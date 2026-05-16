@@ -1,9 +1,26 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import LoadingScreen from './pages/LoadingScreen';
+import DashboardLayout from './layouts/DashboardLayout';
+import DashboardHome from './pages/DashboardHome';
+
 function App() {
   return (
-    <div>
-      <h1>CipherQuest</h1>
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route path="/loading" element={<LoadingScreen />} />
+        <Route 
+          path="/dashboard" 
+          element={
+            <DashboardLayout>
+              <DashboardHome />
+            </DashboardLayout>
+          } 
+        />
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;
