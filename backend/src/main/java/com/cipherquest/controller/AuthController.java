@@ -27,4 +27,10 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest req) {
         return ResponseEntity.ok(userService.login(req));
     }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
+        userService.resetPassword(req);
+        return ResponseEntity.ok(new ApiResponse(true, "Access Cipher updated successfully."));
+    }
 }

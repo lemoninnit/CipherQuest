@@ -44,11 +44,12 @@ const DashboardLayout = ({ children }) => {
           <p className="sidebar-subtitle">Level {user?.level ?? 1} {levelLabel()}</p>
         </div>
         <nav className="sidebar-nav">
-          <NavItem to="/dashboard"         icon="home"                 label="Home"       active={location.pathname === '/dashboard'} />
-          <NavItem to="/dashboard/fishing" icon="phishing"             label="Fishing"    active={location.pathname === '/dashboard/fishing'} />
-          <NavItem to="/dashboard"         icon="enhanced_encryption"  label="Ciphers"    active={false} />
-          <NavItem to="/dashboard"         icon="trending_up"          label="Progress"   active={false} />
-          <NavItem to="/dashboard"         icon="workspace_premium"    label="Badges"     active={false} />
+          <NavItem to="/dashboard"          icon="home"                 label="Home"       active={location.pathname === '/dashboard'} />
+          <NavItem to="/dashboard/fishing"  icon="phishing"             label="Fishing"    active={location.pathname === '/dashboard/fishing'} />
+          <NavItem to="/dashboard/missions" icon="assignment"           label="Missions"   active={location.pathname === '/dashboard/missions'} />
+          <NavItem to="/dashboard"          icon="enhanced_encryption"  label="Ciphers"    active={false} />
+          <NavItem to="/dashboard"          icon="trending_up"          label="Progress"   active={false} />
+          <NavItem to="/dashboard"          icon="workspace_premium"    label="Badges"     active={false} />
           <div className="nav-bottom">
             <NavItem to="/dashboard" icon="settings" label="Settings" active={false} />
             <NavItem icon="logout" label="Logout" onClick={handleLogout} />

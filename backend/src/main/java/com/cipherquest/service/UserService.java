@@ -60,6 +60,19 @@ public class UserService {
         return new AuthResponse(token, toProfileDto(user));
     }
 
+    @Transactional
+    public void resetPassword(ResetPasswordRequest req) {
+        User user = userRepository.findByUsername(req.username())
+            .orElseThrow(() -> new UsernameNotFoundException("Operative ID not found: " + req.username()));
+
+        if (!user.getEmail().equalsIgnoreCase(req.email())) {
+            throw new IllegalArgumentException("Comms Channel (Email) does not match the registered Operative ID");
+        }
+
+        user.setPassword(passwordEncoder.encode(req.newPassword()));
+        userRepository.save(user);
+    }
+
     // ── Profile ───────────────────────────────────────────────────────
 
     public UserProfileDto getProfile(String username) {

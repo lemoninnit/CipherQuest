@@ -23,6 +23,8 @@ export const authApi = {
     request('POST', '/auth/register', { username, email, password }),
   login: (username, password) =>
     request('POST', '/auth/login', { username, password }),
+  resetPassword: (username, email, newPassword) =>
+    request('POST', '/auth/reset-password', { username, email, newPassword }),
 };
 
 export const userApi = {

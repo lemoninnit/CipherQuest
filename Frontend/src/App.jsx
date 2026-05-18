@@ -7,6 +7,8 @@ import LoadingScreen from './pages/LoadingScreen';
 import DashboardLayout from './layouts/DashboardLayout';
 import DashboardHome from './pages/DashboardHome';
 import FishingGame from './pages/FishingGame';
+import MissionsPage from './pages/MissionsPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
   return (
@@ -14,9 +16,10 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* Public routes */}
-          <Route path="/"         element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/loading"  element={<LoadingScreen />} />
+          <Route path="/"               element={<LoginPage />} />
+          <Route path="/register"       element={<RegisterPage />} />
+          <Route path="/loading"        element={<LoadingScreen />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           {/* Protected routes */}
           <Route
@@ -35,6 +38,16 @@ function App() {
               <ProtectedRoute>
                 <DashboardLayout>
                   <FishingGame />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/missions"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <MissionsPage />
                 </DashboardLayout>
               </ProtectedRoute>
             }
