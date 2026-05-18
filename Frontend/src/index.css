@@ -91,10 +91,13 @@ body {
   background-size: 40px 40px;
 }
 
+/* FIXED Glass Card Base Rule containing explicit matching border-radius standards */
 .glass-card {
   background: rgba(23, 26, 33, 0.85);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(0, 209, 255, 0.1);
+  border-radius: 1rem; 
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 209, 255, 0.05);
 }
 
@@ -103,17 +106,25 @@ body {
 }
 
 .neon-glow-focus:focus-within {
-  border-color: #00d1ff;
-  box-shadow: 0 0 10px rgba(0, 209, 255, 0.2);
+  border-color: #00d1ff !important;
+  box-shadow: 0 0 10px rgba(0, 209, 255, 0.2) !important;
 }
 
 .glow-text {
   text-shadow: 0 0 15px rgba(164, 230, 255, 0.4);
 }
 
+/* FIXED Grid Matrix rules with standard position layouts */
 .maze-pattern {
-  background-image: linear-gradient(rgba(0, 209, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 209, 255, 0.05) 1px, transparent 1px);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(rgba(0, 209, 255, 0.03) 1px, transparent 1px), 
+                    linear-gradient(90deg, rgba(0, 209, 255, 0.03) 1px, transparent 1px);
   background-size: 40px 40px;
+  pointer-events: none;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
