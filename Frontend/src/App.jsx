@@ -4,10 +4,10 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/Registerpage';
 import LoadingScreen from './pages/LoadingScreen';
-import DashboardLayout from './layouts/DashboardLayout';
-import DashboardHome from './pages/DashboardHome';
-import FishingGame from './pages/FishingGame';
-import MissionsPage from './pages/MissionsPage';
+import DashboardLayout from './features/layout/DashboardLayout';
+import DashboardHome from './features/pages/home/DashboardHome';
+import CipherGame from './features/ciphergame/CipherGame';
+import BadgesPage from './features/badges/BadgesPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
@@ -33,24 +33,32 @@ function App() {
             }
           />
           <Route
-            path="/dashboard/fishing"
+            path="/dashboard/ciphergame"
             element={
               <ProtectedRoute>
                 <DashboardLayout>
-                  <FishingGame />
+                  <CipherGame />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/fishing"
+            element={<Navigate to="/dashboard/ciphergame" replace />}
+          />
+          <Route
+            path="/dashboard/badges"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <BadgesPage />
                 </DashboardLayout>
               </ProtectedRoute>
             }
           />
           <Route
             path="/dashboard/missions"
-            element={
-              <ProtectedRoute>
-                <DashboardLayout>
-                  <MissionsPage />
-                </DashboardLayout>
-              </ProtectedRoute>
-            }
+            element={<Navigate to="/dashboard/badges" replace />}
           />
 
           {/* Fallback */}
@@ -61,4 +69,4 @@ function App() {
   );
 }
 
-export default App;
+export default App;

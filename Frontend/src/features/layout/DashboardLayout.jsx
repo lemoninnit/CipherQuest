@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import './DashboardLayout.css';
 
 const DashboardLayout = ({ children }) => {
@@ -47,8 +47,8 @@ const DashboardLayout = ({ children }) => {
         </div>
         <nav className="sidebar-nav">
           <NavItem to="/dashboard"          icon="home"                 label="Home"       active={location.pathname === '/dashboard' && !settingsOpen} />
-          <NavItem to="/dashboard/fishing"  icon="sports_esports"       label="CipherGame" active={location.pathname === '/dashboard/fishing' && !settingsOpen} />
-          <NavItem to="/dashboard"          icon="workspace_premium"    label="Badges"     active={false} />
+          <NavItem to="/dashboard/ciphergame" icon="sports_esports"       label="CipherGame" active={location.pathname === '/dashboard/ciphergame' && !settingsOpen} />
+          <NavItem to="/dashboard/badges"      icon="workspace_premium"    label="Badges"     active={location.pathname === '/dashboard/badges' && !settingsOpen} />
           <NavItem
             icon="settings"
             label="Settings"
@@ -88,7 +88,7 @@ const DashboardLayout = ({ children }) => {
           </div>
         </header>
 
-        <div className={`dashboard-content ${location.pathname === '/dashboard/fishing' ? 'dashboard-content-fishing' : ''}`}>
+        <div className={`dashboard-content ${location.pathname === '/dashboard/ciphergame' ? 'dashboard-content-fishing' : ''}`}>
           {children}
         </div>
       </main>
