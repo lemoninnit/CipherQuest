@@ -1,12 +1,31 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { authApi } from '../api/cipherQuestApi';
+import { useAuth } from '../context/AuthContext';
 import './LoginPage.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const handleSubmit = (e) => {
+  const { login } = useAuth();
+  const [form, setForm]       = useState({ username: '', password: '' });
+  const [error, setError]     = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/loading');
+    setLoading(true);
+    setError('');
+    try {
+      const data = await authApi.login(form.username, form.password);
+      login(data.token, data.user);
+      navigate('/loading');
+    } catch (err) {
+      setError(err.message || 'Invalid credentials. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -15,10 +34,10 @@ const LoginPage = () => {
         <div className="maze-pattern absolute-full opacity-20"></div>
         <div className="illustration-wrapper">
           <div className="illustration-container">
-            <img 
-              alt="Cyber Illustration" 
-              className="illustration-img" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJplOW3jHAzhEHHJnd3e4AaV2j0x6GKok6WTaxHd3yBcrkrcyIBUkIZr6zWiVlfebMU5Ad3rQW391Mzsndv1Tj31LnnIwTSi4NZU5u_4AtDZTBYLd6YbxUfNyAin9D6D_h7UbE1J9773B51ntMAan9C6v1xjjlyc8E2dmr15EWeiPFyl8nASh7dfagv47pSHc6GTLXqPmSUCdIgiaLZn7JQ5BK1a9nUq8evVM6naOsUELNzU7SpZK_JG7M-1ZGNxk860IDRzKiPSw" 
+            <img
+              alt="Cyber Illustration"
+              className="illustration-img"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJplOW3jHAzhEHHJnd3e4AaV2j0x6GKok6WTaxHd3yBcrkrcyIBUkIZr6zWiVlfebMU5Ad3rQW391Mzsndv1Tj31LnnIwTSi4NZU5u_4AtDZTBYLd6YbxUfNyAin9D6D_h7UbE1J9773B51ntMAan9C6v1xjjlyc8E2dmr15EWeiPFyl8nASh7dfagv47pSHc6GTLXqPmSUCdIgiaLZn7JQ5BK1a9nUq8evVM6naOsUELNzU7SpZK_JG7M-1ZGNxk860IDRzKiPSw"
             />
             <div className="blur-circle-primary"></div>
             <div className="blur-circle-secondary"></div>
@@ -32,7 +51,8 @@ const LoginPage = () => {
           <div className="illustration-text">
             <h2>Master the Encryption</h2>
             <p>
-              Join the elite rank of operatives in the world's most immersive cryptographic arcade. Solve ciphers, earn badges, and climb the global leaderboard.
+              Join the elite rank of operatives in the world's most immersive cryptographic arcade.
+              Solve ciphers, earn badges, and climb the global leaderboard.
             </p>
           </div>
         </div>
@@ -50,6 +70,10 @@ const LoginPage = () => {
             <p>Identify yourself to enter the grid</p>
           </div>
 
+          {error && (
+            <div className="login-error">{error}</div>
+          )}
+
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
               <label>Operative ID</label>
@@ -57,39 +81,51 @@ const LoginPage = () => {
                 <div className="input-icon">
                   <span className="material-symbols-outlined icon-20">person</span>
                 </div>
-                <input required placeholder="e.g. NeoCipher_42" type="text" />
+                <input
+                  required
+                  name="username"
+                  placeholder="e.g. NeoCipher_42"
+                  type="text"
+                  value={form.username}
+                  onChange={onChange}
+                />
               </div>
             </div>
+
             <div className="form-group">
               <div className="label-row">
                 <label>Access Cipher</label>
-                <a href="#">Lost Key?</a>
               </div>
               <div className="input-wrapper neon-glow-focus">
                 <div className="input-icon">
                   <span className="material-symbols-outlined icon-20">lock</span>
                 </div>
-                <input required placeholder="••••••••" type="password" />
+                <input
+                  required
+                  name="password"
+                  placeholder="••••••••"
+                  type="password"
+                  value={form.password}
+                  onChange={onChange}
+                />
               </div>
             </div>
-            <button type="submit" className="submit-btn">
-              Initialize Session
+
+            <button type="submit" className="submit-btn" disabled={loading}>
+              {loading ? 'Authenticating…' : 'Initialize Session'}
             </button>
           </form>
 
           <div className="divider">
             <div className="divider-line"></div>
-            <span>OR ALTERNATE ACCESS</span>
+            <span>NEW OPERATIVE?</span>
             <div className="divider-line"></div>
           </div>
 
           <div className="alternate-access">
-            <button onClick={() => navigate('/loading')} className="btn-primary-outline">
+            <Link to="/register" className="btn-primary-outline" style={{ textDecoration: 'none', textAlign: 'center' }}>
               Create New Operative
-            </button>
-            <button onClick={() => navigate('/loading')} className="btn-secondary-outline">
-              Access as Guest
-            </button>
+            </Link>
           </div>
         </div>
       </section>

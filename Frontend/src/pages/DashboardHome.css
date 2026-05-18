@@ -98,8 +98,8 @@
 
 .progress-fill-small {
   height: 100%;
-  width: 65%;
   background: linear-gradient(to right, var(--primary), var(--tertiary));
+  transition: width 0.6s ease;
 }
 
 .hero-visual {
@@ -149,7 +149,47 @@
   color: var(--on-surface-variant);
 }
 
-.cipher-section { margin-top: 48px; }
+/* ── Quick Stats ─────────────────────────────────── */
+.quick-stats-section { margin-top: 0; }
+
+.quick-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .quick-stats-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.qs-card {
+  background-color: var(--surface-container);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid rgba(60, 73, 78, 0.15);
+}
+
+.qs-icon { font-size: 2rem; }
+
+.qs-num {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+.qs-label {
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Cipher section ──────────────────────────────── */
+.cipher-section { margin-top: 0; }
 
 .section-header {
   display: flex;
@@ -275,6 +315,7 @@
 }
 
 .play-btn:active { transform: scale(0.9); }
+.play-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .bg-primary { background-color: var(--primary); }
 .text-on-primary { color: var(--on-primary); }
 .bg-secondary { background-color: var(--secondary); }
@@ -286,7 +327,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
-  margin-top: 48px;
+  margin-top: 0;
 }
 
 @media (min-width: 1024px) {
@@ -407,9 +448,8 @@
   color: var(--primary);
   fill: transparent;
   stroke: currentColor;
-  stroke-dasharray: 364.4;
-  stroke-dashoffset: 91;
   stroke-width: 4;
+  transition: stroke-dasharray 0.6s ease;
 }
 
 .donut-text {
@@ -433,9 +473,7 @@
   color: var(--on-surface-variant);
 }
 
-.objective-container {
-  margin-top: 24px;
-}
+.objective-container { margin-top: 24px; }
 
 .objective-header {
   display: flex;
@@ -463,11 +501,12 @@
   height: 4px;
   background-color: var(--surface-container-highest);
   border-radius: 9999px;
+  overflow: hidden;
 }
 
 .objective-fill {
   height: 100%;
   background-color: var(--primary);
-  width: 75%;
   border-radius: 9999px;
+  transition: width 0.6s ease;
 }
