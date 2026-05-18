@@ -1,27 +1,28 @@
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\LeaderboardEntry.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\SessionSummaryResponse.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\exception\GlobalExceptionHandler.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\RegisterRequest.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\AuthResponse.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\service\UserService.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\controller\FishingGameController.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\CipherQuestApplication.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\SubmitAnswerResponse.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\model\FishingSession.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\controller\AuthController.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\service\CaesarCipherService.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\repository\FishingSessionRepository.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\config\SecurityConfig.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\CastResponse.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\model\User.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\controller\UserController.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\ApiResponse.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\SubmitAnswerRequest.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\LoginRequest.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\service\FishingGameService.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\config\JwtAuthFilter.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\config\UserDetailsServiceImpl.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\repository\UserRepository.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\config\JwtUtil.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\StartSessionResponse.java
-C:\Users\Gee Caliph\Desktop\Programming\System\CipherQuest\backend\src\main\java\com\cipherquest\dto\UserProfileDto.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\repository\FishingSessionRepository.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\config\SecurityConfig.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\UserProfileDto.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\service\FishingGameService.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\RegisterRequest.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\config\UserDetailsServiceImpl.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\ApiResponse.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\controller\AuthController.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\StartSessionResponse.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\LeaderboardEntry.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\SubmitAnswerRequest.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\ResetPasswordRequest.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\service\CaesarCipherService.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\LoginRequest.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\controller\FishingGameController.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\SessionSummaryResponse.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\CipherQuestApplication.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\config\JwtUtil.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\exception\GlobalExceptionHandler.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\model\FishingSession.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\model\User.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\service\UserService.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\repository\UserRepository.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\config\JwtAuthFilter.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\SubmitAnswerResponse.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\CastResponse.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\dto\AuthResponse.java
+C:\Users\Moka\Desktop\school\CipherQuest\backend\src\main\java\com\cipherquest\controller\UserController.java
