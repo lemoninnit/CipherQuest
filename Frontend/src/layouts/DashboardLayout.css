@@ -54,6 +54,17 @@
   font-weight: 500;
 }
 
+/* nav button (logout) same look as nav link */
+.nav-item-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: inherit;
+}
+
 .nav-item:hover {
   background-color: var(--surface-container-high);
   color: var(--primary);
@@ -148,21 +159,6 @@
   gap: 8px;
 }
 
-.notification-btn {
-  padding: 8px;
-  color: var(--on-surface-variant);
-  background: transparent;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  transition: background-color 0.3s;
-}
-
-.notification-btn:hover {
-  background-color: rgba(51, 53, 57, 0.2);
-}
-
 .avatar-wrapper {
   width: 40px;
   height: 40px;
@@ -171,12 +167,18 @@
   padding: 2px;
 }
 
-.avatar-img {
+/* Avatar placeholder when no image: shows first letter */
+.avatar-placeholder {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background-color: var(--surface);
-  object-fit: cover;
+  background: linear-gradient(135deg, #005fa3, #00d1ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
 }
 
 .dashboard-content {

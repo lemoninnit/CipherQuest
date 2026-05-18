@@ -1,25 +1,50 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import LoadingScreen from './pages/LoadingScreen';
 import DashboardLayout from './layouts/DashboardLayout';
 import DashboardHome from './pages/DashboardHome';
+import FishingGame from './pages/FishingGame';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/loading" element={<LoadingScreen />} />
-        <Route 
-          path="/dashboard" 
-          element={
-            <DashboardLayout>
-              <DashboardHome />
-            </DashboardLayout>
-          } 
-        />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/"         element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/loading"  element={<LoadingScreen />} />
+
+          {/* Protected routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <DashboardHome />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/fishing"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <FishingGame />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 
