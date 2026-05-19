@@ -29,6 +29,7 @@ export const authApi = {
 
 export const userApi = {
   getMyProfile: () => request('GET', '/users/me'),
+  deleteAccount: () => request('DELETE', '/users/me'),
 };
 
 export const fishingApi = {

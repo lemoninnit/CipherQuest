@@ -26,6 +26,7 @@ com\cipherquest\service\UserService.class
 com\cipherquest\controller\AuthController.class
 com\cipherquest\config\JwtAuthFilter.class
 com\cipherquest\dto\CastResponse.class
+com\cipherquest\dto\ResetPasswordRequest.class
 com\cipherquest\controller\UserController.class
 com\cipherquest\dto\SubmitAnswerRequest.class
 com\cipherquest\CipherQuestApplication.class

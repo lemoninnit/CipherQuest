@@ -14,6 +14,9 @@ public interface FishingSessionRepository extends JpaRepository<FishingSession, 
     // Find the active session for a user (at most one at a time)
     Optional<FishingSession> findByUserAndActiveTrue(User user);
 
+    // Find all sessions for a user
+    List<FishingSession> findByUser(User user);
+
     // All completed sessions for a user, most recent first
     List<FishingSession> findByUserAndActiveFalseOrderByStartedAtDesc(User user);
 

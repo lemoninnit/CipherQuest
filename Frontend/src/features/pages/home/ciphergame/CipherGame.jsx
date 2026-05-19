@@ -19,7 +19,7 @@ const HANDCRAFTED_LEVELS = {
     {
       level: 2,
       plaintext: "WATER",
-      ciphertext: "BFSJW",
+      ciphertext: "CGZKX",
       targetShifts: [6],
       masks: [[false, true, false, true, false]], // Reveal W, T, R (W # T # R)
       hint: "Essential liquid for all living things",

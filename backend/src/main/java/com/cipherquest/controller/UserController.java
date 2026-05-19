@@ -24,4 +24,12 @@ public class UserController {
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(userService.getProfile(userDetails.getUsername()));
     }
+
+    /** Deletes the authenticated operative's account and associated stats. */
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteMyAccount(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        userService.deleteUser(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
 }

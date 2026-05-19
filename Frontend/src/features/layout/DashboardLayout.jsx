@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { userApi } from '../../api/cipherQuestApi';
 import './DashboardLayout.css';
 
 const DashboardLayout = ({ children }) => {
@@ -11,6 +12,21 @@ const DashboardLayout = ({ children }) => {
   const handleLogout = () => {
     logout();
     navigate('/');
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "WARNING: Are you sure you want to permanently decommission this agent profile?\n\nThis will purge all associated logs, XP progress, fishing seasons, and cast results from our databases. This action CANNOT be undone."
+    );
+    if (!confirmed) return;
+
+    try {
+      await userApi.deleteAccount();
+      logout();
+      navigate('/');
+    } catch (err) {
+      alert("Error decommissioning agent profile: " + err.message);
+    }
   };
 
   const NavItem = ({ to, icon, label, active, onClick }) => (
@@ -145,6 +161,21 @@ const DashboardLayout = ({ children }) => {
                   <button className="settings-logout-btn" onClick={handleLogout}>
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
                     Logout
+                  </button>
+                </div>
+              </div>
+
+              {/* Danger Zone */}
+              <div className="settings-group danger-zone-group">
+                <h3>⚠️ Danger Zone</h3>
+                <div className="setting-row danger-row">
+                  <div>
+                    <div className="setting-label">Decommission Profile</div>
+                    <div className="setting-desc">Permanently purge your operative account and delete all data in fishing seasons & cast results</div>
+                  </div>
+                  <button className="settings-delete-btn" onClick={handleDeleteAccount}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete_forever</span>
+                    Purge
                   </button>
                 </div>
               </div>
