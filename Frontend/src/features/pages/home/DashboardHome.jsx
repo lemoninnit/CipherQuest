@@ -8,9 +8,9 @@ const DashboardHome = () => {
   const { user } = useAuth();
 
   const badges = [
-    { label: 'First Crack',  icon: 'workspace_premium', color: 'badge-yellow',    bg: 'badge-bg-yellow',    locked: false },
-    { label: 'Speedster',    icon: 'bolt',              color: 'badge-primary',   bg: 'badge-bg-primary',   locked: false },
-    { label: 'Defender',     icon: 'shield',            color: 'badge-secondary', bg: 'badge-bg-secondary', locked: false },
+    { label: 'First Crack',  icon: 'workspace_premium', color: 'badge-cyan',    bg: 'badge-bg-cyan',    locked: false },
+    { label: 'Speedster',    icon: 'bolt',              color: 'badge-cyan',   bg: 'badge-bg-cyan',   locked: false },
+    { label: 'Defender',     icon: 'shield',            color: 'badge-cyan',   bg: 'badge-bg-cyan',   locked: false },
     { label: 'Secret',       icon: 'lock',              color: 'badge-locked',    bg: 'badge-bg-locked',    locked: true  },
     { label: 'Secret',       icon: 'lock',              color: 'badge-locked',    bg: 'badge-bg-locked',    locked: true  },
   ];
@@ -26,7 +26,7 @@ const DashboardHome = () => {
           <div className="hero-content">
             <span className="hero-tag">
               <span className="live-dot animate-pulse"></span>
-              Active Operative
+              Active Operative Console
             </span>
             <h2 className="hero-title">{user?.username ?? 'Agent'}</h2>
             <p className="hero-desc">
@@ -87,27 +87,27 @@ const DashboardHome = () => {
               <div className="qs-label">Cipher Games</div>
             </div>
           </div>
-          <div className="qs-card glass-card stat-gold">
+          <div className="qs-card glass-card stat-cyan">
             <div className="qs-icon-wrapper">
-              <span className="material-symbols-outlined qs-icon text-gold">emoji_events</span>
+              <span className="material-symbols-outlined qs-icon text-cyan">emoji_events</span>
             </div>
             <div>
               <div className="qs-num">{user?.fishingBestScore ?? 0}</div>
               <div className="qs-label">Best Game Score</div>
             </div>
           </div>
-          <div className="qs-card glass-card stat-green">
+          <div className="qs-card glass-card stat-cyan">
             <div className="qs-icon-wrapper">
-              <span className="material-symbols-outlined qs-icon text-green">verified</span>
+              <span className="material-symbols-outlined qs-icon text-cyan">verified</span>
             </div>
             <div>
               <div className="qs-num">{user?.totalCiphersSolved ?? 0}</div>
               <div className="qs-label">Ciphers Solved</div>
             </div>
           </div>
-          <div className="qs-card glass-card stat-purple">
+          <div className="qs-card glass-card stat-cyan">
             <div className="qs-icon-wrapper">
-              <span className="material-symbols-outlined qs-icon text-purple">military_tech</span>
+              <span className="material-symbols-outlined qs-icon text-cyan">military_tech</span>
             </div>
             <div>
               <div className="qs-num">Lv. {user?.level ?? 1}</div>
@@ -126,7 +126,7 @@ const DashboardHome = () => {
           </div>
         </div>
         <div className="cipher-grid">
-          {/* Fishing Game Card */}
+          {/* Caesar Card */}
           <div className="cipher-card glass-card active-module border-primary-hover" onClick={() => navigate('/dashboard/ciphergame')}>
             <div className="card-status-badge available">AVAILABLE</div>
             <div className="cipher-icon-wrapper bg-primary-light glow-primary-hover">
@@ -142,32 +142,33 @@ const DashboardHome = () => {
             </div>
           </div>
 
-          {/* Coming soon */}
-          <div className="cipher-card glass-card locked-module border-secondary-hover">
+          {/* Locked Vigenère */}
+          <div className="cipher-card glass-card locked-module border-primary-hover">
             <div className="card-status-badge locked">LOCKED</div>
-            <div className="cipher-icon-wrapper bg-secondary-light glow-secondary-hover">
-              <span className="material-symbols-outlined text-gold icon-32">vpn_key</span>
+            <div className="cipher-icon-wrapper bg-locked-light">
+              <span className="material-symbols-outlined text-muted icon-32">vpn_key</span>
             </div>
             <h4 className="cipher-title">Vigenère Matrix</h4>
             <p className="cipher-desc">Polyalphabetic substitution using a keyword cycle matrix. Unlocks after complete Easy tier Caesar.</p>
             <div className="cipher-footer">
-              <span className="xp-text">+1,200 XP</span>
-              <button className="play-btn bg-secondary text-on-secondary" disabled>
+              <span className="xp-text muted">+1,200 XP</span>
+              <button className="play-btn bg-locked text-muted" disabled>
                 <span className="material-symbols-outlined fill-1">lock</span>
               </button>
             </div>
           </div>
 
-          <div className="cipher-card glass-card locked-module border-tertiary-hover">
+          {/* Locked Playfair */}
+          <div className="cipher-card glass-card locked-module border-primary-hover">
             <div className="card-status-badge locked">LOCKED</div>
-            <div className="cipher-icon-wrapper bg-tertiary-light glow-tertiary-hover">
-              <span className="material-symbols-outlined text-purple icon-32">grid_view</span>
+            <div className="cipher-icon-wrapper bg-locked-light">
+              <span className="material-symbols-outlined text-muted icon-32">grid_view</span>
             </div>
             <h4 className="cipher-title">Playfair Matrix</h4>
             <p className="cipher-desc">Digraph substitution technique using a coordinate 5×5 grid. Unlocks after completing Vigenère matrix.</p>
             <div className="cipher-footer">
-              <span className="xp-text">+2,500 XP</span>
-              <button className="play-btn bg-tertiary text-on-tertiary" disabled>
+              <span className="xp-text muted">+2,500 XP</span>
+              <button className="play-btn bg-locked text-muted" disabled>
                 <span className="material-symbols-outlined fill-1">lock</span>
               </button>
             </div>

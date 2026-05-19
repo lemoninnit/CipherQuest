@@ -33,25 +33,43 @@ const ResetPasswordPage = () => {
   return (
     <main className="cipher-bg reset-page">
       <section className="reset-illustration">
-        <div className="maze-pattern absolute-full opacity-20"></div>
         <div className="illustration-wrapper">
-          <div className="illustration-container">
-            <img
-              alt="Cyber Reset Illustration"
-              className="illustration-img"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJplOW3jHAzhEHHJnd3e4AaV2j0x6GKok6WTaxHd3yBcrkrcyIBUkIZr6zWiVlfebMU5Ad3rQW391Mzsndv1Tj31LnnIwTSi4NZU5u_4AtDZTBYLd6YbxUfNyAin9D6D_h7UbE1J9773B51ntMAan9C6v1xjjlyc8E2dmr15EWeiPFyl8nASh7dfagv47pSHc6GTLXqPmSUCdIgiaLZn7JQ5BK1a9nUq8evVM6naOsUELNzU7SpZK_JG7M-1ZGNxk860IDRzKiPSw"
-            />
-            <div className="blur-circle-primary"></div>
-            <div className="blur-circle-secondary"></div>
-            <div className="icon-card-primary animate-pulse">
-              <span className="material-symbols-outlined icon-40">key</span>
+          <div className="terminal-mockup">
+            <div className="terminal-header">
+              <div className="terminal-dot dot-red"></div>
+              <div className="terminal-dot dot-yellow"></div>
+              <div className="terminal-dot dot-green"></div>
+              <span className="terminal-title">Console::CipherQuest_Security_v2.0</span>
             </div>
-            <div className="icon-card-secondary">
-              <span className="material-symbols-outlined icon-32">published_with_changes</span>
+            <div className="terminal-body">
+              <div className="terminal-line">
+                <span className="terminal-prompt">$</span>
+                <span>Initializing override protocol daemon...</span>
+              </div>
+              <div className="terminal-line success">
+                <span className="terminal-prompt">$</span>
+                <span>Operative identification request received.</span>
+              </div>
+              <div className="terminal-line">
+                <span className="terminal-prompt">$</span>
+                <span>Verifying comms channel signature...</span>
+              </div>
+              <div className="terminal-line success">
+                <span className="terminal-prompt">$</span>
+                <span>Verification channel ready. [OK]</span>
+              </div>
+              <div className="terminal-line warning">
+                <span className="terminal-prompt">$</span>
+                <span>Override: Overwriting Access Cipher hash value.</span>
+              </div>
+              <div className="terminal-line">
+                <span className="terminal-prompt">$</span>
+                <span>Status: Awaiting override inputs...<span className="terminal-cursor"></span></span>
+              </div>
             </div>
           </div>
           <div className="illustration-text">
-            <h2>Re-secure your Identity</h2>
+            <h2>Re-secure your <span className="highlight-cyan">Identity</span></h2>
             <p>
               Operatives who lose access to the grid can re-authenticate using their comms channel.
               Confirm your details to overwrite your security configuration.

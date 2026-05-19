@@ -28,7 +28,7 @@ const StageRoadmap = ({
           <div 
             className="roadmap-pathway-fill" 
             style={{ 
-              width: stages[0].completed ? '25%' : '0%' 
+              width: `${Math.min(100, (stages.filter(s => s.completed).length / (stages.length - 1)) * 100)}%` 
             }} 
           />
         </div>

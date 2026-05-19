@@ -4,6 +4,7 @@ import CategorySelector from './categories/CategorySelector';
 import DifficultySelector from './difficulties/DifficultySelector';
 import StageRoadmap from './stages/StageRoadmap';
 import StageCompletedRecap from './stages/StageCompletedRecap';
+import PacmanGame from './pacman/PacmanGame';
 import './CipherGame.css';
 
 /* ─── Handcrafted levels for Caesar Cipher Mastery ─────────────────── */
@@ -463,8 +464,9 @@ export default function CipherGame() {
 
   const ruleViolation = getRuleViolationInfo();
 
-  const handleVerifySubmit = async () => {
-    if (!levelSolved) return;
+  const handleVerifySubmit = async (bypassCheck = false) => {
+    if (!levelSolved && !bypassCheck) return;
+    if (bypassCheck) setLevelSolved(true);
 
     setShowExplanation(true);
     setExplanationStep(-1);
@@ -549,7 +551,7 @@ export default function CipherGame() {
   return (
     <div className="fg-root">
       {gameFlowStep === 'category' && (
-        <CategorySelector 
+        <CategorySelector
           onSelectCategory={(cat) => {
             setSelectedCategory(cat);
             setGameFlowStep('difficulty');
@@ -558,7 +560,7 @@ export default function CipherGame() {
       )}
 
       {gameFlowStep === 'difficulty' && (
-        <DifficultySelector 
+        <DifficultySelector
           onSelectDifficulty={(diff) => {
             setTier(diff);
             setGameFlowStep('stage');
@@ -568,7 +570,7 @@ export default function CipherGame() {
       )}
 
       {gameFlowStep === 'stage' && (
-        <StageRoadmap 
+        <StageRoadmap
           stages={stagesData}
           activeDifficulty={tier}
           onSelectStage={(id) => {
@@ -584,7 +586,7 @@ export default function CipherGame() {
 
       {/* Recap Modal Archive */}
       {recapStageData && (
-        <StageCompletedRecap 
+        <StageCompletedRecap
           stage={recapStageData}
           onClose={() => setRecapStageData(null)}
         />
@@ -592,289 +594,298 @@ export default function CipherGame() {
 
       {/* Interactive Active Game */}
       {gameFlowStep === 'game' && (
-        <>
-          <header className="fg-header">
-            <button className="fg-btn-back-nav" onClick={() => setGameFlowStep('stage')}>
-              <span className="material-symbols-outlined">arrow_back</span>
-              Exit to Stages
-            </button>
-            <div className="fg-header-category">Caesar Cipher</div>
-            <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
-              {tier.toUpperCase()} Mode — Stage {levelIndex + 1}
-            </div>
-            <div className={`fg-header-attempts ${attemptsLeft <= 3 ? 'low-attempts' : ''}`}>
-              Attempts: {attemptsLeft}
-            </div>
-          </header>
+        tier === 'easy' && levelIndex === 1 ? (
+          <PacmanGame
+            levelData={levelData}
+            tier={tier}
+            onVerifySubmit={() => handleVerifySubmit(true)}
+            onBackToStages={() => setGameFlowStep('stage')}
+          />
+        ) : (
+          <>
+            <header className="fg-header">
+              <button className="fg-btn-back-nav" onClick={() => setGameFlowStep('stage')}>
+                <span className="material-symbols-outlined">arrow_back</span>
+                Exit to Stages
+              </button>
+              <div className="fg-header-category">Caesar Cipher</div>
+              <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
+                {tier.toUpperCase()} Mode — Stage {levelIndex + 1}
+              </div>
+              <div className={`fg-header-attempts ${attemptsLeft <= 3 ? 'low-attempts' : ''}`}>
+                Attempts: {attemptsLeft}
+              </div>
+            </header>
 
-          <div className="fg-game-layout">
-            {/* Sidebar */}
-            <aside className="fg-sidebar">
-              {/* Basket Card */}
-              <div className={`fg-basket-card ${levelSolved ? 'active-target' : ''} ${basketShake ? 'shake' : ''}`}>
-                <div className="fg-basket-container">🧺</div>
-                <div className="fg-basket-shift-value">
-                  +{activeShifts[targetSegmentIndex] ?? 0}
+            <div className="fg-game-layout">
+              {/* Sidebar */}
+              <aside className="fg-sidebar">
+                {/* Basket Card */}
+                <div className={`fg-basket-card ${levelSolved ? 'active-target' : ''} ${basketShake ? 'shake' : ''}`}>
+                  <div className="fg-basket-container">🧺</div>
+                  <div className="fg-basket-shift-value">
+                    +{activeShifts[targetSegmentIndex] ?? 0}
+                  </div>
+                  <span className="fg-basket-label">Basket Shift (Segment #{targetSegmentIndex + 1})</span>
+
+                  {floatingXp && (
+                    <div className="fg-xp-pop-indicator" style={{ left: `${floatingXp.x}%`, top: `${floatingXp.y}%` }}>
+                      +{floatingXp.amount} XP
+                    </div>
+                  )}
                 </div>
-                <span className="fg-basket-label">Basket Shift (Segment #{targetSegmentIndex + 1})</span>
 
-                {floatingXp && (
-                  <div className="fg-xp-pop-indicator" style={{ left: `${floatingXp.x}%`, top: `${floatingXp.y}%` }}>
-                    +{floatingXp.amount} XP
-                  </div>
-                )}
-              </div>
+                {/* Guide Card */}
+                <div className="fg-cipher-ref">
+                  <p className="fg-ref-title">Target Shift: Segment #{targetSegmentIndex + 1}</p>
+                  <p className="fg-ref-hint">
+                    <span>Active Shift:</span>
+                    <span className="fg-key">+{activeShifts[targetSegmentIndex] ?? 0}</span>
+                  </p>
+                  <p className="fg-ref-hint">
+                    <span>A →</span>
+                    <span>{caesarDecryptChar('A', -(activeShifts[targetSegmentIndex] ?? 0))}</span>
+                  </p>
+                  <p className="fg-ref-hint">
+                    <span>B →</span>
+                    <span>{caesarDecryptChar('B', -(activeShifts[targetSegmentIndex] ?? 0))}</span>
+                  </p>
+                  <p className="fg-ref-hint">
+                    <span>Z →</span>
+                    <span>{caesarDecryptChar('Z', -(activeShifts[targetSegmentIndex] ?? 0))}</span>
+                  </p>
+                  <p className="fg-ref-formula">
+                    Formula:<br />
+                    Plain[i] = (Cipher[i] - BasketShift) mod 26
+                  </p>
+                </div>
 
-              {/* Guide Card */}
-              <div className="fg-cipher-ref">
-                <p className="fg-ref-title">Target Shift: Segment #{targetSegmentIndex + 1}</p>
-                <p className="fg-ref-hint">
-                  <span>Active Shift:</span>
-                  <span className="fg-key">+{activeShifts[targetSegmentIndex] ?? 0}</span>
-                </p>
-                <p className="fg-ref-hint">
-                  <span>A →</span>
-                  <span>{caesarDecryptChar('A', -(activeShifts[targetSegmentIndex] ?? 0))}</span>
-                </p>
-                <p className="fg-ref-hint">
-                  <span>B →</span>
-                  <span>{caesarDecryptChar('B', -(activeShifts[targetSegmentIndex] ?? 0))}</span>
-                </p>
-                <p className="fg-ref-hint">
-                  <span>Z →</span>
-                  <span>{caesarDecryptChar('Z', -(activeShifts[targetSegmentIndex] ?? 0))}</span>
-                </p>
-                <p className="fg-ref-formula">
-                  Formula:<br/>
-                  Plain[i] = (Cipher[i] - BasketShift) mod 26
-                </p>
-              </div>
+                {/* Status Alert Card */}
+                <div className="fg-sidebar-alerts">
+                  {levelSolved ? (
+                    <div className="fg-success-panel">
+                      <h3>✅ SECURED!</h3>
+                      <p>All segments decrypted successfully.</p>
+                      <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: '10px' }}>
+                        🚀 Verify & Submit
+                      </button>
+                    </div>
+                  ) : ruleViolation ? (
+                    <div className="fg-alert-panel">
+                      <strong>⚠️ Rule Violation:</strong>
+                      <p style={{ marginTop: '6px', fontSize: '0.82rem', lineHeight: '1.4' }}>{ruleViolation.rule}</p>
+                    </div>
+                  ) : (
+                    <div className="fg-alert-panel default-alert">
+                      <strong>🎣 Status Action:</strong>
+                      <p style={{ marginTop: '6px', fontSize: '0.82rem', lineHeight: '1.4' }}>Select a cipher word, then catch a swimming fish with correct shift modifier!</p>
+                    </div>
+                  )}
+                </div>
+              </aside>
 
-              {/* Status Alert Card */}
-              <div className="fg-sidebar-alerts">
-                {levelSolved ? (
-                  <div className="fg-success-panel">
-                    <h3>✅ SECURED!</h3>
-                    <p>All segments decrypted successfully.</p>
-                    <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: '10px' }}>
-                      🚀 Verify & Submit
-                    </button>
-                  </div>
-                ) : ruleViolation ? (
-                  <div className="fg-alert-panel">
-                    <strong>⚠️ Rule Violation:</strong>
-                    <p style={{ marginTop: '6px', fontSize: '0.82rem', lineHeight: '1.4' }}>{ruleViolation.rule}</p>
-                  </div>
-                ) : (
-                  <div className="fg-alert-panel default-alert">
-                    <strong>🎣 Status Action:</strong>
-                    <p style={{ marginTop: '6px', fontSize: '0.82rem', lineHeight: '1.4' }}>Select a cipher word, then catch a swimming fish with correct shift modifier!</p>
-                  </div>
-                )}
-              </div>
-            </aside>
+              {/* Central Game Board */}
+              <main className="fg-main">
+                <section className="fg-word-panel">
+                  <div className="fg-word-segments-row">
+                    {words.map((word, wordIdx) => {
+                      const isTargeted = targetSegmentIndex === wordIdx;
+                      const segmentShift = activeShifts[wordIdx] ?? 0;
+                      const cipherWord = ciphersegments[wordIdx];
+                      const decryptedWord = decryptedSegments[wordIdx];
+                      const expectedWord = words[wordIdx];
 
-            {/* Central Game Board */}
-            <main className="fg-main">
-              <section className="fg-word-panel">
-                <div className="fg-word-segments-row">
-                  {words.map((word, wordIdx) => {
-                    const isTargeted = targetSegmentIndex === wordIdx;
-                    const segmentShift = activeShifts[wordIdx] ?? 0;
-                    const cipherWord = ciphersegments[wordIdx];
-                    const decryptedWord = decryptedSegments[wordIdx];
-                    const expectedWord = words[wordIdx];
+                      return (
+                        <div
+                          key={wordIdx}
+                          className={`fg-word-segment-card ${isTargeted ? 'targeted' : ''}`}
+                          onClick={() => { if (!isCasting) setTargetSegmentIndex(wordIdx); }}
+                        >
+                          <div className="fg-letter-cells">
+                            {cipherWord.split('').map((cipherCh, chIdx) => {
+                              const maskRevealList = levelData.masks[wordIdx];
+                              const shouldRevealCipher = tier === 'easy' ? true : maskRevealList[chIdx];
 
-                    return (
-                      <div
-                        key={wordIdx}
-                        className={`fg-word-segment-card ${isTargeted ? 'targeted' : ''}`}
-                        onClick={() => { if (!isCasting) setTargetSegmentIndex(wordIdx); }}
-                      >
-                        <div className="fg-letter-cells">
-                          {cipherWord.split('').map((cipherCh, chIdx) => {
-                            const maskRevealList = levelData.masks[wordIdx];
-                            const shouldRevealCipher = tier === 'easy' ? true : maskRevealList[chIdx];
-                            
-                            let letterToDisplay = decryptedWord[chIdx];
-                            let cellClass = "fg-letter-cell";
+                              let letterToDisplay = decryptedWord[chIdx];
+                              let cellClass = "fg-letter-cell";
 
-                            if (tier === 'easy') {
-                              const isPrefilledPlaintext = maskRevealList[chIdx];
-                              if (isPrefilledPlaintext) {
-                                letterToDisplay = expectedWord[chIdx];
-                                cellClass += " correct-plain";
+                              if (tier === 'easy') {
+                                const isPrefilledPlaintext = maskRevealList[chIdx];
+                                if (isPrefilledPlaintext) {
+                                  letterToDisplay = expectedWord[chIdx];
+                                  cellClass += " correct-plain";
+                                } else {
+                                  const isCorrect = letterToDisplay === expectedWord[chIdx];
+                                  cellClass += isCorrect ? " correct-plain" : " incorrect-plain";
+                                }
                               } else {
                                 const isCorrect = letterToDisplay === expectedWord[chIdx];
                                 cellClass += isCorrect ? " correct-plain" : " incorrect-plain";
                               }
-                            } else {
-                              const isCorrect = letterToDisplay === expectedWord[chIdx];
-                              cellClass += isCorrect ? " correct-plain" : " incorrect-plain";
-                            }
 
-                            return (
-                              <div key={chIdx} className={cellClass}>
-                                <span className="fg-cell-ciphertext">
-                                  {shouldRevealCipher ? cipherCh : '#'}
-                                </span>
-                                <span className="fg-cell-plaintext">{letterToDisplay}</span>
-                              </div>
-                            );
-                          })}
+                              return (
+                                <div key={chIdx} className={cellClass}>
+                                  <span className="fg-cell-ciphertext">
+                                    {shouldRevealCipher ? cipherCh : '#'}
+                                  </span>
+                                  <span className="fg-cell-plaintext">{letterToDisplay}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="fg-segment-basket-badge">
+                            Basket Shift: +{segmentShift}
+                          </div>
                         </div>
-                        <div className="fg-segment-basket-badge">
-                          Basket Shift: +{segmentShift}
+                      );
+                    })}
+                  </div>
+
+                  <div className="fg-clue-banner">
+                    💡 Hint: <strong>"{levelData.hint}"</strong>
+                  </div>
+                </section>
+
+                {/* Pond */}
+                <section className="fg-pond-wrapper">
+                  <div className="fg-pond-container">
+                    <div className="fg-wave" />
+
+                    {/* Bubbles */}
+                    {bubbles.map((b) => (
+                      <div
+                        key={b.id}
+                        className="fg-bubble"
+                        style={{
+                          left: `${b.x}%`,
+                          width: `${b.size}px`,
+                          height: `${b.size}px`,
+                          animationDelay: `${b.delay}s`,
+                          animationDuration: `${b.duration}s`
+                        }}
+                      />
+                    ))}
+
+                    {/* Swimming Fish */}
+                    {fishList.map((f) => (
+                      <div
+                        key={f.id}
+                        className="fg-fish-entity"
+                        style={{
+                          left: `${f.x}%`,
+                          top: `${f.y}px`,
+                          transform: `scaleX(${f.direction})`
+                        }}
+                        onClick={() => castLineToFish(f)}
+                      >
+                        <span className="fg-fish-sprite" style={{ color: f.color }}>
+                          {f.emoji}
+                        </span>
+                        <div className={`fg-fish-badge ${f.value > 0 ? 'positive' : 'negative'}`} style={{ transform: `scaleX(${f.direction})` }}>
+                          {f.value > 0 ? `+${f.value}` : f.value}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    ))}
 
-                <div className="fg-clue-banner">
-                  💡 Hint: <strong>"{levelData.hint}"</strong>
-                </div>
-              </section>
-
-              {/* Pond */}
-              <section className="fg-pond-wrapper">
-                <div className="fg-pond-container">
-                  <div className="fg-wave" />
-
-                  {/* Bubbles */}
-                  {bubbles.map((b) => (
-                    <div
-                      key={b.id}
-                      className="fg-bubble"
-                      style={{
-                        left: `${b.x}%`,
-                        width: `${b.size}px`,
-                        height: `${b.size}px`,
-                        animationDelay: `${b.delay}s`,
-                        animationDuration: `${b.duration}s`
-                      }}
-                    />
-                  ))}
-
-                  {/* Swimming Fish */}
-                  {fishList.map((f) => (
-                    <div
-                      key={f.id}
-                      className="fg-fish-entity"
-                      style={{
-                        left: `${f.x}%`,
-                        top: `${f.y}px`,
-                        transform: `scaleX(${f.direction})`
-                      }}
-                      onClick={() => castLineToFish(f)}
-                    >
-                      <span className="fg-fish-sprite" style={{ color: f.color }}>
-                        {f.emoji}
-                      </span>
-                      <div className={`fg-fish-badge ${f.value > 0 ? 'positive' : 'negative'}`} style={{ transform: `scaleX(${f.direction})` }}>
-                        {f.value > 0 ? `+${f.value}` : f.value}
+                    {/* Caught Fish being reeled in */}
+                    {isCasting && caughtFish && castProgress < 1 && (
+                      <div
+                        className="fg-fish-entity"
+                        style={{
+                          left: `${(hookX / 500) * 100}%`,
+                          top: `${hookY - 20}px`,
+                          transform: 'scale(1.2)'
+                        }}
+                      >
+                        <span className="fg-fish-sprite" style={{ color: caughtFish.color }}>
+                          {caughtFish.emoji}
+                        </span>
                       </div>
-                    </div>
-                  ))}
-
-                  {/* Caught Fish being reeled in */}
-                  {isCasting && caughtFish && castProgress < 1 && (
-                    <div
-                      className="fg-fish-entity"
-                      style={{
-                        left: `${(hookX / 500) * 100}%`,
-                        top: `${hookY - 20}px`,
-                        transform: 'scale(1.2)'
-                      }}
-                    >
-                      <span className="fg-fish-sprite" style={{ color: caughtFish.color }}>
-                        {caughtFish.emoji}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Rod Line SVG */}
-                  <svg className="fg-pond-svg" viewBox="0 0 500 260">
-                    <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
-                    {isCasting && (
-                      <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />
                     )}
-                  </svg>
 
-                  {/* Splash */}
-                  {splash.show && (
-                    <div className="fg-splash-effect" style={{ left: `${splash.x}%`, top: `${splash.y}px` }}>
-                      💦
+                    {/* Rod Line SVG */}
+                    <svg className="fg-pond-svg" viewBox="0 0 500 260">
+                      <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
+                      {isCasting && (
+                        <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />
+                      )}
+                    </svg>
+
+                    {/* Splash */}
+                    {splash.show && (
+                      <div className="fg-splash-effect" style={{ left: `${splash.x}%`, top: `${splash.y}px` }}>
+                        💦
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </main>
+            </div>
+          </>
+        )
+      )}
+
+            {/* Recap "Why did this work?" explanation overlay */}
+            {showExplanation && (
+              <div className="fg-recap-overlay">
+                <div className="fg-recap-card">
+                  <h2 className="fg-recap-title">🔬 Cryptographic Recap</h2>
+                  <p className="fg-recap-subtitle">Why Did This Work?</p>
+
+                  <div className="fg-recap-animation-box">
+                    <div className="fg-recap-letter-row">
+                      {levelData.plaintext.replace(/\s+/g, '').split('').map((plainCh, idx) => {
+                        const cipherCh = levelData.ciphertext.replace(/\s+/g, '')[idx];
+
+                        let wordCharIdx = idx;
+                        let wordIndex = 0;
+                        let accum = 0;
+                        const wordSegmentsList = levelData.plaintext.split(' ');
+                        for (let i = 0; i < wordSegmentsList.length; i++) {
+                          if (wordCharIdx < accum + wordSegmentsList[i].length) {
+                            wordIndex = i;
+                            wordCharIdx = wordCharIdx - accum;
+                            break;
+                          }
+                          accum += wordSegmentsList[i].length;
+                        }
+
+                        const segmentShift = levelData.targetShifts[wordIndex];
+                        const isActive = explanationStep >= idx;
+                        const isWaiting = explanationStep < idx;
+
+                        return (
+                          <div key={idx} className={`fg-recap-node ${isActive ? 'active' : ''} ${isWaiting ? 'waiting' : ''}`}>
+                            <span className="fg-recap-char-cipher">{cipherCh}</span>
+                            <span className="fg-recap-math">-{segmentShift}</span>
+                            <span className="fg-recap-arrow">↓</span>
+                            <span className="fg-recap-char-plain">{plainCh}</span>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
+                  </div>
+
+                  <div className="fg-recap-explanation">
+                    💡 <strong>Caesar Cipher Decryption Mechanics:</strong> <br />
+                    A Caesar Cipher is a uniform substitution cipher. Each letter in the ciphertext was shifted forward in the alphabet by a fixed shift value.
+                    By catching fish carrying operators, you configured the decryption basket shift value to exactly match the key.
+                    Applying the subtraction shift (<code>Plain = Cipher - Key</code>) maps <strong>all letters</strong> uniformly back to their correct plaintext representation.
+                  </div>
+
+                  <div className="fg-recap-actions">
+                    <button
+                      className="fg-btn fg-btn-primary"
+                      onClick={handleCloseExplanation}
+                      disabled={explanationStep < levelData.plaintext.replace(/\s+/g, '').length - 1}
+                      style={{ background: 'var(--neon-green)', color: '#030914' }}
+                    >
+                      Unlock Next Objective ➔
+                    </button>
+                  </div>
                 </div>
-              </section>
-            </main>
-          </div>
-        </>
-      )}
-
-      {/* Recap "Why did this work?" explanation overlay */}
-      {showExplanation && (
-        <div className="fg-recap-overlay">
-          <div className="fg-recap-card">
-            <h2 className="fg-recap-title">🔬 Cryptographic Recap</h2>
-            <p className="fg-recap-subtitle">Why Did This Work?</p>
-
-            <div className="fg-recap-animation-box">
-              <div className="fg-recap-letter-row">
-                {levelData.plaintext.replace(/\s+/g, '').split('').map((plainCh, idx) => {
-                  const cipherCh = levelData.ciphertext.replace(/\s+/g, '')[idx];
-                  
-                  let wordCharIdx = idx;
-                  let wordIndex = 0;
-                  let accum = 0;
-                  const wordSegmentsList = levelData.plaintext.split(' ');
-                  for (let i = 0; i < wordSegmentsList.length; i++) {
-                    if (wordCharIdx < accum + wordSegmentsList[i].length) {
-                      wordIndex = i;
-                      wordCharIdx = wordCharIdx - accum;
-                      break;
-                    }
-                    accum += wordSegmentsList[i].length;
-                  }
-                  
-                  const segmentShift = levelData.targetShifts[wordIndex];
-                  const isActive = explanationStep >= idx;
-                  const isWaiting = explanationStep < idx;
-
-                  return (
-                    <div key={idx} className={`fg-recap-node ${isActive ? 'active' : ''} ${isWaiting ? 'waiting' : ''}`}>
-                      <span className="fg-recap-char-cipher">{cipherCh}</span>
-                      <span className="fg-recap-math">-{segmentShift}</span>
-                      <span className="fg-recap-arrow">↓</span>
-                      <span className="fg-recap-char-plain">{plainCh}</span>
-                    </div>
-                  );
-                })}
               </div>
-            </div>
-
-            <div className="fg-recap-explanation">
-              💡 <strong>Caesar Cipher Decryption Mechanics:</strong> <br/>
-              A Caesar Cipher is a uniform substitution cipher. Each letter in the ciphertext was shifted forward in the alphabet by a fixed shift value. 
-              By catching fish carrying operators, you configured the decryption basket shift value to exactly match the key. 
-              Applying the subtraction shift (<code>Plain = Cipher - Key</code>) maps <strong>all letters</strong> uniformly back to their correct plaintext representation. 
-            </div>
-
-            <div className="fg-recap-actions">
-              <button
-                className="fg-btn fg-btn-primary"
-                onClick={handleCloseExplanation}
-                disabled={explanationStep < levelData.plaintext.replace(/\s+/g, '').length - 1}
-                style={{ background: 'var(--neon-green)', color: '#030914' }}
-              >
-                Unlock Next Objective ➔
-              </button>
-            </div>
+            )}
           </div>
-        </div>
-      )}
-    </div>
-  );
+      );
 }
