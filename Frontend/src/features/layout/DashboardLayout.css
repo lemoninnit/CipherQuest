@@ -454,6 +454,54 @@ input:checked + .slider:before {
   color: #ffffff;
 }
 
+/* Danger Zone Styles */
+.danger-zone-group h3 {
+  color: #ef4444 !important;
+}
+
+.danger-row {
+  border: 1px solid rgba(239, 68, 68, 0.25) !important;
+  background: rgba(239, 68, 68, 0.02) !important;
+}
+
+.danger-row:hover {
+  background: rgba(239, 68, 68, 0.05) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+.danger-row .setting-label {
+  color: #fca5a5 !important;
+}
+
+.settings-delete-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1.5px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.25s;
+  flex-shrink: 0;
+}
+
+.settings-delete-btn:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #030914;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  transform: scale(1.03);
+}
+
+.settings-delete-btn:active {
+  transform: scale(1);
+}
+
 @keyframes sFadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

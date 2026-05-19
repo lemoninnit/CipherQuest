@@ -23,7 +23,7 @@ const HANDCRAFTED_LEVELS = {
     {
       level: 2,
       plaintext: "WATER",
-      ciphertext: "BFSJW",
+      ciphertext: "CGZKX",
       targetShifts: [6],
       masks: [[false, true, false, true, false]], // Reveal W, T, R (W # T # R)
       hint: "Essential liquid for all living things",
@@ -239,16 +239,26 @@ export default function CipherGame() {
 
   useEffect(() => {
     async function loadProfile() {
+      let username = 'Agent';
       try {
         const p = await userApi.getMyProfile();
         setProfile(p);
+        username = p.username;
       } catch (err) {
         setOffline(true);
         const saved = localStorage.getItem('cq_offline_profile');
-        if (saved) setProfile(JSON.parse(saved));
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setProfile(parsed);
+          username = parsed.username;
+        }
       }
-      const progress = localStorage.getItem('cq_completed_levels');
-      if (progress) setCompletedLevels(JSON.parse(progress));
+      const progress = localStorage.getItem(`cq_completed_levels_${username}`);
+      if (progress) {
+        setCompletedLevels(JSON.parse(progress));
+      } else {
+        setCompletedLevels({ easy: [], medium: [], hard: [] });
+      }
     }
     loadProfile();
   }, []);
@@ -498,7 +508,7 @@ export default function CipherGame() {
     if (!nextCompleted[tier].includes(levelIndex)) {
       nextCompleted[tier].push(levelIndex);
       setCompletedLevels(nextCompleted);
-      localStorage.setItem('cq_completed_levels', JSON.stringify(nextCompleted));
+      localStorage.setItem(`cq_completed_levels_${profile.username || 'Agent'}`, JSON.stringify(nextCompleted));
     }
 
     if (session && !offline) {
