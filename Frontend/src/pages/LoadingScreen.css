@@ -83,10 +83,11 @@
   font-size: 48px;
   font-weight: 800;
   margin: 0;
+  color: #00d1ff;
 }
 
 .tracking-tighter { letter-spacing: -0.05em; }
-.text-primary { color: var(--primary); }
+.text-primary { color: var(--primary, #00d1ff); }
 
 .loading-divider {
   height: 2px;
