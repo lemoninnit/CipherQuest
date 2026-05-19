@@ -507,3 +507,32 @@
 .glass-card.solution-card {
   border-color: rgba(52, 211, 153, 0.4);
 }
+
+/* Screen Shake Damage Feedback */
+.screen-shake {
+  animation: hurtShake 0.45s ease-in-out;
+}
+
+@keyframes hurtShake {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-5px, 3px) rotate(-1deg); }
+  20% { transform: translate(5px, -3px) rotate(1deg); }
+  30% { transform: translate(-4px, -4px) rotate(-1.5deg); }
+  40% { transform: translate(4px, 4px) rotate(1.5deg); }
+  50% { transform: translate(-5px, 2px) rotate(-1deg); }
+  60% { transform: translate(5px, 3px) rotate(0deg); }
+  70% { transform: translate(-2px, -2px) rotate(1deg); }
+  80% { transform: translate(3px, -3px) rotate(-1deg); }
+  90% { transform: translate(-3px, 2px) rotate(0deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+/* Blinking invulnerability animation to prevent damage stack and provide visual feedback */
+.invulnerable-blink {
+  animation: blinkAnim 0.20s linear infinite, pacChompAnim 0.3s steps(2) infinite alternate !important;
+}
+
+@keyframes blinkAnim {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}

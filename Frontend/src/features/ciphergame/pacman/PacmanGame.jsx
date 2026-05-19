@@ -49,13 +49,14 @@ const generateRandomPellets = (ghostList, pacmanPos) => {
   const shuffled = [...openSpaces].sort(() => Math.random() - 0.5);
 
   const initialPellets = [];
-  const pelletValues = [6, 3, -2, 5, -4, 8, -6]; // exactly 7 values
+  const possibleValues = [-3, -2, -1, 0, 1, 2, 3];
 
   for (let i = 0; i < 7; i++) {
     if (shuffled[i]) {
+      const randValue = possibleValues[Math.floor(Math.random() * possibleValues.length)];
       initialPellets.push({
         id: `p-${i}-${Date.now()}-${Math.random()}`,
-        value: pelletValues[i],
+        value: randValue,
         row: shuffled[i].row,
         col: shuffled[i].col,
         eaten: false,
@@ -79,31 +80,96 @@ const generateRandomPellets = (ghostList, pacmanPos) => {
   return initialPellets;
 };
 
+// Dynamically configure ghosts: correct letters at ALL masked indices, plus distractors.
+const generateInitialGhosts = (levelData) => {
+  const maskedIndices = [];
+  levelData.masks[0].forEach((m, idx) => {
+    if (!m) {
+      maskedIndices.push(idx);
+    }
+  });
+
+  const ghosts = [];
+  const startPositions = [
+    { row: 7, col: 1, dir: { r: 0, c: 1 } },
+    { row: 7, col: 19, dir: { r: 0, c: -1 } },
+    { row: 1, col: 9, dir: { r: 1, c: 0 } },
+    { row: 5, col: 4, dir: { r: 0, c: 1 } },
+    { row: 1, col: 19, dir: { r: 0, c: -1 } },
+    { row: 3, col: 9, dir: { r: 0, c: 1 } },
+    { row: 5, col: 16, dir: { r: 0, c: -1 } },
+    { row: 1, col: 5, dir: { r: 1, c: 0 } }
+  ];
+
+  // 1. Assign correct target ghosts for ALL masked indices (guarantees completion)
+  for (let i = 0; i < maskedIndices.length; i++) {
+    const idx = maskedIndices[i];
+    const cipherChar = levelData.ciphertext[idx];
+    const pos = startPositions[i % startPositions.length];
+    ghosts.push({
+      id: `ghost-${i + 1}`,
+      char: cipherChar,
+      index: idx,
+      row: pos.row,
+      col: pos.col,
+      eaten: false,
+      dir: pos.dir
+    });
+  }
+
+  // 2. Add exactly 2 decoy ghosts for distraction/challenge
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const targetLetters = maskedIndices.map(idx => levelData.ciphertext[idx]);
+  
+  for (let i = 0; i < 2; i++) {
+    let decoyChar = '';
+    do {
+      decoyChar = alphabet[Math.floor(Math.random() * 26)];
+    } while (targetLetters.includes(decoyChar));
+
+    const posIdx = maskedIndices.length + i;
+    const pos = startPositions[posIdx % startPositions.length];
+
+    ghosts.push({
+      id: `ghost-decoy-${i + 1}`,
+      char: decoyChar,
+      index: -1, // Decoy indicator
+      row: pos.row,
+      col: pos.col,
+      eaten: false,
+      dir: pos.dir
+    });
+  }
+
+  return ghosts;
+};
+
 export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages }) {
   const targetShift = levelData.targetShifts[0]; // 6 for WATER
 
   // Initial Coordinates
   const initialPacman = { row: 1, col: 1 };
   
-  // Limited to exactly 4 ghosts (2 targets, 2 decoys) for easy mode
-  const initialGhosts = [
-    { id: 'ghost-1', char: 'F', index: 1, row: 7, col: 1, eaten: false, dir: { r: 0, c: 1 } },
-    { id: 'ghost-2', char: 'J', index: 3, row: 7, col: 19, eaten: false, dir: { r: 0, c: -1 } },
-    { id: 'ghost-3', char: 'B', index: -1, row: 1, col: 9, eaten: false, dir: { r: 1, c: 0 } },
-    { id: 'ghost-4', char: 'K', index: -1, row: 5, col: 4, eaten: false, dir: { r: 0, c: 1 } }
-  ];
+  const initialGhosts = generateInitialGhosts(levelData);
+
+  const maskedIndices = [];
+  levelData.masks[0].forEach((m, idx) => {
+    if (!m) maskedIndices.push(idx);
+  });
 
   const [pacman, setPacman] = useState(initialPacman);
   const [pacmanDir, setPacmanDir] = useState('NONE');
   const [bufferedDir, setBufferedDir] = useState('NONE');
 
-  const [activeShift, setActiveShift] = useState(levelData.startShifts[0]); // starts at 2
-  const [eatenGhosts, setEatenGhosts] = useState([]); // indices of eaten target letters [1, 3]
-  const [lives, setLives] = useState(3); // 3 hearts
+  const [activeShift, setActiveShift] = useState(0); // starts at 0
+  const [eatenGhosts, setEatenGhosts] = useState([]); // indices of eaten target letters
+  const [lives, setLives] = useState(5); // 5 hearts
   const [flashError, setFlashError] = useState(false);
   const [ruleViolation, setRuleViolation] = useState(null);
   const [levelSolved, setLevelSolved] = useState(false);
   const [gameOver, setGameOver] = useState(false);
+  const [isScreenShaking, setIsScreenShaking] = useState(false);
+  const [isInvulnerable, setIsInvulnerable] = useState(false);
 
   // Skill states
   const [hasSkillCharge, setHasSkillCharge] = useState(false);
@@ -117,12 +183,42 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const [pellets, setPellets] = useState(() => generateRandomPellets(initialGhosts, initialPacman));
 
   const isPoweredUp = activeShift === targetShift;
+
+  const pacmanRef = useRef(pacman);
+  const ghostsRef = useRef(ghosts);
+  const pelletsRef = useRef(pellets);
+  const pacmanDirRef = useRef(pacmanDir);
+  const bufferedDirRef = useRef(bufferedDir);
+  const activeShiftRef = useRef(activeShift);
+  const skillActiveRef = useRef(skillActive);
+  const isPoweredUpRef = useRef(isPoweredUp);
+  const isInvulnerableRef = useRef(isInvulnerable);
+
+  useEffect(() => { pacmanRef.current = pacman; }, [pacman]);
+  useEffect(() => { ghostsRef.current = ghosts; }, [ghosts]);
+  useEffect(() => { pelletsRef.current = pellets; }, [pellets]);
+  useEffect(() => { pacmanDirRef.current = pacmanDir; }, [pacmanDir]);
+  useEffect(() => { bufferedDirRef.current = bufferedDir; }, [bufferedDir]);
+  useEffect(() => { activeShiftRef.current = activeShift; }, [activeShift]);
+  useEffect(() => { skillActiveRef.current = skillActive; }, [skillActive]);
+  useEffect(() => { isPoweredUpRef.current = isPoweredUp; }, [isPoweredUp]);
+  useEffect(() => { isInvulnerableRef.current = isInvulnerable; }, [isInvulnerable]);
+
   const gameLoopRef = useRef(null);
 
   // ghostMoveTick toggle to limit ghost speed to exactly 0.5x of Pac-man's speed
   const ghostMoveTickRef = useRef(false);
 
   const handleLoseHeart = (message) => {
+    if (isInvulnerableRef.current) return;
+
+    setIsInvulnerable(true);
+    isInvulnerableRef.current = true;
+    setTimeout(() => {
+      setIsInvulnerable(false);
+      isInvulnerableRef.current = false;
+    }, 1200); // 1.2s invulnerability window
+
     setFlashError(true);
     setTimeout(() => setFlashError(false), 300);
     setRuleViolation(message);
@@ -135,19 +231,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     });
   };
 
-  // Instant responsive steering coordinates to eliminate keypress lag
+  // Steering control to set buffer direction only
   const triggerSteer = (dirName) => {
     if (gameOver || levelSolved) return;
     setBufferedDir(dirName);
-
-    const vec = DIR_VECTORS[dirName];
-    const nextRow = pacman.row + vec.r;
-    const nextCol = pacman.col + vec.c;
-    if (MAZE_GRID[nextRow] && MAZE_GRID[nextRow][nextCol] === 0) {
-      setPacman({ row: nextRow, col: nextCol });
-      setPacmanDir(dirName);
-      setBufferedDir('NONE');
-    }
   };
 
   // Key hooks
@@ -172,7 +259,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [pacman, gameOver, levelSolved, hasSkillCharge, skillActive]);
+  }, [gameOver, levelSolved, hasSkillCharge, skillActive]);
 
   const activateSkill = () => {
     if (!hasSkillCharge || skillActive || gameOver || levelSolved) return;
@@ -196,31 +283,39 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     return () => clearInterval(interval);
   }, [skillActive]);
 
-  // Main automatic tick loop (180ms loop)
+  // Main automatic tick loop (180ms loop) using Refs to prevent coordinate change stutter
   useEffect(() => {
     if (gameOver || levelSolved) return;
 
     const gameTick = () => {
+      const currentPacman = pacmanRef.current;
+      const currentPacmanDir = pacmanDirRef.current;
+      const currentBufferedDir = bufferedDirRef.current;
+      const currentActiveShift = activeShiftRef.current;
+      const currentSkillActive = skillActiveRef.current;
+      const currentIsPoweredUp = isPoweredUpRef.current;
+      const currentIsInvulnerable = isInvulnerableRef.current;
+
       // 1. Process Buffered Input
-      let activeDir = pacmanDir;
-      if (bufferedDir !== 'NONE') {
-        const testVec = DIR_VECTORS[bufferedDir];
-        const testRow = pacman.row + testVec.r;
-        const testCol = pacman.col + testVec.c;
+      let activeDir = currentPacmanDir;
+      if (currentBufferedDir !== 'NONE') {
+        const testVec = DIR_VECTORS[currentBufferedDir];
+        const testRow = currentPacman.row + testVec.r;
+        const testCol = currentPacman.col + testVec.c;
         if (MAZE_GRID[testRow] && MAZE_GRID[testRow][testCol] === 0) {
-          activeDir = bufferedDir;
-          setPacmanDir(bufferedDir);
+          activeDir = currentBufferedDir;
+          setPacmanDir(currentBufferedDir);
           setBufferedDir('NONE');
         }
       }
 
       // 2. Pacman auto-run movement step
-      let pRow = pacman.row;
-      let pCol = pacman.col;
+      let pRow = currentPacman.row;
+      let pCol = currentPacman.col;
       if (activeDir !== 'NONE') {
         const vec = DIR_VECTORS[activeDir];
-        const nextRow = pacman.row + vec.r;
-        const nextCol = pacman.col + vec.c;
+        const nextRow = currentPacman.row + vec.r;
+        const nextCol = currentPacman.col + vec.c;
 
         if (MAZE_GRID[nextRow] && MAZE_GRID[nextRow][nextCol] === 0) {
           pRow = nextRow;
@@ -238,7 +333,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             if (pellet.isSkill) {
               setHasSkillCharge(true);
             } else {
-              setActiveShift(pellet.value);
+              setActiveShift((prev) => prev + pellet.value);
               setRuleViolation(null);
             }
             return { ...pellet, eaten: true };
@@ -249,24 +344,43 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
       // 4. Move Ghosts only on ALTERNATE ticks (0.5x speed limit)
       ghostMoveTickRef.current = !ghostMoveTickRef.current;
-      const shouldMoveGhosts = ghostMoveTickRef.current && !skillActive;
+      const shouldMoveGhosts = ghostMoveTickRef.current && !currentSkillActive;
 
       if (shouldMoveGhosts) {
-        setGhosts((prevGhosts) =>
-          prevGhosts.map((ghost) => {
-            if (ghost.eaten) return ghost;
+        setGhosts((prevGhosts) => {
+          const updated = [];
+          for (let i = 0; i < prevGhosts.length; i++) {
+            const ghost = prevGhosts[i];
+            if (ghost.eaten) {
+              updated.push(ghost);
+              continue;
+            }
 
             let gRow = ghost.row;
             let gCol = ghost.col;
             let gDir = ghost.dir || { r: 0, c: 1 };
 
+            // Helper to check if a tile is occupied by another active ghost
+            const isTileOccupiedByOtherGhost = (r, c) => {
+              const inUpdated = updated.some(ug => !ug.eaten && ug.row === r && ug.col === c);
+              if (inUpdated) return true;
+              for (let j = i + 1; j < prevGhosts.length; j++) {
+                const pg = prevGhosts[j];
+                if (!pg.eaten && pg.row === r && pg.col === c) return true;
+              }
+              return false;
+            };
+
             const nextRow = gRow + gDir.r;
             const nextCol = gCol + gDir.c;
 
-            if (MAZE_GRID[nextRow] && MAZE_GRID[nextRow][nextCol] === 0) {
-              return { ...ghost, row: nextRow, col: nextCol };
+            const isNextTileOpen = MAZE_GRID[nextRow] && MAZE_GRID[nextRow][nextCol] === 0;
+            const isNextOccupied = isTileOccupiedByOtherGhost(nextRow, nextCol);
+
+            if (isNextTileOpen && !isNextOccupied) {
+              updated.push({ ...ghost, row: nextRow, col: nextCol });
             } else {
-              // Wall collision! Choose new direction (excluding reverse path to prevent back-turns)
+              // Wall collision OR other ghost in the way! Choose new direction
               const directions = [
                 { r: -1, c: 0 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: 0, c: 1 }
               ];
@@ -275,91 +389,174 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 const nr = gRow + d.r;
                 const nc = gCol + d.c;
                 const isOpen = MAZE_GRID[nr] && MAZE_GRID[nr][nc] === 0;
+                const isOccupied = isTileOccupiedByOtherGhost(nr, nc);
                 const isOpposite = (d.r === -gDir.r && d.r !== 0) || (d.c === -gDir.c && d.c !== 0);
-                return isOpen && !isOpposite;
+                return isOpen && !isOccupied && !isOpposite;
               });
 
               const fallbackMoves = validMoves.length > 0 ? validMoves : directions.filter((d) => {
                 const nr = gRow + d.r;
                 const nc = gCol + d.c;
-                return MAZE_GRID[nr] && MAZE_GRID[nr][nc] === 0;
+                const isOpen = MAZE_GRID[nr] && MAZE_GRID[nr][nc] === 0;
+                const isOccupied = isTileOccupiedByOtherGhost(nr, nc);
+                return isOpen && !isOccupied;
               });
 
               if (fallbackMoves.length > 0) {
                 const chosenDir = fallbackMoves[Math.floor(Math.random() * fallbackMoves.length)];
-                return {
+                updated.push({
                   ...ghost,
                   row: gRow + chosenDir.r,
                   col: gCol + chosenDir.c,
                   dir: chosenDir
-                };
+                });
+              } else {
+                updated.push(ghost); // Stand still if blocked
               }
             }
-            return ghost;
-          })
-        );
+          }
+          return updated;
+        });
       }
 
-      // 5. Ghost Collisions
-      setGhosts((prevGhosts) =>
-        prevGhosts.map((ghost) => {
-          if (!ghost.eaten && ghost.row === pRow && ghost.col === pCol) {
-            if (skillActive) {
+      // 5. Ghost Collisions with Pacman (Hurt, Sequence Validation, & Rebound System)
+      setGhosts((prevGhosts) => {
+        let hurtTriggered = false;
+        let skillDisabledThisTick = false;
+
+        return prevGhosts.map((ghost) => {
+          if (ghost.eaten) return ghost;
+
+          if (ghost.row === pRow && ghost.col === pCol) {
+            // Collision detected!
+            if (currentSkillActive) {
+              // Skill pellet can be used only once per pickup; immediately disable on touch.
+              if (!skillDisabledThisTick) {
+                skillDisabledThisTick = true;
+                setSkillActive(false);
+                setSkillTimeLeft(0);
+                skillActiveRef.current = false;
+              }
+
               if (ghost.index !== -1) {
-                if (isPoweredUp) {
+                if (currentIsPoweredUp) {
+                  // Correct ghost letter is safe and updates progress
                   setEatenGhosts((prevEaten) => {
-                    const nextEaten = [...prevEaten, ghost.index];
-                    if (nextEaten.length === 2) {
+                    const nextEaten = prevEaten.includes(ghost.index)
+                      ? prevEaten
+                      : [...prevEaten, ghost.index];
+                    if (nextEaten.length === maskedIndices.length) {
                       setLevelSolved(true);
                     }
                     return nextEaten;
                   });
                   return { ...ghost, eaten: true };
                 } else {
-                  handleLoseHeart(
-                    `Active shift +${activeShift} decrypted Ciphertext '${ghost.char}' into '${caesarDecryptChar(ghost.char, activeShift)}', violating Caesar logic. Find correct shift first!`
-                  );
+                  // Wrong shift! Lose heart, trigger screen shake, rebound ghost
+                  if (!currentIsInvulnerable && !hurtTriggered) {
+                    hurtTriggered = true;
+                    setIsScreenShaking(true);
+                    setTimeout(() => setIsScreenShaking(false), 450);
+                    handleLoseHeart(
+                      `Active shift +${currentActiveShift} decrypted Ciphertext '${ghost.char}' into '${caesarDecryptChar(ghost.char, currentActiveShift)}', violating Caesar logic. Find correct shift first!`
+                    );
+                  }
+
+                  const gDir = ghost.dir || { r: 0, c: 1 };
+                  const oppositeDir = { r: -gDir.r, c: -gDir.c };
+                  const rbRow = ghost.row + oppositeDir.r;
+                  const rbCol = ghost.col + oppositeDir.c;
+                  const canRebound = MAZE_GRID[rbRow] && MAZE_GRID[rbRow][rbCol] === 0;
+                  return {
+                    ...ghost,
+                    dir: oppositeDir,
+                    row: canRebound ? rbRow : ghost.row,
+                    col: canRebound ? rbCol : ghost.col
+                  };
                 }
               } else {
-                handleLoseHeart(
-                  `Ouch! You ate Decoy Ghost '${ghost.char}' which does not belong to the target blanks. Avoid decoy ghosts!`
-                );
+                // Decoy ghost! Lose heart, trigger screen shake, rebound ghost
+                if (!currentIsInvulnerable && !hurtTriggered) {
+                  hurtTriggered = true;
+                  setIsScreenShaking(true);
+                  setTimeout(() => setIsScreenShaking(false), 450);
+                  handleLoseHeart(
+                    `Ouch! You ate Decoy Ghost '${ghost.char}' which does not belong to the target blanks. Avoid decoy ghosts!`
+                  );
+                }
+
+                const gDir = ghost.dir || { r: 0, c: 1 };
+                const oppositeDir = { r: -gDir.r, c: -gDir.c };
+                const rbRow = ghost.row + oppositeDir.r;
+                const rbCol = ghost.col + oppositeDir.c;
+                const canRebound = MAZE_GRID[rbRow] && MAZE_GRID[rbRow][rbCol] === 0;
+                return {
+                  ...ghost,
+                  dir: oppositeDir,
+                  row: canRebound ? rbRow : ghost.row,
+                  col: canRebound ? rbCol : ghost.col
+                };
               }
             } else {
-              handleLoseHeart(
-                `Ghost captured Pac-Man! You must eat the yellow pellet and press SPACEBAR to freeze them before colliding.`
-              );
+              // Skill not active! Pacman gets caught! Lose heart, trigger screen shake, rebound ghost
+              if (!currentIsInvulnerable && !hurtTriggered) {
+                hurtTriggered = true;
+                setIsScreenShaking(true);
+                setTimeout(() => setIsScreenShaking(false), 450);
+                handleLoseHeart(
+                  `Ghost captured Pac-Man! You must eat the yellow pellet and press SPACEBAR to freeze them before colliding.`
+                );
+              }
+
+              const gDir = ghost.dir || { r: 0, c: 1 };
+              const oppositeDir = { r: -gDir.r, c: -gDir.c };
+              const rbRow = ghost.row + oppositeDir.r;
+              const rbCol = ghost.col + oppositeDir.c;
+              const canRebound = MAZE_GRID[rbRow] && MAZE_GRID[rbRow][rbCol] === 0;
+              return {
+                ...ghost,
+                dir: oppositeDir,
+                row: canRebound ? rbRow : ghost.row,
+                col: canRebound ? rbCol : ghost.col
+              };
             }
           }
           return ghost;
-        })
-      );
+        });
+      });
+
+      // Chain next game tick loop (180ms constant interval)
+      gameLoopRef.current = setTimeout(gameTick, 180);
     };
 
     gameLoopRef.current = setTimeout(gameTick, 180);
     return () => clearTimeout(gameLoopRef.current);
-  }, [pacman, pacmanDir, bufferedDir, pellets, ghosts, skillActive, activeShift, gameOver, levelSolved]);
+  }, [gameOver, levelSolved]);
 
-  // Non-stacking, non-wall dynamic pellet spawner
+  // Non-stacking, non-wall dynamic pellet spawner using Refs to prevent interval clear loops
   useEffect(() => {
     if (gameOver || levelSolved) return;
 
     const spawnTimer = setInterval(() => {
-      const activeShiftsCount = pellets.filter(p => !p.eaten && !p.isSkill).length;
-      const hasActiveSkillPellet = pellets.some(p => !p.eaten && p.isSkill);
+      const currentPellets = pelletsRef.current;
+      const currentPacman = pacmanRef.current;
+      const currentGhosts = ghostsRef.current;
 
-      const needsShift = activeShiftsCount < 7;
+      const activeShiftsCount = currentPellets.filter(p => !p.eaten && !p.isSkill).length;
+      const hasActiveSkillPellet = currentPellets.some(p => !p.eaten && p.isSkill);
+
+      const needsShiftCount = 7 - activeShiftsCount;
       const needsSkill = !hasActiveSkillPellet;
 
-      if (needsShift || needsSkill) {
+      if (needsShiftCount > 0 || needsSkill) {
+        // Collect candidate spawn tiles
         const openSpaces = [];
         for (let r = 1; r < MAZE_GRID.length - 1; r++) {
           for (let c = 1; c < MAZE_GRID[r].length - 1; c++) {
-            // Strictly check that the tile is a path (value 0)
             if (MAZE_GRID[r][c] === 0) {
-              const hasPacman = pacman.row === r && pacman.col === c;
-              const hasGhost = ghosts.some(g => !g.eaten && g.row === r && g.col === c);
-              const hasActivePellet = pellets.some(p => !p.eaten && p.row === r && p.col === c);
+              const hasPacman = currentPacman.row === r && currentPacman.col === c;
+              const hasGhost = currentGhosts.some(g => !g.eaten && g.row === r && g.col === c);
+              const hasActivePellet = currentPellets.some(p => !p.eaten && p.row === r && p.col === c);
 
               if (!hasPacman && !hasGhost && !hasActivePellet) {
                 openSpaces.push({ row: r, col: c });
@@ -369,43 +566,65 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         }
 
         if (openSpaces.length > 0) {
-          const spawnLoc = openSpaces[Math.floor(Math.random() * openSpaces.length)];
-          const spawnSkill = needsSkill && (Math.random() < 0.35);
+          // Shuffle spaces
+          const shuffledSpaces = [...openSpaces].sort(() => Math.random() - 0.5);
+          let spaceIdx = 0;
+          const newPellets = [];
 
-          if (spawnSkill) {
-            setPellets((prev) => [
-              ...prev,
-              { id: `skill-${Date.now()}`, value: 0, row: spawnLoc.row, col: spawnLoc.col, eaten: false, isSkill: true }
-            ]);
-          } else if (needsShift) {
-            const possibleShifts = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -2, -3, -5, -6, -8];
-            const randShift = possibleShifts[Math.floor(Math.random() * possibleShifts.length)];
+          if (needsSkill && shuffledSpaces[spaceIdx]) {
+            newPellets.push({
+              id: `skill-${Date.now()}-${Math.random()}`,
+              value: 0,
+              row: shuffledSpaces[spaceIdx].row,
+              col: shuffledSpaces[spaceIdx].col,
+              eaten: false,
+              isSkill: true
+            });
+            spaceIdx++;
+          }
 
-            setPellets((prev) => [
-              ...prev,
-              { id: `p-${Date.now()}`, value: randShift, row: spawnLoc.row, col: spawnLoc.col, eaten: false, isSkill: false }
-            ]);
+          const possibleValues = [-3, -2, -1, 0, 1, 2, 3];
+          for (let i = 0; i < needsShiftCount; i++) {
+            if (shuffledSpaces[spaceIdx]) {
+              const randValue = possibleValues[Math.floor(Math.random() * possibleValues.length)];
+              newPellets.push({
+                id: `p-${Date.now()}-${i}-${Math.random()}`,
+                value: randValue,
+                row: shuffledSpaces[spaceIdx].row,
+                col: shuffledSpaces[spaceIdx].col,
+                eaten: false,
+                isSkill: false
+              });
+              spaceIdx++;
+            }
+          }
+
+          if (newPellets.length > 0) {
+            setPellets((prev) => [...prev.filter(p => !p.eaten), ...newPellets]);
           }
         }
       }
-    }, 3000);
+    }, 1500); // 1.5 seconds short delay
 
     return () => clearInterval(spawnTimer);
-  }, [pellets, pacman, ghosts, gameOver, levelSolved]);
+  }, [gameOver, levelSolved]);
 
   const handleResetGame = () => {
     setPacman(initialPacman);
     setPacmanDir('NONE');
     setBufferedDir('NONE');
-    setActiveShift(levelData.startShifts[0]);
+    setActiveShift(0);
     setEatenGhosts([]);
-    setLives(3);
+    setLives(5);
     setGameOver(false);
     setLevelSolved(false);
     setHasSkillCharge(false);
     setSkillActive(false);
     setRuleViolation(null);
     setGhosts(initialGhosts);
+    setIsScreenShaking(false);
+    setIsInvulnerable(false);
+    isInvulnerableRef.current = false;
     
     // Regenerate unique and completely randomized pellet locations on restart
     setPellets(generateRandomPellets(initialGhosts, initialPacman));
@@ -424,7 +643,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           {tier.toUpperCase()} Mode — Level {levelData.level}
         </div>
         <div className="pacman-hearts-display">
-          {Array.from({ length: 3 }).map((_, i) => (
+          {Array.from({ length: 5 }).map((_, i) => (
             <span key={i} className={`material-symbols-outlined heart-icon ${i < lives ? 'active-heart' : 'lost-heart'}`}>
               favorite
             </span>
@@ -438,7 +657,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           {/* Active Shift Card */}
           <div className="fg-basket-card">
             <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>😮</div>
-            <div className="fg-basket-shift-value">+{activeShift}</div>
+            <div className="fg-basket-shift-value">{activeShift > 0 ? `+${activeShift}` : activeShift}</div>
             <span className="fg-basket-label">Active Shift Power</span>
           </div>
 
@@ -506,7 +725,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             <div className="fg-letter-cells" style={{ justifyContent: 'center' }}>
               {levelData.plaintext.split('').map((char, idx) => {
                 const mask = levelData.masks[0][idx];
-                const isGhostIndex = idx === 1 || idx === 3;
+                const isGhostIndex = !mask;
                 const isEaten = eatenGhosts.includes(idx);
                 const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
                 
@@ -532,7 +751,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
           {/* Red Highlighted: Wider, taller board container */}
           <section className="pacman-board-wrapper bigger-board">
-            <div className={`maze-grid size-larger ${flashError ? 'flash-error' : ''}`}>
+            <div className={`maze-grid size-larger ${flashError ? 'flash-error' : ''} ${isScreenShaking ? 'screen-shake' : ''}`}>
               {/* Static grid board paths and walls */}
               {MAZE_GRID.map((rowArr, rIdx) =>
                 rowArr.map((cellVal, cIdx) => {
@@ -545,7 +764,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
               {/* Absolute 30fps gliding Pac-Man sprite (No delay) */}
               <div 
-                className="pacman-sprite-absolute"
+                className={`pacman-sprite-absolute ${isInvulnerable ? 'invulnerable-blink' : ''}`}
                 style={{
                   left: `${pacman.col * 46}px`,
                   top: `${pacman.row * 46}px`
