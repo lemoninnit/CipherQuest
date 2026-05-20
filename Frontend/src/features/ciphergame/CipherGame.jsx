@@ -5,6 +5,7 @@ import DifficultySelector from './difficulties/DifficultySelector';
 import StageRoadmap from './stages/StageRoadmap';
 import StageCompletedRecap from './stages/StageCompletedRecap';
 import PacmanGame from './pacman/PacmanGame';
+import CipherSprint from './sprint/CipherSprint';
 import './CipherGame.css';
 
 /* ─── Handcrafted levels for Caesar Cipher Mastery ─────────────────── */
@@ -183,6 +184,116 @@ const HANDCRAFTED_LEVELS = {
   ]
 };
 
+/* ─── Pools of alternative questions for replaying completed stages ─── */
+const ALTERNATIVE_LEVEL_POOLS = {
+  easy: [
+    // Level 1: HELLO (5 letters)
+    [
+      { plaintext: "WORLD", hint: "Our planet Earth", clue: "Planet name" },
+      { plaintext: "HAPPY", hint: "Feeling or showing pleasure or contentment", clue: "Positive emotion" },
+      { plaintext: "SMILE", hint: "Form one's features into a pleased expression", clue: "Facial expression" },
+      { plaintext: "ABOUT", hint: "On the subject of; concerning", clue: "Subject reference" }
+    ],
+    // Level 2: WATER (5 letters)
+    [
+      { plaintext: "RIVER", hint: "A large natural stream of water flowing in a channel", clue: "Flowing stream" },
+      { plaintext: "DRINK", hint: "Take liquid into the mouth and swallow", clue: "Liquid consumption" },
+      { plaintext: "FLOOD", hint: "An overflowing of a large amount of water", clue: "Water overflow" },
+      { plaintext: "BEACH", hint: "A pebbly or sandy shore by the ocean", clue: "Sandy shore" }
+    ],
+    // Level 3: SHARK (5 letters)
+    [
+      { plaintext: "WHALE", hint: "A very large marine mammal with a blowhole", clue: "Large marine mammal" },
+      { plaintext: "CORAL", hint: "Marine invertebrates forming reefs", clue: "Reef builder" },
+      { plaintext: "SHELL", hint: "The hard protective outer case of a marine animal", clue: "Protective shell" },
+      { plaintext: "STING", hint: "A sharp wound or pain caused by sea creatures", clue: "Painful barb" }
+    ],
+    // Level 4: CIPHER (6 letters)
+    [
+      { plaintext: "SECRET", hint: "Kept hidden or private from others", clue: "Hidden fact" },
+      { plaintext: "ENCODE", hint: "Convert information into a coded form", clue: "Write cipher" },
+      { plaintext: "DECODE", hint: "Convert coded message back into plain text", clue: "Read cipher" },
+      { plaintext: "PUZZLE", hint: "A game or toy designed to test ingenuity", clue: "Ingenuity test" }
+    ],
+    // Level 5: OCEAN (5 letters)
+    [
+      { plaintext: "COAST", hint: "The part of the land near the sea", clue: "Land near sea" },
+      { plaintext: "WAVES", hint: "Ripples on the sea surface", clue: "Sea ripples" },
+      { plaintext: "DEPTH", hint: "The distance from the top or surface to the bottom", clue: "Deep measurement" },
+      { plaintext: "BAYOU", hint: "A marshy outlet of a lake or river", clue: "Marshy water" }
+    ]
+  ],
+  medium: [
+    // Level 1: SALMON (6 letters)
+    [
+      { plaintext: "TROUTS", hint: "Freshwater fish related to salmon", clue: "Freshwater fish" },
+      { plaintext: "MARINE", hint: "Relating to or found in the sea", clue: "Sea environment" },
+      { plaintext: "FISHER", hint: "A person who catches fish", clue: "One who angles" },
+      { plaintext: "CODING", hint: "The process of writing computer programs", clue: "Software design" }
+    ],
+    // Level 2: ANCHOR (6 letters)
+    [
+      { plaintext: "VESSEL", hint: "A ship or large boat", clue: "Large boat" },
+      { plaintext: "SAILOR", hint: "A person who works as a member of the crew on a ship", clue: "Crew member" },
+      { plaintext: "HARBOR", hint: "A place on the coast where vessels may find shelter", clue: "Sheltered port" },
+      { plaintext: "CRUISE", hint: "A voyage on a ship taken for pleasure", clue: "Pleasure voyage" }
+    ],
+    // Level 3: PIRATE (6 letters)
+    [
+      { plaintext: "ROBBER", hint: "A person who steals from others", clue: "One who steals" },
+      { plaintext: "MUTINY", hint: "An open rebellion against the proper authorities", clue: "Rebellion at sea" },
+      { plaintext: "LEGEND", hint: "A traditional story sometimes popularly regarded as historical", clue: "Famous tale" },
+      { plaintext: "SHADOW", hint: "A dark area or shape produced by a body", clue: "Dark profile" }
+    ],
+    // Level 4: SECRET (6 letters)
+    [
+      { plaintext: "HIDDEN", hint: "Kept out of sight; concealed", clue: "Concealed" },
+      { plaintext: "MYSTIC", hint: "Inspiring a sense of spiritual mystery", clue: "Spiritual mystery" },
+      { plaintext: "COVERT", hint: "Not openly acknowledged or displayed", clue: "Stealthy" },
+      { plaintext: "SHIELDS", hint: "Broad pieces of metal used as protection", clue: "Protective plate" }
+    ],
+    // Level 5: TREASURE (8 letters)
+    [
+      { plaintext: "GOLDDUST", hint: "Fine particles of gold found in placer deposits", clue: "Precious dust" },
+      { plaintext: "DIAMONDS", hint: "Precious stones consisting of a clear crystalline form of carbon", clue: "Sparkling gems" },
+      { plaintext: "FORTUNES", hint: "Large amounts of money or assets", clue: "Great wealth" },
+      { plaintext: "PLATINUM", hint: "A precious silvery-white metal", clue: "Precious metal" }
+    ]
+  ],
+  hard: [
+    // Level 1: OCEAN BLUE (5, 4 letters)
+    [
+      { plaintext: "RIVER FLOW", hint: "The movement of a freshwater stream", clue: "Water motion" },
+      { plaintext: "BEACH SAND", hint: "Grainy particles on the shoreline", clue: "Shoreline ground" },
+      { plaintext: "WATER DRIP", hint: "Slow leakage of liquid drops", clue: "Liquid drop" }
+    ],
+    // Level 2: DEEP REEF (4, 4 letters)
+    [
+      { plaintext: "FISH SWIM", hint: "How aquatic creatures move", clue: "Marine movement" },
+      { plaintext: "BOAT SAIL", hint: "Vessel cruising on water", clue: "Sailing vessel" },
+      { plaintext: "COAST LINE", hint: "The outline of a coast", clue: "Coast boundary" }
+    ],
+    // Level 3: GOLD COIN (4, 4 letters)
+    [
+      { plaintext: "RICH LOOT", hint: "Valuable spoils of a pirate heist", clue: "Stolen wealth" },
+      { plaintext: "FIND CLUE", hint: "Discover a hint to solve a riddle", clue: "Riddle guidance" },
+      { plaintext: "LOST SHIP", hint: "Sunken vessel at the ocean floor", clue: "Ghost vessel" }
+    ],
+    // Level 4: FIND KEY (4, 3 letters)
+    [
+      { plaintext: "SEEK MAP", hint: "Look for navigation charts to find treasure", clue: "Search chart" },
+      { plaintext: "OPEN BOX", hint: "Unlock a container holding secrets", clue: "Unlock container" },
+      { plaintext: "LOST BOY", hint: "A child who has wandered away", clue: "Wandering child" }
+    ],
+    // Level 5: CATCH MORE FISH (5, 4, 4 letters)
+    [
+      { plaintext: "WRITE SOME CODE", hint: "What engineers do all day", clue: "Create programs" },
+      { plaintext: "SOLVE MORE CODE", hint: "Debugging and finishing tasks", clue: "Debug programs" },
+      { plaintext: "BUILD MORE APPS", hint: "Creating software for users", clue: "Software building" }
+    ]
+  ]
+};
+
 /* ─── Caesar Decrypt helper ───────────────────────────────────────── */
 const caesarDecryptChar = (char, shift) => {
   const code = char.charCodeAt(0);
@@ -235,7 +346,9 @@ export default function CipherGame() {
   const [caughtFish, setCaughtFish] = useState(null);
 
   const animationRef = useRef(null);
-  const levelData = HANDCRAFTED_LEVELS[tier][levelIndex] || HANDCRAFTED_LEVELS.easy[0];
+  
+  const [activeLevelData, setActiveLevelData] = useState(null);
+  const levelData = activeLevelData || HANDCRAFTED_LEVELS[tier][levelIndex] || HANDCRAFTED_LEVELS.easy[0];
 
   useEffect(() => {
     async function loadProfile() {
@@ -266,7 +379,42 @@ export default function CipherGame() {
   useEffect(() => {
     if (gameFlowStep !== 'game') return;
 
-    setActiveShifts([...levelData.startShifts]);
+    const baseLevel = HANDCRAFTED_LEVELS[tier][levelIndex] || HANDCRAFTED_LEVELS.easy[0];
+    const isCompleted = completedLevels[tier]?.includes(levelIndex);
+    let loadedLevel = { ...baseLevel };
+
+    if (isCompleted) {
+      const pool = ALTERNATIVE_LEVEL_POOLS[tier]?.[levelIndex];
+      if (pool && pool.length > 0) {
+        const activePlain = activeLevelData?.plaintext;
+        const availableOptions = pool.filter(item => item.plaintext !== activePlain && item.plaintext !== baseLevel.plaintext);
+        const optionsToUse = availableOptions.length > 0 ? availableOptions : pool;
+        const randomAlt = optionsToUse[Math.floor(Math.random() * optionsToUse.length)];
+        const targetShifts = baseLevel.targetShifts;
+        const cipherWords = randomAlt.plaintext.split(' ').map((w, idx) => {
+          const shift = targetShifts[idx % targetShifts.length];
+          return w.split('').map(ch => {
+            const code = ch.charCodeAt(0);
+            if (code >= 65 && code <= 90) {
+              return String.fromCharCode(((code - 65 + shift) % 26 + 26) % 26 + 65);
+            }
+            return ch;
+          }).join('');
+        });
+        const newCiphertext = cipherWords.join(' ');
+
+        loadedLevel = {
+          ...baseLevel,
+          plaintext: randomAlt.plaintext,
+          ciphertext: newCiphertext,
+          hint: randomAlt.hint,
+          clue: randomAlt.clue
+        };
+      }
+    }
+
+    setActiveLevelData(loadedLevel);
+    setActiveShifts([...loadedLevel.startShifts]);
     setTargetSegmentIndex(0);
     setAttemptsLeft(10);
     setLevelSolved(false);
@@ -274,7 +422,7 @@ export default function CipherGame() {
     generatePondFish();
     generatePondBubbles();
     startBackendSession();
-  }, [gameFlowStep, levelIndex, tier]);
+  }, [gameFlowStep, levelIndex, tier, completedLevels]);
 
   const startBackendSession = async () => {
     if (offline) return;
@@ -527,10 +675,51 @@ export default function CipherGame() {
     setGameFlowStep('stage');
   };
 
+  const handleReplayNewQuestion = () => {
+    const baseLevel = HANDCRAFTED_LEVELS[tier][levelIndex] || HANDCRAFTED_LEVELS.easy[0];
+    const pool = ALTERNATIVE_LEVEL_POOLS[tier]?.[levelIndex];
+    if (pool && pool.length > 0) {
+      const activePlain = activeLevelData?.plaintext;
+      const availableOptions = pool.filter(item => item.plaintext !== activePlain && item.plaintext !== baseLevel.plaintext);
+      const optionsToUse = availableOptions.length > 0 ? availableOptions : pool;
+      const randomAlt = optionsToUse[Math.floor(Math.random() * optionsToUse.length)];
+
+      const targetShifts = baseLevel.targetShifts;
+      const cipherWords = randomAlt.plaintext.split(' ').map((w, idx) => {
+        const shift = targetShifts[idx % targetShifts.length];
+        return w.split('').map(ch => {
+          const code = ch.charCodeAt(0);
+          if (code >= 65 && code <= 90) {
+            return String.fromCharCode(((code - 65 + shift) % 26 + 26) % 26 + 65);
+          }
+          return ch;
+        }).join('');
+      });
+      const newCiphertext = cipherWords.join(' ');
+
+      const loadedLevel = {
+        ...baseLevel,
+        plaintext: randomAlt.plaintext,
+        ciphertext: newCiphertext,
+        hint: randomAlt.hint,
+        clue: randomAlt.clue
+      };
+
+      setActiveLevelData(loadedLevel);
+      setActiveShifts([...loadedLevel.startShifts]);
+      setTargetSegmentIndex(0);
+      setAttemptsLeft(10);
+      setLevelSolved(false);
+      
+      generatePondFish();
+      generatePondBubbles();
+    }
+  };
+
   const stagesData = [
     { id: 1, playable: true, completed: completedLevels[tier].includes(0), secretKey: 3 },
-    { id: 2, playable: completedLevels[tier].includes(0), completed: completedLevels[tier].includes(1), secretKey: 6 },
-    { id: 3, playable: completedLevels[tier].includes(1), completed: completedLevels[tier].includes(2), secretKey: 4 },
+    { id: 2, playable: true, completed: completedLevels[tier].includes(1), secretKey: 6 },
+    { id: 3, playable: true, completed: completedLevels[tier].includes(2), secretKey: 4 },
     { id: 4, playable: completedLevels[tier].includes(2), completed: completedLevels[tier].includes(3), secretKey: 2 },
     { id: 5, playable: completedLevels[tier].includes(3), completed: completedLevels[tier].includes(4), secretKey: 4 }
   ];
@@ -599,6 +788,10 @@ export default function CipherGame() {
         <StageCompletedRecap
           stage={recapStageData}
           onClose={() => setRecapStageData(null)}
+          onPlayAgain={(id) => {
+            setLevelIndex(id - 1);
+            setGameFlowStep('game');
+          }}
         />
       )}
 
@@ -610,6 +803,15 @@ export default function CipherGame() {
             tier={tier}
             onVerifySubmit={() => handleVerifySubmit(true)}
             onBackToStages={() => setGameFlowStep('stage')}
+            onReplayNewQuestion={handleReplayNewQuestion}
+          />
+        ) : tier === 'easy' && levelIndex === 2 ? (
+          <CipherSprint
+            levelData={levelData}
+            tier={tier}
+            onVerifySubmit={() => handleVerifySubmit(true)}
+            onBackToStages={() => setGameFlowStep('stage')}
+            onReplayNewQuestion={handleReplayNewQuestion}
           />
         ) : (
           <>
@@ -679,6 +881,11 @@ export default function CipherGame() {
                       <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: '10px' }}>
                         🚀 Verify & Submit
                       </button>
+                      {completedLevels[tier]?.includes(levelIndex) && (
+                        <button className="fg-btn fg-btn-secondary" onClick={handleReplayNewQuestion} style={{ width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
+                          🔄 Play Again
+                        </button>
+                      )}
                     </div>
                   ) : ruleViolation ? (
                     <div className="fg-alert-panel">

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const StageCompletedRecap = ({ stage, onClose }) => {
+const StageCompletedRecap = ({ stage, onClose, onPlayAgain }) => {
   return (
     <div className="recap-overlay" onClick={onClose}>
       <div className="recap-content-card glass-card" onClick={(e) => e.stopPropagation()}>
@@ -45,9 +45,16 @@ const StageCompletedRecap = ({ stage, onClose }) => {
           </div>
         </div>
 
-        <button className="recap-action-btn" onClick={onClose}>
-          Exit Archive View
-        </button>
+        <div style={{ display: 'flex', gap: '12px', width: '100%', marginTop: '16px' }}>
+          <button className="recap-action-btn" onClick={onClose} style={{ flex: 1, margin: 0, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            Exit Archive
+          </button>
+          {onPlayAgain && (
+            <button className="recap-action-btn" onClick={() => { onPlayAgain(stage.id); onClose(); }} style={{ flex: 1, margin: 0, backgroundColor: 'var(--primary, #06b6d4)', color: '#fff' }}>
+              Challenge Again
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
