@@ -144,7 +144,7 @@ const generateInitialGhosts = (levelData) => {
   return ghosts;
 };
 
-export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages }) {
+export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
   const targetShift = levelData.targetShifts[0]; // 6 for WATER
 
   // Initial Coordinates
@@ -203,6 +203,25 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   useEffect(() => { skillActiveRef.current = skillActive; }, [skillActive]);
   useEffect(() => { isPoweredUpRef.current = isPoweredUp; }, [isPoweredUp]);
   useEffect(() => { isInvulnerableRef.current = isInvulnerable; }, [isInvulnerable]);
+
+  useEffect(() => {
+    const initialGhosts = generateInitialGhosts(levelData);
+    setPacman(initialPacman);
+    setPacmanDir('NONE');
+    setBufferedDir('NONE');
+    setActiveShift(0);
+    setEatenGhosts([]);
+    setLives(5);
+    setFlashError(false);
+    setRuleViolation(null);
+    setLevelSolved(false);
+    setGameOver(false);
+    setHasSkillCharge(false);
+    setSkillActive(false);
+    setSkillTimeLeft(0);
+    setGhosts(initialGhosts);
+    setPellets(generateRandomPellets(initialGhosts, initialPacman));
+  }, [levelData]);
 
   const gameLoopRef = useRef(null);
 
@@ -840,10 +859,18 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 <div className="game-over-card glass-card solution-card">
                   <h2 className="solution-title text-green">🎯 SECURED DECIPHER!</h2>
                   <p className="game-over-text">All missing ciphertext letters successfully resolved.</p>
-                  <button className="fg-btn fg-btn-primary play-again-btn solution-btn" onClick={onVerifySubmit}>
-                    <span className="material-symbols-outlined">check_circle</span>
-                    <span>Verify & Submit</span>
-                  </button>
+                  <div style={{ display: 'flex', gap: '12px', width: '100%', marginTop: '16px' }}>
+                    <button className="fg-btn fg-btn-primary play-again-btn solution-btn" onClick={onVerifySubmit} style={{ flex: 1 }}>
+                      <span className="material-symbols-outlined">check_circle</span>
+                      <span>Verify & Submit</span>
+                    </button>
+                    {onReplayNewQuestion && (
+                      <button className="fg-btn fg-btn-secondary play-again-btn" onClick={onReplayNewQuestion} style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
+                        <span className="material-symbols-outlined">autorenew</span>
+                        <span>Play Again</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
