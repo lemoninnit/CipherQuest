@@ -60,10 +60,10 @@ const LoginPage = () => {
 
       <section className="login-form-section">
         <div className="maze-pattern md-hidden absolute-full opacity-10"></div>
-        <div className="glass-card login-card">
+        <div className="login-card">
           <div className="login-header">
             <div className="login-logo">
-              <span className="material-symbols-outlined fill-1 icon-48">enhanced_encryption</span>
+              <span className="material-symbols-outlined fill-1">enhanced_encryption</span>
               <span className="logo-text">CipherQuest</span>
             </div>
             <h1>Welcome Back, Decoder</h1>

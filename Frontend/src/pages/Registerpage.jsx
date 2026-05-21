@@ -63,10 +63,10 @@ const RegisterPage = () => {
 
       <section className="register-form-section">
         <div className="maze-pattern absolute-full opacity-10"></div>
-        <div className="glass-card register-card">
+        <div className="register-card">
           <div className="register-header">
             <div className="register-logo">
-              <span className="material-symbols-outlined fill-1 icon-48">enhanced_encryption</span>
+              <span className="material-symbols-outlined fill-1">enhanced_encryption</span>
               <span className="logo-text">CipherQuest</span>
             </div>
             <h1>Create Operative</h1>

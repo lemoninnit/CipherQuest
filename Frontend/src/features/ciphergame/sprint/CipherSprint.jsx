@@ -10,23 +10,37 @@ const decryptChar = (char, shift) => {
 };
 
 export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
-  // Target shifts and masked indices
-  const targetShift = levelData.targetShifts[0]; // 4 for SHARK
+  // Target shifts and masked indices (supporting multi-word levels in hard tier)
   const maskedIndices = [];
-  levelData.masks[0].forEach((m, idx) => {
-    if (!m) maskedIndices.push(idx);
+  levelData.masks.forEach((wordMask, segmentIdx) => {
+    wordMask.forEach((m, charIdx) => {
+      if (!m) {
+        // Calculate global character index in levelData.plaintext
+        const prefixWords = levelData.plaintext.split(' ').slice(0, segmentIdx);
+        const spaceCount = segmentIdx;
+        const prefixLen = prefixWords.reduce((sum, w) => sum + w.length, 0);
+        const globalIdx = prefixLen + spaceCount + charIdx;
+        maskedIndices.push(globalIdx);
+      }
+    });
   });
 
   // State
-  const [sprintStep, setSprintStep] = useState('ready'); // 'ready' | 'running' | 'explanation' | 'finished'
+  const [sprintStep, setSprintStep] = useState('ready'); // 'ready' | 'running' | 'explanation' | 'gameover' | 'finished'
   const [currentMaskIndex, setCurrentMaskIndex] = useState(0); // index inside maskedIndices
   const [runnerLane, setRunnerLane] = useState(1); // 0 = Top, 1 = Middle, 2 = Bottom
-  const [collectedKey, setCollectedKey] = useState(null);
+  const [collectedKey, setCollectedKey] = useState(null); // collected plaintext character
   const [coins, setCoins] = useState([]);
   const [gateX, setGateX] = useState(140);
   const [isCrashing, setIsCrashing] = useState(false);
   const [crashMessage, setCrashMessage] = useState('');
+  const [lives, setLives] = useState(5);
   
+  // Refs and animations
+  const collisionHandledRef = useRef(false);
+  const prevLaneRef = useRef(1);
+  const [laneChangeEffect, setLaneChangeEffect] = useState(null); // 'moving-up' | 'moving-down' | null
+
   // Parallax speed lines
   const [speedLines, setSpeedLines] = useState([]);
 
@@ -49,6 +63,19 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
   const currentBatonLetter = levelData.ciphertext[currentIdx] ?? '';
   const currentTargetChar = levelData.plaintext[currentIdx] ?? '';
 
+  // Get active shift key for this character's word segment
+  let segmentIdx = 0;
+  const words = levelData.plaintext.split(' ');
+  let accumulated = 0;
+  for (let i = 0; i < words.length; i++) {
+    if (currentIdx < accumulated + words[i].length + (i > 0 ? 1 : 0)) {
+      segmentIdx = i;
+      break;
+    }
+    accumulated += words[i].length + 1;
+  }
+  const currentShiftKey = levelData.targetShifts[segmentIdx % levelData.targetShifts.length];
+
   // Initialize speed lines
   useEffect(() => {
     const list = [];
@@ -66,21 +93,27 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
 
   // Generate Coins for the current letter
   const spawnCoinsAndGate = () => {
-    // Generate 3 keys: 1 correct targetShift, 2 decoy shifts
-    const shiftsPool = [targetShift];
-    while (shiftsPool.length < 3) {
-      const randShift = Math.floor(Math.random() * 9) + 1;
-      if (!shiftsPool.includes(randShift)) {
-        shiftsPool.push(randShift);
-      }
-    }
-    // Shuffle the shifts
-    shiftsPool.sort(() => Math.random() - 0.5);
+    collisionHandledRef.current = false;
+    const tempIdx = maskedIndices[currentMaskIndex] ?? 0;
+    const tempTargetChar = levelData.plaintext[tempIdx] ?? '';
+
+    // Generate 3 choices: 1 correct target letter, 2 decoy letters
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const decoyOptions = alphabet.filter(ch => ch !== tempTargetChar);
+
+    // Select 2 unique decoys
+    const decoy1 = decoyOptions[Math.floor(Math.random() * decoyOptions.length)];
+    const decoyOptions2 = decoyOptions.filter(ch => ch !== decoy1);
+    const decoy2 = decoyOptions2[Math.floor(Math.random() * decoyOptions2.length)];
+
+    // Place the correct letter in correctLane = currentMaskIndex % 3, and decoys in others
+    const correctLane = currentMaskIndex % 3;
+    const decoyLanes = [0, 1, 2].filter(l => l !== correctLane);
 
     const newCoins = [
-      { id: 1, lane: 0, value: shiftsPool[0], x: 85, eaten: false },
-      { id: 2, lane: 1, value: shiftsPool[1], x: 85, eaten: false },
-      { id: 3, lane: 2, value: shiftsPool[2], x: 85, eaten: false }
+      { id: 1, lane: correctLane, char: tempTargetChar, x: 85, eaten: false },
+      { id: 2, lane: decoyLanes[0], char: decoy1, x: 85, eaten: false },
+      { id: 3, lane: decoyLanes[1], char: decoy2, x: 85, eaten: false }
     ];
     setCoins(newCoins);
     setGateX(135);
@@ -93,6 +126,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
     setSprintStep('running');
     setCurrentMaskIndex(0);
     setAttempts([]);
+    setLives(5);
     setFirstTryForCurrent(true);
     spawnCoinsAndGate();
   };
@@ -112,12 +146,25 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sprintStep, isCrashing]);
 
+  // Handle lane change transition tilt effect
+  useEffect(() => {
+    if (runnerLane !== prevLaneRef.current) {
+      const dir = runnerLane < prevLaneRef.current ? 'moving-up' : 'moving-down';
+      setLaneChangeEffect(dir);
+      prevLaneRef.current = runnerLane;
+      
+      const timer = setTimeout(() => {
+        setLaneChangeEffect(null);
+      }, 180);
+      return () => clearTimeout(timer);
+    }
+  }, [runnerLane]);
+
   // Main game tick (scrolling and collision)
   useEffect(() => {
     if (sprintStep !== 'running' || isCrashing) return;
 
     const updatePhysics = () => {
-      // Much slower, comfortable speed for user reading/reacting
       const speed = isBoosting ? 1.5 : 0.22;
 
       // Update background speed lines
@@ -137,16 +184,15 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
           if (coin.eaten) return coin;
           const nextX = coin.x - speed;
           
-          // Check collision with runner (runner is at x = 15)
           if (nextX <= 22 && nextX >= 10 && coin.lane === runnerLane) {
-            setCollectedKey(coin.value);
-            
-            // Sparkle feedback
+            setCollectedKey(coin.char);
             setIsSpinning(true);
             setTimeout(() => setIsSpinning(false), 500);
 
-            setFeedbackText(`🪙 Key +${coin.value} Collected!`);
-            setFeedbackColor(coin.value === targetShift ? '#22c55e' : '#f87171');
+            const isCorrect = coin.char === currentTargetChar;
+
+            setFeedbackText(`🪙 Letter ${coin.char} Collected!`);
+            setFeedbackColor(isCorrect ? '#22c55e' : '#f87171');
             setFeedbackY(20 + coin.lane * 30 - 8);
 
             setTimeout(() => {
@@ -162,13 +208,14 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
       setGateX((prevGateX) => {
         const nextGateX = prevGateX - speed;
 
-        // Check gate collision at x = 15
         if (nextGateX <= 18) {
-          // Gate reached!
-          cancelAnimationFrame(requestRef.current);
-          setTimeout(() => {
-            handleGateCollision();
-          }, 0);
+          if (!collisionHandledRef.current) {
+            collisionHandledRef.current = true;
+            cancelAnimationFrame(requestRef.current);
+            setTimeout(() => {
+              handleGateCollision();
+            }, 0);
+          }
           return 18;
         }
 
@@ -180,36 +227,34 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
 
     requestRef.current = requestAnimationFrame(updatePhysics);
     return () => cancelAnimationFrame(requestRef.current);
-  }, [sprintStep, runnerLane, isCrashing, coins, gateX, collectedKey, isBoosting]);
+  }, [sprintStep, runnerLane, isCrashing, coins, gateX, collectedKey, isBoosting, currentTargetChar]);
 
   useEffect(() => {
     setSprintStep('ready');
     setCurrentMaskIndex(0);
     setAttempts([]);
+    setLives(5);
     setFirstTryForCurrent(true);
     setCoins([]);
   }, [levelData]);
 
   const handleGateCollision = () => {
-    const keyUsed = collectedKey ?? 0;
-    const isCorrect = keyUsed === targetShift;
+    const charUsed = collectedKey;
+    const isCorrect = charUsed === currentTargetChar;
 
-    // Log attempt
     setAttempts((prev) => [
       ...prev,
       {
         index: currentIdx,
         cipherChar: currentBatonLetter,
-        keyCollected: keyUsed,
+        keyCollected: charUsed || 'None',
         correct: isCorrect,
         firstTry: firstTryForCurrent
       }
     ]);
 
     if (isCorrect) {
-      // Correct! Trigger screen flash and boost streak forward
       setIsBoosting(true);
-      
       setFeedbackText('⚡ Checkpoint Cleared! BOOST!');
       setFeedbackColor('#22c55e');
       setFeedbackY(10);
@@ -218,26 +263,58 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
       setTimeout(() => {
         setIsBoosting(false);
         if (currentMaskIndex + 1 < maskedIndices.length) {
+          collisionHandledRef.current = false;
           setCurrentMaskIndex((prev) => prev + 1);
           setFirstTryForCurrent(true);
-          spawnCoinsAndGate();
+          
+          const nextIndex = currentMaskIndex + 1;
+          const tempIdx = maskedIndices[nextIndex] ?? 0;
+          const tempTargetChar = levelData.plaintext[tempIdx] ?? '';
+
+          const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+          const decoyOptions = alphabet.filter(ch => ch !== tempTargetChar);
+
+          const decoy1 = decoyOptions[Math.floor(Math.random() * decoyOptions.length)];
+          const decoyOptions2 = decoyOptions.filter(ch => ch !== decoy1);
+          const decoy2 = decoyOptions2[Math.floor(Math.random() * decoyOptions2.length)];
+
+          // Place the correct letter in nextCorrectLane = (currentMaskIndex + 1) % 3, and decoys in others
+          const nextCorrectLane = (nextIndex) % 3;
+          const nextDecoyLanes = [0, 1, 2].filter(l => l !== nextCorrectLane);
+
+          const newCoins = [
+            { id: 1, lane: nextCorrectLane, char: tempTargetChar, x: 85, eaten: false },
+            { id: 2, lane: nextDecoyLanes[0], char: decoy1, x: 85, eaten: false },
+            { id: 3, lane: nextDecoyLanes[1], char: decoy2, x: 85, eaten: false }
+          ];
+          setCoins(newCoins);
+          setGateX(135);
+          setCollectedKey(null);
+          setIsCrashing(false);
         } else {
           setSprintStep('finished');
         }
       }, 1200);
     } else {
-      // Crash! Trigger screen shake
       setTrackShake(true);
       setTimeout(() => setTrackShake(false), 500);
 
       setIsCrashing(true);
       setFirstTryForCurrent(false);
       
-      const decodedChar = decryptChar(currentBatonLetter, keyUsed);
-      setCrashMessage(
-        `Wrong Key! Shift +${keyUsed} decrypted '${currentBatonLetter}' into '${decodedChar}', which violates Caesar Cipher logic.`
-      );
-      setSprintStep('explanation');
+      setLives((prevLives) => {
+        const nextLives = prevLives - 1;
+        if (nextLives <= 0) {
+          setSprintStep('gameover');
+        } else {
+          const reason = charUsed 
+            ? `Wrong Letter! Cipher '${currentBatonLetter}' with shift -${currentShiftKey} decrypts to '${currentTargetChar}'. You collected decoy letter '${charUsed}'.`
+            : `Gate Shut! You didn't collect any letter coin to unlock the checkpoint gate. The correct decrypted letter was '${currentTargetChar}'.`;
+          setCrashMessage(reason);
+          setSprintStep('explanation');
+        }
+        return nextLives;
+      });
     }
   };
 
@@ -250,137 +327,212 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
   return (
     <div className="sprint-container">
       {/* HUD Header */}
-      <header className="sprint-header">
-        <button className="sprint-btn-back" onClick={onBackToStages}>
+      <header className="fg-header relative-header">
+        <button className="fg-btn-back-nav" onClick={onBackToStages}>
           <span className="material-symbols-outlined">arrow_back</span>
           Exit to Stages
         </button>
-        <div className="sprint-header-title">
+        <div className="fg-header-title">
           Cipher Sprint — Stage {levelData.level} ({tier.toUpperCase()})
         </div>
       </header>
 
-      {sprintStep === 'ready' && (
+      {sprintStep === 'ready' ? (
         <div className="sprint-ready-card">
           <h2>🏃‍♂️ Cipher Sprint Relay</h2>
           <p className="sprint-ready-desc">
-            Help our runner sprint across the checkpoints! Reason out the correct key code from the baton's encrypted letter, guide the runner to collect the matching key coin, and sprint cleanly through the checkpoint gates!
+            Baton relay decryption challenge! Steer the runner into the lane carrying the correct plaintext letter to decrypt checkpoints.
           </p>
           <div className="sprint-ready-instruction">
-            <strong>🎮 Controls:</strong> Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes, or click/tap lanes directly.
+            <strong>🎮 Controls:</strong> Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter based on the Caesar Shift Key clue!
           </div>
           <button className="sprint-btn-primary" onClick={handleStartSprint}>
             🚀 Start Relay Run
           </button>
         </div>
-      )}
+      ) : (
+        <div className="sprint-widescreen">
+          <aside className="sprint-sidebar">
+            {/* Stats Card */}
+            <div className="sidebar-stats-card">
+              <div className="stats-header">OPERATIVE HUD</div>
+              <div className="stats-content">
+                <div className="stat-row">
+                  <span className="stat-label">LIVES:</span>
+                  <span className="stat-value hearts-glow">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span key={i} className="material-symbols-outlined" style={{ color: i < lives ? '#ff007f' : 'rgba(255,255,255,0.15)', fontVariationSettings: "'FILL' 1", fontSize: '1.1rem', marginRight: '2px' }}>
+                        favorite
+                      </span>
+                    ))}
+                  </span>
+                </div>
+                <div className="stat-row">
+                  <span className="stat-label">CAESAR CLUE:</span>
+                  <span className="stat-value clue-glow" style={{ color: 'var(--neon-cyan)', fontWeight: 'bold' }}>
+                    Plain = Cipher - {currentShiftKey}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-      {(sprintStep === 'running' || sprintStep === 'explanation') && (
-        <div className="sprint-gameplay-area">
-          {/* Baton display */}
-          <div className="sprint-baton-hud">
-            <div className="baton-tag">BATON LETTER:</div>
-            <div className="baton-letter">{currentBatonLetter}</div>
-            <div className="baton-desc">Decrypt using the correct Caesar shift coin!</div>
-          </div>
+            {/* Success / Alert / Objectives card */}
+            <div className="sidebar-action-hud">
+              {sprintStep === 'finished' ? (
+                <div className="fg-success-panel">
+                  <h3>✅ SECURED!</h3>
+                  <p>All checkpoints cleared successfully.</p>
+                  <button className="fg-btn fg-btn-primary" onClick={onVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: '10px' }}>
+                    🚀 Verify & Submit
+                  </button>
+                  <button className="fg-btn fg-btn-secondary" onClick={onReplayNewQuestion} style={{ width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
+                    🔄 Play Again
+                  </button>
+                </div>
+              ) : sprintStep === 'gameover' ? (
+                <div className="fg-alert-panel" style={{ borderColor: 'var(--neon-red)', background: 'rgba(255, 0, 127, 0.08)' }}>
+                  <strong style={{ color: 'var(--neon-red)' }}>💀 SYSTEM FAILURE!</strong>
+                  <p style={{ fontSize: '0.74rem', lineHeight: '1.4', color: '#fda4af', margin: '8px 0' }}>
+                    Runner crashed too many times and ran out of lives.
+                  </p>
+                  <button className="fg-btn" onClick={handleStartSprint} style={{ width: '100%', background: 'var(--neon-red)', color: '#fff', border: 'none', marginTop: '10px' }}>
+                    🔄 Try Again
+                  </button>
+                </div>
+              ) : sprintStep === 'explanation' ? (
+                <div className="fg-alert-panel" style={{ borderColor: 'var(--neon-red)', background: 'rgba(255, 0, 127, 0.05)' }}>
+                  <strong style={{ color: 'var(--neon-red)' }}>💥 CRASH! Gate Stayed Shut</strong>
+                  <p style={{ fontSize: '0.72rem', lineHeight: '1.45', color: '#cbd5e1', marginTop: '6px' }}>
+                    {crashMessage}
+                  </p>
+                  <button className="fg-btn fg-btn-secondary" onClick={handleContinueAfterCrash} style={{ width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
+                    🔄 Try Checkpoint Again
+                  </button>
+                </div>
+              ) : (
+                <div className="fg-alert-panel default-alert">
+                  <strong>📝 Objectives:</strong>
+                  <div style={{ fontSize: '0.72rem', lineHeight: '1.45', color: '#cbd5e1' }}>
+                    • Read the active Caesar Shift Key clue: <code>Plain = Cipher - {currentShiftKey}</code>.<br />
+                    • Calculate the correct plaintext letter for <code>{currentBatonLetter}</code>.<br />
+                    • Steer the runner into the lane matching that correct letter.<br />
+                    • Avoid decoy letters to prevent crashing into the checkpoint gate!
+                  </div>
+                </div>
+              )}
+            </div>
+          </aside>
 
-          {/* Running Track container */}
-          <div className={`sprint-track-container ${trackShake ? 'shake-track' : ''}`}>
-            {/* Speed Lines */}
-            {speedLines.map((line) => (
+          <main className="sprint-main">
+            {/* Baton display */}
+            <div className="sprint-baton-hud" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <div className="baton-tag">APPROACHING GATE:</div>
+              <div className="baton-letter" style={{ background: 'var(--neon-cyan)', color: '#030914', boxShadow: '0 0 15px rgba(0, 229, 255, 0.4)' }}>
+                {sprintStep === 'finished' ? '🏁' : currentBatonLetter}
+              </div>
+              <div className="baton-desc">
+                {sprintStep === 'finished'
+                  ? 'Relay run completed! Verify decryption in the sidebar.'
+                  : `Decrypt '${currentBatonLetter}' using Shift -${currentShiftKey}!`
+                }
+              </div>
+            </div>
+
+            {/* Running Track container */}
+            <div className={`sprint-track-container ${trackShake ? 'shake-track' : ''}`} style={{ background: 'rgba(10, 18, 40, 0.5)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              {/* Speed Lines */}
+              {speedLines.map((line) => (
+                <div
+                  key={line.id}
+                  className="sprint-speed-line"
+                  style={{
+                    left: `${line.x}%`,
+                    top: `${line.y}%`,
+                    width: `${line.width}px`
+                  }}
+                />
+              ))}
+
+              {/* Lanes */}
+              <div className={`sprint-lane lane-0 ${runnerLane === 0 ? 'highlighted' : ''}`} onClick={() => { if (sprintStep === 'running') setRunnerLane(0); }}>
+                <span className="lane-number-badge">Top</span>
+              </div>
+              <div className={`sprint-lane lane-1 ${runnerLane === 1 ? 'highlighted' : ''}`} onClick={() => { if (sprintStep === 'running') setRunnerLane(1); }}>
+                <span className="lane-number-badge">Middle</span>
+              </div>
+              <div className={`sprint-lane lane-2 ${runnerLane === 2 ? 'highlighted' : ''}`} onClick={() => { if (sprintStep === 'running') setRunnerLane(2); }}>
+                <span className="lane-number-badge">Bottom</span>
+              </div>
+
+              {/* Runner */}
               <div
-                key={line.id}
-                className="sprint-speed-line"
+                className={`sprint-runner-sprite ${isCrashing ? 'crash' : ''} ${isSpinning ? 'spin-effect' : ''} ${isBoosting ? 'boost-trail' : ''} ${laneChangeEffect || ''}`}
                 style={{
-                  left: `${line.x}%`,
-                  top: `${line.y}%`,
-                  width: `${line.width}px`
+                  top: `${20 + runnerLane * 30}%`
                 }}
-              />
-            ))}
+              >
+                <span className="sprint-runner-char">🏃‍♂️</span>
+                <div className="runner-baton-glow" style={{ background: 'var(--neon-cyan)', color: '#000' }}>
+                  {sprintStep === 'finished' ? '✓' : currentBatonLetter}
+                </div>
+              </div>
 
-            {/* Lanes */}
-            <div className={`sprint-lane lane-0 ${runnerLane === 0 ? 'highlighted' : ''}`} onClick={() => setRunnerLane(0)}>
-              <span className="lane-number-badge">Top</span>
-            </div>
-            <div className={`sprint-lane lane-1 ${runnerLane === 1 ? 'highlighted' : ''}`} onClick={() => setRunnerLane(1)}>
-              <span className="lane-number-badge">Middle</span>
-            </div>
-            <div className={`sprint-lane lane-2 ${runnerLane === 2 ? 'highlighted' : ''}`} onClick={() => setRunnerLane(2)}>
-              <span className="lane-number-badge">Bottom</span>
-            </div>
+              {/* Coins (Letters) */}
+              {sprintStep === 'running' && coins.map((coin) => (
+                !coin.eaten && (
+                  <div
+                    key={coin.id}
+                    className="sprint-coin-sprite"
+                    style={{
+                      left: `${coin.x}%`,
+                      top: `${20 + coin.lane * 30}%`
+                    }}
+                  >
+                    🪙
+                    <span className="coin-value" style={{ border: '1px solid var(--neon-cyan)', background: '#0b1228' }}>{coin.char}</span>
+                  </div>
+                )
+              ))}
 
-            {/* Runner */}
-            <div
-              className={`sprint-runner-sprite ${isCrashing ? 'crash' : ''} ${isSpinning ? 'spin-effect' : ''} ${isBoosting ? 'boost-trail' : ''}`}
-              style={{
-                top: `${20 + runnerLane * 30}%`
-              }}
-            >
-              🏃‍♂️
-              <div className="runner-baton-glow">{currentBatonLetter}</div>
-              {collectedKey !== null && (
-                <div className="runner-coin-carried">🪙 +{collectedKey}</div>
+              {/* Checkpoint Gate */}
+              <div
+                className={`sprint-checkpoint-gate ${isBoosting || sprintStep === 'finished' ? 'gate-cleared' : ''}`}
+                style={{
+                  left: `${sprintStep === 'finished' ? 15 : gateX}%`
+                }}
+              >
+                <div className="gate-beam"></div>
+                <div className="gate-pillar left"></div>
+                <div className="gate-pillar right"></div>
+                <div className="gate-badge">CHECKPOINT</div>
+              </div>
+
+              {/* Floating XP / Feedback overlay */}
+              {feedbackText && (
+                <div
+                  className="sprint-floating-feedback"
+                  style={{
+                    top: `${feedbackY}%`,
+                    color: feedbackColor
+                  }}
+                >
+                  {feedbackText}
+                </div>
               )}
             </div>
 
-            {/* Coins */}
-            {coins.map((coin) => (
-              !coin.eaten && (
-                <div
-                  key={coin.id}
-                  className="sprint-coin-sprite"
-                  style={{
-                    left: `${coin.x}%`,
-                    top: `${20 + coin.lane * 30}%`
-                  }}
-                >
-                  🪙
-                  <span className="coin-value">+{coin.value}</span>
-                </div>
-              )
-            ))}
-
-            {/* Checkpoint Gate */}
-            <div
-              className={`sprint-checkpoint-gate ${isBoosting ? 'gate-cleared' : ''}`}
-              style={{
-                left: `${gateX}%`
-              }}
-            >
-              <div className="gate-beam"></div>
-              <div className="gate-pillar left"></div>
-              <div className="gate-pillar right"></div>
-              <div className="gate-badge">CHECKPOINT</div>
-            </div>
-
-            {/* Floating XP / Feedback overlay */}
-            {feedbackText && (
-              <div
-                className="sprint-floating-feedback"
-                style={{
-                  top: `${feedbackY}%`,
-                  color: feedbackColor
-                }}
-              >
-                {feedbackText}
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar instructions */}
-          <div className="sprint-side-hud">
-            <div className="sprint-word-progress">
-              <h3>Word Decryption Progress:</h3>
+            {/* Word Decryption Progress */}
+            <div className="sprint-word-progress-card" style={{ marginTop: '20px', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '12px', padding: '16px 20px' }}>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: '700', color: '#94a3b8', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Word Decryption Progress:</h3>
               <div className="sprint-letters-row">
                 {levelData.plaintext.split('').map((char, idx) => {
                   const isMasked = !levelData.masks[0][idx];
-                  const isSolved = isMasked && (maskedIndices.indexOf(idx) < currentMaskIndex);
+                  const isSolved = isMasked && (maskedIndices.indexOf(idx) < currentMaskIndex || sprintStep === 'finished');
                   const displayChar = !isMasked ? char : (isSolved ? char : '_');
                   const cipherChar = levelData.ciphertext[idx];
 
                   return (
-                    <div key={idx} className={`sprint-letter-box ${isSolved ? 'solved' : ''} ${isMasked && idx === currentIdx ? 'active' : ''}`}>
+                    <div key={idx} className={`sprint-letter-box ${isSolved ? 'solved' : ''} ${isMasked && idx === currentIdx && sprintStep === 'running' ? 'active' : ''}`}>
                       <span className="sprint-box-cipher">{cipherChar}</span>
                       <span className="sprint-box-plain">{displayChar}</span>
                     </div>
@@ -388,80 +540,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
                 })}
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {sprintStep === 'explanation' && (
-        <div className="sprint-explanation-overlay">
-          <div className="sprint-explanation-card">
-            <span className="sprint-crash-icon">💥</span>
-            <h3>CRASH! Gate Stayed Shut</h3>
-            <p className="sprint-explanation-text">{crashMessage}</p>
-            <button className="sprint-btn-primary" onClick={handleContinueAfterCrash}>
-              🔄 Try Checkpoint Again
-            </button>
-          </div>
-        </div>
-      )}
-
-      {sprintStep === 'finished' && (
-        <div className="sprint-finished-card">
-          <h2>🏁 FINISH LINE CLEARED!</h2>
-          <p className="sprint-finished-desc">
-            The crowd cheers! You successfully decrypted all message letters!
-          </p>
-
-          <div className="sprint-finish-banner">
-            <div className="sprint-letters-row justify-center">
-              {levelData.plaintext.split('').map((char, idx) => (
-                <div key={idx} className="sprint-letter-box solved">
-                  <span className="sprint-box-cipher">{levelData.ciphertext[idx]}</span>
-                  <span className="sprint-box-plain">{char}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="sprint-recap-table-container">
-            <h3>🔬 Relay Run Recap</h3>
-            <table className="sprint-recap-table">
-              <thead>
-                <tr>
-                  <th>Checkpoint</th>
-                  <th>Cipher Letter</th>
-                  <th>Plaintext Target</th>
-                  <th>Key Coin Used</th>
-                  <th>Result</th>
-                  <th>First Attempt?</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attempts.map((att, idx) => {
-                  const targetPlain = levelData.plaintext[att.index];
-                  return (
-                    <tr key={idx} className={att.correct ? 'row-correct' : 'row-incorrect'}>
-                      <td>#{idx + 1}</td>
-                      <td>{att.cipherChar}</td>
-                      <td>{targetPlain}</td>
-                      <td>+{att.keyCollected}</td>
-                      <td>{att.correct ? '✅ Clean Pass' : '❌ Crashed'}</td>
-                      <td>{att.firstTry ? '⭐️ Yes' : 'No'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="sprint-action-row">
-            <button className="sprint-btn-primary" onClick={onVerifySubmit}>
-              🚀 Verify & Submit
-            </button>
-            <button className="sprint-btn-secondary" onClick={onReplayNewQuestion || handleStartSprint}>
-              🔄 Run Again
-            </button>
-          </div>
+          </main>
         </div>
       )}
     </div>

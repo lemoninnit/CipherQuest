@@ -49,29 +49,14 @@ const generateRandomPellets = (ghostList, pacmanPos) => {
   const shuffled = [...openSpaces].sort(() => Math.random() - 0.5);
 
   const initialPellets = [];
-  const possibleValues = [-3, -2, -1, 0, 1, 2, 3];
 
-  for (let i = 0; i < 7; i++) {
-    if (shuffled[i]) {
-      const randValue = possibleValues[Math.floor(Math.random() * possibleValues.length)];
-      initialPellets.push({
-        id: `p-${i}-${Date.now()}-${Math.random()}`,
-        value: randValue,
-        row: shuffled[i].row,
-        col: shuffled[i].col,
-        eaten: false,
-        isSkill: false
-      });
-    }
-  }
-
-  // The 8th shuffled space becomes the yellow skill pellet
-  if (shuffled[7]) {
+  // Spawn exactly one yellow skill pellet, NO normal yellow score dots
+  if (shuffled[0]) {
     initialPellets.push({
       id: `skill-${Date.now()}-${Math.random()}`,
       value: 0,
-      row: shuffled[7].row,
-      col: shuffled[7].col,
+      row: shuffled[0].row,
+      col: shuffled[0].col,
       eaten: false,
       isSkill: true
     });
@@ -104,11 +89,11 @@ const generateInitialGhosts = (levelData) => {
   // 1. Assign correct target ghosts for ALL masked indices (guarantees completion)
   for (let i = 0; i < maskedIndices.length; i++) {
     const idx = maskedIndices[i];
-    const cipherChar = levelData.ciphertext[idx];
+    const plainChar = levelData.plaintext[idx];
     const pos = startPositions[i % startPositions.length];
     ghosts.push({
       id: `ghost-${i + 1}`,
-      char: cipherChar,
+      char: plainChar,
       index: idx,
       row: pos.row,
       col: pos.col,
@@ -119,7 +104,7 @@ const generateInitialGhosts = (levelData) => {
 
   // 2. Add exactly 2 decoy ghosts for distraction/challenge
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const targetLetters = maskedIndices.map(idx => levelData.ciphertext[idx]);
+  const targetLetters = maskedIndices.map(idx => levelData.plaintext[idx]);
   
   for (let i = 0; i < 2; i++) {
     let decoyChar = '';
@@ -182,7 +167,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   // Dynamic non-wall non-stacking pellet arrays on load
   const [pellets, setPellets] = useState(() => generateRandomPellets(initialGhosts, initialPacman));
 
-  const isPoweredUp = activeShift === targetShift;
+  const isPoweredUp = true;
 
   const pacmanRef = useRef(pacman);
   const ghostsRef = useRef(ghosts);
@@ -352,7 +337,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             if (pellet.isSkill) {
               setHasSkillCharge(true);
             } else {
-              setActiveShift((prev) => prev + pellet.value);
               setRuleViolation(null);
             }
             return { ...pellet, eaten: true };
@@ -458,41 +442,17 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               }
 
               if (ghost.index !== -1) {
-                if (currentIsPoweredUp) {
-                  // Correct ghost letter is safe and updates progress
-                  setEatenGhosts((prevEaten) => {
-                    const nextEaten = prevEaten.includes(ghost.index)
-                      ? prevEaten
-                      : [...prevEaten, ghost.index];
-                    if (nextEaten.length === maskedIndices.length) {
-                      setLevelSolved(true);
-                    }
-                    return nextEaten;
-                  });
-                  return { ...ghost, eaten: true };
-                } else {
-                  // Wrong shift! Lose heart, trigger screen shake, rebound ghost
-                  if (!currentIsInvulnerable && !hurtTriggered) {
-                    hurtTriggered = true;
-                    setIsScreenShaking(true);
-                    setTimeout(() => setIsScreenShaking(false), 450);
-                    handleLoseHeart(
-                      `Active shift +${currentActiveShift} decrypted Ciphertext '${ghost.char}' into '${caesarDecryptChar(ghost.char, currentActiveShift)}', violating Caesar logic. Find correct shift first!`
-                    );
+                // Correct ghost letter is safe and updates progress
+                setEatenGhosts((prevEaten) => {
+                  const nextEaten = prevEaten.includes(ghost.index)
+                    ? prevEaten
+                    : [...prevEaten, ghost.index];
+                  if (nextEaten.length === maskedIndices.length) {
+                    setLevelSolved(true);
                   }
-
-                  const gDir = ghost.dir || { r: 0, c: 1 };
-                  const oppositeDir = { r: -gDir.r, c: -gDir.c };
-                  const rbRow = ghost.row + oppositeDir.r;
-                  const rbCol = ghost.col + oppositeDir.c;
-                  const canRebound = MAZE_GRID[rbRow] && MAZE_GRID[rbRow][rbCol] === 0;
-                  return {
-                    ...ghost,
-                    dir: oppositeDir,
-                    row: canRebound ? rbRow : ghost.row,
-                    col: canRebound ? rbCol : ghost.col
-                  };
-                }
+                  return nextEaten;
+                });
+                return { ...ghost, eaten: true };
               } else {
                 // Decoy ghost! Lose heart, trigger screen shake, rebound ghost
                 if (!currentIsInvulnerable && !hurtTriggered) {
@@ -500,7 +460,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   setIsScreenShaking(true);
                   setTimeout(() => setIsScreenShaking(false), 450);
                   handleLoseHeart(
-                    `Ouch! You ate Decoy Ghost '${ghost.char}' which does not belong to the target blanks. Avoid decoy ghosts!`
+                    `Ouch! You ate Decoy Ghost '${ghost.char}' which does not belong to the target blanks. Use the Shift Clue!`
                   );
                 }
 
@@ -523,7 +483,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 setIsScreenShaking(true);
                 setTimeout(() => setIsScreenShaking(false), 450);
                 handleLoseHeart(
-                  `Ghost captured Pac-Man! You must eat the yellow pellet and press SPACEBAR to freeze them before colliding.`
+                  `Ghost captured Pac-Man! Eat a yellow pellet 🟡 and press SPACEBAR to activate Decryption Mode first.`
                 );
               }
 
@@ -561,13 +521,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       const currentPacman = pacmanRef.current;
       const currentGhosts = ghostsRef.current;
 
-      const activeShiftsCount = currentPellets.filter(p => !p.eaten && !p.isSkill).length;
       const hasActiveSkillPellet = currentPellets.some(p => !p.eaten && p.isSkill);
-
-      const needsShiftCount = 7 - activeShiftsCount;
       const needsSkill = !hasActiveSkillPellet;
 
-      if (needsShiftCount > 0 || needsSkill) {
+      if (needsSkill) {
         // Collect candidate spawn tiles
         const openSpaces = [];
         for (let r = 1; r < MAZE_GRID.length - 1; r++) {
@@ -587,35 +544,17 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         if (openSpaces.length > 0) {
           // Shuffle spaces
           const shuffledSpaces = [...openSpaces].sort(() => Math.random() - 0.5);
-          let spaceIdx = 0;
           const newPellets = [];
 
-          if (needsSkill && shuffledSpaces[spaceIdx]) {
+          if (shuffledSpaces[0]) {
             newPellets.push({
               id: `skill-${Date.now()}-${Math.random()}`,
               value: 0,
-              row: shuffledSpaces[spaceIdx].row,
-              col: shuffledSpaces[spaceIdx].col,
+              row: shuffledSpaces[0].row,
+              col: shuffledSpaces[0].col,
               eaten: false,
               isSkill: true
             });
-            spaceIdx++;
-          }
-
-          const possibleValues = [-3, -2, -1, 0, 1, 2, 3];
-          for (let i = 0; i < needsShiftCount; i++) {
-            if (shuffledSpaces[spaceIdx]) {
-              const randValue = possibleValues[Math.floor(Math.random() * possibleValues.length)];
-              newPellets.push({
-                id: `p-${Date.now()}-${i}-${Math.random()}`,
-                value: randValue,
-                row: shuffledSpaces[spaceIdx].row,
-                col: shuffledSpaces[spaceIdx].col,
-                eaten: false,
-                isSkill: false
-              });
-              spaceIdx++;
-            }
           }
 
           if (newPellets.length > 0) {
@@ -675,9 +614,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         <aside className="fg-sidebar">
           {/* Active Shift Card */}
           <div className="fg-basket-card">
-            <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>😮</div>
-            <div className="fg-basket-shift-value">{activeShift > 0 ? `+${activeShift}` : activeShift}</div>
-            <span className="fg-basket-label">Active Shift Power</span>
+            <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔑</div>
+            <div className="fg-basket-shift-value" style={{ color: 'var(--neon-green)' }}>+{targetShift}</div>
+            <span className="fg-basket-label">Caesar Shift Key Clue</span>
           </div>
 
           {/* Skill Charge */}
@@ -718,7 +657,18 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
           {/* Yellow Highlighted: Educational Clues (No direct answers) */}
           <div className="sidebar-action-hud">
-            {ruleViolation ? (
+            {levelSolved ? (
+              <div className="fg-success-panel">
+                <h3>✅ SECURED!</h3>
+                <p>All segments decrypted successfully.</p>
+                <button className="fg-btn fg-btn-primary" onClick={onVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: '10px' }}>
+                  🚀 Verify & Submit
+                </button>
+                <button className="fg-btn fg-btn-secondary" onClick={onReplayNewQuestion} style={{ width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
+                  🔄 Play Again
+                </button>
+              </div>
+            ) : ruleViolation ? (
               <div className="fg-alert-panel">
                 <strong>⚠️ Alert Warning:</strong>
                 <p style={{ fontSize: '0.74rem', lineHeight: '1.4', color: '#fda4af' }}>{ruleViolation}</p>
@@ -727,10 +677,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               <div className="fg-alert-panel default-alert">
                 <strong>📝 Objectives:</strong>
                 <div style={{ fontSize: '0.74rem', lineHeight: '1.45', color: '#cbd5e1' }}>
-                  • Determine the target shift using standard Caesar formulas.<br />
-                  • Catch the matching shift pellet in the corridors.<br />
-                  • Secure a yellow pellet 🟡, then press **SPACEBAR** to freeze.<br />
-                  • Target the correct cipher letters to decipher blanks!
+                  • Use the Caesar Shift Key clue to decrypt empty letters.<br />
+                  • Eat a yellow Skill Pellet ⚡, then press **SPACEBAR** to activate Decryption Mode.<br />
+                  • While Decryption Mode is active, eat the ghost carrying the correct plaintext letter.<br />
+                  • Avoid decoy ghosts and do not touch ghosts when Decryption Mode is inactive!
                 </div>
               </div>
             )}
@@ -795,11 +745,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               {/* Slower gliding Ghosts (0.5x speed) */}
               {ghosts.map((ghost) => {
                 if (ghost.eaten) return null;
-                const isVulnerable = skillActive && isPoweredUp;
+                const isVulnerable = skillActive;
                 return (
                   <div
                     key={ghost.id}
-                    className={`ghost-sprite-absolute ${isVulnerable && ghost.index !== -1 ? 'vulnerable' : ''}`}
+                    className={`ghost-sprite-absolute ${isVulnerable ? 'vulnerable' : ''}`}
                     style={{
                       left: `${ghost.col * 46}px`,
                       top: `${ghost.row * 46}px`
@@ -830,8 +780,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                         ⚡
                       </div>
                     ) : (
-                      <div className={`circle-pellet-badge ${pellet.value === 6 ? 'correct' : ''}`}>
-                        {pellet.value > 0 ? `+${pellet.value}` : pellet.value}
+                      <div className="circle-pellet-badge score-dot">
+                        •
                       </div>
                     )}
                   </div>
@@ -853,27 +803,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               </div>
             )}
 
-            {/* Level Solved verify overlay */}
-            {levelSolved && (
-              <div className="game-over-overlay">
-                <div className="game-over-card glass-card solution-card">
-                  <h2 className="solution-title text-green">🎯 SECURED DECIPHER!</h2>
-                  <p className="game-over-text">All missing ciphertext letters successfully resolved.</p>
-                  <div style={{ display: 'flex', gap: '12px', width: '100%', marginTop: '16px' }}>
-                    <button className="fg-btn fg-btn-primary play-again-btn solution-btn" onClick={onVerifySubmit} style={{ flex: 1 }}>
-                      <span className="material-symbols-outlined">check_circle</span>
-                      <span>Verify & Submit</span>
-                    </button>
-                    {onReplayNewQuestion && (
-                      <button className="fg-btn fg-btn-secondary play-again-btn" onClick={onReplayNewQuestion} style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
-                        <span className="material-symbols-outlined">autorenew</span>
-                        <span>Play Again</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+
           </section>
         </main>
       </div>

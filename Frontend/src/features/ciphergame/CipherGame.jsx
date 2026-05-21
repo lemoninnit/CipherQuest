@@ -309,6 +309,59 @@ const caesarDecryptWord = (word, shift) => {
 
 const FISH_EMOJIS = ['🐟', '🐠', '🐡', '🦈', '🐙', '🦑', '🦐'];
 
+const generateRandomizedLevel = (tier, levelIndex, currentPlaintext) => {
+  const baseLevel = HANDCRAFTED_LEVELS[tier]?.[levelIndex] || HANDCRAFTED_LEVELS.easy[0];
+  const pool = ALTERNATIVE_LEVEL_POOLS[tier]?.[levelIndex] || [];
+  const allOptions = [
+    { plaintext: baseLevel.plaintext, hint: baseLevel.hint, clue: baseLevel.clue },
+    ...pool
+  ];
+
+  // Filter out current active plaintext if possible to ensure we get a different question
+  const filteredOptions = allOptions.filter(opt => opt.plaintext !== currentPlaintext);
+  const optionsToUse = filteredOptions.length > 0 ? filteredOptions : allOptions;
+  const chosenOption = optionsToUse[Math.floor(Math.random() * optionsToUse.length)];
+
+  // Generate random shift keys:
+  // Random shift between 1 and 9 for easy mode, and 1 to 15 for medium/hard mode.
+  const targetShifts = baseLevel.targetShifts.map(() => {
+    const maxShift = tier === 'easy' ? 9 : 15;
+    return Math.floor(Math.random() * maxShift) + 1;
+  });
+
+  // Encrypt the chosen plaintext using the randomized targetShifts
+  const cipherWords = chosenOption.plaintext.split(' ').map((word, idx) => {
+    const shift = targetShifts[idx % targetShifts.length];
+    return word.split('').map(ch => {
+      const code = ch.charCodeAt(0);
+      if (code >= 65 && code <= 90) {
+        return String.fromCharCode(((code - 65 + shift) % 26 + 26) % 26 + 65);
+      }
+      return ch;
+    }).join('');
+  });
+  const newCiphertext = cipherWords.join(' ');
+
+  // Generate startShifts that do NOT match the target shifts to prevent starting already solved.
+  const startShifts = targetShifts.map((targetShift) => {
+    let startShift;
+    do {
+      startShift = Math.floor(Math.random() * 5); // 0 to 4
+    } while (startShift === targetShift);
+    return startShift;
+  });
+
+  return {
+    ...baseLevel,
+    plaintext: chosenOption.plaintext,
+    ciphertext: newCiphertext,
+    hint: chosenOption.hint,
+    clue: chosenOption.clue,
+    targetShifts,
+    startShifts
+  };
+};
+
 export default function CipherGame() {
   const [offline, setOffline] = useState(false);
   const [profile, setProfile] = useState({ username: "Agent", xp: 0, level: 1 });
@@ -379,39 +432,8 @@ export default function CipherGame() {
   useEffect(() => {
     if (gameFlowStep !== 'game') return;
 
-    const baseLevel = HANDCRAFTED_LEVELS[tier][levelIndex] || HANDCRAFTED_LEVELS.easy[0];
-    const isCompleted = completedLevels[tier]?.includes(levelIndex);
-    let loadedLevel = { ...baseLevel };
-
-    if (isCompleted) {
-      const pool = ALTERNATIVE_LEVEL_POOLS[tier]?.[levelIndex];
-      if (pool && pool.length > 0) {
-        const activePlain = activeLevelData?.plaintext;
-        const availableOptions = pool.filter(item => item.plaintext !== activePlain && item.plaintext !== baseLevel.plaintext);
-        const optionsToUse = availableOptions.length > 0 ? availableOptions : pool;
-        const randomAlt = optionsToUse[Math.floor(Math.random() * optionsToUse.length)];
-        const targetShifts = baseLevel.targetShifts;
-        const cipherWords = randomAlt.plaintext.split(' ').map((w, idx) => {
-          const shift = targetShifts[idx % targetShifts.length];
-          return w.split('').map(ch => {
-            const code = ch.charCodeAt(0);
-            if (code >= 65 && code <= 90) {
-              return String.fromCharCode(((code - 65 + shift) % 26 + 26) % 26 + 65);
-            }
-            return ch;
-          }).join('');
-        });
-        const newCiphertext = cipherWords.join(' ');
-
-        loadedLevel = {
-          ...baseLevel,
-          plaintext: randomAlt.plaintext,
-          ciphertext: newCiphertext,
-          hint: randomAlt.hint,
-          clue: randomAlt.clue
-        };
-      }
-    }
+    // Generate a fully randomized level (different word and different shift key) on every load/replay
+    const loadedLevel = generateRandomizedLevel(tier, levelIndex, activeLevelData?.plaintext);
 
     setActiveLevelData(loadedLevel);
     setActiveShifts([...loadedLevel.startShifts]);
@@ -422,7 +444,7 @@ export default function CipherGame() {
     generatePondFish();
     generatePondBubbles();
     startBackendSession();
-  }, [gameFlowStep, levelIndex, tier, completedLevels]);
+  }, [gameFlowStep, levelIndex, tier]);
 
   const startBackendSession = async () => {
     if (offline) return;
@@ -573,6 +595,7 @@ export default function CipherGame() {
     requestAnimationFrame(animateCastOut);
   };
 
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const words = levelData.plaintext.split(' ');
   const ciphersegments = levelData.ciphertext.split(' ');
 
@@ -1044,12 +1067,12 @@ export default function CipherGame() {
 
             {/* Recap "Why did this work?" explanation overlay */}
             {showExplanation && (
-              <div className="fg-recap-overlay">
-                <div className="fg-recap-card">
+              <div className="fg-recap-overlay" style={{ overflowY: 'auto', padding: '30px 10px' }}>
+                <div className="fg-recap-card" style={{ maxWidth: '1100px', width: '95%', padding: '24px 32px' }}>
                   <h2 className="fg-recap-title">🔬 Cryptographic Recap</h2>
                   <p className="fg-recap-subtitle">Why Did This Work?</p>
 
-                  <div className="fg-recap-animation-box">
+                  <div className="fg-recap-animation-box" style={{ minHeight: 'auto', padding: '16px', marginBottom: '16px' }}>
                     <div className="fg-recap-letter-row">
                       {levelData.plaintext.replace(/\s+/g, '').split('').map((plainCh, idx) => {
                         const cipherCh = levelData.ciphertext.replace(/\s+/g, '')[idx];
@@ -1083,14 +1106,130 @@ export default function CipherGame() {
                     </div>
                   </div>
 
-                  <div className="fg-recap-explanation">
+                  <div className="fg-recap-explanation" style={{ background: 'rgba(255, 255, 255, 0.015)' }}>
                     💡 <strong>Caesar Cipher Decryption Mechanics:</strong> <br />
                     A Caesar Cipher is a uniform substitution cipher. Each letter in the ciphertext was shifted forward in the alphabet by a fixed shift value.
-                    By catching fish carrying operators, you configured the decryption basket shift value to exactly match the key.
+                    {levelIndex === 0 && (
+                      <span> By catching fish carrying operators, you configured the decryption basket shift value to exactly match the key. </span>
+                    )}
+                    {levelIndex === 1 && (
+                      <span> By using the Shift Key Clue, you decrypted the empty letter cells and collected the ghosts carrying the correct plaintext letters. </span>
+                    )}
+                    {levelIndex === 2 && (
+                      <span> By matching the encrypted baton letters with correct shift key coins, you guided the runner safely through the checkpoint gates. </span>
+                    )}
                     Applying the subtraction shift (<code>Plain = Cipher - Key</code>) maps <strong>all letters</strong> uniformly back to their correct plaintext representation.
+
+                    <div className="fg-recap-visual-layout" style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {/* Caesar Alphabet Shift Tables */}
+                      {levelData.targetShifts && levelData.targetShifts.map((shiftVal, sIdx) => {
+                        const sAlphabet = alphabet.map((ch, idx) => alphabet[(idx + shiftVal) % 26]);
+                        return (
+                          <div key={sIdx} style={{
+                            background: 'rgba(0, 229, 255, 0.05)',
+                            border: '1px solid rgba(0, 229, 255, 0.2)',
+                            borderRadius: '12px',
+                            padding: '12px'
+                          }}>
+                            <div style={{ fontWeight: '700', color: 'var(--neon-cyan)', marginBottom: '8px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px', textAlign: 'left' }}>
+                              🔑 Caesar Alphabet Shift Table {levelData.targetShifts.length > 1 ? `for Word Segment #${sIdx + 1}` : ''} (Key: +{shiftVal})
+                            </div>
+                            
+                            <div style={{ overflowX: 'auto', width: '100%' }}>
+                              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: '850px' }}>
+                                <thead>
+                                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                                    <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: '600' }}>Plain:</th>
+                                    {alphabet.map((ch, idx) => (
+                                      <td key={idx} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)', borderRight: '1px solid rgba(255,255,255,0.03)' }}>
+                                        <div style={{ fontWeight: 'bold' }}>{ch}</div>
+                                        <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{idx + 1}</div>
+                                      </td>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr>
+                                    <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: '600' }}>Cipher:</th>
+                                    {sAlphabet.map((ch, idx) => {
+                                      const codeVal = ch.charCodeAt(0) - 65 + 1;
+                                      return (
+                                        <td key={idx} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0, 229, 255, 0.02)', borderRight: '1px solid rgba(0, 229, 255, 0.03)' }}>
+                                          <div style={{ fontWeight: 'bold' }}>{ch}</div>
+                                          <div style={{ fontSize: '0.55rem', color: 'rgba(0, 229, 255, 0.6)' }}>{codeVal}</div>
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {/* Step-by-Step letter decryption breakdown */}
+                      <div style={{
+                        background: 'rgba(57, 255, 20, 0.03)',
+                        border: '1px solid rgba(57, 255, 20, 0.15)',
+                        borderRadius: '12px',
+                        padding: '12px'
+                      }}>
+                        <div style={{ fontWeight: '700', color: 'var(--neon-green)', marginBottom: '8px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px', textAlign: 'left' }}>
+                          📝 Step-by-Step Decryption Solution
+                        </div>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '8px' }}>
+                          {levelData.plaintext.replace(/\s+/g, '').split('').map((plainCh, idx) => {
+                            const cipherCh = levelData.ciphertext.replace(/\s+/g, '')[idx];
+                            if (!plainCh || !cipherCh) return null;
+                            
+                            // Calculate which word segment/shift this letter belongs to
+                            let wordIndex = 0;
+                            const originalSegments = levelData.plaintext.split(' ');
+                            let accumulatedLen = 0;
+                            for (let i = 0; i < originalSegments.length; i++) {
+                              const wordLen = originalSegments[i].replace(/\s+/g, '').length;
+                              if (idx < accumulatedLen + wordLen) {
+                                wordIndex = i;
+                                break;
+                              }
+                              accumulatedLen += wordLen;
+                            }
+                            
+                            const charShift = levelData.targetShifts ? (levelData.targetShifts[wordIndex] ?? levelData.targetShifts[0]) : 0;
+                            
+                            const pVal = plainCh.charCodeAt(0) - 65 + 1;
+                            const cVal = cipherCh.charCodeAt(0) - 65 + 1;
+                            
+                            return (
+                              <div key={idx} style={{
+                                background: 'rgba(3, 9, 20, 0.6)',
+                                border: '1px solid rgba(255, 255, 255, 0.05)',
+                                borderRadius: '8px',
+                                padding: '6px 8px',
+                                textAlign: 'center',
+                                fontFamily: 'JetBrains Mono, monospace'
+                              }}>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>#{idx + 1}</div>
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2px', fontSize: '0.85rem' }}>
+                                  <span style={{ color: 'var(--neon-cyan)', fontWeight: 'bold' }}>{cipherCh}</span>
+                                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>({cVal})</span>
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>-{charShift} steps</div>
+                                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '2px', fontSize: '0.85rem', borderTop: '1px dashed rgba(255,255,255,0.08)', paddingTop: '2px', marginTop: '2px' }}>
+                                  <span style={{ color: 'var(--neon-green)', fontWeight: 'bold' }}>{plainCh}</span>
+                                  <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>({pVal})</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="fg-recap-actions">
+                  <div className="fg-recap-actions" style={{ marginTop: '16px' }}>
                     <button
                       className="fg-btn fg-btn-primary"
                       onClick={handleCloseExplanation}
