@@ -29,38 +29,38 @@ const CategorySelector = ({ onSelectCategory }) => {
         </div>
 
         {/* Vigenere Cipher Card */}
-        <div className="flow-card locked">
+        <div className="flow-card active" onClick={() => onSelectCategory('vigenere')}>
           <div className="flow-card-header">
             <div className="flow-icon-box vigenere">
               <span className="material-symbols-outlined">vpn_key</span>
             </div>
-            <span className="flow-status locked">LOCKED</span>
+            <span className="flow-status active">AVAILABLE</span>
           </div>
           <h3 className="flow-card-title">Vigenère Cipher</h3>
           <p className="flow-card-desc">
-            Learn polyalphabetic substitution using a keyword matrix. Unlocks after completing Caesar Caesar Hard tier.
+            Learn polyalphabetic substitution using a repeating keyword. Decrypt repeating keyword shifts dynamically.
           </p>
           <div className="flow-card-footer">
             <span className="flow-stat">5 STAGES</span>
-            <span className="flow-reward">+1,200 XP</span>
+            <span className="flow-reward">+100 XP / Level</span>
           </div>
         </div>
 
         {/* Playfair Cipher Card */}
-        <div className="flow-card locked">
+        <div className="flow-card active" onClick={() => onSelectCategory('playfair')}>
           <div className="flow-card-header">
             <div className="flow-icon-box playfair">
               <span className="material-symbols-outlined">grid_view</span>
             </div>
-            <span className="flow-status locked">LOCKED</span>
+            <span className="flow-status active">AVAILABLE</span>
           </div>
           <h3 className="flow-card-title">Playfair Cipher</h3>
           <p className="flow-card-desc">
-            Encrypt pairs of letters (digraphs) inside a 5×5 key matrix. Unlocks after securing the Vigenère module.
+            Encrypt pairs of letters (digraphs) inside a 5×5 key matrix. Learn row, column, and rectangular swaps.
           </p>
           <div className="flow-card-footer">
             <span className="flow-stat">5 STAGES</span>
-            <span className="flow-reward">+2,500 XP</span>
+            <span className="flow-reward">+100 XP / Level</span>
           </div>
         </div>
       </div>

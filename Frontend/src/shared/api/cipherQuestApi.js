@@ -28,17 +28,23 @@ export const authApi = {
 };
 
 export const userApi = {
-  getMyProfile: () => request('GET', '/users/me'),
-  deleteAccount: () => request('DELETE', '/users/me'),
+  getMyProfile:   ()                      => request('GET',    '/users/me'),
+  deleteAccount:  ()                      => request('DELETE', '/users/me'),
+  // DAY 2 additions
+  getProgress:    ()                      => request('GET',    '/users/progress'),
+  saveProgress:   (cipherType, difficultyTier, levelIndex) =>
+    request('POST', '/users/progress', { cipherType, difficultyTier, levelIndex }),
+  deductAttempt:  ()                      => request('POST', '/users/attempts/deduct'),
+  getBadges:      ()                      => request('GET',    '/users/badges'),
 };
 
 export const fishingApi = {
-  startSession:  ()               => request('POST', '/fishing/start'),
-  cast:          (sessionId)      => request('POST', `/fishing/${sessionId}/cast`),
-  submitAnswer:  (sessionId, ans) => request('POST', `/fishing/${sessionId}/submit`, { answer: ans }),
-  endSession:    (sessionId)      => request('POST', `/fishing/${sessionId}/end`),
-  getSummary:    (sessionId)      => request('GET',  `/fishing/${sessionId}/summary`),
-  getLeaderboard: ()              => request('GET',  '/fishing/leaderboard'),
+  startSession:   ()               => request('POST', '/fishing/start'),
+  cast:           (sessionId)      => request('POST', `/fishing/${sessionId}/cast`),
+  submitAnswer:   (sessionId, ans) => request('POST', `/fishing/${sessionId}/submit`, { answer: ans }),
+  endSession:     (sessionId)      => request('POST', `/fishing/${sessionId}/end`),
+  getSummary:     (sessionId)      => request('GET',  `/fishing/${sessionId}/summary`),
+  getLeaderboard: ()               => request('GET',  '/fishing/leaderboard'),
 };
 
 export const saveToken  = (token) => localStorage.setItem('cq_token', token);

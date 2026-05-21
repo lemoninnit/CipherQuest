@@ -184,6 +184,418 @@ const HANDCRAFTED_LEVELS = {
   ]
 };
 
+/* ─── Handcrafted levels for Vigenère Cipher Mastery ──────────────── */
+const VIGENERE_LEVELS = {
+  easy: [
+    {
+      level: 1,
+      plaintext: "HELLO",
+      ciphertext: "RIJVS",
+      targetKey: "KEY",
+      targetShifts: [10, 4, 24],
+      masks: [[false, true, true, true, false]],
+      hint: "Friendly greeting decrypted with key KEY",
+      startKey: "AAA",
+      startShifts: [0, 0, 0],
+      clue: "A standard greeting"
+    },
+    {
+      level: 2,
+      plaintext: "WATER",
+      ciphertext: "GEROV",
+      targetKey: "KEY",
+      targetShifts: [10, 4, 24],
+      masks: [[false, true, false, true, false]],
+      hint: "Essential liquid decrypted with key KEY",
+      startKey: "AAA",
+      startShifts: [0, 0, 0],
+      clue: "Essential for life"
+    },
+    {
+      level: 3,
+      plaintext: "SHARK",
+      ciphertext: "CLYBO",
+      targetKey: "KEY",
+      targetShifts: [10, 4, 24],
+      masks: [[false, true, false, true, false]],
+      hint: "Ocean predator decrypted with key KEY",
+      startKey: "AAA",
+      startShifts: [0, 0, 0],
+      clue: "Ocean predator"
+    },
+    {
+      level: 4,
+      plaintext: "CIPHER",
+      ciphertext: "MMNRIP",
+      targetKey: "KEY",
+      targetShifts: [10, 4, 24],
+      masks: [[false, true, false, true, true, false]],
+      hint: "Secret code decrypted with key KEY",
+      startKey: "AAA",
+      startShifts: [0, 0, 0],
+      clue: "Secret writing"
+    },
+    {
+      level: 5,
+      plaintext: "OCEAN",
+      ciphertext: "YGCKR",
+      targetKey: "KEY",
+      targetShifts: [10, 4, 24],
+      masks: [[false, true, true, false, false]],
+      hint: "Large expanse of sea decrypted with key KEY",
+      startKey: "AAA",
+      startShifts: [0, 0, 0],
+      clue: "Large body of salt water"
+    }
+  ],
+  medium: [
+    {
+      level: 1,
+      plaintext: "SALMON",
+      ciphertext: "OAGQKN",
+      targetKey: "WAVE",
+      targetShifts: [22, 0, 21, 4],
+      masks: [[false, true, true, true, false, false]],
+      hint: "Pink fish that swims upstream decrypted with key WAVE",
+      startKey: "AAAA",
+      startShifts: [0, 0, 0, 0],
+      clue: "Swims upstream"
+    },
+    {
+      level: 2,
+      plaintext: "ANCHOR",
+      ciphertext: "WNXLKR",
+      targetKey: "WAVE",
+      targetShifts: [22, 0, 21, 4],
+      masks: [[false, true, true, true, false, false]],
+      hint: "Heavy metal object to moor ship with key WAVE",
+      startKey: "AAAA",
+      startShifts: [0, 0, 0, 0],
+      clue: "Moors a ship"
+    },
+    {
+      level: 3,
+      plaintext: "PIRATE",
+      ciphertext: "LIMEPE",
+      targetKey: "WAVE",
+      targetShifts: [22, 0, 21, 4],
+      masks: [[false, true, false, true, true, false]],
+      hint: "Sea outlaw decrypted with key WAVE",
+      startKey: "AAAA",
+      startShifts: [0, 0, 0, 0],
+      clue: "Ocean outlaw"
+    },
+    {
+      level: 4,
+      plaintext: "SECRET",
+      ciphertext: "OEXVAT",
+      targetKey: "WAVE",
+      targetShifts: [22, 0, 21, 4],
+      masks: [[false, true, true, false, true, false]],
+      hint: "Hidden info decrypted with key WAVE",
+      startKey: "AAAA",
+      startShifts: [0, 0, 0, 0],
+      clue: "Kept hidden"
+    },
+    {
+      level: 5,
+      plaintext: "TREASURE",
+      ciphertext: "PRZEOMH",
+      targetKey: "WAVE",
+      targetShifts: [22, 0, 21, 4],
+      masks: [[false, true, false, true, false, true, false, false]],
+      hint: "Valuable chest gold decrypted with key WAVE",
+      startKey: "AAAA",
+      startShifts: [0, 0, 0, 0],
+      clue: "Sunken wealth"
+    }
+  ],
+  hard: [
+    {
+      level: 1,
+      plaintext: "OCEAN BLUE",
+      ciphertext: "QQHEP POYG",
+      targetKey: "CODE",
+      targetShifts: [2, 14, 3, 4],
+      masks: [
+        [false, true, false, true, false],
+        [false, true, false, false]
+      ],
+      hint: "Deep sea scenery decrypted with key CODE",
+      startKey: "CODE",
+      startShifts: [0, 0, 0, 0],
+      clue: "Deep water scene"
+    },
+    {
+      level: 2,
+      plaintext: "DEEP REEF",
+      ciphertext: "FSSN UHHJ",
+      targetKey: "CODE",
+      targetShifts: [2, 14, 3, 4],
+      masks: [
+        [false, true, false, false],
+        [false, true, false, false]
+      ],
+      hint: "Marine habitat decrypted with key CODE",
+      startKey: "CODE",
+      startShifts: [0, 0, 0, 0],
+      clue: "Marine ecosystem"
+    },
+    {
+      level: 3,
+      plaintext: "GOLD COIN",
+      ciphertext: "ICOR FQIY",
+      targetKey: "CODE",
+      targetShifts: [2, 14, 3, 4],
+      masks: [
+        [false, true, false, false],
+        [false, true, false, false]
+      ],
+      hint: "Sunken treasure coin decrypted with key CODE",
+      startKey: "CODE",
+      startShifts: [0, 0, 0, 0],
+      clue: "Pirate currency"
+    },
+    {
+      level: 4,
+      plaintext: "FIND KEY",
+      ciphertext: "HWQD OGY",
+      targetKey: "CODE",
+      targetShifts: [2, 14, 3, 4],
+      masks: [
+        [false, true, false, false],
+        [false, true, false]
+      ],
+      hint: "Cryptographic directive with key CODE",
+      startKey: "CODE",
+      startShifts: [0, 0, 0, 0],
+      clue: "Unlock the code"
+    },
+    {
+      level: 5,
+      plaintext: "CATCH MORE FISH",
+      ciphertext: "EOXGQ ACDF HLVL",
+      targetKey: "CODE",
+      targetShifts: [2, 14, 3, 4],
+      masks: [
+        [false, true, false, true, false],
+        [false, true, false, false],
+        [false, true, false, false]
+      ],
+      hint: "Angler primary goal decrypted with key CODE",
+      startKey: "CODE",
+      startShifts: [0, 0, 0, 0],
+      clue: "Angler's objective"
+    }
+  ]
+};
+
+/* ─── Handcrafted levels for Playfair Cipher Mastery ──────────────── */
+const PLAYFAIR_LEVELS = {
+  easy: [
+    {
+      level: 1,
+      plaintext: "HELX",
+      ciphertext: "GBQV",
+      targetKey: "WAVE",
+      targetShifts: [0],
+      masks: [[false, true, true, false]],
+      hint: "Greeting HELX decrypted with matrix WAVE",
+      startKey: "WAVE",
+      startShifts: [0],
+      clue: "A friendly word"
+    },
+    {
+      level: 2,
+      plaintext: "WATERX",
+      ciphertext: "AVYWQY",
+      targetKey: "WAVE",
+      targetShifts: [0],
+      masks: [[false, true, false, true, false, false]],
+      hint: "Essential liquid WATERX decrypted with matrix WAVE",
+      startKey: "WAVE",
+      startShifts: [0],
+      clue: "Essential for life"
+    },
+    {
+      level: 3,
+      plaintext: "SHARKX",
+      ciphertext: "OEPYQY",
+      targetKey: "WAVE",
+      targetShifts: [0],
+      masks: [[false, true, false, true, false, false]],
+      hint: "Ocean predator SHARKX decrypted with matrix WAVE",
+      startKey: "WAVE",
+      startShifts: [0],
+      clue: "Ocean predator"
+    },
+    {
+      level: 4,
+      plaintext: "CIPHER",
+      ciphertext: "BPRMDS",
+      targetKey: "WAVE",
+      targetShifts: [0],
+      masks: [[false, true, false, true, true, false]],
+      hint: "Secret code CIPHER decrypted with matrix WAVE",
+      startKey: "WAVE",
+      startShifts: [0],
+      clue: "Secret writing"
+    },
+    {
+      level: 5,
+      plaintext: "OCEANX",
+      ciphertext: "REVNWQ",
+      targetKey: "WAVE",
+      targetShifts: [0],
+      masks: [[false, true, true, false, false, false]],
+      hint: "Large expanse of salt water OCEANX decrypted with matrix WAVE",
+      startKey: "WAVE",
+      startShifts: [0],
+      clue: "Large body of salt water"
+    }
+  ],
+  medium: [
+    {
+      level: 1,
+      plaintext: "SALMON",
+      ciphertext: "RBNIMK",
+      targetKey: "SHARK",
+      targetShifts: [0],
+      masks: [[false, true, true, true, false, false]],
+      hint: "Pink fish SALMON decrypted with matrix SHARK",
+      startKey: "SHARK",
+      startShifts: [0],
+      clue: "Swims upstream"
+    },
+    {
+      level: 2,
+      plaintext: "ANCHOR",
+      ciphertext: "BMEFMT",
+      targetKey: "SHARK",
+      targetShifts: [0],
+      masks: [[false, true, true, true, false, false]],
+      hint: "Anchor decrypted with matrix SHARK",
+      startKey: "SHARK",
+      startShifts: [0],
+      clue: "Moors a ship"
+    },
+    {
+      level: 3,
+      plaintext: "PIRATE",
+      ciphertext: "OKGDSM",
+      targetKey: "SHARK",
+      targetShifts: [0],
+      masks: [[false, true, false, true, true, false]],
+      hint: "Pirate decrypted with matrix SHARK",
+      startKey: "SHARK",
+      startShifts: [0],
+      clue: "Ocean outlaw"
+    },
+    {
+      level: 4,
+      plaintext: "SECRET",
+      ciphertext: "TFDGDM",
+      targetKey: "SHARK",
+      targetShifts: [0],
+      masks: [[false, true, true, false, true, false]],
+      hint: "Secret decrypted with matrix SHARK",
+      startKey: "SHARK",
+      startShifts: [0],
+      clue: "Kept hidden"
+    },
+    {
+      level: 5,
+      plaintext: "TREASURE",
+      ciphertext: "TFDBSMSM",
+      targetKey: "SHARK",
+      targetShifts: [0],
+      masks: [[false, true, false, true, false, true, false, false]],
+      hint: "Sunken wealth decrypted with matrix SHARK",
+      startKey: "SHARK",
+      startShifts: [0],
+      clue: "Sunken wealth"
+    }
+  ],
+  hard: [
+    {
+      level: 1,
+      plaintext: "OCEANX BLUEX",
+      ciphertext: "REVNWQ KNVQYI",
+      targetKey: "OCTOPUS",
+      targetShifts: [0],
+      masks: [
+        [false, true, false, true, false, false],
+        [false, true, false, false, false, false]
+      ],
+      hint: "Deep water scene OCEANX BLUEX with matrix OCTOPUS",
+      startKey: "OCTOPUS",
+      startShifts: [0],
+      clue: "Deep water scene"
+    },
+    {
+      level: 2,
+      plaintext: "DEEPX REEF",
+      ciphertext: "GDFNW TFDG",
+      targetKey: "OCTOPUS",
+      targetShifts: [0],
+      masks: [
+        [false, true, false, false, false],
+        [false, true, false, false]
+      ],
+      hint: "Marine ecosystem with matrix OCTOPUS",
+      startKey: "OCTOPUS",
+      startShifts: [0],
+      clue: "Marine ecosystem"
+    },
+    {
+      level: 3,
+      plaintext: "GOLDX COIN",
+      ciphertext: "FNKDW HMGK",
+      targetKey: "OCTOPUS",
+      targetShifts: [0],
+      masks: [
+        [false, true, false, false, false],
+        [false, true, false, false]
+      ],
+      hint: "Pirate gold coins with matrix OCTOPUS",
+      startKey: "OCTOPUS",
+      startShifts: [0],
+      clue: "Pirate currency"
+    },
+    {
+      level: 4,
+      plaintext: "FINDX KEYX",
+      ciphertext: "QDKDW NFDX",
+      targetKey: "OCTOPUS",
+      targetShifts: [0],
+      masks: [
+        [false, true, false, false, false],
+        [false, true, false, false]
+      ],
+      hint: "Unlock the code with matrix OCTOPUS",
+      startKey: "OCTOPUS",
+      startShifts: [0],
+      clue: "Unlock the code"
+    },
+    {
+      level: 5,
+      plaintext: "CATCHX MOREX FISHX",
+      ciphertext: "EBEKNW NVQD GBNW",
+      targetKey: "OCTOPUS",
+      targetShifts: [0],
+      masks: [
+        [false, true, false, true, false, false],
+        [false, true, false, false, false],
+        [false, true, false, false, false]
+      ],
+      hint: "Angler motto with matrix OCTOPUS",
+      startKey: "OCTOPUS",
+      startShifts: [0],
+      clue: "Angler's objective"
+    }
+  ]
+};
+
 /* ─── Pools of alternative questions for replaying completed stages ─── */
 const ALTERNATIVE_LEVEL_POOLS = {
   easy: [
@@ -307,17 +719,115 @@ const caesarDecryptWord = (word, shift) => {
   return word.split('').map(ch => caesarDecryptChar(ch, shift)).join('');
 };
 
+/* ─── Vigenère Decrypt Helpers ───────────────────────────────────── */
+const vigenereDecryptChar = (char, shift) => {
+  const code = char.charCodeAt(0);
+  if (code >= 65 && code <= 90) {
+    return String.fromCharCode(((code - 65 - shift + 26) % 26 + 26) % 26 + 65);
+  }
+  return char;
+};
+
+const vigenereDecryptWord = (word, keyWord) => {
+  if (!keyWord) return word;
+  const upperKey = keyWord.toUpperCase();
+  let keyIndex = 0;
+  return word.split('').map(ch => {
+    const code = ch.charCodeAt(0);
+    if (code >= 65 && code <= 90) {
+      const keyChar = upperKey[keyIndex % upperKey.length];
+      const shift = (keyChar.charCodeAt(0) - 65) % 26;
+      keyIndex++;
+      return vigenereDecryptChar(ch, shift);
+    }
+    return ch;
+  }).join('');
+};
+
+/* ─── Playfair Decrypt Helpers ───────────────────────────────────── */
+const generatePlayfairMatrix = (key) => {
+  const cleanedKey = key.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, "");
+  const seen = new Set();
+  const matrixChars = [];
+  for (const c of cleanedKey) {
+    if (!seen.has(c)) {
+      seen.add(c);
+      matrixChars.push(c);
+    }
+  }
+  for (let c = 65; c <= 90; c++) {
+    const char = String.fromCharCode(c);
+    if (char === 'J') continue;
+    if (!seen.has(char)) {
+      seen.add(char);
+      matrixChars.push(char);
+    }
+  }
+  const matrix = [];
+  for (let r = 0; r < 5; r++) {
+    matrix.push(matrixChars.slice(r * 5, r * 5 + 5));
+  }
+  return matrix;
+};
+
+const findPlayfairPosition = (c, matrix) => {
+  for (let r = 0; r < 5; r++) {
+    for (let col = 0; col < 5; col++) {
+      if (matrix[r][col] === c) {
+        return [r, col];
+      }
+    }
+  }
+  return [0, 0];
+};
+
+const playfairDecryptWord = (word, key) => {
+  const matrix = generatePlayfairMatrix(key);
+  const cleaned = word.toUpperCase().replace(/J/g, "I").replace(/[^A-Z]/g, "");
+  if (cleaned.length === 0) return "";
+  const pairs = [];
+  for (let i = 0; i < cleaned.length; i += 2) {
+    if (i + 1 < cleaned.length) {
+      pairs.push(cleaned.substring(i, i + 2));
+    } else {
+      pairs.push(cleaned.substring(i, i + 1) + "X");
+    }
+  }
+  let result = "";
+  for (const pair of pairs) {
+    const a = pair[0];
+    const b = pair[1];
+    const [r1, c1] = findPlayfairPosition(a, matrix);
+    const [r2, c2] = findPlayfairPosition(b, matrix);
+    if (r1 === r2) {
+      result += matrix[r1][(c1 - 1 + 5) % 5];
+      result += matrix[r2][(c2 - 1 + 5) % 5];
+    } else if (c1 === c2) {
+      result += matrix[(r1 - 1 + 5) % 5][c1];
+      result += matrix[(r2 - 1 + 5) % 5][c2];
+    } else {
+      result += matrix[r1][c2];
+      result += matrix[r2][c1];
+    }
+  }
+  return result;
+};
+
 const FISH_EMOJIS = ['🐟', '🐠', '🐡', '🦈', '🐙', '🦑', '🦐'];
 
 export default function CipherGame() {
   const [offline, setOffline] = useState(false);
   const [profile, setProfile] = useState({ username: "Agent", xp: 0, level: 1 });
   const [session, setSession] = useState(null);
-  const [completedLevels, setCompletedLevels] = useState({ easy: [], medium: [], hard: [] });
+  const [completedLevels, setCompletedLevels] = useState({
+    caesar: { easy: [], medium: [], hard: [] },
+    vigenere: { easy: [], medium: [], hard: [] },
+    playfair: { easy: [], medium: [], hard: [] }
+  });
 
   /* Navigation Flow State: 'category' | 'difficulty' | 'stage' | 'game' */
   const [gameFlowStep, setGameFlowStep] = useState('category');
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState('caesar');
   const [tier, setTier] = useState('easy');
   const [levelIndex, setLevelIndex] = useState(0);
 
@@ -344,11 +854,12 @@ export default function CipherGame() {
   const [castProgress, setCastProgress] = useState(0);
   const [castTarget, setCastTarget] = useState({ x: 0, y: 0 });
   const [caughtFish, setCaughtFish] = useState(null);
+  const [activeLevelData, setActiveLevelData] = useState(null);
 
   const animationRef = useRef(null);
-  
-  const [activeLevelData, setActiveLevelData] = useState(null);
-  const levelData = activeLevelData || HANDCRAFTED_LEVELS[tier][levelIndex] || HANDCRAFTED_LEVELS.easy[0];
+
+  const currentLevelsData = selectedCategory === 'vigenere' ? VIGENERE_LEVELS : (selectedCategory === 'playfair' ? PLAYFAIR_LEVELS : HANDCRAFTED_LEVELS);
+  const levelData = activeLevelData || currentLevelsData[tier][levelIndex] || currentLevelsData.easy[0];
 
   useEffect(() => {
     async function loadProfile() {
@@ -368,9 +879,28 @@ export default function CipherGame() {
       }
       const progress = localStorage.getItem(`cq_completed_levels_${username}`);
       if (progress) {
-        setCompletedLevels(JSON.parse(progress));
-      } else {
-        setCompletedLevels({ easy: [], medium: [], hard: [] });
+        try {
+          const parsed = JSON.parse(progress);
+          if (parsed.easy !== undefined || parsed.medium !== undefined || parsed.hard !== undefined) {
+            setCompletedLevels({
+              caesar: {
+                easy: parsed.easy || [],
+                medium: parsed.medium || [],
+                hard: parsed.hard || []
+              },
+              vigenere: { easy: [], medium: [], hard: [] },
+              playfair: { easy: [], medium: [], hard: [] }
+            });
+          } else {
+            setCompletedLevels({
+              caesar: parsed.caesar || { easy: [], medium: [], hard: [] },
+              vigenere: parsed.vigenere || { easy: [], medium: [], hard: [] },
+              playfair: parsed.playfair || { easy: [], medium: [], hard: [] }
+            });
+          }
+        } catch (e) {
+          // fallback
+        }
       }
     }
     loadProfile();
@@ -379,8 +909,9 @@ export default function CipherGame() {
   useEffect(() => {
     if (gameFlowStep !== 'game') return;
 
-    const baseLevel = HANDCRAFTED_LEVELS[tier][levelIndex] || HANDCRAFTED_LEVELS.easy[0];
-    const isCompleted = completedLevels[tier]?.includes(levelIndex);
+    const baseLevel = currentLevelsData[tier][levelIndex] || currentLevelsData.easy[0];
+    const catProgress = completedLevels[selectedCategory || 'caesar'] || { easy: [], medium: [], hard: [] };
+    const isCompleted = catProgress[tier]?.includes(levelIndex);
     let loadedLevel = { ...baseLevel };
 
     if (isCompleted) {
@@ -653,8 +1184,12 @@ export default function CipherGame() {
     if (offline) localStorage.setItem('cq_offline_profile', JSON.stringify(updated));
 
     const nextCompleted = { ...completedLevels };
-    if (!nextCompleted[tier].includes(levelIndex)) {
-      nextCompleted[tier].push(levelIndex);
+    const activeCat = selectedCategory || 'caesar';
+    if (!nextCompleted[activeCat]) {
+      nextCompleted[activeCat] = { easy: [], medium: [], hard: [] };
+    }
+    if (!nextCompleted[activeCat][tier].includes(levelIndex)) {
+      nextCompleted[activeCat][tier].push(levelIndex);
       setCompletedLevels(nextCompleted);
       localStorage.setItem(`cq_completed_levels_${profile.username || 'Agent'}`, JSON.stringify(nextCompleted));
     }
@@ -710,18 +1245,19 @@ export default function CipherGame() {
       setTargetSegmentIndex(0);
       setAttemptsLeft(10);
       setLevelSolved(false);
-      
+
       generatePondFish();
       generatePondBubbles();
     }
   };
 
+  const catProgress = completedLevels[selectedCategory || 'caesar'] || { easy: [], medium: [], hard: [] };
   const stagesData = [
-    { id: 1, playable: true, completed: completedLevels[tier].includes(0), secretKey: 3 },
-    { id: 2, playable: true, completed: completedLevels[tier].includes(1), secretKey: 6 },
-    { id: 3, playable: true, completed: completedLevels[tier].includes(2), secretKey: 4 },
-    { id: 4, playable: completedLevels[tier].includes(2), completed: completedLevels[tier].includes(3), secretKey: 2 },
-    { id: 5, playable: completedLevels[tier].includes(3), completed: completedLevels[tier].includes(4), secretKey: 4 }
+    { id: 1, playable: true, completed: catProgress[tier]?.includes(0), secretKey: 3 },
+    { id: 2, playable: true, completed: catProgress[tier]?.includes(1), secretKey: 6 },
+    { id: 3, playable: true, completed: catProgress[tier]?.includes(2), secretKey: 4 },
+    { id: 4, playable: catProgress[tier]?.includes(2), completed: catProgress[tier]?.includes(3), secretKey: 2 },
+    { id: 5, playable: catProgress[tier]?.includes(3), completed: catProgress[tier]?.includes(4), secretKey: 4 }
   ];
 
   /* SVG Calculations */
@@ -765,6 +1301,8 @@ export default function CipherGame() {
             setGameFlowStep('stage');
           }}
           onBack={() => setGameFlowStep('category')}
+          activeCategory={selectedCategory || 'caesar'}
+          completedLevels={completedLevels}
         />
       )}
 
@@ -797,7 +1335,7 @@ export default function CipherGame() {
 
       {/* Interactive Active Game */}
       {gameFlowStep === 'game' && (
-        tier === 'easy' && levelIndex === 1 ? (
+        (selectedCategory === 'caesar' || !selectedCategory) && tier === 'easy' && levelIndex === 1 ? (
           <PacmanGame
             levelData={levelData}
             tier={tier}
@@ -805,7 +1343,7 @@ export default function CipherGame() {
             onBackToStages={() => setGameFlowStep('stage')}
             onReplayNewQuestion={handleReplayNewQuestion}
           />
-        ) : tier === 'easy' && levelIndex === 2 ? (
+        ) : (selectedCategory === 'caesar' || !selectedCategory) && tier === 'easy' && levelIndex === 2 ? (
           <CipherSprint
             levelData={levelData}
             tier={tier}
@@ -820,7 +1358,9 @@ export default function CipherGame() {
                 <span className="material-symbols-outlined">arrow_back</span>
                 Exit to Stages
               </button>
-              <div className="fg-header-category">Caesar Cipher</div>
+              <div className="fg-header-category" style={{ textTransform: 'capitalize' }}>
+                {selectedCategory || 'caesar'} Cipher
+              </div>
               <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
                 {tier.toUpperCase()} Mode — Stage {levelIndex + 1}
               </div>
