@@ -1284,54 +1284,53 @@
 
 .stage-card.completed .stage-card-status { color: #10b981; }
 
-/* ─── Stages progress bar ─── */
+/* ─── Stages progress section ─── */
+.stages-progress-section {
+  margin-top: 1.5rem;
+  padding: 16px 20px;
+  background: rgba(0, 229, 255, 0.04);
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  border-radius: 14px;
+}
+
+.stages-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.stages-progress-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.stages-progress-count {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #00e5ff;
+  letter-spacing: 0.04em;
+}
+
 .stages-progress-bar {
   position: relative;
-  height: 8px;
-  background: rgba(255,255,255,0.06);
+  height: 10px;
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 99px;
-  margin: 0.5rem 0;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .stages-progress-fill {
   position: absolute;
-  left: 0; top: 0; bottom: 0;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #00d1ff 0%, #00e5ff 60%, #00b4d8 100%);
   border-radius: 99px;
-  transition: width 0.4s ease;
-}
-
-.stages-progress-text {
-  display: block;
-  text-align: center;
-  font-size: 0.75rem;
-  color: #64748b;
-  margin-top: 4px;
-}
-
-/* ─── lobby-header-row back button ─── */
-.lobby-header-row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.lobby-back-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 8px;
-  color: #94a3b8;
-  font-size: 0.85rem;
-  padding: 6px 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.lobby-back-btn:hover {
-  background: rgba(255,255,255,0.06);
-  color: #e2e8f0;
-}
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}

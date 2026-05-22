@@ -45,12 +45,17 @@ export default function StageRoadmap({ game }) {
         })}
       </div>
 
-      <div className="stages-progress-bar">
-        <div
-          className="stages-progress-fill"
-          style={{ width: `${(completed.length / 5) * 100}%` }}
-        />
-        <span className="stages-progress-text">{completed.length} / 5 completed</span>
+      <div className="stages-progress-section">
+        <div className="stages-progress-header">
+          <span className="stages-progress-label">Stage Progress</span>
+          <span className="stages-progress-count">{completed.length} / 5 Completed</span>
+        </div>
+        <div className="stages-progress-bar">
+          <div
+            className="stages-progress-fill"
+            style={{ width: `${(completed.length / 5) * 100}%` }}
+          />
+        </div>
       </div>
     </div>
   );
