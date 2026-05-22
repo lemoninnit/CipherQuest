@@ -9,6 +9,7 @@ const ResetPasswordPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -93,7 +94,7 @@ const ResetPasswordPage = () => {
           {error && <div className="reset-error">{error}</div>}
           {success && <div className="reset-success">{success} Redirecting to login...</div>}
 
-          <form onSubmit={handleSubmit} className="reset-form">
+          <form onSubmit={handleSubmit} className="reset-form" autoComplete="off">
             <div className="form-group">
               <label>Operative ID</label>
               <div className="input-wrapper neon-glow-focus">
@@ -103,11 +104,12 @@ const ResetPasswordPage = () => {
                 <input
                   required
                   name="username"
-                  placeholder="e.g. NeoCipher_42"
+                  placeholder="Enter your operative ID"
                   type="text"
                   value={form.username}
                   onChange={onChange}
                   disabled={loading}
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -126,13 +128,14 @@ const ResetPasswordPage = () => {
                   value={form.email}
                   onChange={onChange}
                   disabled={loading}
+                  autoComplete="off"
                 />
               </div>
             </div>
 
             <div className="form-group">
               <label>New Access Cipher (Password)</label>
-              <div className="input-wrapper neon-glow-focus">
+              <div className="input-wrapper neon-glow-focus has-toggle">
                 <div className="input-icon">
                   <span className="material-symbols-outlined icon-20">lock</span>
                 </div>
@@ -140,12 +143,25 @@ const ResetPasswordPage = () => {
                   required
                   name="newPassword"
                   placeholder="••••••••"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={form.newPassword}
                   onChange={onChange}
                   minLength={6}
                   disabled={loading}
+                  autoComplete="new-password"
                 />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  disabled={loading}
+                >
+                  <span className="material-symbols-outlined icon-20">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
               </div>
             </div>
 
