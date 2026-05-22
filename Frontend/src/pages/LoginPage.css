@@ -175,6 +175,19 @@
   text-decoration: underline;
 }
 
+.forgot-cipher-link {
+  align-self: flex-end;
+  margin-top: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #00e5ff;
+  text-decoration: none;
+}
+
+.forgot-cipher-link:hover {
+  text-decoration: underline;
+}
+
 .input-wrapper {
   position: relative;
   background: rgba(3, 7, 18, 0.6);

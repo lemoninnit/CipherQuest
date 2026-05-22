@@ -10,6 +10,7 @@ const RegisterPage = () => {
   const [form, setForm]       = useState({ username: '', email: '', password: '' });
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -75,7 +76,7 @@ const RegisterPage = () => {
 
           {error && <div className="register-error">{error}</div>}
 
-          <form onSubmit={handleSubmit} className="register-form">
+          <form onSubmit={handleSubmit} className="register-form" autoComplete="off">
             <div className="form-group">
               <label>Operative ID</label>
               <div className="input-wrapper neon-glow-focus">
@@ -84,9 +85,10 @@ const RegisterPage = () => {
                 </div>
                 <input
                   required name="username" type="text"
-                  placeholder="johndoe@gmail.com"
+                  placeholder="Choose an operative ID"
                   value={form.username} onChange={onChange}
                   minLength={3} maxLength={30}
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -101,22 +103,35 @@ const RegisterPage = () => {
                   required name="email" type="email"
                   placeholder="operative@cipherquest.io"
                   value={form.email} onChange={onChange}
+                  autoComplete="off"
                 />
               </div>
             </div>
 
             <div className="form-group">
               <label>Access Cipher (Password)</label>
-              <div className="input-wrapper neon-glow-focus">
+              <div className="input-wrapper neon-glow-focus has-toggle">
                 <div className="input-icon">
                   <span className="material-symbols-outlined icon-20">lock</span>
                 </div>
                 <input
-                  required name="password" type="password"
+                  required name="password" type={showPassword ? 'text' : 'password'}
                   placeholder="••••••"
                   value={form.password} onChange={onChange}
                   minLength={6}
+                  autoComplete="new-password"
                 />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                >
+                  <span className="material-symbols-outlined icon-20">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
               </div>
             </div>
 
