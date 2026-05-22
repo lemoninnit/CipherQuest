@@ -12,7 +12,17 @@ const caesarDecryptChar = (char, shift) => {
 const caesarDecryptWord = (word, shift) =>
   word.split('').map(ch => caesarDecryptChar(ch, shift)).join('');
 
-const FISH_EMOJIS = ['🐟', '🐠', '🐡', '🦈', '🐙', '🦑', '🦐'];
+const applyShiftDelta = (curr, delta) => {
+  let val = curr + delta;
+  if (val < -25) {
+    val = val + 26;
+  } else if (val > 25) {
+    val = val - 26;
+  }
+  return val;
+};
+
+const FISH_EMOJIS = ['🐟', '🐠', '🐡', '🦈', '🦐'];
 const FISH_VALUES = [+1, -1, +2, -2, +3, -3, +5, -5];
 
 export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
@@ -21,9 +31,9 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
   /* ── state ── */
   const [phase, setPhase]                     = useState('ready');
-  const [activeShifts, setActiveShifts]       = useState([...levelData.startShifts ?? [1]]);
+  const [activeShifts, setActiveShifts]       = useState(cipherSegs.map(() => 0));
   const [targetSegIdx, setTargetSegIdx]       = useState(0);
-  const [attemptsLeft, setAttemptsLeft]       = useState(10);
+  const [attemptsLeft, setAttemptsLeft]       = useState(15);
   const [levelSolved, setLevelSolved]         = useState(false);
   const [basketShake, setBasketShake]         = useState(false);
   const [floatingXp, setFloatingXp]           = useState(null);
@@ -36,24 +46,42 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const [splash, setSplash]                   = useState({ show: false, x: 0, y: 0 });
   const [showExplanation, setShowExplanation] = useState(false);
   const [explanationStep, setExplanationStep] = useState(-1);
+  const [chumCount, setChumCount]             = useState(3);
+  const [hoveredFish, setHoveredFish]         = useState(null);
   const animationRef = useRef(null);
 
   /* ── derived ── */
   const decryptedSegs = cipherSegs.map((seg, i) =>
     caesarDecryptWord(seg, activeShifts[i] ?? 0)
   );
+
+  // Live hovered preview of decrypted segments (Only in Easy mode!)
+  const previewSegs = cipherSegs.map((seg, i) => {
+    if (i !== targetSegIdx || !hoveredFish) return decryptedSegs[i];
+    if (tier !== 'easy') return decryptedSegs[i];
+
+    const previewShift = applyShiftDelta(activeShifts[i] ?? 0, hoveredFish.value);
+    return caesarDecryptWord(seg, previewShift);
+  });
+
   const allCorrect = decryptedSegs.every((dec, i) => dec === words[i]);
 
   /* ── start game ── */
   const startGame = () => {
-    setActiveShifts([...(levelData.startShifts ?? levelData.targetShifts.map(() => 1))]);
+    setActiveShifts(cipherSegs.map(() => 0));
     setTargetSegIdx(0);
-    setAttemptsLeft(10);
+    setAttemptsLeft(15);
+    setChumCount(3);
     setLevelSolved(false);
     setPhase('playing');
     spawnFish();
     spawnBubbles();
   };
+
+  /* ── reset on levelData change ── */
+  useEffect(() => {
+    setPhase('ready');
+  }, [levelData]);
 
   /* ── detect solve ── */
   useEffect(() => {
@@ -65,16 +93,19 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   /* ── fish physics ── */
   const spawnFish = () => {
     const list = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
+      const value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
+      const emoji = FISH_EMOJIS[Math.floor(Math.random() * FISH_EMOJIS.length)];
+      const color = i % 2 === 0 ? 'var(--neon-cyan)' : 'var(--neon-green)';
       list.push({
         id: i,
-        value: FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)],
+        value,
         x: 10 + Math.random() * 80,
         y: 60 + Math.random() * 140,
         speed: 0.3 + Math.random() * 0.4,
         direction: Math.random() > 0.5 ? 1 : -1,
-        emoji: FISH_EMOJIS[Math.floor(Math.random() * FISH_EMOJIS.length)],
-        color: i % 2 === 0 ? 'var(--neon-cyan)' : 'var(--neon-green)',
+        emoji,
+        color,
       });
     }
     setFishList(list);
@@ -100,8 +131,18 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         let nx = f.x + f.speed * f.direction * 0.08;
         let nd = f.direction;
         let nv = f.value;
-        if (nx > 92) { nx = 92; nd = -1; nv = FISH_VALUES[Math.floor(Math.random() * 8)]; }
-        if (nx < 8)  { nx = 8;  nd = 1;  nv = FISH_VALUES[Math.floor(Math.random() * 8)]; }
+        
+        // Spawn fresh modifiers on screen bounce for variety
+        if (nx > 92) {
+          nx = 92;
+          nd = -1;
+          if (typeof nv === 'number') nv = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
+        }
+        if (nx < 8)  {
+          nx = 8;
+          nd = 1;
+          if (typeof nv === 'number') nv = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
+        }
         return { ...f, x: nx, direction: nd, value: nv };
       }));
       animationRef.current = requestAnimationFrame(tick);
@@ -111,17 +152,20 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   }, [phase]);
 
   /* ── casting ── */
-  const applyShiftDelta = (curr, delta) => {
-    let v = curr + delta;
-    while (v < 0) v += 26;
-    while (v > 25) v -= 26;
-    return v;
+
+  const handleChumWaters = () => {
+    if (chumCount <= 0 || isCasting) return;
+    setChumCount(prev => prev - 1);
+    spawnFish();
+    setSplash({ show: true, x: 50, y: 120 });
+    setTimeout(() => setSplash({ show: false, x: 0, y: 0 }), 600);
   };
 
   const castLineToFish = (fish) => {
     if (isCasting || levelSolved) return;
     setIsCasting(true);
     setCaughtFish(fish);
+    setHoveredFish(null);
     const tx = (fish.x / 100) * 500;
     const ty = fish.y;
     setCastTarget({ x: tx, y: ty });
@@ -155,17 +199,23 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           setBasketShake(true);
           setTimeout(() => setBasketShake(false), 400);
           setAttemptsLeft(prev => Math.max(0, prev - 1));
+          
           setTimeout(() => {
-            setFishList(prev => [...prev, {
-              id: Date.now(),
-              value: FISH_VALUES[Math.floor(Math.random() * 8)],
-              x: Math.random() > 0.5 ? 90 : 10,
-              y: 60 + Math.random() * 140,
-              speed: 0.3 + Math.random() * 0.4,
-              direction: Math.random() > 0.5 ? 1 : -1,
-              emoji: FISH_EMOJIS[Math.floor(Math.random() * FISH_EMOJIS.length)],
-              color: Math.random() > 0.5 ? 'var(--neon-pink)' : 'var(--neon-yellow)',
-            }]);
+            setFishList(prev => {
+              const value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
+              const emoji = FISH_EMOJIS[Math.floor(Math.random() * FISH_EMOJIS.length)];
+              const color = Math.random() > 0.5 ? 'var(--neon-cyan)' : 'var(--neon-green)';
+              return [...prev, {
+                id: Date.now(),
+                value,
+                x: Math.random() > 0.5 ? 90 : 10,
+                y: 60 + Math.random() * 140,
+                speed: 0.3 + Math.random() * 0.4,
+                direction: Math.random() > 0.5 ? 1 : -1,
+                emoji,
+                color,
+              }];
+            });
           }, 600);
         };
         requestAnimationFrame(reelIn);
@@ -274,8 +324,28 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   );
 
   /* ════ PLAYING ════ */
+  const currentShift = activeShifts[targetSegIdx] ?? 0;
+
   return (
     <div className="fg-root">
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 0.6; box-shadow: 0 0 4px rgba(0, 229, 255, 0.4); }
+          100% { opacity: 1; box-shadow: 0 0 12px rgba(0, 229, 255, 0.8); }
+        }
+        .golden-badge {
+          background: #ffd700 !important;
+          color: #000 !important;
+          font-weight: 800 !important;
+          box-shadow: 0 0 8px gold !important;
+        }
+        .scramble-badge {
+          background: #ff007f !important;
+          color: #fff !important;
+          font-weight: 800 !important;
+        }
+      `}</style>
+
       {showExplanation && (
         <div className="fg-recap-overlay" style={{ overflowY: 'auto', padding: '30px 10px' }}>
           <div className="fg-recap-card" style={{ maxWidth: '1100px', width: '95%', padding: '24px 32px' }}>
@@ -366,7 +436,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           {tier.toUpperCase()} Mode — Stage {levelData.level}
         </div>
         <div className={`fg-header-attempts ${attemptsLeft <= 3 ? 'low-attempts' : ''}`}>
-          Attempts: {attemptsLeft}
+          Casts Left: {attemptsLeft}
         </div>
       </header>
 
@@ -375,7 +445,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         <aside className="fg-sidebar">
           <div className={`fg-basket-card ${levelSolved ? 'active-target' : ''} ${basketShake ? 'shake' : ''}`}>
             <div className="fg-basket-container">🧺</div>
-            <div className="fg-basket-shift-value">+{activeShifts[targetSegIdx] ?? 0}</div>
+            <div className="fg-basket-shift-value">{currentShift >= 0 ? `+${currentShift}` : currentShift}</div>
             <span className="fg-basket-label">Basket Shift (Seg #{targetSegIdx + 1})</span>
             {floatingXp && (
               <div className="fg-xp-pop-indicator" style={{ left: `${floatingXp.x}%`, top: `${floatingXp.y}%` }}>
@@ -384,12 +454,37 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
             )}
           </div>
 
+          <button
+            className="fg-btn"
+            onClick={handleChumWaters}
+            disabled={chumCount <= 0 || isCasting}
+            style={{
+              width: '100%',
+              marginBottom: '16px',
+              padding: '12px',
+              fontWeight: 'bold',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              transition: 'all 0.2s',
+              background: chumCount > 0 ? 'rgba(0, 229, 255, 0.12)' : 'rgba(255, 255, 255, 0.03)',
+              border: chumCount > 0 ? '1px solid var(--neon-cyan)' : '1px solid rgba(255, 255, 255, 0.08)',
+              color: chumCount > 0 ? 'var(--neon-cyan)' : 'var(--text-muted)',
+              cursor: chumCount > 0 ? 'pointer' : 'not-allowed',
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>waves</span>
+            Chum the Waters ({chumCount} left)
+          </button>
+
           <div className="fg-cipher-ref">
             <p className="fg-ref-title">Target: Segment #{targetSegIdx + 1}</p>
-            <p className="fg-ref-hint"><span>Active Shift:</span><span className="fg-key">+{activeShifts[targetSegIdx] ?? 0}</span></p>
-            <p className="fg-ref-hint"><span>A →</span><span>{caesarDecryptChar('A', -(activeShifts[targetSegIdx] ?? 0))}</span></p>
-            <p className="fg-ref-hint"><span>B →</span><span>{caesarDecryptChar('B', -(activeShifts[targetSegIdx] ?? 0))}</span></p>
-            <p className="fg-ref-hint"><span>Z →</span><span>{caesarDecryptChar('Z', -(activeShifts[targetSegIdx] ?? 0))}</span></p>
+            <p className="fg-ref-hint"><span>Active Shift:</span><span className="fg-key">{currentShift >= 0 ? `+${currentShift}` : currentShift}</span></p>
+            <p className="fg-ref-hint"><span>A →</span><span>{caesarDecryptChar('A', -currentShift)}</span></p>
+            <p className="fg-ref-hint"><span>B →</span><span>{caesarDecryptChar('B', -currentShift)}</span></p>
+            <p className="fg-ref-hint"><span>Z →</span><span>{caesarDecryptChar('Z', -currentShift)}</span></p>
             <p className="fg-ref-formula">Formula:<br />Plain[i] = (Cipher[i] − Shift) mod 26</p>
           </div>
 
@@ -430,6 +525,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                 const segShift = activeShifts[wIdx] ?? 0;
                 const cipherWord = cipherSegs[wIdx];
                 const decWord = decryptedSegs[wIdx];
+                const prevWord = previewSegs[wIdx];
 
                 return (
                   <div key={wIdx} className={`fg-word-segment-card ${isTargeted ? 'targeted' : ''}`}
@@ -438,19 +534,29 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                       {cipherWord.split('').map((cipherCh, chIdx) => {
                         const maskList = levelData.masks[wIdx];
                         const isPrefilled = tier === 'easy' && maskList?.[chIdx];
-                        const letterToShow = isPrefilled ? word[chIdx] : decWord[chIdx];
-                        const isCorrect = letterToShow === word[chIdx];
-                        let cellClass = `fg-letter-cell ${isCorrect ? 'correct-plain' : 'incorrect-plain'}`;
-                        if (isPrefilled) cellClass = 'fg-letter-cell correct-plain';
+                        
+                        const isCorrect = decWord[chIdx] === word[chIdx];
+                        const isHovered = tier === 'easy' && hoveredFish && isTargeted;
+                        const letterToShow = (isPrefilled || isCorrect) ? word[chIdx] : (isHovered ? prevWord[chIdx] : '_');
+                        
+                        let cellClass = 'fg-letter-cell';
+                        if (isPrefilled || isCorrect) cellClass = 'fg-letter-cell correct-plain';
+                        
+                        const cellStyle = isHovered && !isPrefilled ? {
+                          borderColor: 'var(--neon-cyan)',
+                          animation: 'pulse 1s infinite alternate',
+                          color: 'var(--neon-cyan)'
+                        } : {};
+
                         return (
-                          <div key={chIdx} className={cellClass}>
+                          <div key={chIdx} className={cellClass} style={cellStyle}>
                             <span className="fg-cell-ciphertext">{cipherCh}</span>
                             <span className="fg-cell-plaintext">{letterToShow}</span>
                           </div>
                         );
                       })}
                     </div>
-                    <div className="fg-segment-basket-badge">Basket Shift: +{segShift}</div>
+                    <div className="fg-segment-basket-badge">Basket Shift: {segShift >= 0 ? `+${segShift}` : segShift}</div>
                   </div>
                 );
               })}
@@ -465,16 +571,23 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               {bubbles.map(b => (
                 <div key={b.id} className="fg-bubble" style={{ left: `${b.x}%`, width: `${b.size}px`, height: `${b.size}px`, animationDelay: `${b.delay}s`, animationDuration: `${b.duration}s` }} />
               ))}
-              {fishList.map(f => (
-                <div key={f.id} className="fg-fish-entity"
-                  style={{ left: `${f.x}%`, top: `${f.y}px`, transform: `scaleX(${f.direction})` }}
-                  onClick={() => castLineToFish(f)}>
-                  <span className="fg-fish-sprite" style={{ color: f.color }}>{f.emoji}</span>
-                  <div className={`fg-fish-badge ${f.value > 0 ? 'positive' : 'negative'}`} style={{ transform: `scaleX(${f.direction})` }}>
-                    {f.value > 0 ? `+${f.value}` : f.value}
+              {fishList.map(f => {
+                const badgeText = f.value > 0 ? `+${f.value}` : `${f.value}`;
+                const badgeClass = `fg-fish-badge ${f.value > 0 ? 'positive' : 'negative'}`;
+
+                return (
+                  <div key={f.id} className="fg-fish-entity"
+                    style={{ left: `${f.x}%`, top: `${f.y}px`, transform: `scaleX(${f.direction})` }}
+                    onMouseEnter={() => { if (!isCasting) setHoveredFish(f); }}
+                    onMouseLeave={() => setHoveredFish(null)}
+                    onClick={() => castLineToFish(f)}>
+                    <span className="fg-fish-sprite" style={{ color: f.color }}>{f.emoji}</span>
+                    <div className={badgeClass} style={{ transform: `scaleX(${f.direction})` }}>
+                      {badgeText}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               {isCasting && caughtFish && castProgress < 1 && (
                 <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
                   <span className="fg-fish-sprite" style={{ color: caughtFish.color }}>{caughtFish.emoji}</span>

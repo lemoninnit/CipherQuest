@@ -185,13 +185,7 @@ public class UserProgressService {
      * Hard  requires all 5 Medium levels complete.
      */
     private void assertTierUnlocked(Long userId, String cipher, String difficulty) {
-        if ("EASY".equals(difficulty)) return;
-        String prereq = "MEDIUM".equals(difficulty) ? "EASY" : "MEDIUM";
-        long done = progressRepository.countCompleted(userId, cipher, prereq);
-        if (done < LEVELS_PER_TIER) {
-            throw new IllegalStateException(String.format(
-                "Complete all %d %s %s levels first.", LEVELS_PER_TIER, cipher, prereq));
-        }
+        // No-op to support unlocked category research progress saving
     }
 
     private Map<String, Map<String, List<Integer>>> buildProgressMap(Long userId) {

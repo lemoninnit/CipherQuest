@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './CipherSprint.css';
+import '../../CipherGame.css';
 
 const decryptChar = (char, shift) => {
   const code = char.charCodeAt(0);
@@ -47,6 +48,28 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
   // Stats for the final recap
   const [attempts, setAttempts] = useState([]);
   const [firstTryForCurrent, setFirstTryForCurrent] = useState(true);
+
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [explanationStep, setExplanationStep] = useState(-1);
+
+  const handleVerifySubmit = () => {
+    setShowExplanation(true);
+    setExplanationStep(-1);
+    const total = levelData.plaintext.replace(/\s+/g, '').length;
+    let step = -1;
+    const iv = setInterval(() => {
+      step++;
+      setExplanationStep(step);
+      if (step >= total - 1) clearInterval(iv);
+    }, 600);
+  };
+
+  const handleCloseExplanation = () => {
+    setShowExplanation(false);
+    onVerifySubmit();
+  };
+
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
   // FX States
   const [feedbackText, setFeedbackText] = useState('');
@@ -236,6 +259,8 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
     setLives(5);
     setFirstTryForCurrent(true);
     setCoins([]);
+    setShowExplanation(false);
+    setExplanationStep(-1);
   }, [levelData]);
 
   const handleGateCollision = () => {
@@ -325,7 +350,88 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
   };
 
   return (
-    <div className="sprint-container">
+    <div className="sprint-container fg-root">
+      {showExplanation && (
+        <div className="fg-recap-overlay" style={{ overflowY: 'auto', padding: '30px 10px', zIndex: 9999 }}>
+          <div className="fg-recap-card" style={{ maxWidth: '1100px', width: '95%', padding: '24px 32px' }}>
+            <h2 className="fg-recap-title">🔬 Cryptographic Recap</h2>
+            <p className="fg-recap-subtitle">Why Did This Work?</p>
+            <div className="fg-recap-animation-box" style={{ minHeight: 'auto', padding: '16px', marginBottom: '16px' }}>
+              <div className="fg-recap-letter-row">
+                {levelData.plaintext.replace(/\s+/g, '').split('').map((plainCh, idx) => {
+                  const cipherCh = levelData.ciphertext.replace(/\s+/g, '')[idx];
+                  let wi = 0, acc = 0;
+                  for (let i = 0; i < words.length; i++) {
+                    if (idx < acc + words[i].length) { wi = i; break; }
+                    acc += words[i].length;
+                  }
+                  const seg = levelData.targetShifts[wi];
+                  return (
+                    <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}>
+                      <span className="fg-recap-char-cipher">{cipherCh}</span>
+                      <span className="fg-recap-math">-{seg}</span>
+                      <span className="fg-recap-arrow">↓</span>
+                      <span className="fg-recap-char-plain">{plainCh}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="fg-recap-explanation" style={{ background: 'rgba(255,255,255,0.015)' }}>
+              💡 <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is shifted backward by the key value.
+              By steer-racing the runner into correct lanes, you matched the secret Caesar shift.{' '}
+              <code>Plain = (Cipher − Key) mod 26</code> maps every letter back uniformly.
+              {levelData.targetShifts && levelData.targetShifts.map((shiftVal, sIdx) => {
+                const sAlph = alphabet.map((_, i) => alphabet[(i + shiftVal) % 26]);
+                return (
+                  <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
+                      🔑 Caesar Alphabet Shift Table {levelData.targetShifts.length > 1 ? `— Segment #${sIdx + 1}` : ''} (Key: +{shiftVal})
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
+                            {alphabet.map((ch, i) => (
+                              <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
+                                <div style={{ fontWeight: 'bold' }}>{ch}</div>
+                                <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
+                              </td>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
+                            {sAlph.map((ch, i) => (
+                              <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
+                                <div style={{ fontWeight: 'bold' }}>{ch}</div>
+                                <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>{ch.charCodeAt(0) - 64}</div>
+                              </td>
+                            ))}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="fg-recap-actions" style={{ marginTop: 16 }}>
+              <button
+                className="fg-btn fg-btn-primary"
+                onClick={handleCloseExplanation}
+                disabled={explanationStep < levelData.plaintext.replace(/\s+/g, '').length - 1}
+                style={{ background: 'var(--neon-green)', color: '#030914' }}
+              >
+                Unlock Next Objective ➔
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* HUD Header */}
       <header className="fg-header relative-header">
         <button className="fg-btn-back-nav" onClick={onBackToStages}>
@@ -338,17 +444,29 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
       </header>
 
       {sprintStep === 'ready' ? (
-        <div className="sprint-ready-card">
-          <h2>🏃‍♂️ Cipher Sprint Relay</h2>
-          <p className="sprint-ready-desc">
-            Baton relay decryption challenge! Steer the runner into the lane carrying the correct plaintext letter to decrypt checkpoints.
-          </p>
-          <div className="sprint-ready-instruction">
-            <strong>🎮 Controls:</strong> Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter based on the Caesar Shift Key clue!
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', width: '100%' }}>
+          <div className="vg-ready-card" style={{ maxWidth: 540 }}>
+            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🏃‍♂️</div>
+            <h2 style={{ color: 'var(--neon-cyan)', margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>Cipher Sprint Relay</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
+              Baton relay decryption challenge! Steer the runner into the lane carrying the correct plaintext letter to decrypt checkpoints.
+            </p>
+            <div style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: '16px 20px', marginBottom: '20px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Ciphertext</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-cyan)' }}>{levelData.ciphertext}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Hint</span>
+                <span style={{ color: '#a0c4d8', fontStyle: 'italic' }}>{levelData.hint}</span>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', lineHeight: 1.5 }}>
+              <strong style={{ color: 'var(--neon-green)' }}>How it works:</strong>{' '}
+              Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter based on the Caesar Shift Key clue to clear the checkpoint gate. Decoy letters will cause a crash!
+            </p>
+            <button className="vg-start-btn" onClick={handleStartSprint}>🚀 Start Relay Run</button>
           </div>
-          <button className="sprint-btn-primary" onClick={handleStartSprint}>
-            🚀 Start Relay Run
-          </button>
         </div>
       ) : (
         <div className="sprint-widescreen">
@@ -382,7 +500,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
                 <div className="fg-success-panel">
                   <h3>✅ SECURED!</h3>
                   <p>All checkpoints cleared successfully.</p>
-                  <button className="fg-btn fg-btn-primary" onClick={onVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: '10px' }}>
+                  <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: '10px' }}>
                     🚀 Verify & Submit
                   </button>
                   <button className="fg-btn fg-btn-secondary" onClick={onReplayNewQuestion} style={{ width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>

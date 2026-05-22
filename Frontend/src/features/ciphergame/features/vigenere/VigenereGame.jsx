@@ -124,6 +124,14 @@ export default function VigenereGame({
     spawnBubbles();
   };
 
+  useEffect(() => {
+    setPhase('ready');
+    setBuiltKey(Array(keyLen).fill(''));
+    setActiveSlot(0);
+    setWrongCount(0);
+    setHintRevealed(false);
+  }, [levelData]);
+
   /* ── physics loop ── */
   useEffect(() => {
     if (phase !== 'playing') return;

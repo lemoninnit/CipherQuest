@@ -1,4 +1,3 @@
-import React from "react";
 import "./CipherGame.css";
 
 import { useGameFlow } from "./core/hooks/useGameFlow";
@@ -16,16 +15,16 @@ import CipherSprint      from "./features/sprint/CipherSprint";
 // Vigenere game (its own fishing)
 import VigenereGame      from "./features/vigenere/VigenereGame";
 
-// Playfair placeholder
-import PlayfairPlaceholder from "./features/playfair/PlayfairPlaceholder";
+// Playfair game
+import PlayfairFishingGame from "./features/playfair/PlayfairFishingGame";
 
 export default function CipherGame() {
   const game = useGameFlow();
   const {
     category, difficulty, currentStage,
-    progress, isUnlocked,
+    progress,
     goToCategories, selectCategory, selectDifficulty,
-    completeStage, backToStages,
+    completeStage, backToStages, replayCurrentStage,
   } = game;
 
   /* ─── Active game renderer ─── */
@@ -37,7 +36,7 @@ export default function CipherGame() {
       tier,
       onBackToStages: backToStages,
       onVerifySubmit: completeStage,
-      onReplayNewQuestion: backToStages,
+      onReplayNewQuestion: replayCurrentStage,
     };
 
     switch (gameType) {
@@ -49,8 +48,8 @@ export default function CipherGame() {
         return <CipherSprint {...sharedProps} />;
       case 'VIGENERE_FISHING':
         return <VigenereGame {...sharedProps} />;
-      case 'PLAYFAIR_PLACEHOLDER':
-        return <PlayfairPlaceholder {...sharedProps} />;
+      case 'PLAYFAIR_FISHING':
+        return <PlayfairFishingGame {...sharedProps} />;
       default:
         return (
           <div className="cipher-container">

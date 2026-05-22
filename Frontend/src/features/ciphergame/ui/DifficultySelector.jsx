@@ -2,8 +2,8 @@ import React from 'react';
 
 const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caesar', completedLevels = {} }) => {
   const catProgress = completedLevels[activeCategory] || { easy: [], medium: [], hard: [] };
-  const isEasyCompleted   = (catProgress.easy   || []).length >= 5;
-  const isMediumCompleted = (catProgress.medium || []).length >= 5;
+  const isEasyCompleted   = true;
+  const isMediumCompleted = true;
 
   const categoryLabels = {
     caesar:   { easy: 'Simple Shifts',     medium: 'Compound Shifts',  hard: 'Full Key-Space' },

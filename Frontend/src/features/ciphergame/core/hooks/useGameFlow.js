@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../../../../context/AuthContext";
+import { userApi } from "../../../../api/cipherQuestApi";
 import {
   getCaesarLevelData, getCaesarGameType,
   getVigenereLevelData, getVigenereGameType,
@@ -11,24 +13,46 @@ const defaultProgress = () => ({
   playfair: { easy: [], medium: [], hard: [] },
 });
 
+const convertBackendProgress = (backendMap) => {
+  const result = defaultProgress();
+  if (!backendMap) return result;
+  
+  for (const [cipher, diffMap] of Object.entries(backendMap)) {
+    const frontendCipher = cipher.toLowerCase();
+    if (!result[frontendCipher]) continue;
+    
+    for (const [diff, levels] of Object.entries(diffMap)) {
+      const frontendDiff = diff.toLowerCase();
+      if (!result[frontendCipher][frontendDiff]) continue;
+      
+      result[frontendCipher][frontendDiff] = levels.map(
+        levelIndex => `${frontendCipher}-${frontendDiff}-${levelIndex}`
+      );
+    }
+  }
+  return result;
+};
+
 export function useGameFlow() {
-  const [progress, setProgress] = useState(() => {
-    try {
-      const saved = localStorage.getItem("cipher_progress_v2");
-      return saved ? JSON.parse(saved) : defaultProgress();
-    } catch { return defaultProgress(); }
-  });
+  const { user, refreshProfile } = useAuth();
+  const [progress, setProgress] = useState(defaultProgress());
 
   const [category,   setCategory]   = useState(null);
   const [difficulty, setDifficulty] = useState(null);
   const [currentStage, setCurrentStage] = useState(null);
 
+  // Sync progress state when user or user progress map changes
+  useEffect(() => {
+    if (user) {
+      const map = user.progress || user.progressMap;
+      if (map) {
+        setProgress(convertBackendProgress(map));
+      }
+    }
+  }, [user]);
+
   const isUnlocked = (cat, diff) => {
-    const catProg = progress[cat] || { easy: [], medium: [], hard: [] };
-    if (diff === "easy")   return true;
-    if (diff === "medium") return catProg.easy.length >= 5;
-    if (diff === "hard")   return catProg.medium.length >= 5;
-    return false;
+    return true;
   };
 
   const isStageCompleted = (cat, diff, stageIndex) => {
@@ -58,23 +82,41 @@ export function useGameFlow() {
     });
   };
 
-  const completeStage = () => {
+  const completeStage = async () => {
     if (!currentStage) return;
-    const { category: cat, difficulty: diff, id } = currentStage;
-    setProgress(prev => {
-      const catProg = prev[cat] || { easy: [], medium: [], hard: [] };
-      const diffArr = catProg[diff] || [];
-      const next = {
-        ...prev,
-        [cat]: {
-          ...catProg,
-          [diff]: diffArr.includes(id) ? diffArr : [...diffArr, id],
-        },
-      };
-      try { localStorage.setItem("cipher_progress_v2", JSON.stringify(next)); } catch {}
-      return next;
-    });
+    const { category: cat, difficulty: diff, stageIndex, id } = currentStage;
+    try {
+      const response = await userApi.saveProgress(cat, diff, stageIndex);
+      if (response && response.progressMap) {
+        setProgress(convertBackendProgress(response.progressMap));
+      }
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+    } catch (err) {
+      console.error("Failed to save progress to backend:", err);
+      // Fallback local update if API fails (offline mode)
+      setProgress(prev => {
+        const catProg = prev[cat] || { easy: [], medium: [], hard: [] };
+        const diffArr = catProg[diff] || [];
+        const next = {
+          ...prev,
+          [cat]: {
+            ...catProg,
+            [diff]: diffArr.includes(id) ? diffArr : [...diffArr, id],
+          },
+        };
+        try { localStorage.setItem("cipher_progress_v2", JSON.stringify(next)); } catch {}
+        return next;
+      });
+    }
     setCurrentStage(null);
+  };
+
+  const replayCurrentStage = () => {
+    if (!currentStage) return;
+    const { category: cat, difficulty: diff, stageIndex } = currentStage;
+    startStage(cat, diff, stageIndex);
   };
 
   const goToCategories   = () => { setCategory(null); setDifficulty(null); setCurrentStage(null); };
@@ -87,7 +129,7 @@ export function useGameFlow() {
     progress,
     category, difficulty, currentStage,
     isUnlocked, isStageCompleted,
-    startStage, completeStage,
+    startStage, completeStage, replayCurrentStage,
     goToCategories, selectCategory, selectDifficulty,
     backToDifficulty, backToStages,
   };

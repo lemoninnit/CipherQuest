@@ -1,16 +1,8 @@
-/**
- * Level data for each cipher category, difficulty, and stage.
- *
- * Caesar  → 3 game types: FISHING (CaesarFishingGame), PACMAN, SPRINT
- * Vigenere → 1 game type: FISHING (VigenereGame)
- * Playfair → placeholder
- *
- * levelData shape for Caesar FISHING / PACMAN / SPRINT:
- *   { level, ciphertext, plaintext, targetShifts, masks, hint }
- *
- * levelData shape for Vigenere FISHING:
- *   { level, ciphertext, plaintext, targetKey, hint }
- */
+import {
+  generatePlayfairMatrix,
+  preparePlayfairDigraphs,
+  transformPlayfairPair,
+} from "./playfair";
 
 /* ─────────────────── helpers ─────────────────── */
 function caesarEnc(text, shift) {
@@ -47,33 +39,46 @@ function makeMask(len, revealFraction = 0.5) {
 
 /* ─────────────────── Caesar levels ─────────────────── */
 // Stage cycling: stage 0→FISHING, stage 1→PACMAN, stage 2→SPRINT, 3→FISHING, 4→PACMAN
-// (5 stages per difficulty, distributed across 3 games)
-
 const caesarWords = {
   easy: [
-    { plain: 'HELLO',   shift: 3, hint: 'A common greeting' },
-    { plain: 'WORLD',   shift: 5, hint: 'The planet we live on' },
-    { plain: 'APPLE',   shift: 7, hint: 'A fruit that keeps the doctor away' },
-    { plain: 'BEACH',   shift: 4, hint: 'Sandy shores by the sea' },
-    { plain: 'CLOUD',   shift: 6, hint: 'Floats in the sky' },
+    { plain: 'HELLO', hint: 'A common greeting' },
+    { plain: 'WORLD', hint: 'The planet we live on' },
+    { plain: 'APPLE', hint: 'A fruit that keeps the doctor away' },
+    { plain: 'BEACH', hint: 'Sandy shores by the sea' },
+    { plain: 'CLOUD', hint: 'Floats in the sky' },
+    { plain: 'WATER', hint: 'Essential liquid for all living things' },
+    { plain: 'SHARK', hint: 'A fearsome ocean predator' },
+    { plain: 'CIPHER', hint: 'A secret way of writing' },
+    { plain: 'OCEAN', hint: 'A very large expanse of sea' },
+    { plain: 'SALMON', hint: 'Pink-fleshed fish that swims upstream' },
   ],
   medium: [
-    { plain: 'SHIELD',  shift: 11, hint: 'Used for protection in battle' },
-    { plain: 'FALCON',  shift: 13, hint: 'A fast bird of prey' },
-    { plain: 'BRIDGE',  shift: 9,  hint: 'Connects two sides' },
-    { plain: 'CASTLE',  shift: 15, hint: 'A royal fortress' },
-    { plain: 'DRAGON',  shift: 17, hint: 'A mythical fire-breather' },
+    { plain: 'SHIELD', hint: 'Used for protection in battle' },
+    { plain: 'FALCON', hint: 'A fast bird of prey' },
+    { plain: 'BRIDGE', hint: 'Connects two sides' },
+    { plain: 'CASTLE', hint: 'A royal fortress' },
+    { plain: 'DRAGON', hint: 'A mythical fire-breather' },
+    { plain: 'ANCHOR', hint: 'Heavy metal object used to moor a ship' },
+    { plain: 'SECRET', hint: 'Not meant to be known or seen by others' },
+    { plain: 'TREASURE', hint: 'Precious metals, gems, or other values' },
+    { plain: 'OCTOPUS', hint: 'Sea creature with eight tentacles' },
+    { plain: 'COMPASS', hint: 'Instrument for finding direction' },
   ],
   hard: [
-    { plain: 'CRYPTOGRAPHY', shift: 19, hint: 'The art of secret writing' },
-    { plain: 'JAVASCRIPT',   shift: 21, hint: 'A web programming language' },
-    { plain: 'ALGORITHM',    shift: 23, hint: 'A step-by-step problem solution' },
-    { plain: 'FREQUENCY',    shift: 17, hint: 'Rate of recurrence' },
-    { plain: 'SUBSTITUTION', shift: 25, hint: 'Replacing one thing with another' },
+    { plain: 'CRYPTOGRAPHY', hint: 'The art of secret writing' },
+    { plain: 'JAVASCRIPT', hint: 'A web programming language' },
+    { plain: 'ALGORITHM', hint: 'A step-by-step problem solution' },
+    { plain: 'FREQUENCY', hint: 'Rate of recurrence' },
+    { plain: 'SUBSTITUTION', hint: 'Replacing one thing with another' },
+    { plain: 'DECIPHERMENT', hint: 'The process of decoding secret messages' },
+    { plain: 'MATHEMATICS', hint: 'The science of numbers and space' },
+    { plain: 'POLYMORPHIC', hint: 'Occurring in several different forms' },
+    { plain: 'COINCIDENCE', hint: 'A remarkable concurrence of events' },
+    { plain: 'TRANSPOSITION', hint: 'Rearranging the positions of letters' },
   ],
 };
 
-function buildCaesarLevel(plain, shift, stageIndex, difficulty) {
+function buildCaesarLevel(plain, shift, stageIndex, difficulty, hint) {
   const ciphertext = caesarEnc(plain, shift);
   const len = plain.length;
   // Reveal more in easy, less in hard
@@ -89,15 +94,19 @@ function buildCaesarLevel(plain, shift, stageIndex, difficulty) {
     targetShifts: [shift],
     startShifts: [startShift],
     masks: [mask],
-    hint: caesarWords[difficulty][stageIndex].hint,
+    hint: hint,
   };
 }
 
 const GAME_CYCLE_CAESAR = ['FISHING', 'PACMAN', 'SPRINT', 'FISHING', 'PACMAN'];
 
 export function getCaesarLevelData(difficulty, stageIndex) {
-  const w = caesarWords[difficulty][stageIndex];
-  return buildCaesarLevel(w.plain, w.shift, stageIndex, difficulty);
+  const pool = caesarWords[difficulty];
+  const randIndex = Math.floor(Math.random() * pool.length);
+  const w = pool[randIndex];
+  // Randomize shift between 1 and 25
+  const shift = Math.floor(Math.random() * 25) + 1;
+  return buildCaesarLevel(w.plain, shift, stageIndex, difficulty, w.hint);
 }
 
 export function getCaesarGameType(stageIndex) {
@@ -105,21 +114,6 @@ export function getCaesarGameType(stageIndex) {
 }
 
 /* ─────────────────── Vigenere levels ─────────────────── */
-// Vigenere only has its own fishing game
-
-/*
- * Vigenère level design principles:
- *  - Easy:   2-letter keys, short words, one thematic clue about the key
- *  - Medium: 4-letter keys, 2-word phrases, key relates to theme
- *  - Hard:   5-7 letter keys, multi-word phrases, key hidden in a riddle
- *
- * Each entry includes:
- *   plain    — plaintext (uppercase)
- *   key      — keyword (uppercase)
- *   hint     — what the plaintext means
- *   keyClue  — a riddle / clue about the keyword itself
- *   keyInfo  — educational note shown in sidebar (why this key, what shifts it applies)
- */
 const vigenereData = {
   easy: [
     {
@@ -157,6 +151,41 @@ const vigenereData = {
       keyClue: 'Key hint: a hugs-and-kisses sign-off in a letter',
       keyInfo: 'X=23, O=14 — X is only 3 away from Z, so it produces a near-reverse shift; O shifts by 14.',
     },
+    {
+      plain: 'SUNSET',
+      key: 'RED',
+      hint: 'The daily disappearance of the sun below the horizon',
+      keyClue: 'Key hint: the color of fire or blood',
+      keyInfo: 'R=17, E=4, D=3 — simple 3-letter keyword to practice short cyclic shifting.'
+    },
+    {
+      plain: 'PALACE',
+      key: 'ROYAL',
+      hint: 'The official residence of a sovereign or president',
+      keyClue: 'Key hint: relating to a king or queen',
+      keyInfo: 'R=17, O=14, Y=24, A=0, L=11 — 5-letter key alternates shifts across letters.'
+    },
+    {
+      plain: 'DESERT',
+      key: 'SAND',
+      hint: 'A barren area of landscape where little precipitation occurs',
+      keyClue: 'Key hint: tiny loose grains of rock on a beach',
+      keyInfo: 'S=18, A=0, N=13, D=3 — A at position 2 leaves that letter completely unshifted.'
+    },
+    {
+      plain: 'GALAXY',
+      key: 'STAR',
+      hint: 'A system of millions or billions of stars, together with gas and dust',
+      keyClue: 'Key hint: a luminous point in the night sky',
+      keyInfo: 'S=18, T=19, A=0, R=17 — notice how A does not shift the letter under it.'
+    },
+    {
+      plain: 'CAVERN',
+      key: 'DEEP',
+      hint: 'A cave, especially a large one that is dark',
+      keyClue: 'Key hint: extending far down from the top or surface',
+      keyInfo: 'D=3, E=4, E=4, P=15 — repeating E shifts give two adjacent letters the same offset.'
+    }
   ],
   medium: [
     {
@@ -194,6 +223,41 @@ const vigenereData = {
       keyClue: 'Key hint: a shallow rocky formation just below the ocean surface',
       keyInfo: 'R=17, E=4, E=4, F=5 — two consecutive E shifts repeat; look for repeating patterns in the ciphertext.',
     },
+    {
+      plain: 'HIDDEN TREASURE',
+      key: 'GOLD',
+      hint: 'Valuable things that are pushed out of sight or buried',
+      keyClue: 'Key hint: a precious yellow metal',
+      keyInfo: 'G=6, O=14, L=11, D=3 — simple 4-letter key repeating over a multi-word phrase.'
+    },
+    {
+      plain: 'SECRET AGENT',
+      key: 'SPY',
+      hint: 'A person employed by a government to obtain information secretly',
+      keyClue: 'Key hint: to gather intelligence stealthily',
+      keyInfo: 'S=18, P=15, Y=24 — short key applied to a longer phrase, creating a high frequency of pattern repeats.'
+    },
+    {
+      plain: 'SATELLITE DISH',
+      key: 'WAVE',
+      hint: 'A bowl-shaped antenna used to receive signals from space',
+      keyClue: 'Key hint: a disturbance that travels through medium, like sound or ocean waves',
+      keyInfo: 'W=22, A=0, V=21, E=4 — a nice mix of large shifts (W, V) and small shifts (A, E).'
+    },
+    {
+      plain: 'ANCIENT SCROLL',
+      key: 'TOMB',
+      hint: 'A very old roll of parchment containing writing',
+      keyClue: 'Key hint: a large vault, typically underground, for burying the dead',
+      keyInfo: 'T=19, O=14, M=12, B=1 — the keyword shifts letters in a consistent pattern.'
+    },
+    {
+      plain: 'DEEP SEA TRENCH',
+      key: 'FISH',
+      hint: 'A very deep area of the ocean floor',
+      keyClue: 'Key hint: a limbless cold-blooded vertebrate animal with gills',
+      keyInfo: 'F=5, I=8, S=18, H=7 — a thematic word and keyword combo.'
+    }
   ],
   hard: [
     {
@@ -231,11 +295,48 @@ const vigenereData = {
       keyClue: 'Key hint: Claude Shannon — the mathematician who proved information-theoretic security in 1949',
       keyInfo: 'S=18, H=7, A=0, N=13, N=13, O=14, N=13 — three N-shifts and one A-shift. Shannon\'s proof showed that for perfect secrecy the key entropy must equal the message entropy — something a repeating Vigenère key cannot achieve.',
     },
+    {
+      plain: 'MATHEMATICAL SYMMETRY IN CRYPTOGRAPHY',
+      key: 'EULER',
+      hint: 'The balanced beauty of number theory in protecting secrets',
+      keyClue: 'Key hint: the Swiss mathematician Leonhard Euler whose totient theorem is fundamental to RSA encryption',
+      keyInfo: 'E=4, U=20, L=11, E=4, R=17 — 5-letter key repeating over a long mathematical phrase.'
+    },
+    {
+      plain: 'KNOWLEDGE IS THE ULTIMATE DEFENSE',
+      key: 'SHIELD',
+      hint: 'Understanding ciphers is your best protection against espionage',
+      keyClue: 'Key hint: a broad piece of armor held for protection',
+      keyInfo: 'S=18, H=7, I=8, E=4, L=11, D=3 — a solid key applied to an inspiring motto.'
+    },
+    {
+      plain: 'FREQUENCY SPECTRUM ANALYSIS SECURES CHANNELS',
+      key: 'HACKER',
+      hint: 'Analyzing signal frequencies to intercept or secure communications',
+      keyClue: 'Key hint: a person who uses computers to gain unauthorized access to data',
+      keyInfo: 'H=7, A=0, C=2, K=10, E=4, R=17 — A at index 2 offers a zero-shift hint in the cycle.'
+    },
+    {
+      plain: 'ALGORITHMS GOVERN THE DIGITAL WORLD',
+      key: 'BINARY',
+      hint: 'Mathematical rules controlling all computer processing and ciphers',
+      keyClue: 'Key hint: a system of numerical notation to the base 2',
+      keyInfo: 'B=1, I=8, N=13, A=0, R=17, Y=24 — 6-letter key with wide ranging shifts.'
+    },
+    {
+      plain: 'SECURE COMMUNICATIONS REQUIRE PERFECT KEY SYNC',
+      key: 'VERNAM',
+      hint: 'Both sides must keep their keys perfectly synchronized to decode messages',
+      keyClue: 'Key hint: Gilbert Vernam, who patented the One-Time Pad in 1919',
+      keyInfo: 'V=21, E=4, R=17, N=13, A=0, M=12 — Vernam ciphers utilize exclusive OR logic.'
+    }
   ],
 };
 
 export function getVigenereLevelData(difficulty, stageIndex) {
-  const d = vigenereData[difficulty][stageIndex];
+  const pool = vigenereData[difficulty];
+  const randIndex = Math.floor(Math.random() * pool.length);
+  const d = pool[randIndex];
   const ciphertext = vigEnc(d.plain, d.key);
   return {
     level: stageIndex + 1,
@@ -253,15 +354,250 @@ export function getVigenereGameType() {
 }
 
 /* ─────────────────── Playfair levels ─────────────────── */
-// Playfair is placeholder only
+const playfairData = {
+  easy: [
+    {
+      plain: 'HIDDEN MAP',
+      key: 'LAGOON',
+      hint: 'A secret chart that points toward buried treasure',
+      keyClue: 'A calm pool separated from the open sea',
+      lesson: 'Playfair reads two letters at a time. Repeated letters are split with filler X.',
+    },
+    {
+      plain: 'SAFE HARBOR',
+      key: 'ANCHOR',
+      hint: 'A protected place where ships can rest',
+      keyClue: 'Heavy metal gear that keeps a ship from drifting',
+      lesson: 'Same-row digraphs move left when decrypting.',
+    },
+    {
+      plain: 'SILVER KEY',
+      key: 'COMPASS',
+      hint: 'A bright object that can unlock a hidden door',
+      keyClue: 'A navigator uses it to find north',
+      lesson: 'Same-column digraphs move upward when decrypting.',
+    },
+    {
+      plain: 'TIDAL CAVE',
+      key: 'CURRENT',
+      hint: 'A sea-carved chamber that opens at low water',
+      keyClue: 'A moving stream of ocean water',
+      lesson: 'Rectangle pairs swap columns while staying on their own rows.',
+    },
+    {
+      plain: 'MOONLIT BAY',
+      key: 'BEACON',
+      hint: 'A quiet inlet brightened by night light',
+      keyClue: 'A signal light that guides sailors home',
+      lesson: 'The letter J shares I in the 5 by 5 matrix.',
+    },
+    {
+      plain: 'PIRATE GOLD',
+      key: 'ISLAND',
+      hint: 'Sunken loot hidden by ocean outlaws',
+      keyClue: 'A piece of land surrounded by water',
+      lesson: 'Digraph pairs are mapped onto a 5x5 key matrix.'
+    },
+    {
+      plain: 'DEEP WATER',
+      key: 'OCEAN',
+      hint: 'Vast blue sea depths',
+      keyClue: 'A very large expanse of sea',
+      lesson: 'Same-row digraphs shift to the left for decryption.'
+    },
+    {
+      plain: 'SHIP WRECK',
+      key: 'STORM',
+      hint: 'A sunken vessel on the ocean floor',
+      keyClue: 'Violent disturbance of the atmosphere with strong winds',
+      lesson: 'Same-column digraphs shift upward for decryption.'
+    },
+    {
+      plain: 'LOST MAPS',
+      key: 'CHART',
+      hint: 'Forgotten navigator guides',
+      keyClue: 'A sheet map for sea navigation',
+      lesson: 'Rectangle pairs swap columns while maintaining their row coordinates.'
+    },
+    {
+      plain: 'SAND DUNES',
+      key: 'BEACH',
+      hint: 'Windblown ridges by the shoreline',
+      keyClue: 'Sandy shore by the ocean',
+      lesson: 'Remember that I and J share a single slot in the Playfair matrix.'
+    }
+  ],
+  medium: [
+    {
+      plain: 'CIPHER ROUTE',
+      key: 'VOYAGER',
+      hint: 'A planned path for carrying a coded message',
+      keyClue: 'Someone who travels far across water or space',
+      lesson: 'Longer keys reshape the matrix and change every digraph decision.',
+    },
+    {
+      plain: 'SECRET SIGNAL',
+      key: 'HORIZON',
+      hint: 'A hidden message flashed to an ally',
+      keyClue: 'The line where sky appears to meet sea',
+      lesson: 'Use the matrix positions first, then choose row, column, or rectangle.',
+    },
+    {
+      plain: 'CORAL LOOKOUT',
+      key: 'MARINER',
+      hint: 'A reef station watching for danger',
+      keyClue: 'A person skilled at navigating the sea',
+      lesson: 'Double letters create filler X so each pair has two different letters.',
+    },
+    {
+      plain: 'BURIED LETTER',
+      key: 'SEASHELL',
+      hint: 'A message hidden below the sand',
+      keyClue: 'A beach object that sounds like the ocean',
+      lesson: 'Playfair hides single-letter frequency by encrypting pairs.',
+    },
+    {
+      plain: 'RIDDLE OF TIDES',
+      key: 'ASTROLABE',
+      hint: 'A puzzle about the ocean rising and falling',
+      keyClue: 'An old instrument used to read stars for navigation',
+      lesson: 'Every solved pair gives evidence for how the matrix is being used.',
+    },
+    {
+      plain: 'INTERCEPT CODE',
+      key: 'RECEIVER',
+      hint: 'Eavesdropping on a cipher transmission',
+      keyClue: 'A device or person that gets signals',
+      lesson: 'Repeating letters are automatically split using filler letter X.'
+    },
+    {
+      plain: 'OCEAN CURRENTS',
+      key: 'DRIFTING',
+      hint: 'Moving waters that carry ships',
+      keyClue: 'Floating along with the flow',
+      lesson: 'Every letter pair acts as coordinates in the 5x5 grid.'
+    },
+    {
+      plain: 'SUNKEN GALLEON',
+      key: 'SPANISH',
+      hint: 'A Spanish gold ship at the bottom of the sea',
+      keyClue: 'Relating to Spain',
+      lesson: 'Playfair resists frequency analysis because single letters do not map directly.'
+    },
+    {
+      plain: 'CIPHER SECRETS',
+      key: 'LOCKBOX',
+      hint: 'Encrypted details in a secure container',
+      keyClue: 'A metal box with a lock',
+      lesson: 'The key phrase dictates the layout of the 5x5 matrix.'
+    },
+    {
+      plain: 'STARRY NIGHTS',
+      key: 'NAVIGATOR',
+      hint: 'Clear skies used for guiding ships',
+      keyClue: 'The officer responsible for steering the ship',
+      lesson: 'Digraph encryption preserves letter coordinates in structured shapes.'
+    }
+  ],
+  hard: [
+    {
+      plain: 'JOURNAL HIDES THE FINAL COORDINATE',
+      key: 'CARTOGRAPHER',
+      hint: 'A logbook conceals the last map position',
+      keyClue: 'A maker of maps',
+      lesson: 'J becomes I before pairing, which changes both the text and the matrix.',
+    },
+    {
+      plain: 'THE LIGHTHOUSE WINDOW REVEALS A ROUTE',
+      key: 'LIGHTHOUSE',
+      hint: 'A tower signal exposes where to sail next',
+      keyClue: 'A coastal tower that warns ships',
+      lesson: 'Hard Playfair solving is pattern work: inspect matrix geometry, not just letters.',
+    },
+    {
+      plain: 'ANCIENT MARINERS GUARDED SILENT KEYS',
+      key: 'CONSTELLATION',
+      hint: 'Old sailors protected quiet cipher clues',
+      keyClue: 'A named pattern of stars',
+      lesson: 'A strong keyword spreads common letters across the square.',
+    },
+    {
+      plain: 'FREQUENCY CLUES FAIL AGAINST DIGRAPHS',
+      key: 'MONSOON CURRENT',
+      hint: 'Single-letter statistics become less reliable',
+      keyClue: 'Seasonal winds and moving seawater',
+      lesson: 'Playfair was stronger than simple substitution because it encrypts pairs.',
+    },
+    {
+      plain: 'RECTANGLES COLUMNS AND ROWS SOLVE THE VAULT',
+      key: 'ABYSSAL TRENCH',
+      hint: 'The three matrix moves open the final lock',
+      keyClue: 'The deepest kind of ocean valley',
+      lesson: 'Mastery means recognizing all three rules quickly under pressure.',
+    },
+    {
+      plain: 'CRYPTANALYSIS SOLVES THE MATRIX PUZZLES',
+      key: 'DECIPHERABLE',
+      hint: 'Applying math and logic to break the grid',
+      keyClue: 'Able to be decoded or understood',
+      lesson: 'Playfair was widely used in WWII because it could be computed by hand.'
+    },
+    {
+      plain: 'NAVIGATORS READ STARS FOR STEERING ROUTES',
+      key: 'CONSTELLATIONS',
+      hint: 'Guiding vessels using celestial patterns',
+      keyClue: 'Recognizable patterns of stars',
+      lesson: 'Remember to swap J for I when creating the matrix and mapping pairs.'
+    },
+    {
+      plain: 'DOUBLE LETTER PAIRINGS RECEIVE FILLER LETTERS',
+      key: 'SYMMETRICAL',
+      hint: 'Splitting identical sequential characters in the plaintext',
+      keyClue: 'Made up of exactly similar parts facing each other',
+      lesson: 'Plaintext splitting prevents double-letter repeats from mapping to the same output.'
+    },
+    {
+      plain: 'THE SUBMARINE STEALTHILY AVOIDS DETECTION',
+      key: 'HYDROPHONE',
+      hint: 'Undersea vessel running silent under the thermocline',
+      keyClue: 'An instrument for detecting underwater sound',
+      lesson: 'A wider keyword matrix layout makes rectangle patterns less obvious.'
+    },
+    {
+      plain: 'SYMMETRIC ENCRYPTION RULES THE SEA LANES',
+      key: 'CRYPTOSECURITY',
+      hint: 'Using identical keys for coding and decoding messages',
+      keyClue: 'Safety measures protecting communication channels',
+      lesson: 'Playfair is a symmetric cipher, meaning decryption is the exact reverse of encryption.'
+    }
+  ],
+};
+
 export function getPlayfairLevelData(difficulty, stageIndex) {
+  const pool = playfairData[difficulty];
+  const randIndex = Math.floor(Math.random() * pool.length);
+  const data = pool[randIndex];
+  const matrix = generatePlayfairMatrix(data.key);
+  const pairs = preparePlayfairDigraphs(data.plain);
+  const encryptedPairs = pairs.map((pair) => transformPlayfairPair(pair, matrix, 'encrypt'));
+
   return {
     level: stageIndex + 1,
     difficulty,
-    hint: 'Playfair cipher uses a 5×5 key matrix to encrypt digraphs.',
+    plaintext: pairs.join(' '),
+    displayPlaintext: data.plain,
+    ciphertext: encryptedPairs.map((pair) => pair.result).join(' '),
+    key: data.key,
+    matrix,
+    pairs,
+    cipherPairs: encryptedPairs.map((pair) => pair.result),
+    rules: encryptedPairs.map((pair) => pair.rule),
+    hint: data.hint,
+    keyClue: data.keyClue,
+    lesson: data.lesson,
   };
 }
 
 export function getPlayfairGameType() {
-  return 'PLAYFAIR_PLACEHOLDER';
+  return 'PLAYFAIR_FISHING';
 }

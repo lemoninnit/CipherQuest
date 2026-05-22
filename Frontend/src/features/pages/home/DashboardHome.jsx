@@ -135,42 +135,42 @@ const DashboardHome = () => {
             </div>
           </div>
 
-          {/* Locked Vigenère */}
-          <div className="cipher-card launcher-card dh-glass-card locked-module border-primary-hover">
+          {/* Vigenère Card */}
+          <div className="cipher-card launcher-card dh-glass-card active-module border-primary-hover" onClick={() => navigate('/dashboard/ciphergame')}>
             <div className="launcher-header">
-              <div className="cipher-icon-wrapper bg-locked-light">
-                <span className="material-symbols-outlined text-muted icon-24">vpn_key</span>
+              <div className="cipher-icon-wrapper bg-primary-light glow-primary-hover">
+                <span className="material-symbols-outlined text-cyan icon-24">vpn_key</span>
               </div>
-              <div className="card-status-badge locked">LOCKED</div>
+              <div className="card-status-badge available">AVAILABLE</div>
             </div>
             <div className="launcher-body">
               <h4 className="cipher-title">Vigenère Matrix</h4>
-              <p className="cipher-desc">Polyalphabetic substitution using a keyword cycle matrix. Unlocks after Easy tier Caesar.</p>
+              <p className="cipher-desc">Polyalphabetic substitution using a keyword cycle matrix.</p>
             </div>
             <div className="launcher-footer">
-              <span className="xp-text muted">+1,200 XP</span>
-              <button className="play-btn bg-locked text-muted" disabled>
-                <span className="material-symbols-outlined fill-1">lock</span>
+              <span className="xp-text">+1,200 XP</span>
+              <button className="play-btn bg-primary text-on-primary">
+                <span className="material-symbols-outlined fill-1">play_arrow</span>
               </button>
             </div>
           </div>
 
-          {/* Locked Playfair */}
-          <div className="cipher-card launcher-card dh-glass-card locked-module border-primary-hover">
+          {/* Playfair Card */}
+          <div className="cipher-card launcher-card dh-glass-card active-module border-primary-hover" onClick={() => navigate('/dashboard/ciphergame')}>
              <div className="launcher-header">
-              <div className="cipher-icon-wrapper bg-locked-light">
-                <span className="material-symbols-outlined text-muted icon-24">grid_view</span>
+              <div className="cipher-icon-wrapper bg-primary-light glow-primary-hover">
+                <span className="material-symbols-outlined text-cyan icon-24">grid_view</span>
               </div>
-              <div className="card-status-badge locked">LOCKED</div>
+              <div className="card-status-badge available">AVAILABLE</div>
             </div>
             <div className="launcher-body">
               <h4 className="cipher-title">Playfair Matrix</h4>
-              <p className="cipher-desc">Digraph substitution technique using a coordinate 5×5 grid. Unlocks after Vigenère.</p>
+              <p className="cipher-desc">Digraph substitution technique using a coordinate 5×5 grid.</p>
             </div>
             <div className="launcher-footer">
-              <span className="xp-text muted">+2,500 XP</span>
-              <button className="play-btn bg-locked text-muted" disabled>
-                <span className="material-symbols-outlined fill-1">lock</span>
+              <span className="xp-text">+2,500 XP</span>
+              <button className="play-btn bg-primary text-on-primary">
+                <span className="material-symbols-outlined fill-1">play_arrow</span>
               </button>
             </div>
           </div>
