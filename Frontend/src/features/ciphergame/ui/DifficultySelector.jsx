@@ -2,8 +2,19 @@ import React from 'react';
 
 const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caesar', completedLevels = {} }) => {
   const catProgress = completedLevels[activeCategory] || { easy: [], medium: [], hard: [] };
-  const isEasyCompleted = catProgress.easy?.length >= 5;
-  const isMediumCompleted = catProgress.medium?.length >= 5;
+  const isEasyCompleted   = (catProgress.easy   || []).length >= 5;
+  const isMediumCompleted = (catProgress.medium || []).length >= 5;
+
+  const categoryLabels = {
+    caesar:   { easy: 'Simple Shifts',     medium: 'Compound Shifts',  hard: 'Full Key-Space' },
+    vigenere: { easy: 'Short Keywords',    medium: 'Medium Keywords',   hard: 'Long Keywords' },
+    playfair: { easy: 'Basic Digraphs',    medium: 'Compound Digraphs', hard: 'Full Matrix' },
+  };
+  const labels = categoryLabels[activeCategory] || categoryLabels.caesar;
+
+  const easyCount   = (catProgress.easy   || []).length;
+  const mediumCount = (catProgress.medium || []).length;
+  const hardCount   = (catProgress.hard   || []).length;
 
   return (
     <div className="game-lobby">
@@ -21,64 +32,64 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
       </div>
 
       <div className="difficulty-grid">
-        {/* Easy Card */}
+        {/* Easy */}
         <div className="difficulty-card easy playable" onClick={() => onSelectDifficulty('easy')}>
           <div className="difficulty-card-header">
             <span className="diff-label">EASY TIER</span>
             <span className="diff-status active">PLAYABLE</span>
           </div>
-          <h3 className="diff-title">Easy Shift</h3>
-          <p className="diff-desc">
-            Simple numeric shifts between +1 and +9. Excellent for standard operative drills and mastering base substitution.
-          </p>
+          <h3 className="diff-title">{labels.easy}</h3>
+          <p className="diff-desc">Beginner-friendly challenges to master the cipher basics.</p>
           <div className="diff-meta">
-            <span>5 Levels</span>
+            <span>5 Levels ({easyCount}/5 done)</span>
             <span>+100 XP per level</span>
           </div>
         </div>
 
-        {/* Medium Card */}
-        <div 
-          className={`difficulty-card medium ${isEasyCompleted ? 'playable' : 'locked'}`} 
+        {/* Medium */}
+        <div
+          className={`difficulty-card medium ${isEasyCompleted ? 'playable' : 'locked'}`}
           onClick={() => { if (isEasyCompleted) onSelectDifficulty('medium'); }}
         >
           <div className="difficulty-card-header">
             <span className="diff-label">MEDIUM TIER</span>
-            {isEasyCompleted ? (
-              <span className="diff-status active">PLAYABLE</span>
-            ) : (
-              <span className="diff-status locked">LOCKED</span>
-            )}
+            {isEasyCompleted
+              ? <span className="diff-status active">PLAYABLE</span>
+              : <span className="diff-status locked">🔒 LOCKED</span>
+            }
           </div>
-          <h3 className="diff-title">Compound Shift</h3>
+          <h3 className="diff-title">{labels.medium}</h3>
           <p className="diff-desc">
-            Moderate numeric shifts. Requires active subtraction and double-step fish decryption. Complete Easy tier to unlock.
+            {isEasyCompleted
+              ? 'Intermediate challenges with more complex keys.'
+              : 'Complete all 5 Easy stages to unlock.'}
           </p>
           <div className="diff-meta">
-            <span>5 Levels</span>
+            <span>5 Levels ({mediumCount}/5 done)</span>
             <span>+250 XP per level</span>
           </div>
         </div>
 
-        {/* Hard Card */}
-        <div 
-          className={`difficulty-card hard ${isMediumCompleted ? 'playable' : 'locked'}`} 
+        {/* Hard */}
+        <div
+          className={`difficulty-card hard ${isMediumCompleted ? 'playable' : 'locked'}`}
           onClick={() => { if (isMediumCompleted) onSelectDifficulty('hard'); }}
         >
           <div className="difficulty-card-header">
             <span className="diff-label">HARD TIER</span>
-            {isMediumCompleted ? (
-              <span className="diff-status active">PLAYABLE</span>
-            ) : (
-              <span className="diff-status locked">LOCKED</span>
-            )}
+            {isMediumCompleted
+              ? <span className="diff-status active">PLAYABLE</span>
+              : <span className="diff-status locked">🔒 LOCKED</span>
+            }
           </div>
-          <h3 className="diff-title">Dynamic Chaos Shift</h3>
+          <h3 className="diff-title">{labels.hard}</h3>
           <p className="diff-desc">
-            Full key-space shifts (1–25). Includes compound decrypt rules and rapidly moving obstacles. Complete Medium tier to unlock.
+            {isMediumCompleted
+              ? 'Advanced challenges using full key-space encryption.'
+              : 'Complete all 5 Medium stages to unlock.'}
           </p>
           <div className="diff-meta">
-            <span>5 Levels</span>
+            <span>5 Levels ({hardCount}/5 done)</span>
             <span>+500 XP per level</span>
           </div>
         </div>
@@ -88,4 +99,3 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
 };
 
 export default DifficultySelector;
-

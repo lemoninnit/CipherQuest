@@ -1193,3 +1193,122 @@
 .recap-action-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* ─── Stage Roadmap Grid ─── */
+.stages-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin: 1.5rem 0 1rem;
+}
+
+@media (max-width: 700px) {
+  .stages-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.stage-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 1rem 0.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #e2e8f0;
+}
+
+.stage-card:hover {
+  background: rgba(99,102,241,0.15);
+  border-color: rgba(99,102,241,0.5);
+  transform: translateY(-2px);
+}
+
+.stage-card.completed {
+  background: rgba(16,185,129,0.12);
+  border-color: rgba(16,185,129,0.4);
+}
+
+.stage-card.completed:hover {
+  background: rgba(16,185,129,0.2);
+}
+
+.stage-card-number {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.stage-card-icon span {
+  font-size: 1.6rem;
+  color: #6366f1;
+}
+
+.stage-card.completed .stage-card-icon span {
+  color: #10b981;
+}
+
+.stage-card-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.stage-card.completed .stage-card-status { color: #10b981; }
+
+/* ─── Stages progress bar ─── */
+.stages-progress-bar {
+  position: relative;
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 99px;
+  margin: 0.5rem 0;
+  overflow: hidden;
+}
+
+.stages-progress-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.stages-progress-text {
+  display: block;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* ─── lobby-header-row back button ─── */
+.lobby-header-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.lobby-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lobby-back-btn:hover {
+  background: rgba(255,255,255,0.06);
+  color: #e2e8f0;
+}
