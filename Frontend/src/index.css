@@ -278,6 +278,55 @@ body {
   color: rgba(187, 201, 207, 0.4);
 }
 
+.input-wrapper input:-webkit-autofill,
+.input-wrapper input:-webkit-autofill:hover,
+.input-wrapper input:-webkit-autofill:focus,
+.input-wrapper input:-webkit-autofill:active {
+  -webkit-text-fill-color: #ffffff;
+  caret-color: #ffffff;
+  box-shadow: 0 0 0 1000px #1e232d inset;
+  border-radius: 14px;
+  transition: background-color 9999s ease-out;
+}
+
+.input-wrapper.has-toggle input {
+  padding-right: 52px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.password-toggle:hover:not(:disabled),
+.password-toggle:focus-visible {
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.08);
+  outline: none;
+}
+
+.password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.password-toggle .material-symbols-outlined {
+  color: currentColor;
+}
+
 .label-row {
   display: flex;
   justify-content: space-between;

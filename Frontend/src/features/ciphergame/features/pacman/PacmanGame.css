@@ -536,3 +536,12 @@
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
+
+.circle-pellet-badge.score-dot {
+  width: 8px !important;
+  height: 8px !important;
+  background: #ffeb3b !important; /* classic yellow dot color */
+  border: none !important;
+  box-shadow: 0 0 8px #facc15, 0 0 3px rgba(255,255,255,0.9) !important;
+}
+

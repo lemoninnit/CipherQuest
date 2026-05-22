@@ -10,6 +10,7 @@ const LoginPage = () => {
   const [form, setForm]       = useState({ username: '', password: '' });
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -60,10 +61,10 @@ const LoginPage = () => {
 
       <section className="login-form-section">
         <div className="maze-pattern md-hidden absolute-full opacity-10"></div>
-        <div className="glass-card login-card">
+        <div className="login-card">
           <div className="login-header">
             <div className="login-logo">
-              <span className="material-symbols-outlined fill-1 icon-48">enhanced_encryption</span>
+              <span className="material-symbols-outlined fill-1">enhanced_encryption</span>
               <span className="logo-text">CipherQuest</span>
             </div>
             <h1>Welcome Back, Decoder</h1>
@@ -72,7 +73,7 @@ const LoginPage = () => {
 
           {error && <div className="login-error">{error}</div>}
 
-          <form onSubmit={handleSubmit} className="login-form">
+          <form onSubmit={handleSubmit} className="login-form" autoComplete="off">
             <div className="form-group">
               <label>Operative ID</label>
               <div className="input-wrapper neon-glow-focus">
@@ -81,27 +82,40 @@ const LoginPage = () => {
                 </div>
                 <input
                   required name="username" type="text"
-                  placeholder="e.g. NeoCipher_42"
+                  placeholder="Enter your operative ID"
                   value={form.username} onChange={onChange}
+                  autoComplete="off"
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <div className="label-row">
-                <label>Access Cipher</label>
-                <Link to="/reset-password">Forgot Access Cipher?</Link>
-              </div>
-              <div className="input-wrapper neon-glow-focus">
+              <label>Access Cipher</label>
+              <div className="input-wrapper neon-glow-focus has-toggle">
                 <div className="input-icon">
                   <span className="material-symbols-outlined icon-20">lock</span>
                 </div>
                 <input
-                  required name="password" type="password"
+                  required name="password" type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={form.password} onChange={onChange}
+                  autoComplete="new-password"
                 />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((visible) => !visible)}
+                >
+                  <span className="material-symbols-outlined icon-20">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
               </div>
+              <Link to="/reset-password" className="forgot-cipher-link">
+                Forgot Access Cipher?
+              </Link>
             </div>
 
             <button type="submit" className="submit-btn" disabled={loading}>

@@ -23,15 +23,15 @@ const StageCompletedRecap = ({ stage, onClose, onPlayAgain }) => {
           <div className="archive-details">
             <div className="archive-row">
               <span className="archive-label">TARGET WORD</span>
-              <span className="archive-value word-glow">HELLO</span>
+              <span className="archive-value word-glow">DYNAMIC POOL</span>
             </div>
             <div className="archive-row">
               <span className="archive-label">DECRYPTION HINT</span>
-              <span className="archive-value">A word used for greetings</span>
+              <span className="archive-value">Randomized question per replay</span>
             </div>
             <div className="archive-row">
-              <span className="archive-label">SECRET KEY DISCOVERED</span>
-              <span className="archive-value key-glow">Shift Shift: {stage.secretKey || 3}</span>
+              <span className="archive-label">SECRET KEY RANGE</span>
+              <span className="archive-value key-glow">Shift: Randomized (1-15)</span>
             </div>
             <div className="archive-row">
               <span className="archive-label">SCORE GAINED</span>
@@ -41,7 +41,7 @@ const StageCompletedRecap = ({ stage, onClose, onPlayAgain }) => {
 
           <div className="archive-footer-note">
             <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--primary)' }}>terminal</span>
-            <p>This stage has already been decrypted. To practice or challenge new records, re-randomization occurs in Medium and Hard tiers.</p>
+            <p>This stage has already been decrypted. To practice or challenge new records, re-randomization of questions and shift keys occurs on every attempt.</p>
           </div>
         </div>
 
