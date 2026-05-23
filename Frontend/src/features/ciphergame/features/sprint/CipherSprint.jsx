@@ -11,20 +11,37 @@ const decryptChar = (char, shift) => {
 };
 
 export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
-  // Target shifts and masked indices (supporting multi-word levels in hard tier)
-  const maskedIndices = [];
-  levelData.masks.forEach((wordMask, segmentIdx) => {
-    wordMask.forEach((m, charIdx) => {
-      if (!m) {
-        // Calculate global character index in levelData.plaintext
-        const prefixWords = levelData.plaintext.split(' ').slice(0, segmentIdx);
-        const spaceCount = segmentIdx;
-        const prefixLen = prefixWords.reduce((sum, w) => sum + w.length, 0);
-        const globalIdx = prefixLen + spaceCount + charIdx;
-        maskedIndices.push(globalIdx);
+  // Calculate hints for EASY and MEDIUM tiers
+  const hintIndices = new Set();
+  if (tier === 'easy' || tier === 'medium') {
+    const numHints = tier === 'easy' ? 2 : 14; // 2 hints for easy, 4 hints for medium (since it's a long sentence)
+    let hintsFound = 0;
+    for (let i = 0; i < levelData.plaintext.length; i++) {
+      if (levelData.plaintext[i] !== ' ' && levelData.masks && levelData.masks[0][i]) {
+        hintIndices.add(i);
+        hintsFound++;
+        if (hintsFound >= numHints) break;
       }
-    });
-  });
+    }
+    // Fallback if masks didn't provide enough
+    if (hintsFound < numHints) {
+      for (let i = 0; i < levelData.plaintext.length; i++) {
+        if (levelData.plaintext[i] !== ' ' && !hintIndices.has(i)) {
+          hintIndices.add(i);
+          hintsFound++;
+          if (hintsFound >= numHints) break;
+        }
+      }
+    }
+  }
+
+  // Force characters to be masked (required to solve), except hints in easy tier
+  const maskedIndices = [];
+  for (let i = 0; i < levelData.plaintext.length; i++) {
+    if (levelData.plaintext[i] !== ' ' && !hintIndices.has(i)) {
+      maskedIndices.push(i);
+    }
+  }
 
   // State
   const [sprintStep, setSprintStep] = useState('ready'); // 'ready' | 'running' | 'explanation' | 'gameover' | 'finished'
@@ -36,7 +53,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
   const [isCrashing, setIsCrashing] = useState(false);
   const [crashMessage, setCrashMessage] = useState('');
   const [lives, setLives] = useState(5);
-  
+
   // Refs and animations
   const collisionHandledRef = useRef(false);
   const prevLaneRef = useRef(1);
@@ -48,6 +65,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
   // Stats for the final recap
   const [attempts, setAttempts] = useState([]);
   const [firstTryForCurrent, setFirstTryForCurrent] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
 
   const [showExplanation, setShowExplanation] = useState(false);
   const [explanationStep, setExplanationStep] = useState(-1);
@@ -151,7 +169,18 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
     setAttempts([]);
     setLives(5);
     setFirstTryForCurrent(true);
+    setIsPaused(false);
     spawnCoinsAndGate();
+  };
+
+  // Retry from Checkpoint (Game Over)
+  const handleRetryFromCheckpoint = () => {
+    setSprintStep('running');
+    setLives(5); // Refill lives
+    setFirstTryForCurrent(true);
+    setIsCrashing(false);
+    setIsPaused(false);
+    spawnCoinsAndGate(); // Spawns coins for the CURRENT currentMaskIndex
   };
 
   // Keyboard steer
@@ -159,6 +188,13 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
     if (sprintStep !== 'running' || isCrashing) return;
 
     const handleKeyDown = (e) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        setIsPaused(prev => !prev);
+      }
+
+      if (isPaused) return; // Prevent steering while paused
+
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
         setRunnerLane((prev) => Math.max(0, prev - 1));
       } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
@@ -167,7 +203,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sprintStep, isCrashing]);
+  }, [sprintStep, isCrashing, isPaused]);
 
   // Handle lane change transition tilt effect
   useEffect(() => {
@@ -175,7 +211,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
       const dir = runnerLane < prevLaneRef.current ? 'moving-up' : 'moving-down';
       setLaneChangeEffect(dir);
       prevLaneRef.current = runnerLane;
-      
+
       const timer = setTimeout(() => {
         setLaneChangeEffect(null);
       }, 180);
@@ -185,7 +221,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
 
   // Main game tick (scrolling and collision)
   useEffect(() => {
-    if (sprintStep !== 'running' || isCrashing) return;
+    if (sprintStep !== 'running' || isCrashing || isPaused) return;
 
     const updatePhysics = () => {
       const speed = isBoosting ? 1.5 : 0.22;
@@ -206,7 +242,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
         return prevCoins.map((coin) => {
           if (coin.eaten) return coin;
           const nextX = coin.x - speed;
-          
+
           if (nextX <= 22 && nextX >= 10 && coin.lane === runnerLane) {
             setCollectedKey(coin.char);
             setIsSpinning(true);
@@ -250,7 +286,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
 
     requestRef.current = requestAnimationFrame(updatePhysics);
     return () => cancelAnimationFrame(requestRef.current);
-  }, [sprintStep, runnerLane, isCrashing, coins, gateX, collectedKey, isBoosting, currentTargetChar]);
+  }, [sprintStep, runnerLane, isCrashing, isPaused, coins, gateX, collectedKey, isBoosting, currentTargetChar]);
 
   useEffect(() => {
     setSprintStep('ready');
@@ -261,6 +297,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
     setCoins([]);
     setShowExplanation(false);
     setExplanationStep(-1);
+    setIsPaused(false);
   }, [levelData]);
 
   const handleGateCollision = () => {
@@ -291,7 +328,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
           collisionHandledRef.current = false;
           setCurrentMaskIndex((prev) => prev + 1);
           setFirstTryForCurrent(true);
-          
+
           const nextIndex = currentMaskIndex + 1;
           const tempIdx = maskedIndices[nextIndex] ?? 0;
           const tempTargetChar = levelData.plaintext[tempIdx] ?? '';
@@ -326,15 +363,15 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
 
       setIsCrashing(true);
       setFirstTryForCurrent(false);
-      
+
       setLives((prevLives) => {
         const nextLives = prevLives - 1;
         if (nextLives <= 0) {
           setSprintStep('gameover');
         } else {
-          const reason = charUsed 
-            ? `Wrong Letter! Cipher '${currentBatonLetter}' with shift -${currentShiftKey} decrypts to '${currentTargetChar}'. You collected decoy letter '${charUsed}'.`
-            : `Gate Shut! You didn't collect any letter coin to unlock the checkpoint gate. The correct decrypted letter was '${currentTargetChar}'.`;
+          const reason = charUsed
+            ? `Wrong Letter! You collected decoy letter '${charUsed}'. Try again to decrypt cipher '${currentBatonLetter}'!`
+            : `Gate Shut! You didn't collect any letter coin to unlock the checkpoint gate. Try again to decrypt cipher '${currentBatonLetter}'!`;
           setCrashMessage(reason);
           setSprintStep('explanation');
         }
@@ -446,11 +483,12 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
       {sprintStep === 'ready' ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', width: '100%' }}>
           <div className="vg-ready-card" style={{ maxWidth: 540 }}>
-            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🏃‍♂️</div>
+            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🏃♂️</div>
             <h2 style={{ color: 'var(--neon-cyan)', margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>Cipher Sprint Relay</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
               Baton relay decryption challenge! Steer the runner into the lane carrying the correct plaintext letter to decrypt checkpoints.
             </p>
+
             <div style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: '16px 20px', marginBottom: '20px', textAlign: 'left' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Ciphertext</span>
@@ -491,6 +529,28 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
                     Plain = Cipher - {currentShiftKey}
                   </span>
                 </div>
+                {/* Pause Button */}
+                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
+                  <button
+                    onClick={() => setIsPaused(p => !p)}
+                    style={{
+                      background: isPaused ? 'var(--neon-green)' : 'rgba(255,255,255,0.1)',
+                      color: isPaused ? '#000' : '#fff',
+                      border: 'none',
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {isPaused ? '▶ Resume (Space)' : '⏸ Pause & Think (Space)'}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -513,7 +573,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
                   <p style={{ fontSize: '0.74rem', lineHeight: '1.4', color: '#fda4af', margin: '8px 0' }}>
                     Runner crashed too many times and ran out of lives.
                   </p>
-                  <button className="fg-btn" onClick={handleStartSprint} style={{ width: '100%', background: 'var(--neon-red)', color: '#fff', border: 'none', marginTop: '10px' }}>
+                  <button className="fg-btn" onClick={handleRetryFromCheckpoint} style={{ width: '100%', background: 'var(--neon-red)', color: '#fff', border: 'none', marginTop: '10px' }}>
                     🔄 Try Again
                   </button>
                 </div>
@@ -528,13 +588,39 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
                   </button>
                 </div>
               ) : (
-                <div className="fg-alert-panel default-alert">
-                  <strong>📝 Objectives:</strong>
+                <div className="fg-alert-panel default-alert" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  <strong style={{ color: 'var(--neon-cyan)', marginBottom: '4px' }}>📝 OBJECTIVES & GUIDE:</strong>
                   <div style={{ fontSize: '0.72rem', lineHeight: '1.45', color: '#cbd5e1' }}>
-                    • Read the active Caesar Shift Key clue: <code>Plain = Cipher - {currentShiftKey}</code>.<br />
-                    • Calculate the correct plaintext letter for <code>{currentBatonLetter}</code>.<br />
-                    • Steer the runner into the lane matching that correct letter.<br />
-                    • Avoid decoy letters to prevent crashing into the checkpoint gate!
+                    • Solve the cipher letter to find the matching lane.<br />
+                    • Avoid decoy letters to prevent crashing!
+                  </div>
+                  <div style={{
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid rgba(0, 229, 255, 0.2)',
+                    borderRadius: '8px',
+                    padding: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      Current Letter Decryption
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '6px' }}>
+                        <span style={{ fontSize: '1.2rem', color: '#fff', fontFamily: 'monospace' }}>{currentBatonLetter}</span>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>CIPHER</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--neon-cyan)' }}>
+                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>Shift -{currentShiftKey}</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>arrow_forward</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.3)', padding: '6px 12px', borderRadius: '6px', boxShadow: '0 0 10px rgba(0,229,255,0.1) inset' }}>
+                        <span style={{ fontSize: '1.2rem', color: 'var(--neon-green)', fontFamily: 'monospace', fontWeight: 'bold' }}>?</span>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--neon-cyan)' }}>PLAIN</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -589,7 +675,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
                   top: `${20 + runnerLane * 30}%`
                 }}
               >
-                <span className="sprint-runner-char">🏃‍♂️</span>
+                <span className="sprint-runner-char">🏃♂️</span>
                 <div className="runner-baton-glow" style={{ background: 'var(--neon-cyan)', color: '#000' }}>
                   {sprintStep === 'finished' ? '✓' : currentBatonLetter}
                 </div>
@@ -644,13 +730,13 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
               <h3 style={{ fontSize: '0.9rem', fontWeight: '700', color: '#94a3b8', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Word Decryption Progress:</h3>
               <div className="sprint-letters-row">
                 {levelData.plaintext.split('').map((char, idx) => {
-                  const isMasked = !levelData.masks[0][idx];
+                  const isMasked = char !== ' ' && !hintIndices.has(idx);
                   const isSolved = isMasked && (maskedIndices.indexOf(idx) < currentMaskIndex || sprintStep === 'finished');
                   const displayChar = !isMasked ? char : (isSolved ? char : '_');
-                  const cipherChar = levelData.ciphertext[idx];
+                  const cipherChar = levelData.ciphertext[idx] !== ' ' ? levelData.ciphertext[idx] : ' ';
 
                   return (
-                    <div key={idx} className={`sprint-letter-box ${isSolved ? 'solved' : ''} ${isMasked && idx === currentIdx && sprintStep === 'running' ? 'active' : ''}`}>
+                    <div key={idx} className={`sprint-letter-box ${isSolved ? 'solved' : ''} ${isMasked && idx === currentIdx && sprintStep === 'running' ? 'active' : ''}`} style={char === ' ' ? { visibility: 'hidden', width: '20px' } : {}}>
                       <span className="sprint-box-cipher">{cipherChar}</span>
                       <span className="sprint-box-plain">{displayChar}</span>
                     </div>
