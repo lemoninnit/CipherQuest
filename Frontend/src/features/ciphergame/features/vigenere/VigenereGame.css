@@ -409,6 +409,42 @@
   gap: 10px;
 }
 
+.vg-value-reference {
+  margin-top: 10px;
+  background: rgba(0, 229, 255, 0.05);
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.vg-value-reference-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.vg-value-reference-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vg-value-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  padding: 4px 8px;
+  line-height: 1.2;
+}
+
 /* ── Pond ─────────────────────────────────────────────────── */
 .vg-pond-section {
   flex-shrink: 0;
