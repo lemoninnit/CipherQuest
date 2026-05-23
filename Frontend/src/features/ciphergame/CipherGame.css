@@ -115,6 +115,29 @@
 }
 .fg-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+.fg-btn-back-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.08) !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  color: #ef4444 !important;
+  padding: 8px 16px !important;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.fg-btn-back-nav:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
 .fg-btn-primary {
   background: linear-gradient(135deg, #0077c2, #00b0ff);
   color: #fff;
@@ -158,7 +181,7 @@
   font-family: 'JetBrains Mono', monospace;
   font-size: .8rem;
   box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.3);
-  flex: 1.2;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
@@ -1193,3 +1216,121 @@
 .recap-action-btn:hover {
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* ─── Stage Roadmap Grid ─── */
+.stages-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin: 1.5rem 0 1rem;
+}
+
+@media (max-width: 700px) {
+  .stages-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.stage-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 1rem 0.5rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #e2e8f0;
+}
+
+.stage-card:hover {
+  background: rgba(99,102,241,0.15);
+  border-color: rgba(99,102,241,0.5);
+  transform: translateY(-2px);
+}
+
+.stage-card.completed {
+  background: rgba(16,185,129,0.12);
+  border-color: rgba(16,185,129,0.4);
+}
+
+.stage-card.completed:hover {
+  background: rgba(16,185,129,0.2);
+}
+
+.stage-card-number {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.stage-card-icon span {
+  font-size: 1.6rem;
+  color: #6366f1;
+}
+
+.stage-card.completed .stage-card-icon span {
+  color: #10b981;
+}
+
+.stage-card-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.stage-card.completed .stage-card-status { color: #10b981; }
+
+/* ─── Stages progress section ─── */
+.stages-progress-section {
+  margin-top: 1.5rem;
+  padding: 16px 20px;
+  background: rgba(0, 229, 255, 0.04);
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  border-radius: 14px;
+}
+
+.stages-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.stages-progress-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.stages-progress-count {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #00e5ff;
+  letter-spacing: 0.04em;
+}
+
+.stages-progress-bar {
+  position: relative;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stages-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #00d1ff 0%, #00e5ff 60%, #00b4d8 100%);
+  border-radius: 99px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}

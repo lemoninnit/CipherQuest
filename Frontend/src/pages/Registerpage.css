@@ -15,7 +15,7 @@
   content: "";
   position: absolute;
   inset: 0;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(0, 229, 255, 0.04) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
   background-size: 50px 50px;
@@ -24,7 +24,7 @@
   z-index: 1;
 }
 
-/* Splitting panels */
+/* Left illustration panel */
 .register-illustration {
   display: none;
   flex: 1.2;
@@ -54,130 +54,26 @@
   position: relative;
 }
 
-/* Left Illustration Panel: Terminal Mockup matching Login */
-.illustration-wrapper {
-  position: relative;
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
+/* Error banner */
+.register-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 10px;
+  color: #fca5a5;
+  padding: 10px 14px;
+  font-size: 0.8rem;
+  margin-bottom: 20px;
+  text-align: center;
 }
 
-.terminal-mockup {
-  background: rgba(4, 8, 16, 0.85);
-  border: 1.5px solid rgba(0, 229, 255, 0.25);
-  border-radius: 12px;
-  padding: 20px;
-  font-family: 'JetBrains Mono', monospace;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 229, 255, 0.05);
-  position: relative;
-  overflow: hidden;
-}
-
-.terminal-header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  border-bottom: 1px solid rgba(0, 229, 255, 0.15);
-  padding-bottom: 10px;
-  margin-bottom: 16px;
-}
-
-.terminal-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-.dot-red { background: #ef4444; }
-.dot-yellow { background: #f59e0b; }
-.dot-green { background: #10b981; }
-
-.terminal-title {
-  color: rgba(0, 229, 255, 0.8);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-left: 8px;
-  flex: 1;
-}
-
-.terminal-body {
-  color: #38bdf8;
-  font-size: 0.82rem;
-  line-height: 1.6;
-}
-
-.terminal-line {
-  margin-bottom: 8px;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.terminal-line.success {
-  color: #4ade80;
-}
-
-.terminal-line.warning {
-  color: #fb7185;
-}
-
-.terminal-prompt {
-  color: #00e5ff;
-  user-select: none;
-}
-
-.terminal-cursor {
-  display: inline-block;
-  width: 8px;
-  height: 15px;
-  background: #00e5ff;
-  animation: cursorBlink 1s infinite;
-  vertical-align: middle;
-}
-
-@keyframes cursorBlink {
-  0%, 100% { opacity: 0; }
-  50% { opacity: 1; }
-}
-
-.illustration-text {
-  text-align: left;
-}
-
-.illustration-text h2 {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #ffffff;
-  line-height: 1.15;
-  margin-bottom: 16px;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
-}
-
-.highlight-cyan {
-  color: #00e5ff;
-  text-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
-}
-
-.illustration-text p {
-  font-size: 1rem;
-  color: #94a3b8;
-  line-height: 1.6;
-  max-width: 440px;
-}
-
-/* Glassmorphic Form Card Details */
+/* Glassmorphic Form Card */
 .register-card {
   width: 100%;
   max-width: 440px;
   background: rgba(10, 17, 32, 0.75);
   backdrop-filter: blur(20px);
   border: 1.5px solid rgba(0, 229, 255, 0.25);
-  box-shadow: 0 25px 50px rgba(0,0,0,0.6), 0 0 30px rgba(0, 229, 255, 0.08);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 229, 255, 0.08);
   border-radius: 20px;
   padding: 40px;
   display: flex;
@@ -212,13 +108,13 @@
   margin-bottom: 16px;
 }
 
-.logo-icon-glow {
+.register-logo .material-symbols-outlined {
   color: #00e5ff;
   font-size: 2.5rem !important;
   filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.6));
 }
 
-.logo-text {
+.register-logo .logo-text {
   font-size: 1.7rem;
   font-weight: 900;
   color: #ffffff;
@@ -241,20 +137,6 @@
   text-transform: uppercase;
 }
 
-/* Error banner */
-.register-error {
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  border-radius: 10px;
-  color: #fca5a5;
-  padding: 10px 14px;
-  font-size: 0.8rem;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 /* Form Styles */
 .register-form {
   display: flex;
@@ -262,70 +144,8 @@
   gap: 18px;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-group label {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #94a3b8;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.input-wrapper {
-  position: relative;
-  background: rgba(3, 7, 18, 0.6);
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.input-wrapper:hover {
-  border-color: rgba(0, 229, 255, 0.35);
-}
-
-.input-wrapper.neon-glow-focus:focus-within {
-  border-color: #00e5ff !important;
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25) !important;
-  background: rgba(3, 7, 18, 0.85);
-}
-
-.input-icon {
-  position: absolute;
-  top: 50%;
-  left: 14px;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  color: #64748b;
-  transition: color 0.25s;
-}
-
-.input-wrapper:focus-within .input-icon {
-  color: #00e5ff;
-}
-
-.input-wrapper input {
-  width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
-  padding: 14px 16px 14px 44px;
-  color: #ffffff;
-  font-family: inherit;
-  font-size: 0.95rem;
-}
-
-.input-wrapper input::placeholder {
-  color: #475569;
-}
-
-/* Button & Link Interactions */
-.submit-btn {
+/* Submit Button */
+.register-card .submit-btn {
   width: 100%;
   padding: 14px;
   background: linear-gradient(135deg, #00d1ff 0%, #007799 100%);
@@ -346,21 +166,22 @@
   margin-top: 10px;
 }
 
-.submit-btn:hover:not(:disabled) {
+.register-card .submit-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 209, 255, 0.4);
   background: linear-gradient(135deg, #00e5ff 0%, #0088bb 100%);
 }
 
-.submit-btn:active:not(:disabled) {
+.register-card .submit-btn:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.submit-btn:disabled {
+.register-card .submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
+/* Footer */
 .register-footer {
   text-align: center;
   margin-top: 24px;

@@ -1,0 +1,255 @@
+/* VigenereGame.css */
+
+/* ── Ready Screen ─────────────────────────────────────────── */
+.vg-ready-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 40px 48px;
+  max-width: 560px;
+  width: 100%;
+  text-align: center;
+  backdrop-filter: blur(12px);
+}
+
+.vg-ready-preview {
+  background: rgba(0,229,255,0.05);
+  border: 1px solid rgba(0,229,255,0.2);
+  border-radius: 12px;
+  padding: 18px 24px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.vg-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.88rem;
+}
+.vg-preview-row:last-child { margin-bottom: 0; }
+.vg-preview-label { color: var(--text-muted); }
+.vg-preview-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  letter-spacing: 0.1em;
+  font-size: 1.05rem;
+}
+
+.vg-how-it-works {
+  background: rgba(57,255,20,0.05);
+  border: 1px solid rgba(57,255,20,0.15);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  text-align: left;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.vg-how-it-works strong { color: var(--neon-green); }
+
+.vg-start-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--neon-cyan);
+  color: #030914;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.vg-start-btn:hover {
+  box-shadow: 0 0 24px rgba(0,229,255,0.5);
+  transform: translateY(-1px);
+}
+
+/* ── Word Panel ───────────────────────────────────────────── */
+.vg-word-panel-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.vg-segments-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.vg-segment-card {
+  background: var(--card-bg);
+  border: 1.5px solid var(--card-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.vg-segment-card.is-solved {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 12px rgba(57,255,20,0.2);
+}
+
+.vg-letter-row {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.vg-letter-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 28px;
+}
+
+.vg-cell-cipher {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 5px;
+  padding: 2px 5px;
+  min-width: 24px;
+  text-align: center;
+}
+.vg-cell-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--neon-yellow);
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+}
+.vg-cell-arrow { font-size: 0.6rem; color: var(--text-muted); }
+.vg-cell-plain {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  min-width: 24px;
+  text-align: center;
+  border-radius: 5px;
+  padding: 2px 5px;
+  transition: background 0.2s, color 0.2s;
+}
+.vg-cell-plain.correct  { background: rgba(57,255,20,0.15);   color: var(--neon-green); }
+.vg-cell-plain.wrong    { background: rgba(255,45,85,0.12);   color: var(--neon-red); }
+.vg-cell-plain.pending  { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.25); }
+
+.vg-segment-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 2px;
+}
+
+/* Currently decrypting indicator */
+.vg-decrypt-indicator {
+  background: rgba(255,215,0,0.07);
+  border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.83rem;
+  color: var(--neon-yellow);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Letter value reference */
+.vg-value-reference {
+  margin-top: 10px;
+  background: rgba(0,229,255,0.05);
+  border: 1px solid rgba(0,229,255,0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.vg-value-reference-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.vg-value-reference-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vg-value-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  padding: 4px 8px;
+  line-height: 1.2;
+}
+
+/* ── Recap Table ──────────────────────────────────────────── */
+.vg-recap-table-wrap { overflow-x: auto; margin-bottom: 20px; }
+.vg-recap-table {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+.vg-recap-table th {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  padding: 3px 6px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.vg-recap-table td {
+  padding: 3px 5px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.55);
+  transition: background 0.4s, color 0.4s;
+}
+.vg-recap-table td.lit {
+  background: rgba(0,229,255,0.15);
+  color: var(--neon-cyan);
+  font-weight: 700;
+}
+.vg-recap-table td.result-cell {
+  background: rgba(57,255,20,0.18) !important;
+  color: var(--neon-green) !important;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+/* ── Recap Explanation ────────────────────────────────────── */
+.vg-recap-explanation {
+  background: rgba(0,229,255,0.05);
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.vg-recap-explanation strong { color: var(--neon-cyan); }
+.vg-recap-explanation code {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--neon-green);
+  font-size: 0.88rem;
+}

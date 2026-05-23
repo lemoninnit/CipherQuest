@@ -333,24 +333,54 @@ const vigenereData = {
   ],
 };
 
+function makeVigenereMask(plainText, revealFraction = 0.5) {
+  const len = plainText.length;
+  const mask = Array(len).fill(true);
+  
+  const letterIndices = [];
+  for (let i = 0; i < len; i++) {
+    const c = plainText[i].toUpperCase();
+    if (c >= 'A' && c <= 'Z') {
+      letterIndices.push(i);
+    }
+  }
+  
+  const hideCount = Math.ceil(letterIndices.length * (1 - revealFraction));
+  const hideIndices = [...letterIndices]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, hideCount);
+    
+  hideIndices.forEach(idx => {
+    mask[idx] = false;
+  });
+  return mask;
+}
+
 export function getVigenereLevelData(difficulty, stageIndex) {
   const pool = vigenereData[difficulty];
   const randIndex = Math.floor(Math.random() * pool.length);
   const d = pool[randIndex];
   const ciphertext = vigEnc(d.plain, d.key);
+  
+  const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0.35;
+  const mask = makeVigenereMask(d.plain, reveal);
+
   return {
     level: stageIndex + 1,
     ciphertext,
     plaintext: d.plain,
     targetKey: d.key,
+    masks: [mask],
     hint: d.hint,
     keyClue: d.keyClue,
     keyInfo: d.keyInfo,
   };
 }
 
-export function getVigenereGameType() {
-  return 'VIGENERE_FISHING'; // always the same game for vigenere
+const GAME_CYCLE_VIGENERE = ['VIGENERE_FISHING', 'PACMAN', 'VIGENERE_FISHING', 'PACMAN', 'VIGENERE_FISHING'];
+
+export function getVigenereGameType(stageIndex) {
+  return GAME_CYCLE_VIGENERE[stageIndex % GAME_CYCLE_VIGENERE.length];
 }
 
 /* ─────────────────── Playfair levels ─────────────────── */
@@ -598,6 +628,8 @@ export function getPlayfairLevelData(difficulty, stageIndex) {
   };
 }
 
-export function getPlayfairGameType() {
-  return 'PLAYFAIR_FISHING';
+const GAME_CYCLE_PLAYFAIR = ['PLAYFAIR_FISHING', 'PACMAN', 'PLAYFAIR_FISHING', 'PACMAN', 'PLAYFAIR_FISHING'];
+
+export function getPlayfairGameType(stageIndex = 0) {
+  return GAME_CYCLE_PLAYFAIR[stageIndex % GAME_CYCLE_PLAYFAIR.length];
 }

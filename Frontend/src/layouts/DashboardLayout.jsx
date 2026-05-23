@@ -36,8 +36,6 @@ const DashboardLayout = ({ children }) => {
     return 'Operative';
   };
 
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
-
   return (
     <div className="dashboard-container">
       <aside className="sidebar z-50">
@@ -46,15 +44,15 @@ const DashboardLayout = ({ children }) => {
           <p className="sidebar-subtitle">Level {user?.level ?? 1} {levelLabel()}</p>
         </div>
         <nav className="sidebar-nav">
-          <NavItem to="/dashboard"          icon="home"                 label="Home"       active={location.pathname === '/dashboard' && !settingsOpen} />
-          <NavItem to="/dashboard/fishing"  icon="sports_esports"       label="CipherGame" active={location.pathname === '/dashboard/fishing' && !settingsOpen} />
-          <NavItem to="/dashboard"          icon="workspace_premium"    label="Badges"     active={false} />
-          <NavItem
-            icon="settings"
-            label="Settings"
-            active={settingsOpen}
-            onClick={() => setSettingsOpen(true)}
-          />
+          <NavItem to="/dashboard"         icon="home"                 label="Home"       active={location.pathname === '/dashboard'} />
+          <NavItem to="/dashboard/fishing" icon="phishing"             label="Fishing"    active={location.pathname === '/dashboard/fishing'} />
+          <NavItem to="/dashboard"         icon="enhanced_encryption"  label="Ciphers"    active={false} />
+          <NavItem to="/dashboard"         icon="trending_up"          label="Progress"   active={false} />
+          <NavItem to="/dashboard"         icon="workspace_premium"    label="Badges"     active={false} />
+          <div className="nav-bottom">
+            <NavItem to="/dashboard" icon="settings" label="Settings" active={false} />
+            <NavItem icon="logout" label="Logout" onClick={handleLogout} />
+          </div>
         </nav>
       </aside>
 
@@ -88,70 +86,10 @@ const DashboardLayout = ({ children }) => {
           </div>
         </header>
 
-        <div className={`dashboard-content ${location.pathname === '/dashboard/fishing' ? 'dashboard-content-fishing' : ''}`}>
+        <div className="dashboard-content">
           {children}
         </div>
       </main>
-
-      {/* ── Agent Settings Console Modal Overlay ───────────── */}
-      {settingsOpen && (
-        <div className="settings-modal-overlay" onClick={() => setSettingsOpen(false)}>
-          <div className="settings-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="settings-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="material-symbols-outlined text-primary" style={{ color: 'var(--primary)' }}>settings</span>
-                <h2>Agent Console Settings</h2>
-              </div>
-              <button className="settings-close-btn" onClick={() => setSettingsOpen(false)}>
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="settings-modal-body">
-              {/* Agent Profile Card */}
-              <div className="settings-profile-card">
-                <div className="avatar-placeholder large">
-                  {(user?.username ?? 'O')[0].toUpperCase()}
-                </div>
-                <div>
-                  <div className="profile-username">{user?.username ?? 'Operative'}</div>
-                  <div className="profile-role">Operative Rank: Level {user?.level ?? 1}</div>
-                </div>
-              </div>
-
-              {/* Preferences Setting Row */}
-              <div className="settings-group">
-                <h3>🎮 Preferences</h3>
-                <div className="setting-row">
-                  <div>
-                    <div className="setting-label">Sound Effects</div>
-                    <div className="setting-desc">Play feedback sound when catching fish</div>
-                  </div>
-                  <label className="toggle-switch">
-                    <input type="checkbox" defaultChecked />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Security & Sign Out Row */}
-              <div className="settings-group">
-                <h3>🔐 Security & Session</h3>
-                <div className="setting-row">
-                  <div>
-                    <div className="setting-label">Session Control</div>
-                    <div className="setting-desc">Sign out from this terminal securely</div>
-                  </div>
-                  <button className="settings-logout-btn" onClick={handleLogout}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>logout</span>
-                    Logout
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
