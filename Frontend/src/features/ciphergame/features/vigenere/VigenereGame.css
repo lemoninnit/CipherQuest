@@ -158,7 +158,9 @@
 .vg-top-section {
   display: flex;
   gap: 0;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   border-bottom: 1px solid var(--card-border);
   background: rgba(6,19,36,0.6);
 }
@@ -173,6 +175,7 @@
   gap: 12px;
   border-right: 1px solid var(--card-border);
   background: rgba(3,9,20,0.4);
+  overflow-y: auto;
 }
 
 .vg-sidebar-card {
@@ -412,7 +415,7 @@
 /* ── Pond ─────────────────────────────────────────────────── */
 .vg-pond-section {
   flex-shrink: 0;
-  height: 240px;
+  height: 180px;
   position: relative;
   background: linear-gradient(180deg, #041630 0%, #061e3a 50%, #07254a 100%);
   border-top: 1px solid rgba(0,229,255,0.15);
@@ -464,12 +467,13 @@
 .vg-fish {
   position: absolute;
   cursor: pointer;
-  transition: transform 0.1s;
   user-select: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  animation: fish-swim-sway 2.5s ease-in-out infinite alternate;
+  transform: scaleX(var(--dir, 1));
 }
 .vg-fish:hover { filter: brightness(1.3); }
 .vg-fish:hover .vg-fish-badge { transform: scaleX(var(--dir)) scale(1.1); }
@@ -667,15 +671,252 @@
 .vg-recap-proceed-btn:hover { box-shadow: 0 0 24px rgba(57,255,20,0.5); }
 .vg-recap-proceed-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* ── Instruction tooltip strip ────────────────────────────── */
-.vg-instruction-strip {
-  background: rgba(255,215,0,0.06);
-  border-top: 1px solid rgba(255,215,0,0.15);
-  padding: 6px 20px;
-  font-size: 0.78rem;
-  color: var(--neon-yellow);
+/* ── Tools Button & Modal ───────────────────────────────── */
+.vg-tabula-modal-btn {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 8px;
+  color: var(--neon-cyan);
+  font-size: 0.8rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.vg-tabula-modal-btn:hover {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+}
+.vg-tabula-modal-btn .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.vg-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 16, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.vg-modal-card.tabula-modal {
+  background: #061324;
+  border: 2px solid var(--neon-cyan);
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
+  border-radius: 16px;
+  width: 95%;
+  max-width: 1000px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modal-zoom-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modal-zoom-in {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.vg-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+}
+
+.vg-modal-header h3 {
+  margin: 0;
+  color: var(--neon-cyan);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.vg-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.8rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+.vg-modal-close:hover {
+  color: #ff2d55;
+}
+
+.vg-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vg-modal-instructions {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin: 0 0 8px 0;
+  line-height: 1.5;
+}
+
+.vg-tabula-scroll-wrapper {
+  overflow: auto;
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(2, 6, 16, 0.6);
+  max-height: 55vh;
+}
+
+.vg-tabula-full-grid {
+  border-collapse: collapse;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  width: 100%;
+  text-align: center;
+}
+
+.vg-tabula-full-grid th, 
+.vg-tabula-full-grid td {
+  padding: 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.vg-tabula-full-grid th.corner-cell {
+  background: #030a15;
+  color: var(--text-muted);
+  font-weight: bold;
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 3;
+}
+
+.vg-tabula-full-grid th.col-header {
+  background: #030a15;
+  color: var(--neon-cyan);
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.vg-tabula-full-grid td.row-header {
+  background: #030a15;
+  color: var(--neon-cyan);
+  font-weight: bold;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+.vg-tabula-full-grid td.cell {
+  color: rgba(255, 255, 255, 0.65);
+  cursor: crosshair;
+  transition: background 0.15s, color 0.15s;
+}
+
+.vg-tabula-full-grid tr:hover td.cell {
+  background: rgba(0, 229, 255, 0.04);
+}
+
+.vg-tabula-full-grid td.cell:hover {
+  background: var(--neon-cyan) !important;
+  color: #030914 !important;
+  font-weight: bold;
+  box-shadow: 0 0 8px var(--neon-cyan);
+}
+
+.correct-key-row {
+  background: rgba(255, 215, 0, 0.08);
+}
+.correct-key-row td.row-header {
+  color: var(--neon-yellow) !important;
+  text-shadow: 0 0 8px var(--neon-yellow);
+}
+.correct-key-row td.cell {
+  color: #ffd700;
+  font-weight: bold;
+}
+
+/* ── Live Scanner & Previews ────────────────────────────── */
+.vg-cell-plain.preview {
+  background: rgba(0, 229, 255, 0.15);
+  color: var(--neon-cyan);
+  border: 1px dashed var(--neon-cyan);
+  animation: pulse-preview 1s infinite alternate;
+}
+.vg-cell-key.preview {
+  color: var(--neon-cyan);
+  font-weight: 800;
+  animation: pulse-preview 1s infinite alternate;
+}
+
+@keyframes pulse-preview {
+  from { opacity: 0.6; }
+  to { opacity: 1; text-shadow: 0 0 8px var(--neon-cyan); }
+}
+
+.vg-scan-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-top: auto;
+  border: 1px solid transparent;
+}
+.vg-scan-indicator.idle {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+}
+.vg-scan-indicator.scanning {
+  background: rgba(0, 229, 255, 0.06);
+  border-color: rgba(0, 229, 255, 0.2);
+  color: var(--neon-cyan);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.05);
+}
+.vg-scan-indicator .scanner-icon {
+  font-size: 1.25rem;
+}
+.vg-scan-indicator.scanning .scanner-icon {
+  animation: spin 3s linear infinite;
+}
+
+.vg-scan-indicator .scanner-text {
+  line-height: 1.4;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ── Fish Sway Animation ────────────────────────────────── */
+@keyframes fish-swim-sway {
+  0% { 
+    margin-top: -3px;
+  }
+  100% { 
+    margin-top: 3px;
+  }
 }

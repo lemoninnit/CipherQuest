@@ -63,6 +63,7 @@ export default function VigenereGame({
   const [castTarget, setCastTarget]   = useState({ x: 0, y: 0 });
   const [castProg, setCastProg]       = useState(0);
   const [splash, setSplash]           = useState(null);
+  const [hoveredFish, setHoveredFish] = useState(null);
 
   /* ── feedback ── */
   const [feedback, setFeedback]       = useState(null);
@@ -98,8 +99,7 @@ export default function VigenereGame({
       id: Date.now() + i,
       letter,
       x: 8 + Math.random() * 80,
-      y: 35 + Math.random() * 155,
-      // FIXED: much slower fish — was 0.25+0.35, now 0.10+0.12
+      y: 30 + Math.random() * 100, // kept within 180px pond height
       speed: 0.10 + Math.random() * 0.12,
       direction: Math.random() > 0.5 ? 1 : -1,
       emoji: FISH_EMOJIS[i % FISH_EMOJIS.length],
@@ -119,6 +119,7 @@ export default function VigenereGame({
     setActiveSlot(0);
     setWrongCount(0);
     setHintRevealed(false);
+    setHoveredFish(null);
     setPhase('playing');
     setFishList(spawnFish(0));
     spawnBubbles();
@@ -130,6 +131,7 @@ export default function VigenereGame({
     setActiveSlot(0);
     setWrongCount(0);
     setHintRevealed(false);
+    setHoveredFish(null);
   }, [levelData]);
 
   /* ── physics loop ── */
@@ -154,6 +156,7 @@ export default function VigenereGame({
     if (isCasting || phase !== 'playing') return;
     setIsCasting(true);
     setCaughtFish(fish);
+    setHoveredFish(null);
     const pondEl = document.querySelector('.vg-pond-section');
     const pondW  = pondEl?.offsetWidth || 600;
     setCastTarget({ x: (fish.x / 100) * pondW, y: fish.y });
@@ -186,6 +189,7 @@ export default function VigenereGame({
 
   /* ── catch result ── */
   const handleCatch = (fish) => {
+    setHoveredFish(null);
     const correct = fish.letter === targetKey[activeSlot];
     if (correct) {
       const nextKey = [...builtKey];
@@ -221,7 +225,7 @@ export default function VigenereGame({
       setTimeout(() => {
         setFishList(prev => [
           ...prev,
-          { ...fish, id: Date.now(), x: Math.random() > 0.5 ? 88 : 12, y: 35 + Math.random() * 155 },
+          { ...fish, id: Date.now(), x: Math.random() > 0.5 ? 88 : 12, y: 30 + Math.random() * 100 },
         ]);
       }, 500);
     }
@@ -244,19 +248,6 @@ export default function VigenereGame({
 
   const handleSubmit = () => onVerifySubmit();
 
-  /* ── mini table for current key slot: show 6 sample cipher→plain mappings ── */
-  const buildMiniTable = () => {
-    if (!builtKey[activeSlot]) {
-      const k = charToIdx(targetKey[activeSlot]);
-      return ['A', 'E', 'I', 'M', 'Q', 'Z'].map(c => ({
-        cipher: c,
-        plain: idxToChar(charToIdx(c) - k),
-      }));
-    }
-    return [];
-  };
-  const miniTable = phase === 'playing' ? buildMiniTable() : [];
-
   /* ── recap rows ── */
   const buildRecapRows = () => {
     const rows = [];
@@ -278,9 +269,9 @@ export default function VigenereGame({
   /* ── rod coords ── */
   const pondW    = 600;
   const rodBaseX = pondW * 0.42;
-  const rodBaseY = 230;
+  const rodBaseY = 165; // shifted for 180px pond
   const rodTipX  = rodBaseX - 30;
-  const rodTipY  = 180;
+  const rodTipY  = 115; // shifted for 180px pond
   let hookX = rodTipX, hookY = rodTipY;
   if (isCasting && caughtFish) {
     hookX = rodTipX + (castTarget.x - rodTipX) * castProg;
@@ -296,11 +287,21 @@ export default function VigenereGame({
       const gi     = globalCharIdx;
       const keyPos = gi % keyLen;
       const kFilled = !!builtKey[keyPos];
-      const shift   = kFilled ? charToIdx(targetKey[keyPos]) : 0;
-      const plainCh = kFilled ? idxToChar(charToIdx(cipherCh) - shift) : '?';
+      const isHovered = hoveredFish && keyPos === activeSlot && !kFilled;
+      const activeKeyLetter = kFilled ? targetKey[keyPos] : (isHovered ? hoveredFish.letter : null);
+      const shift = activeKeyLetter ? charToIdx(activeKeyLetter) : 0;
+      const plainCh = (kFilled || isHovered) ? idxToChar(charToIdx(cipherCh) - shift) : '?';
       const correct = kFilled && plainCh === plainChars[gi];
       globalCharIdx++;
-      return { cipherCh, keyPos, kFilled, plainCh, correct, kLetter: builtKey[keyPos] || '?' };
+      return { 
+        cipherCh, 
+        keyPos, 
+        kFilled, 
+        plainCh, 
+        correct, 
+        kLetter: kFilled ? (builtKey[keyPos] || '?') : (isHovered ? hoveredFish.letter : '?'),
+        isHovered 
+      };
     });
     return { cipherWord, cells, plainWord: plainSegments[wIdx] };
   });
@@ -336,7 +337,7 @@ export default function VigenereGame({
             </div>
             <div className="vg-preview-row">
               <span className="vg-preview-label">Message hint</span>
-              <span className="vg-preview-value" style={{ color: '#a0c4d8', fontStyle: 'italic' }}>{levelData.hint}</span>
+              <span className="vg-preview-value">{levelData.hint}</span>
             </div>
             {levelData.keyClue && (
               <div className="vg-preview-row" style={{ borderTop: '1px solid rgba(255,215,0,0.2)', paddingTop: 8, marginTop: 4 }}>
@@ -347,15 +348,12 @@ export default function VigenereGame({
           </div>
 
           <div className="vg-how-it-works">
-            <strong>Decryption formula:</strong><br />
+            <strong>Decryption mechanics:</strong><br />
             <code style={{ color: '#39ff14', fontFamily: 'JetBrains Mono, monospace' }}>
               Plain[i] = (Cipher[i] − Key[i mod |key|] + 26) mod 26
             </code>
             <br /><br />
-            Each fish carries one letter A–Z. Catch the fish matching the next key letter.
-            The live panel shows the decryption in real time — <strong>watch the letters turn green as you get it right.</strong>
-            <br /><br />
-            Miss twice on the same slot and a <strong>hint letter</strong> will appear to help you.
+            Each fish carries one letter A–Z. Hover over a swimming fish to see its live decryption output preview, then catch it to set the key letter.
           </div>
 
           <button className="vg-start-btn" onClick={startGame}>🎣 Start Fishing</button>
@@ -473,8 +471,8 @@ export default function VigenereGame({
               <div className="vg-progress-bar" style={{ marginTop: 10 }}>
                 <div className="vg-progress-fill" style={{ width: `${(builtKey.filter(Boolean).length / keyLen) * 100}%` }} />
               </div>
-              <div style={{ marginTop: 6, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Catching slot {activeSlot + 1} of {keyLen}
+              <div style={{ marginTop: 6, fontSize: 0.72 + 'rem', color: 'var(--text-muted)' }}>
+                Slot {activeSlot + 1} of {keyLen}
               </div>
             </div>
 
@@ -494,87 +492,23 @@ export default function VigenereGame({
               </div>
             )}
 
-            {/* Live Vigenère mapping */}
-            <div className="vg-sidebar-card">
-              <div className="vg-sidebar-title">📊 Active Key Mapping</div>
-              {builtKey[activeSlot] ? (
-                <div style={{ fontSize: '0.8rem', color: 'var(--neon-green)' }}>
-                  ✅ Slot {activeSlot + 1} = <strong>{builtKey[activeSlot]}</strong>
-                  <br /><span style={{ color: 'var(--text-muted)' }}>shift = {charToIdx(builtKey[activeSlot])}</span>
-                </div>
-              ) : (
-                <>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: 6 }}>
-                    Catching key letter #{activeSlot + 1}. What each candidate shift does:
-                  </div>
-                  <table className="vg-table-mini">
-                    <thead><tr><th>Cipher</th><th>→</th><th>Plain</th></tr></thead>
-                    <tbody>
-                      {miniTable.map((row, i) => (
-                        <tr key={i}>
-                          <td>{row.cipher}</td>
-                          <td style={{ color: 'rgba(255,255,255,0.2)' }}>→</td>
-                          <td style={{ color: 'var(--neon-cyan)' }}>{row.plain}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </>
-              )}
-            </div>
-
-            {/* Tabula Recta toggle */}
-            <div className="vg-sidebar-card">
+            {/* Interactive Tools */}
+            <div className="vg-sidebar-card compact-tool-card">
+              <div className="vg-sidebar-title">🔧 Decoding Tools</div>
               <button
-                onClick={() => setShowTabula(v => !v)}
-                style={{ background: 'rgba(0,229,255,0.08)', border: '1px solid rgba(0,229,255,0.25)', color: 'var(--neon-cyan)', borderRadius: 8, padding: '6px 12px', fontSize: '0.78rem', cursor: 'pointer', width: '100%', marginBottom: showTabula ? 8 : 0 }}
+                className="vg-tabula-modal-btn"
+                onClick={() => setShowTabula(true)}
               >
-                {showTabula ? '▲ Hide' : '▼ Show'} Tabula Recta for Key Letter #{activeSlot + 1}
+                <span className="material-symbols-outlined">grid_on</span>
+                Interactive Tabula Recta
               </button>
-              {showTabula && (
-                <div style={{ overflowX: 'auto' }}>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: 4 }}>
-                    Row = current key letter candidate. Column = Cipher → find Plain.
-                  </div>
-                  <table style={{ borderCollapse: 'collapse', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.6rem', width: '100%' }}>
-                    <thead>
-                      <tr>
-                        <th style={{ color: 'var(--text-muted)', padding: '2px 3px' }}>K↓ C→</th>
-                        {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(ch => (
-                          <th key={ch} style={{ color: 'var(--neon-cyan)', padding: '2px 3px', fontWeight: 700 }}>{ch}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* Show 3 rows: the active slot's correct key letter surrounded by neighbours */}
-                      {[-1, 0, 1].map(offset => {
-                        const kIdx = (charToIdx(targetKey[activeSlot]) + offset + 26) % 26;
-                        const kLetter = idxToChar(kIdx);
-                        const row = tabulaRow(kLetter);
-                        const isTarget = offset === 0;
-                        return (
-                          <tr key={offset} style={{ background: isTarget ? 'rgba(255,215,0,0.08)' : 'transparent' }}>
-                            <td style={{ color: isTarget ? '#ffd700' : 'var(--text-muted)', fontWeight: isTarget ? 700 : 400, padding: '2px 3px' }}>{kLetter}</td>
-                            {row.map((ch, ci) => (
-                              <td key={ci} style={{ color: isTarget ? '#ffd700' : 'rgba(255,255,255,0.35)', padding: '2px 3px' }}>{ch}</td>
-                            ))}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  <div style={{ fontSize: '0.6rem', color: 'rgba(255,215,0,0.6)', marginTop: 4 }}>
-                    ★ Gold row = correct key letter for slot #{activeSlot + 1}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Formula */}
             <div className="vg-formula-box">
               <strong style={{ color: 'var(--neon-cyan)', fontSize: '0.78rem' }}>Vigenère Decrypt:</strong><br />
               <code>P[i] = (C[i] − K[i mod n] + 26) mod 26</code><br />
-              <span style={{ fontSize: '0.72rem', marginTop: 4, display: 'block' }}>K = key letter index (A=0, B=1…Z=25)</span>
+              <span style={{ fontSize: '0.72rem', marginTop: 4, display: 'block' }}>K = letter index (A=0…Z=25)</span>
             </div>
 
             {allCorrect && (
@@ -589,23 +523,41 @@ export default function VigenereGame({
 
           {/* Word panel */}
           <div className="vg-word-area">
-            <div className="vg-word-panel-title">Live Decryption</div>
+            <div className="vg-word-panel-title">Live Decryption Console</div>
             <div className="vg-segments-row">
               {wordViews.map((w, wIdx) => (
                 <div key={wIdx} className={`vg-segment-card ${wordSolved[wIdx] ? 'is-solved' : ''}`}>
                   <div className="vg-letter-row">
-                    {w.cells.map((cell, cIdx) => (
-                      <div key={cIdx} className="vg-letter-cell">
-                        <span className="vg-cell-cipher">{cell.cipherCh}</span>
-                        <span className="vg-cell-key">
-                          {cell.kFilled ? cell.kLetter : (cell.keyPos === activeSlot ? '?' : '_')}
-                        </span>
-                        <span className="vg-cell-arrow">↓</span>
-                        <span className={`vg-cell-plain ${!cell.kFilled ? 'pending' : cell.correct ? 'correct' : 'wrong'}`}>
-                          {cell.kFilled ? cell.plainCh : '?'}
-                        </span>
-                      </div>
-                    ))}
+                    {w.cells.map((cell, cIdx) => {
+                      let plainClass = 'vg-cell-plain';
+                      if (cell.kFilled) {
+                        plainClass += cell.correct ? ' correct' : ' wrong';
+                      } else if (cell.isHovered) {
+                        plainClass += ' preview';
+                      } else {
+                        plainClass += ' pending';
+                      }
+
+                      let keyClass = 'vg-cell-key';
+                      if (cell.kFilled) {
+                        keyClass += ' filled';
+                      } else if (cell.isHovered) {
+                        keyClass += ' preview';
+                      }
+
+                      return (
+                        <div key={cIdx} className="vg-letter-cell">
+                          <span className="vg-cell-cipher">{cell.cipherCh}</span>
+                          <span className={keyClass}>
+                            {cell.kFilled ? cell.kLetter : (cell.isHovered ? cell.kLetter : (cell.keyPos === activeSlot ? '?' : '_'))}
+                          </span>
+                          <span className="vg-cell-arrow">↓</span>
+                          <span className={plainClass}>
+                            {cell.kFilled ? cell.plainCh : (cell.isHovered ? cell.plainCh : '?')}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                   <div className="vg-segment-label">{wordSolved[wIdx] ? '✅ ' : ''}{w.plainWord}</div>
                 </div>
@@ -618,29 +570,30 @@ export default function VigenereGame({
 
             {/* Wrong-catch educational feedback */}
             {wrongCount > 0 && !hintRevealed && (
-              <div style={{ background: 'rgba(255,45,85,0.08)', border: '1px solid rgba(255,45,85,0.25)', borderRadius: 10, padding: '8px 14px', marginTop: 8, fontSize: '0.8rem', color: '#ff9eb5' }}>
+              <div style={{ background: 'rgba(255,45,85,0.08)', border: '1px solid rgba(255,45,85,0.25)', borderRadius: 10, padding: '8px 14px', fontSize: '0.8rem', color: '#ff9eb5' }}>
                 ⚠️ {wrongCount} wrong catch{wrongCount > 1 ? 'es' : ''} for slot {activeSlot + 1}.
-                The wrong key letter produced incorrect decryptions. Check the Tabula Recta for guidance.
+                The wrong key letter produced incorrect decryptions. Check the Interactive Tabula Recta tool.
                 {wrongCount === 1 && ' One more miss and you\'ll get a hint letter.'}
               </div>
             )}
 
-            <div className="vg-decrypt-indicator">
-              <span>🎯</span>
-              <span>
-                Catch the fish carrying key letter #{activeSlot + 1}. Correct letter turns ciphertext <strong style={{ color: 'var(--neon-green)' }}>green</strong>.
-                Wrong letter = that fish respawns + a note on what went wrong.
-              </span>
-            </div>
+            {/* Live Hover Scanner Console */}
+            {hoveredFish ? (
+              <div className="vg-scan-indicator scanning">
+                <span className="material-symbols-outlined scanner-icon">radar</span>
+                <span className="scanner-text">
+                  Testing Key Letter: <strong style={{ color: 'var(--neon-cyan)' }}>{hoveredFish.letter}</strong> (Shift -{charToIdx(hoveredFish.letter)}) — Previewing decryptions...
+                </span>
+              </div>
+            ) : (
+              <div className="vg-scan-indicator idle">
+                <span className="material-symbols-outlined scanner-icon">explore</span>
+                <span className="scanner-text">
+                  Hover over a swimming fish to scan its decryption output in real time! Click to catch it when you find a match.
+                </span>
+              </div>
+            )}
           </div>
-        </div>
-
-        <div className="vg-instruction-strip">
-          <span>🎣</span>
-          <span>
-            Click a fish to cast your line. Each fish carries a letter A–Z. Find the right key letters in order.
-            Wrong letter → fish goes back. Right letter → key slot fills. 2 misses → hint appears.
-          </span>
         </div>
 
         {/* Pond */}
@@ -653,7 +606,9 @@ export default function VigenereGame({
             const isCorrect = f.letter === targetKey[activeSlot];
             return (
               <div key={f.id} className="vg-fish"
-                style={{ left: `${f.x}%`, top: f.y, transform: `scaleX(${f.direction})` }}
+                style={{ left: `${f.x}%`, top: f.y, '--dir': f.direction }}
+                onMouseEnter={() => { if (!isCasting) setHoveredFish(f); }}
+                onMouseLeave={() => setHoveredFish(null)}
                 onClick={() => castAt(f)}>
                 <span className="vg-fish-sprite">{f.emoji}</span>
                 <span className={`vg-fish-badge ${isCorrect && hintRevealed ? 'correct-letter' : 'other-letter'}`} style={{ transform: `scaleX(${f.direction})` }}>
@@ -670,7 +625,7 @@ export default function VigenereGame({
           {splash && (
             <div className="vg-splash" style={{ left: `${splash.x}%`, top: splash.y }}>💦</div>
           )}
-          <svg className="vg-pond-svg" viewBox={`0 0 ${pondW} 240`} preserveAspectRatio="none">
+          <svg className="vg-pond-svg" viewBox={`0 0 ${pondW} 180`} preserveAspectRatio="none">
             <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="vg-rod-line" />
             {isCasting && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="vg-fish-line" />}
           </svg>
@@ -680,6 +635,61 @@ export default function VigenereGame({
       {feedback && (
         <div className="vg-feedback" style={{ color: feedback.color, fontSize: '0.88rem', maxWidth: '70%', lineHeight: 1.4 }}>
           {feedback.text}
+        </div>
+      )}
+
+      {/* Tabula Recta Modal */}
+      {showTabula && (
+        <div className="vg-modal-overlay" onClick={() => setShowTabula(false)}>
+          <div className="vg-modal-card tabula-modal" onClick={e => e.stopPropagation()}>
+            <div className="vg-modal-header">
+              <h3>📊 Interactive Tabula Recta</h3>
+              <button className="vg-modal-close" onClick={() => setShowTabula(false)}>×</button>
+            </div>
+            <div className="vg-modal-body">
+              <p className="vg-modal-instructions">
+                The Tabula Recta is a 26×26 grid of shifted alphabets. Find the column of your <strong>Cipher letter (C)</strong>,
+                then look at the row of your <strong>Key letter (K)</strong> to find the intersection, which is the <strong>Plain letter (P)</strong>!
+                <br />
+                <span style={{ color: 'var(--neon-yellow)' }}>★ Gold Row: the correct key letter for the active slot is highlighted.</span>
+              </p>
+              <div className="vg-tabula-scroll-wrapper">
+                <table className="vg-tabula-full-grid">
+                  <thead>
+                    <tr>
+                      <th className="corner-cell">K \ P</th>
+                      {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(ch => (
+                        <th key={ch} className="col-header">{ch}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((kChar, rIdx) => {
+                      const isCorrectKey = kChar === targetKey[activeSlot];
+                      const rowLetters = tabulaRow(kChar);
+                      return (
+                        <tr key={kChar} className={isCorrectKey ? 'correct-key-row' : ''}>
+                          <td className="row-header">{kChar}</td>
+                          {rowLetters.map((cChar, cIdx) => {
+                            const plainLetter = idxToChar(cIdx);
+                            return (
+                              <td 
+                                key={cIdx} 
+                                className="cell"
+                                title={`Key: ${kChar}, Plain: ${plainLetter} → Cipher: ${cChar}`}
+                              >
+                                {cChar}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
