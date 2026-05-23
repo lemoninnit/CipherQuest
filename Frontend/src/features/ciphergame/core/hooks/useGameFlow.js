@@ -67,10 +67,10 @@ export function useGameFlow() {
       gameType  = getCaesarGameType(stageIndex);
     } else if (cat === 'vigenere') {
       levelData = getVigenereLevelData(diff, stageIndex);
-      gameType  = getVigenereGameType();
+      gameType  = getVigenereGameType(stageIndex);
     } else {
       levelData = getPlayfairLevelData(diff, stageIndex);
-      gameType  = getPlayfairGameType();
+      gameType  = getPlayfairGameType(stageIndex);
     }
     setCurrentStage({
       id: `${cat}-${diff}-${stageIndex}`,

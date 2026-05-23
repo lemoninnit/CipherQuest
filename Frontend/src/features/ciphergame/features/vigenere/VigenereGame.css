@@ -1,70 +1,6 @@
 /* VigenereGame.css */
 
-/* ── Layout ──────────────────────────────────────────────── */
-.vg-root {
-  height: 100%;
-  width: 100%;
-  background: radial-gradient(circle at 50% 20%, #081d3a 0%, #030914 80%);
-  color: var(--text-primary);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-}
-
-.vg-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 20px;
-  background: rgba(6,19,36,0.9);
-  border-bottom: 1px solid var(--card-border);
-  flex-shrink: 0;
-  z-index: 10;
-}
-
-.vg-btn-back {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: var(--text-primary);
-  padding: 6px 14px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.vg-btn-back:hover { background: rgba(255,255,255,0.07); }
-
-.vg-header-title {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--neon-cyan);
-  letter-spacing: 0.04em;
-  flex: 1;
-  text-align: center;
-}
-
-.vg-stage-badge {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  padding: 4px 10px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 6px;
-}
-
 /* ── Ready Screen ─────────────────────────────────────────── */
-.vg-ready-screen {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
 .vg-ready-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -76,20 +12,6 @@
   backdrop-filter: blur(12px);
 }
 
-.vg-ready-icon { font-size: 3.5rem; margin-bottom: 16px; }
-.vg-ready-title {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--neon-cyan);
-  margin-bottom: 8px;
-}
-.vg-ready-subtitle {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  margin-bottom: 28px;
-  line-height: 1.6;
-}
-
 .vg-ready-preview {
   background: rgba(0,229,255,0.05);
   border: 1px solid rgba(0,229,255,0.2);
@@ -98,6 +20,7 @@
   margin-bottom: 28px;
   text-align: left;
 }
+
 .vg-preview-row {
   display: flex;
   justify-content: space-between;
@@ -146,165 +69,14 @@
   transform: translateY(-1px);
 }
 
-/* ── Game Layout ──────────────────────────────────────────── */
-.vg-game-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  gap: 0;
-}
-
-.vg-top-section {
-  display: flex;
-  gap: 0;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--card-border);
-  background: rgba(6,19,36,0.6);
-}
-
-/* ── Sidebar ──────────────────────────────────────────────── */
-.vg-sidebar {
-  width: 260px;
-  flex-shrink: 0;
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border-right: 1px solid var(--card-border);
-  background: rgba(3,9,20,0.4);
-}
-
-.vg-sidebar-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 10px;
-  padding: 12px 14px;
-}
-
-.vg-sidebar-title {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-
-/* Key slots */
-.vg-key-slots {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.vg-key-slot {
-  width: 36px;
-  height: 36px;
-  border-radius: 7px;
-  border: 2px solid rgba(0,229,255,0.25);
-  background: rgba(0,229,255,0.06);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--neon-cyan);
-  transition: all 0.2s;
-  position: relative;
-}
-.vg-key-slot.filled {
-  border-color: var(--neon-cyan);
-  background: rgba(0,229,255,0.15);
-  box-shadow: 0 0 10px rgba(0,229,255,0.3);
-}
-.vg-key-slot.active-slot {
-  border-color: var(--neon-yellow);
-  background: rgba(255,215,0,0.12);
-  box-shadow: 0 0 14px rgba(255,215,0,0.4);
-  animation: pulse-slot 0.8s ease-in-out infinite alternate;
-}
-@keyframes pulse-slot {
-  from { box-shadow: 0 0 8px rgba(255,215,0,0.3); }
-  to   { box-shadow: 0 0 18px rgba(255,215,0,0.7); }
-}
-
-/* Vigenère table mini */
-.vg-table-mini {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  width: 100%;
-  border-collapse: collapse;
-}
-.vg-table-mini th {
-  color: var(--text-muted);
-  font-size: 0.65rem;
-  padding: 2px 4px;
-  text-align: center;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-}
-.vg-table-mini td {
-  padding: 3px 4px;
-  text-align: center;
-  border: 1px solid rgba(255,255,255,0.04);
-}
-.vg-table-mini tr.active-row td {
-  background: rgba(0,229,255,0.1);
-  color: var(--neon-cyan);
-}
-.vg-table-mini .cell-highlight {
-  background: rgba(57,255,20,0.2) !important;
-  color: var(--neon-green) !important;
-  font-weight: 700;
-  border-radius: 3px;
-}
-
-/* Progress bar */
-.vg-progress-bar {
-  height: 6px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 10px;
-  overflow: hidden;
-  margin-top: 6px;
-}
-.vg-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green));
-  border-radius: 10px;
-  transition: width 0.4s ease;
-}
-
-.vg-formula-box {
-  background: rgba(57,255,20,0.05);
-  border: 1px solid rgba(57,255,20,0.15);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-.vg-formula-box code {
-  color: var(--neon-green);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
-}
-
 /* ── Word Panel ───────────────────────────────────────────── */
-.vg-word-area {
-  flex: 1;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow-y: auto;
-}
-
 .vg-word-panel-title {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   color: var(--text-muted);
   text-transform: uppercase;
+  margin-bottom: 8px;
 }
 
 .vg-segments-row {
@@ -318,12 +90,7 @@
   border: 1.5px solid var(--card-border);
   border-radius: 12px;
   padding: 12px 16px;
-  cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
-}
-.vg-segment-card.is-active {
-  border-color: var(--neon-yellow);
-  box-shadow: 0 0 14px rgba(255,215,0,0.25);
 }
 .vg-segment-card.is-solved {
   border-color: var(--neon-green);
@@ -374,8 +141,8 @@
   padding: 2px 5px;
   transition: background 0.2s, color 0.2s;
 }
-.vg-cell-plain.correct  { background: rgba(57,255,20,0.15);  color: var(--neon-green); }
-.vg-cell-plain.wrong    { background: rgba(255,45,85,0.12);  color: var(--neon-red); }
+.vg-cell-plain.correct  { background: rgba(57,255,20,0.15);   color: var(--neon-green); }
+.vg-cell-plain.wrong    { background: rgba(255,45,85,0.12);   color: var(--neon-red); }
 .vg-cell-plain.pending  { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.25); }
 
 .vg-segment-label {
@@ -384,17 +151,6 @@
   text-align: center;
   margin-top: 2px;
 }
-
-/* Hint banner */
-.vg-hint-banner {
-  background: rgba(0,229,255,0.07);
-  border: 1px solid rgba(0,229,255,0.18);
-  border-radius: 8px;
-  padding: 8px 14px;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-}
-.vg-hint-banner strong { color: var(--neon-cyan); }
 
 /* Currently decrypting indicator */
 .vg-decrypt-indicator {
@@ -409,10 +165,11 @@
   gap: 10px;
 }
 
+/* Letter value reference */
 .vg-value-reference {
   margin-top: 10px;
-  background: rgba(0, 229, 255, 0.05);
-  border: 1px solid rgba(0, 229, 255, 0.18);
+  background: rgba(0,229,255,0.05);
+  border: 1px solid rgba(0,229,255,0.18);
   border-radius: 10px;
   padding: 10px 12px;
 }
@@ -445,199 +202,7 @@
   line-height: 1.2;
 }
 
-/* ── Pond ─────────────────────────────────────────────────── */
-.vg-pond-section {
-  flex-shrink: 0;
-  height: 240px;
-  position: relative;
-  background: linear-gradient(180deg, #041630 0%, #061e3a 50%, #07254a 100%);
-  border-top: 1px solid rgba(0,229,255,0.15);
-  overflow: hidden;
-}
-
-.vg-pond-surface {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-  animation: wave-line 3s ease-in-out infinite;
-  opacity: 0.5;
-}
-@keyframes wave-line {
-  0%, 100% { transform: scaleX(0.95) translateY(0); opacity: 0.4; }
-  50%       { transform: scaleX(1.05) translateY(2px); opacity: 0.7; }
-}
-
-.vg-bubble {
-  position: absolute;
-  bottom: 0;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, rgba(0,229,255,0.4), rgba(0,229,255,0.05));
-  border: 1px solid rgba(0,229,255,0.25);
-  animation: bubble-rise linear infinite;
-  pointer-events: none;
-}
-@keyframes bubble-rise {
-  from { transform: translateY(0) scale(1); opacity: 0.6; }
-  to   { transform: translateY(-240px) scale(0.5); opacity: 0; }
-}
-
-/* Rod + line */
-.vg-pond-svg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-.vg-rod-line  { stroke: #8b6914; stroke-width: 3; stroke-linecap: round; }
-.vg-fish-line { stroke: rgba(0,229,255,0.6); stroke-width: 1.5; stroke-dasharray: 4 3; }
-
-/* Fish entities */
-.vg-fish {
-  position: absolute;
-  cursor: pointer;
-  transition: transform 0.1s;
-  user-select: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-.vg-fish:hover { filter: brightness(1.3); }
-.vg-fish:hover .vg-fish-badge { transform: scaleX(var(--dir)) scale(1.1); }
-
-.vg-fish-sprite { font-size: 1.5rem; line-height: 1; }
-
-.vg-fish-badge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 5px;
-  border: 1px solid currentColor;
-  min-width: 24px;
-  text-align: center;
-  line-height: 1.3;
-}
-.vg-fish-badge.correct-letter {
-  color: var(--neon-green);
-  background: rgba(57,255,20,0.15);
-  border-color: var(--neon-green);
-  box-shadow: 0 0 8px rgba(57,255,20,0.4);
-}
-.vg-fish-badge.other-letter {
-  color: var(--neon-cyan);
-  background: rgba(0,229,255,0.08);
-  border-color: rgba(0,229,255,0.35);
-}
-
-.vg-splash {
-  position: absolute;
-  font-size: 1.4rem;
-  pointer-events: none;
-  animation: splash-anim 0.5s ease-out forwards;
-}
-@keyframes splash-anim {
-  0%   { opacity: 1; transform: scale(0.5); }
-  60%  { opacity: 1; transform: scale(1.4); }
-  100% { opacity: 0; transform: scale(1) translateY(-20px); }
-}
-
-/* Reel-in fish */
-.vg-reel-fish {
-  position: absolute;
-  pointer-events: none;
-  animation: none;
-  transition: left 0.05s linear, top 0.05s linear;
-}
-
-/* ── Feedback flash ───────────────────────────────────────── */
-.vg-feedback {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 50;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 2rem;
-  font-weight: 800;
-  pointer-events: none;
-  animation: feedback-pop 0.7s ease-out forwards;
-}
-@keyframes feedback-pop {
-  0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.6); }
-  30%  { opacity: 1; transform: translate(-50%, -60%) scale(1.2); }
-  100% { opacity: 0; transform: translate(-50%, -80%) scale(0.9); }
-}
-
-/* ── Submit button ────────────────────────────────────────── */
-.vg-submit-panel {
-  background: rgba(57,255,20,0.07);
-  border: 1px solid rgba(57,255,20,0.3);
-  border-radius: 10px;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.vg-submit-btn {
-  width: 100%;
-  padding: 12px;
-  background: var(--neon-green);
-  color: #030914;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 800;
-  cursor: pointer;
-  letter-spacing: 0.04em;
-  transition: box-shadow 0.2s;
-}
-.vg-submit-btn:hover { box-shadow: 0 0 20px rgba(57,255,20,0.5); }
-.vg-submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-/* ── Recap Overlay ────────────────────────────────────────── */
-.vg-recap-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(3,9,20,0.92);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  backdrop-filter: blur(6px);
-}
-
-.vg-recap-card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 20px;
-  padding: 36px 44px;
-  max-width: 680px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.vg-recap-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--neon-cyan);
-  text-align: center;
-  margin-bottom: 4px;
-}
-.vg-recap-subtitle {
-  color: var(--text-muted);
-  text-align: center;
-  margin-bottom: 24px;
-  font-size: 0.9rem;
-}
-
-/* Full Vigenère table in recap */
+/* ── Recap Table ──────────────────────────────────────────── */
 .vg-recap-table-wrap { overflow-x: auto; margin-bottom: 20px; }
 .vg-recap-table {
   font-family: 'JetBrains Mono', monospace;
@@ -671,6 +236,7 @@
   font-size: 0.9rem;
 }
 
+/* ── Recap Explanation ────────────────────────────────────── */
 .vg-recap-explanation {
   background: rgba(0,229,255,0.05);
   border: 1px solid rgba(0,229,255,0.15);
@@ -686,32 +252,4 @@
   font-family: 'JetBrains Mono', monospace;
   color: var(--neon-green);
   font-size: 0.88rem;
-}
-
-.vg-recap-proceed-btn {
-  width: 100%;
-  padding: 14px;
-  background: var(--neon-green);
-  color: #030914;
-  border: none;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: box-shadow 0.2s;
-}
-.vg-recap-proceed-btn:hover { box-shadow: 0 0 24px rgba(57,255,20,0.5); }
-.vg-recap-proceed-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-
-/* ── Instruction tooltip strip ────────────────────────────── */
-.vg-instruction-strip {
-  background: rgba(255,215,0,0.06);
-  border-top: 1px solid rgba(255,215,0,0.15);
-  padding: 6px 20px;
-  font-size: 0.78rem;
-  color: var(--neon-yellow);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
 }

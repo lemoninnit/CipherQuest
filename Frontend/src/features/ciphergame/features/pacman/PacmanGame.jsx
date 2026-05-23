@@ -22,6 +22,27 @@ const DIR_VECTORS = {
   NONE: { r: 0, c: 0 }
 };
 
+const charToIdx = (ch) => ch.charCodeAt(0) - 65;
+const idxToChar = (n) => String.fromCharCode((((n % 26) + 26) % 26) + 65);
+
+const tabulaRow = (keyLetter) => {
+  const k = charToIdx(keyLetter);
+  return Array.from({ length: 26 }, (_, i) => idxToChar(i + k));
+};
+
+const getOrigIndex = (plaintext, charIndexWithoutSpaces) => {
+  let letterCount = 0;
+  for (let i = 0; i < plaintext.length; i++) {
+    if (plaintext[i] !== ' ') {
+      if (letterCount === charIndexWithoutSpaces) {
+        return i;
+      }
+      letterCount++;
+    }
+  }
+  return charIndexWithoutSpaces;
+};
+
 const caesarDecryptChar = (char, shift) => {
   const code = char.charCodeAt(0);
   if (code >= 65 && code <= 90) {
@@ -66,14 +87,80 @@ const generateRandomPellets = (ghostList, pacmanPos) => {
   return initialPellets;
 };
 
+const describePlayfairRule = (rule, mode = 'decrypt') => {
+  const direction = mode === 'decrypt' ? 'back' : 'forward';
+  if (rule === 'row') return `Same row: move one column left for both letters.`;
+  if (rule === 'column') return `Same column: move one row upward for both letters.`;
+  return 'Rectangle: keep each row, swap to the other letter column.';
+};
+
 // Dynamically configure ghosts: correct letters at ALL masked indices, plus distractors.
 const generateInitialGhosts = (levelData) => {
-  const maskedIndices = [];
-  levelData.masks[0].forEach((m, idx) => {
-    if (!m) {
-      maskedIndices.push(idx);
+  const isPlayfair = !!levelData.matrix;
+  if (isPlayfair) {
+    const ghosts = [];
+    const startPositions = [
+      { row: 7, col: 1, dir: { r: 0, c: 1 } },
+      { row: 7, col: 19, dir: { r: 0, c: -1 } },
+      { row: 1, col: 9, dir: { r: 1, c: 0 } },
+      { row: 5, col: 4, dir: { r: 0, c: 1 } },
+      { row: 1, col: 19, dir: { r: 0, c: -1 } },
+      { row: 3, col: 9, dir: { r: 0, c: 1 } },
+      { row: 5, col: 16, dir: { r: 0, c: -1 } },
+      { row: 1, col: 5, dir: { r: 1, c: 0 } }
+    ];
+
+    const pairs = levelData.pairs || [];
+    // 1. Assign correct target ghosts for ALL digraph pairs
+    for (let i = 0; i < pairs.length; i++) {
+      const plainPair = pairs[i];
+      const pos = startPositions[i % startPositions.length];
+      ghosts.push({
+        id: `ghost-${i + 1}`,
+        char: plainPair,
+        index: i,
+        row: pos.row,
+        col: pos.col,
+        eaten: false,
+        dir: pos.dir
+      });
     }
-  });
+
+    // 2. Add exactly 2 decoy ghosts for distraction/challenge
+    const alphabet = 'ABCDEFGHIKLMNOPQRSTUVWXYZ';
+    for (let i = 0; i < 2; i++) {
+      let decoyPair = '';
+      do {
+        const c1 = alphabet[Math.floor(Math.random() * 25)];
+        const c2 = alphabet[Math.floor(Math.random() * 25)];
+        decoyPair = c1 + c2;
+      } while (pairs.includes(decoyPair));
+
+      const posIdx = pairs.length + i;
+      const pos = startPositions[posIdx % startPositions.length];
+
+      ghosts.push({
+        id: `ghost-decoy-${i + 1}`,
+        char: decoyPair,
+        index: -1, // Decoy indicator
+        row: pos.row,
+        col: pos.col,
+        eaten: false,
+        dir: pos.dir
+      });
+    }
+
+    return ghosts;
+  }
+
+  const maskedIndices = [];
+  if (levelData && levelData.masks && levelData.masks[0]) {
+    levelData.masks[0].forEach((m, idx) => {
+      if (!m) {
+        maskedIndices.push(idx);
+      }
+    });
+  }
 
   const ghosts = [];
   const startPositions = [
@@ -90,7 +177,7 @@ const generateInitialGhosts = (levelData) => {
   // 1. Assign correct target ghosts for ALL masked indices (guarantees completion)
   for (let i = 0; i < maskedIndices.length; i++) {
     const idx = maskedIndices[i];
-    const plainChar = levelData.plaintext[idx];
+    const plainChar = levelData.plaintext ? levelData.plaintext[idx] : '';
     const pos = startPositions[i % startPositions.length];
     ghosts.push({
       id: `ghost-${i + 1}`,
@@ -105,7 +192,7 @@ const generateInitialGhosts = (levelData) => {
 
   // 2. Add exactly 2 decoy ghosts for distraction/challenge
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const targetLetters = maskedIndices.map(idx => levelData.plaintext[idx]);
+  const targetLetters = levelData.plaintext ? maskedIndices.map(idx => levelData.plaintext[idx]) : [];
   
   for (let i = 0; i < 2; i++) {
     let decoyChar = '';
@@ -131,7 +218,18 @@ const generateInitialGhosts = (levelData) => {
 };
 
 export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
-  const targetShift = levelData.targetShifts[0]; // 6 for WATER
+  if (!levelData) {
+    return (
+      <div className="cipher-container">
+        <p style={{ color: '#f87171' }}>Loading game data...</p>
+        <button onClick={onBackToStages}>Back to Stages</button>
+      </div>
+    );
+  }
+
+  const isVigenere = !!levelData.targetKey;
+  const isPlayfair = !!levelData.matrix;
+  const targetShift = isVigenere ? 0 : (levelData.targetShifts && levelData.targetShifts[0] ? levelData.targetShifts[0] : 0);
 
   // Initial Coordinates
   const initialPacman = { row: 1, col: 1 };
@@ -139,13 +237,16 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const initialGhosts = generateInitialGhosts(levelData);
 
   const maskedIndices = [];
-  levelData.masks[0].forEach((m, idx) => {
-    if (!m) maskedIndices.push(idx);
-  });
+  if (levelData.masks && levelData.masks[0]) {
+    levelData.masks[0].forEach((m, idx) => {
+      if (!m) maskedIndices.push(idx);
+    });
+  }
 
   const [phase, setPhase] = useState('ready');
   const [showExplanation, setShowExplanation] = useState(false);
   const [explanationStep, setExplanationStep] = useState(-1);
+  const [showTabula, setShowTabula] = useState(false);
 
   const [pacman, setPacman] = useState(initialPacman);
   const [pacmanDir, setPacmanDir] = useState('NONE');
@@ -455,7 +556,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   const nextEaten = prevEaten.includes(ghost.index)
                     ? prevEaten
                     : [...prevEaten, ghost.index];
-                  if (nextEaten.length === maskedIndices.length) {
+                  const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
+                  if (nextEaten.length === totalTargets) {
                     setLevelSolved(true);
                   }
                   return nextEaten;
@@ -468,7 +570,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   setIsScreenShaking(true);
                   setTimeout(() => setIsScreenShaking(false), 450);
                   handleLoseHeart(
-                    `Ouch! You ate Decoy Ghost '${ghost.char}' which does not belong to the target blanks. Use the Shift Clue!`
+                    isPlayfair
+                      ? `Ouch! You ate Decoy Ghost '${ghost.char}' which is not part of the correct plaintext pairs. Use the Playfair matrix!`
+                      : `Ouch! You ate Decoy Ghost '${ghost.char}' which does not belong to the target blanks. Use the Shift Clue!`
                   );
                 }
 
@@ -598,7 +702,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     if (!levelSolved) return;
     setShowExplanation(true);
     setExplanationStep(-1);
-    const total = levelData.plaintext.replace(/\s+/g, '').length;
+    const total = isPlayfair 
+      ? (levelData.pairs ? levelData.pairs.length : 0)
+      : (levelData.plaintext ? levelData.plaintext.replace(/\s+/g, '').length : 0);
     let step = -1;
     const iv = setInterval(() => {
       step++;
@@ -621,7 +727,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           <span className="material-symbols-outlined">arrow_back</span>
           Exit to Stages
         </button>
-        <div className="fg-header-category indent-header-title">Caesar Cipher</div>
+        <div className="fg-header-category indent-header-title">
+          {isPlayfair ? "Playfair Cipher" : (isVigenere ? "Vigenère Cipher" : "Caesar Cipher")}
+        </div>
         <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
           {tier.toUpperCase()} Mode — Stage {levelData.level}
         </div>
@@ -629,15 +737,27 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', width: '100%' }}>
         <div className="vg-ready-card" style={{ maxWidth: 540 }}>
           <div style={{ fontSize: '3rem', marginBottom: '12px' }}>👾</div>
-          <h2 style={{ color: 'var(--neon-cyan)', margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>Caesar Pac-Man</h2>
+          <h2 style={{ color: 'var(--neon-cyan)', margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>
+            {isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man")}
+          </h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
-            Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the ciphertext under Caesar decryption.
+            {isPlayfair
+              ? "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the Playfair digraph pairs using the key matrix!"
+              : (isVigenere 
+                ? "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the Vigenère cipher. Use the repeating keyword to find the shifts!"
+                : "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the ciphertext under Caesar decryption.")}
           </p>
           <div style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: '16px 20px', marginBottom: '20px', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
               <span style={{ color: 'var(--text-muted)' }}>Ciphertext</span>
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-cyan)' }}>{levelData.ciphertext}</span>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-cyan)', letterSpacing: '1px' }}>{levelData.ciphertext}</span>
             </div>
+            {isPlayfair ? (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Keyword</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-yellow)' }}>{levelData.key}</span>
+              </div>
+            ) : null}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
               <span style={{ color: 'var(--text-muted)' }}>Hint</span>
               <span style={{ color: '#a0c4d8', fontStyle: 'italic' }}>{levelData.hint}</span>
@@ -645,7 +765,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           </div>
           <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', lineHeight: 1.5 }}>
             <strong style={{ color: 'var(--neon-green)' }}>How it works:</strong>{' '}
-            Eat a yellow Skill Pellet ⚡, then press <strong>SPACEBAR</strong> to activate Decryption Mode. While Decryption Mode is active, eat the ghost carrying the correct plaintext letter. Avoid decoy ghosts and do not touch ghosts when Decryption Mode is inactive!
+            {isPlayfair
+              ? "Use the 5x5 key matrix on the side to visually decrypt the active ciphertext digraph. Work out the plaintext letter pair, eat a yellow Skill Pellet ⚡, then press SPACEBAR to activate Decryption Mode and eat the matching ghost! Avoid decoys."
+              : (isVigenere 
+                ? "Use the keyword clue and the Interactive Tabula Recta tool. Work out the plaintext letter for each blank index, eat a yellow Skill Pellet ⚡, then press SPACEBAR to activate Decryption Mode and eat the matching ghost! Avoid decoys."
+                : "Eat a yellow Skill Pellet ⚡, then press SPACEBAR to activate Decryption Mode. While Decryption Mode is active, eat the ghost carrying the correct plaintext letter. Avoid decoy ghosts and do not touch ghosts when Decryption Mode is inactive!")}
           </p>
           <button className="vg-start-btn" onClick={() => setPhase('playing')}>👾 Start Pac-Man</button>
         </div>
@@ -653,8 +777,30 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     </div>
   );
 
-  const words = levelData.plaintext.split(' ');
-  const cipherSegs = levelData.ciphertext.split(' ');
+  // 1. Find the first unsolved digraph index for active highlight
+  let activeIndex = -1;
+  if (isPlayfair && levelData.pairs) {
+    activeIndex = levelData.pairs.findIndex((_, idx) => !eatenGhosts.includes(idx));
+  }
+  const cipherPair = (isPlayfair && levelData.cipherPairs && activeIndex !== -1) ? levelData.cipherPairs[activeIndex] : null;
+
+  // 2. Build matrix letter position lookup
+  const lookup = {};
+  if (isPlayfair && levelData.matrix) {
+    levelData.matrix.forEach((row, rowIndex) => {
+      row.forEach((letter, colIndex) => {
+        lookup[letter] = { row: rowIndex, col: colIndex };
+      });
+    });
+  }
+
+  // 3. Highlight positions for active cipher pair
+  const cipherHighlight = new Set();
+  if (cipherPair) {
+    const [a, b] = cipherPair.split('');
+    if (lookup[a]) cipherHighlight.add(`${lookup[a].row}-${lookup[a].col}`);
+    if (lookup[b]) cipherHighlight.add(`${lookup[b].row}-${lookup[b].col}`);
+  }
 
   return (
     <div className="pacman-container fg-root">
@@ -664,72 +810,164 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             <h2 className="fg-recap-title">🔬 Cryptographic Recap</h2>
             <p className="fg-recap-subtitle">Why Did This Work?</p>
             <div className="fg-recap-animation-box" style={{ minHeight: 'auto', padding: '16px', marginBottom: '16px' }}>
-              <div className="fg-recap-letter-row">
-                {levelData.plaintext.replace(/\s+/g, '').split('').map((plainCh, idx) => {
-                  const cipherCh = levelData.ciphertext.replace(/\s+/g, '')[idx];
-                  let wi = 0, acc = 0;
-                  for (let i = 0; i < words.length; i++) {
-                    if (idx < acc + words[i].length) { wi = i; break; }
-                    acc += words[i].length;
-                  }
-                  const seg = levelData.targetShifts[wi];
-                  return (
-                    <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}>
-                      <span className="fg-recap-char-cipher">{cipherCh}</span>
-                      <span className="fg-recap-math">-{seg}</span>
-                      <span className="fg-recap-arrow">↓</span>
-                      <span className="fg-recap-char-plain">{plainCh}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              {isPlayfair ? (
+                <div className="fg-recap-letter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
+                  {(levelData.pairs || []).map((plainPair, idx) => {
+                    const cipherPair = levelData.cipherPairs ? levelData.cipherPairs[idx] : '';
+                    const rule = levelData.rules ? levelData.rules[idx] : '';
+                    return (
+                      <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`} style={{ minWidth: '110px', padding: '12px 16px' }}>
+                        <span className="fg-recap-char-cipher" style={{ fontSize: '1.25rem' }}>{cipherPair}</span>
+                        <span className="fg-recap-math" style={{ fontSize: '0.7rem', color: 'var(--neon-yellow)' }}>({rule})</span>
+                        <span className="fg-recap-arrow">↓</span>
+                        <span className="fg-recap-char-plain" style={{ fontSize: '1.25rem' }}>{explanationStep >= idx ? plainPair : '__'}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="fg-recap-letter-row">
+                  {(levelData.plaintext || '').replace(/\s+/g, '').split('').map((plainCh, idx) => {
+                    const cipherCh = levelData.ciphertext ? levelData.ciphertext.replace(/\s+/g, '')[idx] : '';
+                    let mathDisplay = "";
+                    if (isVigenere) {
+                      const origIdx = getOrigIndex(levelData.plaintext || '', idx);
+                      const keyChar = levelData.targetKey ? levelData.targetKey[origIdx % levelData.targetKey.length] : '';
+                      const shiftVal = keyChar ? charToIdx(keyChar) : 0;
+                      mathDisplay = keyChar ? `-${keyChar} (${shiftVal})` : '';
+                    } else {
+                      let wi = 0, acc = 0;
+                      for (let i = 0; i < words.length; i++) {
+                        if (idx < acc + words[i].length) { wi = i; break; }
+                        acc += words[i].length;
+                      }
+                      const seg = levelData.targetShifts ? levelData.targetShifts[wi] : 0;
+                      mathDisplay = `-${seg}`;
+                    }
+                    return (
+                      <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}>
+                        <span className="fg-recap-char-cipher">{cipherCh}</span>
+                        <span className="fg-recap-math">{mathDisplay}</span>
+                        <span className="fg-recap-arrow">↓</span>
+                        <span className="fg-recap-char-plain">{plainCh}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
             <div className="fg-recap-explanation" style={{ background: 'rgba(255,255,255,0.015)' }}>
-              💡 <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is shifted backward by the key value.
-              By catching fish with numeric modifiers, you tuned the basket shift to match the secret key.{' '}
-              <code>Plain = (Cipher − Key) mod 26</code> maps every letter back uniformly.
-              {levelData.targetShifts && levelData.targetShifts.map((shiftVal, sIdx) => {
-                const sAlph = alphabet.map((_, i) => alphabet[(i + shiftVal) % 26]);
-                return (
-                  <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
-                    <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
-                      🔑 Caesar Alphabet Shift Table {levelData.targetShifts.length > 1 ? `— Segment #${sIdx + 1}` : ''} (Key: +{shiftVal})
+              💡 {isPlayfair ? (
+                <>
+                  <strong>Playfair Cipher Decryption:</strong> digraph pairs are decrypted using a 5x5 key matrix.
+                  Depending on their geometric alignment in the grid, the letters move left (same row), move up (same column), or swap columns (rectangle).
+                  <br /><br />
+                  <strong>Why this worked:</strong> You successfully navigated the maze to eat the ghosts matching each plaintext pair, demonstrating how symmetric coordinates in the grid map to letters.
+                  <br /><br />
+                  <span style={{ color: 'var(--neon-cyan)', fontSize: '0.85rem' }}>Lesson context: {levelData.lesson}</span>
+                </>
+              ) : isVigenere ? (
+                <>
+                  <strong>Vigenère Cipher Decryption:</strong> Each ciphertext letter is shifted backward by the corresponding letter of the repeating keyword.
+                  By eating the correct ghosts in the maze, you solved the keyword alignment.
+                  <code>Plain[i] = (Cipher[i] - Key[i mod keyLen]) mod 26</code> maps every letter back.
+                </>
+              ) : (
+                <>
+                  <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is shifted backward by the key value.
+                  By eating the correct ghosts, you resolved the shifted characters.
+                  <code>Plain = (Cipher - Key) mod 26</code> maps every letter back uniformly.
+                </>
+              )}
+              {!isPlayfair && (isVigenere ? (
+                (() => {
+                  const uniqueKeyLetters = Array.from(new Set((levelData.targetKey || '').split('')));
+                  return uniqueKeyLetters.map((kChar, sIdx) => {
+                    const shiftVal = charToIdx(kChar);
+                    const sAlph = alphabet.map((_, i) => alphabet[(i + shiftVal) % 26]);
+                    return (
+                      <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
+                        <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
+                          🔑 Vigenère Row for Key Letter: <strong>{kChar}</strong> (Shift: +{shiftVal})
+                        </div>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
+                            <thead>
+                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                                <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
+                                {alphabet.map((ch, i) => (
+                                  <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
+                                    <div style={{ fontWeight: 'bold' }}>{ch}</div>
+                                    <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
+                                  </td>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
+                                {sAlph.map((ch, i) => (
+                                  <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
+                                    <div style={{ fontWeight: 'bold' }}>{ch}</div>
+                                    <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>{ch.charCodeAt(0) - 64}</div>
+                                  </td>
+                                ))}
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()
+              ) : (
+                levelData.targetShifts && levelData.targetShifts.map((shiftVal, sIdx) => {
+                  const sAlph = alphabet.map((_, i) => alphabet[(i + shiftVal) % 26]);
+                  return (
+                    <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
+                      <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
+                        🔑 Caesar Alphabet Shift Table {levelData.targetShifts.length > 1 ? `— Segment #${sIdx + 1}` : ''} (Key: +{shiftVal})
+                      </div>
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
+                          <thead>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                              <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
+                              {alphabet.map((ch, i) => (
+                                <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
+                                  <div style={{ fontWeight: 'bold' }}>{ch}</div>
+                                  <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
+                                </td>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
+                              {sAlph.map((ch, i) => (
+                                <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
+                                  <div style={{ fontWeight: 'bold' }}>{ch}</div>
+                                  <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>{ch.charCodeAt(0) - 64}</div>
+                                </td>
+                              ))}
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
-                            {alphabet.map((ch, i) => (
-                              <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
-                                <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
-                              </td>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
-                            {sAlph.map((ch, i) => (
-                              <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
-                                <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>{ch.charCodeAt(0) - 64}</div>
-                              </td>
-                            ))}
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ))}
             </div>
             <div className="fg-recap-actions" style={{ marginTop: 16 }}>
               <button
                 className="fg-btn fg-btn-primary"
                 onClick={handleCloseExplanation}
-                disabled={explanationStep < levelData.plaintext.replace(/\s+/g, '').length - 1}
+                disabled={
+                  isPlayfair 
+                    ? explanationStep < (levelData.pairs ? levelData.pairs.length - 1 : 0)
+                    : explanationStep < (levelData.plaintext ? levelData.plaintext.replace(/\s+/g, '').length - 1 : 0)
+                }
                 style={{ background: 'var(--neon-green)', color: '#030914' }}
               >
                 Unlock Next Objective ➔
@@ -745,7 +983,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           <span className="material-symbols-outlined">arrow_back</span>
           Exit to Stages
         </button>
-        <div className="fg-header-category indent-header-title">Caesar in Cipher Pac-Man</div>
+        <div className="fg-header-category indent-header-title">
+          {isPlayfair ? "Playfair in Cipher Pac-Man" : (isVigenere ? "Vigenère in Cipher Pac-Man" : "Caesar in Cipher Pac-Man")}
+        </div>
         <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
           {tier.toUpperCase()} Mode — Level {levelData.level}
         </div>
@@ -762,11 +1002,68 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         {/* Sidebar Cards */}
         <aside className="fg-sidebar">
           {/* Active Shift Card */}
-          <div className="fg-basket-card">
-            <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔑</div>
-            <div className="fg-basket-shift-value" style={{ color: 'var(--neon-green)' }}>+{targetShift}</div>
-            <span className="fg-basket-label">Caesar Shift Key Clue</span>
-          </div>
+          {isPlayfair ? (
+            <div className="fg-basket-card">
+              <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔲</div>
+              <div className="fg-basket-shift-value" style={{ color: 'var(--neon-yellow)', fontSize: '1.3rem', letterSpacing: '1px' }}>{levelData.key}</div>
+              <span className="fg-basket-label">Playfair Key Clue</span>
+            </div>
+          ) : isVigenere ? (
+            <div className="fg-basket-card">
+              <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔑</div>
+              <div className="fg-basket-shift-value" style={{ color: 'var(--neon-green)', fontSize: '1.4rem' }}>{levelData.targetKey}</div>
+              <span className="fg-basket-label">{levelData.keyClue || "Vigenère Key"}</span>
+            </div>
+          ) : (
+            <div className="fg-basket-card">
+              <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔑</div>
+              <div className="fg-basket-shift-value" style={{ color: 'var(--neon-green)' }}>+{targetShift}</div>
+              <span className="fg-basket-label">Caesar Shift Key Clue</span>
+            </div>
+          )}
+
+          {isVigenere && (
+            <button className="vg-tabula-modal-btn" onClick={() => setShowTabula(true)} style={{ marginTop: '4px', marginBottom: '4px' }}>
+              <span className="material-symbols-outlined">grid_on</span>
+              <span>View Tabula Recta</span>
+            </button>
+          )}
+
+          {/* Playfair 5x5 Matrix Guide */}
+          {isPlayfair && (
+            <div className="sidebar-matrix-hud vg-sidebar-card" style={{ width: '100%', background: 'rgba(6,19,36,0.5)', border: '1px solid rgba(0, 229, 255, 0.25)', borderRadius: '12px', padding: '12px' }}>
+              <div className="vg-sidebar-title" style={{ fontSize: '0.85rem', color: 'var(--neon-cyan)', marginBottom: '8px', fontWeight: 'bold', textAlign: 'center' }}>🔲 Key Matrix</div>
+              <div className="pf-matrix" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', maxWidth: '170px', margin: '0 auto' }}>
+                {(levelData.matrix || []).map((row, rowIndex) => row.map((letter, colIndex) => {
+                  const key = `${rowIndex}-${colIndex}`;
+                  const isHighlighted = cipherHighlight.has(key);
+                  return (
+                    <span key={letter} className={isHighlighted ? 'cipher-cell' : ''} style={{ fontSize: '0.8rem', padding: '4px 0', border: isHighlighted ? '1px solid var(--neon-yellow)' : '1px solid rgba(0, 229, 255, 0.1)', background: isHighlighted ? 'rgba(255, 215, 0, 0.15)' : 'rgba(0, 229, 255, 0.03)', color: isHighlighted ? 'var(--neon-yellow)' : '#fff', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>
+                      {letter}
+                    </span>
+                  );
+                }))}
+              </div>
+              
+              <div className="vg-active-pair-info" style={{ marginTop: '12px', textAlign: 'center', fontSize: '0.78rem', background: 'rgba(255, 255, 255, 0.03)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                <div>Active Ciphertext: <strong style={{ color: 'var(--neon-yellow)', fontSize: '0.95rem', letterSpacing: '1px' }}>{cipherPair || 'N/A'}</strong></div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Find highlighted letters in matrix above & decrypt!</div>
+              </div>
+            </div>
+          )}
+
+          {/* Playfair Active Rule Clue Card */}
+          {isPlayfair && cipherPair && (
+            <div className="sidebar-matrix-hud vg-sidebar-card" style={{ width: '100%', background: 'rgba(6,19,36,0.5)', border: '1px solid rgba(0, 229, 255, 0.25)', borderRadius: '12px', padding: '12px' }}>
+              <div className="vg-sidebar-title" style={{ fontSize: '0.85rem', color: 'var(--neon-cyan)', marginBottom: '8px', fontWeight: 'bold', textAlign: 'center' }}>🔬 Geometry Rule</div>
+              <div className="pf-rule-pill revealed" style={{ margin: '0 auto', fontSize: '0.75rem', fontWeight: 'bold', textAlign: 'center' }}>
+                {levelData.rules ? levelData.rules[activeIndex] : ''}
+              </div>
+              <p className="pf-sidebar-note" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '6px', lineHeight: '1.4' }}>
+                {describePlayfairRule(levelData.rules ? levelData.rules[activeIndex] : '', 'decrypt')}
+              </p>
+            </div>
+          )}
 
           {/* Skill Charge */}
           <div className={`skill-charge-card ${hasSkillCharge ? 'charged' : ''} ${skillActive ? 'active' : ''}`}>
@@ -826,9 +1123,15 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               <div className="fg-alert-panel default-alert">
                 <strong>📝 Objectives:</strong>
                 <div style={{ fontSize: '0.74rem', lineHeight: '1.45', color: '#cbd5e1' }}>
-                  • Use the Caesar Shift Key clue to decrypt empty letters.<br />
+                  {isPlayfair ? (
+                    <>• Use the 5x5 key matrix on the left and the active geometry rule to decrypt digraphs.<br /></>
+                  ) : isVigenere ? (
+                    <>• Use the Vigenère keyword clue and Tabula Recta to decrypt empty letters.<br /></>
+                  ) : (
+                    <>• Use the Caesar Shift Key clue to decrypt empty letters.<br /></>
+                  )}
                   • Eat a yellow Skill Pellet ⚡, then press **SPACEBAR** to activate Decryption Mode.<br />
-                  • While Decryption Mode is active, eat the ghost carrying the correct plaintext letter.<br />
+                  • While Decryption Mode is active, eat the ghost carrying the correct plaintext letter/pair.<br />
                   • Avoid decoy ghosts and do not touch ghosts when Decryption Mode is inactive!
                 </div>
               </div>
@@ -840,28 +1143,63 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         <main className="pacman-main">
           {/* Header Letters panel */}
           <section className="fg-word-panel">
-            <div className="fg-letter-cells" style={{ justifyContent: 'center' }}>
-              {levelData.plaintext.split('').map((char, idx) => {
-                const mask = levelData.masks[0][idx];
-                const isGhostIndex = !mask;
-                const isEaten = eatenGhosts.includes(idx);
-                const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
-                
-                let cellClass = "fg-letter-cell";
-                if (mask) {
-                  cellClass += " correct-plain";
-                } else if (isGhostIndex) {
-                  cellClass += isEaten ? " correct-plain" : " masked";
-                }
+            {isPlayfair ? (
+              <div className="pf-pair-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', margin: '10px 0' }}>
+                {(levelData.pairs || []).map((plainPair, idx) => {
+                  const cipherPair = levelData.cipherPairs ? levelData.cipherPairs[idx] : '';
+                  const isSolved = eatenGhosts.includes(idx);
+                  const isActive = activeIndex === idx;
+                  
+                  return (
+                    <div 
+                      key={idx} 
+                      className={`pf-pair-card playfair-digraph-cell ${isSolved ? 'solved' : ''} ${isActive ? 'active' : ''}`}
+                      style={{
+                        minWidth: '74px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '9px',
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        color: 'var(--text-primary)',
+                        padding: '8px 10px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '2px',
+                        fontFamily: 'JetBrains Mono, monospace',
+                        transition: 'transform 0.16s, border-color 0.16s, box-shadow 0.16s'
+                      }}
+                    >
+                      <span className="pf-cipher" style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{cipherPair}</span>
+                      <span className="pf-arrow" style={{ color: 'rgba(255, 255, 255, 0.26)', fontSize: '0.62rem', textTransform: 'uppercase' }}>↓</span>
+                      <strong style={{ color: isSolved ? 'var(--neon-green)' : 'var(--neon-yellow)', fontSize: '1rem' }}>{isSolved ? plainPair : '__'}</strong>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="fg-letter-cells" style={{ justifyContent: 'center' }}>
+                {(levelData.plaintext || '').split('').map((char, idx) => {
+                  const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
+                  const isGhostIndex = !mask;
+                  const isEaten = eatenGhosts.includes(idx);
+                  const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
+                  
+                  let cellClass = "fg-letter-cell";
+                  if (mask) {
+                    cellClass += " correct-plain";
+                  } else if (isGhostIndex) {
+                    cellClass += isEaten ? " correct-plain" : " masked";
+                  }
 
-                return (
-                  <div key={idx} className={cellClass}>
-                    <span className="fg-cell-ciphertext">{levelData.ciphertext[idx]}</span>
-                    <span className="fg-cell-plaintext">{displayChar}</span>
-                  </div>
-                );
-              })}
-            </div>
+                  return (
+                    <div key={idx} className={cellClass}>
+                      <span className="fg-cell-ciphertext">{levelData.ciphertext ? levelData.ciphertext[idx] : ''}</span>
+                      <span className="fg-cell-plaintext">{displayChar}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="fg-clue-banner" style={{ marginTop: '8px' }}>
               💡 Clue Context: <strong>"{levelData.hint}"</strong>
             </div>
@@ -952,7 +1290,60 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               </div>
             )}
 
-
+            {/* Tabula Recta Modal for Vigenère Mode */}
+            {showTabula && isVigenere && (
+              <div className="vg-modal-overlay" onClick={() => setShowTabula(false)}>
+                <div className="vg-modal-card tabula-modal" onClick={e => e.stopPropagation()}>
+                  <div className="vg-modal-header">
+                    <h3>📊 Interactive Tabula Recta</h3>
+                    <button className="vg-modal-close" onClick={() => setShowTabula(false)}>×</button>
+                  </div>
+                  <div className="vg-modal-body">
+                    <p className="vg-modal-instructions">
+                      The Tabula Recta is a 26×26 grid of shifted alphabets. Find the column of your <strong>Cipher letter (C)</strong>,
+                      then look at the row of your <strong>Key letter (K)</strong> to find the intersection, which is the <strong>Plain letter (P)</strong>!
+                      <br />
+                      <span style={{ color: 'var(--neon-yellow)' }}>★ Gold Rows: rows containing key letters for this level's key ("{levelData.targetKey}") are highlighted.</span>
+                    </p>
+                    <div className="vg-tabula-scroll-wrapper">
+                      <table className="vg-tabula-full-grid">
+                        <thead>
+                          <tr>
+                            <th className="corner-cell">K \ P</th>
+                            {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(ch => (
+                              <th key={ch} className="col-header">{ch}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((kChar, rIdx) => {
+                            const isCorrectKey = levelData.targetKey ? levelData.targetKey.includes(kChar) : false;
+                            const rowLetters = tabulaRow(kChar);
+                            return (
+                              <tr key={kChar} className={isCorrectKey ? 'correct-key-row' : ''}>
+                                <td className="row-header">{kChar}</td>
+                                {rowLetters.map((cChar, cIdx) => {
+                                  const plainLetter = idxToChar(cIdx);
+                                  return (
+                                    <td 
+                                      key={cIdx} 
+                                      className="cell"
+                                      title={`Key: ${kChar}, Plain: ${plainLetter} → Cipher: ${cChar}`}
+                                    >
+                                      {cChar}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
         </main>
       </div>
