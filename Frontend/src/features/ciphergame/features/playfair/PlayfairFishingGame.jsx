@@ -88,6 +88,7 @@ export default function PlayfairFishingGame({
   const [splash, setSplash] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [recapStep, setRecapStep] = useState(-1);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const animationRef = useRef(null);
   const feedbackTimer = useRef(null);
@@ -114,6 +115,7 @@ export default function PlayfairFishingGame({
     setSolvedPairs(Array(pairData.length).fill(null));
     setMisses(0);
     setStreak(0);
+    setIsMenuOpen(false);
   }, [levelData]);
 
   const showFeedback = (message, tone = 'info') => {
@@ -123,7 +125,7 @@ export default function PlayfairFishingGame({
   };
 
   useEffect(() => {
-    if (phase !== 'playing') return undefined;
+    if (phase !== 'playing' || isMenuOpen) return undefined;
 
     const tick = () => {
       setFishList((prev) => prev.map((fish) => {
@@ -144,7 +146,7 @@ export default function PlayfairFishingGame({
 
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [phase]);
+  }, [phase, isMenuOpen]);
 
   const finishStage = () => {
     setPhase('recap');
@@ -252,9 +254,8 @@ export default function PlayfairFishingGame({
     return (
       <div className="pf-root">
         <header className="pf-header">
-          <button className="vg-btn-back" onClick={onBackToStages}>
-            <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>arrow_back</span>
-            Exit to Stages
+          <button className="fg-btn-back-nav" onClick={onBackToStages}>
+            <span className="material-symbols-outlined">arrow_back</span> Exit to Stages
           </button>
           <div className="pf-header-title">Playfair Fishing</div>
           <div className="vg-stage-badge">{tier.toUpperCase()} · Stage {levelData.level}</div>
@@ -348,9 +349,8 @@ export default function PlayfairFishingGame({
   return (
     <div className="pf-root">
       <header className="pf-header">
-        <button className="vg-btn-back" onClick={onBackToStages}>
-          <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>arrow_back</span>
-          Exit
+        <button className="fg-btn-back-nav" onClick={() => setIsMenuOpen(true)}>
+          <span className="material-symbols-outlined">menu</span> Menu
         </button>
         <div className="pf-header-title">Playfair Fishing</div>
         <div className="vg-stage-badge">{tier.toUpperCase()} · Stage {levelData.level}</div>
@@ -486,6 +486,43 @@ export default function PlayfairFishingGame({
       {feedback && (
         <div className={`pf-feedback ${feedback.tone}`}>
           {feedback.message}
+        </div>
+      )}
+
+      {/* Menu Modal */}
+      {isMenuOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #0f172a, #020617)',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '16px',
+            padding: '32px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            minWidth: '320px',
+            boxShadow: '0 0 30px rgba(0,0,0,0.8)'
+          }}>
+            <h2 style={{ color: 'var(--neon-cyan)', margin: 0, textAlign: 'center', fontSize: '1.6rem', marginBottom: '8px', letterSpacing: '2px' }}>PAUSED</h2>
+            <button className="fg-btn fg-btn-primary" onClick={() => setIsMenuOpen(false)} style={{ padding: '14px', fontSize: '1.1rem', background: 'var(--neon-green)', color: '#000', fontWeight: 'bold' }}>
+              ▶ Resume
+            </button>
+            <button className="fg-btn fg-btn-secondary" onClick={() => { setIsMenuOpen(false); setPhase('ready'); }} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
+              📖 Tutorial
+            </button>
+            <button className="fg-btn" onClick={onBackToStages} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', marginTop: '8px' }}>
+              🚪 Exit Stage
+            </button>
+          </div>
         </div>
       )}
     </div>

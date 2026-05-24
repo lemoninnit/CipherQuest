@@ -4,7 +4,8 @@
   flex-direction: column;
   background: radial-gradient(circle at center, #0a1128 0%, #030712 100%);
   color: #f8fafc;
-  min-height: 520px;
+  height: 100%;
+  flex: 1;
   border-radius: 16px;
   border: 1px solid rgba(56, 189, 248, 0.2);
   box-shadow: 0 0 30px rgba(56, 189, 248, 0.1);
@@ -163,8 +164,13 @@
 }
 
 @keyframes pulseGlow {
-  0% { box-shadow: 0 0 8px rgba(6, 182, 212, 0.4); }
-  100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.8); }
+  0% {
+    box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
+  }
+
+  100% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.8);
+  }
 }
 
 .baton-desc {
@@ -173,6 +179,31 @@
 }
 
 /* Gameplay Grid / Track */
+.sprint-widescreen {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+.sprint-sidebar {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+}
+
+.sprint-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+  min-width: 0;
+}
+
 .sprint-gameplay-area {
   display: flex;
   flex-direction: column;
@@ -180,7 +211,8 @@
 }
 
 .sprint-track-container {
-  height: 240px;
+  flex: 1;
+  min-height: 240px;
   position: relative;
   background: linear-gradient(180deg, #111827 0%, #030712 100%);
   border-radius: 16px;
@@ -214,9 +246,17 @@
   background: rgba(56, 189, 248, 0.03);
 }
 
-.lane-0 { top: 0; }
-.lane-1 { top: 33.33%; }
-.lane-2 { top: 66.66%; }
+.lane-0 {
+  top: 0;
+}
+
+.lane-1 {
+  top: 33.33%;
+}
+
+.lane-2 {
+  top: 66.66%;
+}
 
 .lane-number-badge {
   font-size: 0.65rem;
@@ -244,7 +284,8 @@
 
 .sprint-runner-char {
   display: inline-block;
-  transform: scaleX(-1); /* Face right */
+  transform: scaleX(-1);
+  /* Face right */
 }
 
 .sprint-runner-sprite:not(.crash):not(.moving-up):not(.moving-down) {
@@ -266,15 +307,34 @@
 }
 
 @keyframes runCycle {
-  0% { transform: translateY(-4px) rotate(6deg) scaleY(1.05); }
-  50% { transform: translateY(2px) rotate(14deg) scaleY(0.9) skewX(-6deg); }
-  100% { transform: translateY(-4px) rotate(6deg) scaleY(1.05); }
+  0% {
+    transform: translateY(0px) scaleY(1);
+  }
+
+  50% {
+    transform: translateY(-4px) scaleY(1.03);
+  }
+
+  100% {
+    transform: translateY(0px) scaleY(1);
+  }
 }
 
 @keyframes crashSpin {
-  0% { transform: rotate(0) scale(1); filter: hue-rotate(0deg); }
-  50% { transform: rotate(180deg) scale(0.8); filter: hue-rotate(90deg) saturate(3); }
-  100% { transform: rotate(360deg) scale(1); filter: grayscale(1); }
+  0% {
+    transform: rotate(0) scale(1);
+    filter: hue-rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(180deg) scale(0.8);
+    filter: hue-rotate(90deg) saturate(3);
+  }
+
+  100% {
+    transform: rotate(360deg) scale(1);
+    filter: grayscale(1);
+  }
 }
 
 .runner-baton-glow {
@@ -318,8 +378,15 @@
 }
 
 @keyframes coinFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
 }
 
 .coin-value {
@@ -486,8 +553,15 @@
 }
 
 @keyframes cardEntrance {
-  0% { transform: scale(0.85); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .sprint-crash-icon {
@@ -614,14 +688,31 @@
 }
 
 .shake-track {
-  animation: trackShakeAnimation 0.4s cubic-bezier(.36,.07,.19,.97) both;
+  animation: trackShakeAnimation 0.4s cubic-bezier(.36, .07, .19, .97) both;
 }
 
 @keyframes trackShakeAnimation {
-  10%, 90% { transform: translate3d(-3px, 0, 0); }
-  20%, 80% { transform: translate3d(5px, 0, 0); }
-  30%, 50%, 70% { transform: translate3d(-7px, 0, 0); }
-  40%, 60% { transform: translate3d(7px, 0, 0); }
+
+  10%,
+  90% {
+    transform: translate3d(-3px, 0, 0);
+  }
+
+  20%,
+  80% {
+    transform: translate3d(5px, 0, 0);
+  }
+
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-7px, 0, 0);
+  }
+
+  40%,
+  60% {
+    transform: translate3d(7px, 0, 0);
+  }
 }
 
 .spin-effect {
@@ -629,15 +720,26 @@
 }
 
 @keyframes spinVisual {
-  0% { transform: rotate(0) scale(1); }
-  50% { transform: rotate(180deg) scale(1.35); }
-  100% { transform: rotate(360deg) scale(1); }
+  0% {
+    transform: rotate(0) scale(1);
+  }
+
+  50% {
+    transform: rotate(180deg) scale(1.35);
+  }
+
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
 }
 
 .boost-trail::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   border-radius: 50%;
   background: rgba(6, 182, 212, 0.4);
   filter: blur(8px);
@@ -646,8 +748,15 @@
 }
 
 @keyframes boostTrailAnimation {
-  0% { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(1.6); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
 }
 
 .sprint-checkpoint-gate.gate-cleared .gate-beam {
@@ -668,8 +777,15 @@
 }
 
 @keyframes floatFeedback {
-  0% { transform: translateY(0); opacity: 1; }
-  100% { transform: translateY(-30px); opacity: 0; }
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
 }
 
 /* Widescreen Layout */
@@ -705,6 +821,13 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.sidebar-action-hud {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .stats-header {
@@ -821,5 +944,3 @@
   color: var(--neon-cyan);
   font-family: 'JetBrains Mono', monospace;
 }
-
-

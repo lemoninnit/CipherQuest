@@ -66,6 +66,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
   const [attempts, setAttempts] = useState([]);
   const [firstTryForCurrent, setFirstTryForCurrent] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [showExplanation, setShowExplanation] = useState(false);
   const [explanationStep, setExplanationStep] = useState(-1);
@@ -170,6 +171,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
     setLives(5);
     setFirstTryForCurrent(true);
     setIsPaused(false);
+    setIsMenuOpen(false);
     spawnCoinsAndGate();
   };
 
@@ -180,12 +182,13 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
     setFirstTryForCurrent(true);
     setIsCrashing(false);
     setIsPaused(false);
+    setIsMenuOpen(false);
     spawnCoinsAndGate(); // Spawns coins for the CURRENT currentMaskIndex
   };
 
   // Keyboard steer
   useEffect(() => {
-    if (sprintStep !== 'running' || isCrashing) return;
+    if (sprintStep !== 'running' || isCrashing || isMenuOpen) return;
 
     const handleKeyDown = (e) => {
       if (e.key === ' ' || e.code === 'Space') {
@@ -203,7 +206,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sprintStep, isCrashing, isPaused]);
+  }, [sprintStep, isCrashing, isPaused, isMenuOpen]);
 
   // Handle lane change transition tilt effect
   useEffect(() => {
@@ -221,7 +224,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
 
   // Main game tick (scrolling and collision)
   useEffect(() => {
-    if (sprintStep !== 'running' || isCrashing || isPaused) return;
+    if (sprintStep !== 'running' || isCrashing || isPaused || isMenuOpen) return;
 
     const updatePhysics = () => {
       const speed = isBoosting ? 1.5 : 0.22;
@@ -286,7 +289,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
 
     requestRef.current = requestAnimationFrame(updatePhysics);
     return () => cancelAnimationFrame(requestRef.current);
-  }, [sprintStep, runnerLane, isCrashing, isPaused, coins, gateX, collectedKey, isBoosting, currentTargetChar]);
+  }, [sprintStep, runnerLane, isCrashing, isPaused, isMenuOpen, coins, gateX, collectedKey, isBoosting, currentTargetChar]);
 
   useEffect(() => {
     setSprintStep('ready');
@@ -471,10 +474,17 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
 
       {/* HUD Header */}
       <header className="fg-header relative-header">
-        <button className="fg-btn-back-nav" onClick={onBackToStages}>
-          <span className="material-symbols-outlined">arrow_back</span>
-          Exit to Stages
-        </button>
+        {sprintStep === 'ready' ? (
+          <button className="fg-btn-back-nav" onClick={onBackToStages}>
+            <span className="material-symbols-outlined">arrow_back</span>
+            Exit to Stages
+          </button>
+        ) : (
+          <button className="fg-btn-back-nav" onClick={() => setIsMenuOpen(true)}>
+            <span className="material-symbols-outlined">menu</span>
+            Menu
+          </button>
+        )}
         <div className="fg-header-title">
           Cipher Sprint — Stage {levelData.level} ({tier.toUpperCase()})
         </div>
@@ -525,33 +535,38 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
                 </div>
                 <div className="stat-row">
                   <span className="stat-label">CAESAR CLUE:</span>
-                  <span className="stat-value clue-glow" style={{ color: 'var(--neon-cyan)', fontWeight: 'bold' }}>
+                  <span className="stat-value clue-glow" style={{ fontSize: '0.9rem', color: 'var(--neon-cyan)', fontWeight: 'bold' }}>
                     Plain = Cipher - {currentShiftKey}
                   </span>
                 </div>
-                {/* Pause Button */}
-                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center' }}>
-                  <button
-                    onClick={() => setIsPaused(p => !p)}
-                    style={{
-                      background: isPaused ? 'var(--neon-green)' : 'rgba(255,255,255,0.1)',
-                      color: isPaused ? '#000' : '#fff',
-                      border: 'none',
-                      padding: '6px 12px',
-                      borderRadius: '20px',
-                      fontSize: '0.75rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {isPaused ? '▶ Resume (Space)' : '⏸ Pause & Think (Space)'}
-                  </button>
-                </div>
               </div>
+            </div>
+
+            {/* Pause Card */}
+            <div className="sidebar-stats-card" style={{ padding: '12px', display: 'flex', justifyContent: 'center' }}>
+              <button
+                onClick={() => setIsPaused(p => !p)}
+                style={{
+                  background: isPaused ? 'var(--neon-green)' : 'rgba(255,255,255,0.08)',
+                  color: isPaused ? '#000' : '#fff',
+                  border: isPaused ? 'none' : '1px solid rgba(255,255,255,0.15)',
+                  padding: '10px 16px',
+                  borderRadius: '24px',
+                  fontSize: '0.8rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  transition: 'all 0.2s ease',
+                  width: '100%',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}
+              >
+                {isPaused ? '▶ Resume (Space)' : '⏸ Pause (Space)'}
+              </button>
             </div>
 
             {/* Success / Alert / Objectives card */}
@@ -568,29 +583,29 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
                   </button>
                 </div>
               ) : sprintStep === 'gameover' ? (
-                <div className="fg-alert-panel" style={{ borderColor: 'var(--neon-red)', background: 'rgba(255, 0, 127, 0.08)' }}>
-                  <strong style={{ color: 'var(--neon-red)' }}>💀 SYSTEM FAILURE!</strong>
-                  <p style={{ fontSize: '0.74rem', lineHeight: '1.4', color: '#fda4af', margin: '8px 0' }}>
+                <div className="fg-alert-panel" style={{ borderColor: 'var(--neon-red)', background: 'rgba(255, 0, 127, 0.08)', textAlign: 'center' }}>
+                  <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>💀 SYSTEM FAILURE!</strong>
+                  <p style={{ fontSize: '0.88rem', lineHeight: '1.5', color: '#fda4af', margin: '12px 0' }}>
                     Runner crashed too many times and ran out of lives.
                   </p>
-                  <button className="fg-btn" onClick={handleRetryFromCheckpoint} style={{ width: '100%', background: 'var(--neon-red)', color: '#fff', border: 'none', marginTop: '10px' }}>
+                  <button className="fg-btn" onClick={handleRetryFromCheckpoint} style={{ width: '100%', background: 'var(--neon-red)', color: '#fff', border: 'none', marginTop: 'auto', fontSize: '0.9rem', padding: '12px' }}>
                     🔄 Try Again
                   </button>
                 </div>
               ) : sprintStep === 'explanation' ? (
-                <div className="fg-alert-panel" style={{ borderColor: 'var(--neon-red)', background: 'rgba(255, 0, 127, 0.05)' }}>
-                  <strong style={{ color: 'var(--neon-red)' }}>💥 CRASH! Gate Stayed Shut</strong>
-                  <p style={{ fontSize: '0.72rem', lineHeight: '1.45', color: '#cbd5e1', marginTop: '6px' }}>
+                <div className="fg-alert-panel" style={{ borderColor: 'var(--neon-red)', background: 'rgba(255, 0, 127, 0.05)', textAlign: 'center' }}>
+                  <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>💥 CRASH! GATE STAYED SHUT</strong>
+                  <p style={{ fontSize: '0.88rem', lineHeight: '1.5', color: '#cbd5e1', marginTop: '12px', marginBottom: '12px' }}>
                     {crashMessage}
                   </p>
-                  <button className="fg-btn fg-btn-secondary" onClick={handleContinueAfterCrash} style={{ width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.1)', color: '#fff' }}>
+                  <button className="fg-btn fg-btn-secondary" onClick={handleContinueAfterCrash} style={{ width: '100%', marginTop: '10%', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.9rem', padding: '12px' }}>
                     🔄 Try Checkpoint Again
                   </button>
                 </div>
               ) : (
-                <div className="fg-alert-panel default-alert" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <strong style={{ color: 'var(--neon-cyan)', marginBottom: '4px' }}>📝 OBJECTIVES & GUIDE:</strong>
-                  <div style={{ fontSize: '0.72rem', lineHeight: '1.45', color: '#cbd5e1' }}>
+                <div className="sidebar-stats-card" style={{ display: 'flex', flexDirection: 'column', gap: '15px', flex: 1, overflowY: 'auto', textAlign: 'center', justifyContent: 'center' }}>
+                  <div className="stats-header" style={{ color: 'var(--neon-cyan)', fontSize: '0.9rem' }}>📝 OBJECTIVES & GUIDE</div>
+                  <div style={{ fontSize: '0.85rem', lineHeight: '1.6', color: '#cbd5e1' }}>
                     • Solve the cipher letter to find the matching lane.<br />
                     • Avoid decoy letters to prevent crashing!
                   </div>
@@ -598,27 +613,27 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
                     background: 'rgba(0,0,0,0.3)',
                     border: '1px solid rgba(0, 229, 255, 0.2)',
                     borderRadius: '8px',
-                    padding: '12px',
+                    padding: '16px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '12px'
                   }}>
-                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>
                       Current Letter Decryption
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '6px' }}>
-                        <span style={{ fontSize: '1.2rem', color: '#fff', fontFamily: 'monospace' }}>{currentBatonLetter}</span>
-                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>CIPHER</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '8px', minWidth: '55px' }}>
+                        <span style={{ fontSize: '1.4rem', color: '#fff', fontFamily: 'monospace' }}>{currentBatonLetter}</span>
+                        <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: '4px' }}>CIPHER</span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--neon-cyan)' }}>
-                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold' }}>Shift -{currentShiftKey}</span>
-                        <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>arrow_forward</span>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Shift -{currentShiftKey}</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '1.4rem', margin: '4px 0' }}>arrow_forward</span>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.3)', padding: '6px 12px', borderRadius: '6px', boxShadow: '0 0 10px rgba(0,229,255,0.1) inset' }}>
-                        <span style={{ fontSize: '1.2rem', color: 'var(--neon-green)', fontFamily: 'monospace', fontWeight: 'bold' }}>?</span>
-                        <span style={{ fontSize: '0.6rem', color: 'var(--neon-cyan)' }}>PLAIN</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.3)', padding: '8px 14px', borderRadius: '8px', boxShadow: '0 0 10px rgba(0,229,255,0.1) inset', minWidth: '55px' }}>
+                        <span style={{ fontSize: '1.4rem', color: 'var(--neon-green)', fontFamily: 'monospace', fontWeight: 'bold' }}>?</span>
+                        <span style={{ fontSize: '0.55rem', color: 'var(--neon-cyan)', marginTop: '4px' }}>PLAIN</span>
                       </div>
                     </div>
                   </div>
@@ -675,7 +690,7 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
                   top: `${20 + runnerLane * 30}%`
                 }}
               >
-                <span className="sprint-runner-char">🏃♂️</span>
+                <span className="sprint-runner-char">🏃</span>
                 <div className="runner-baton-glow" style={{ background: 'var(--neon-cyan)', color: '#000' }}>
                   {sprintStep === 'finished' ? '✓' : currentBatonLetter}
                 </div>
@@ -745,6 +760,43 @@ export default function CipherSprint({ levelData, tier, onVerifySubmit, onBackTo
               </div>
             </div>
           </main>
+        </div>
+      )}
+
+      {/* Menu Modal */}
+      {isMenuOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #0f172a, #020617)',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '16px',
+            padding: '32px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            minWidth: '320px',
+            boxShadow: '0 0 30px rgba(0,0,0,0.8)'
+          }}>
+            <h2 style={{ color: 'var(--neon-cyan)', margin: 0, textAlign: 'center', fontSize: '1.6rem', marginBottom: '8px', letterSpacing: '2px' }}>PAUSED</h2>
+            <button className="fg-btn fg-btn-primary" onClick={() => setIsMenuOpen(false)} style={{ padding: '14px', fontSize: '1.1rem', background: 'var(--neon-green)', color: '#000', fontWeight: 'bold' }}>
+              ▶ Resume
+            </button>
+            <button className="fg-btn fg-btn-secondary" onClick={() => { setIsMenuOpen(false); setSprintStep('ready'); }} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
+              📖 Tutorial
+            </button>
+            <button className="fg-btn" onClick={onBackToStages} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', marginTop: '8px' }}>
+              🚪 Exit Stage
+            </button>
+          </div>
         </div>
       )}
     </div>

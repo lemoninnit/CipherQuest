@@ -247,6 +247,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const [showExplanation, setShowExplanation] = useState(false);
   const [explanationStep, setExplanationStep] = useState(-1);
   const [showTabula, setShowTabula] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [pacman, setPacman] = useState(initialPacman);
   const [pacmanDir, setPacmanDir] = useState('NONE');
@@ -315,6 +316,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setPhase('ready');
     setShowExplanation(false);
     setExplanationStep(-1);
+    setIsMenuOpen(false);
   }, [levelData]);
 
   const gameLoopRef = useRef(null);
@@ -372,7 +374,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameOver, levelSolved, hasSkillCharge, skillActive]);
+  }, [gameOver, levelSolved, hasSkillCharge, skillActive, isMenuOpen, phase]);
 
   const activateSkill = () => {
     if (!hasSkillCharge || skillActive || gameOver || levelSolved) return;
@@ -382,7 +384,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   };
 
   useEffect(() => {
-    if (!skillActive) return;
+    if (!skillActive || isMenuOpen || phase === 'ready') return;
     const interval = setInterval(() => {
       setSkillTimeLeft((prev) => {
         if (prev <= 1) {
@@ -394,11 +396,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [skillActive]);
+  }, [skillActive, isMenuOpen, phase]);
 
   // Main automatic tick loop (180ms loop) using Refs to prevent coordinate change stutter
   useEffect(() => {
-    if (gameOver || levelSolved) return;
+    if (gameOver || levelSolved || isMenuOpen || phase === 'ready') return;
 
     const gameTick = () => {
       const currentPacman = pacmanRef.current;
@@ -622,11 +624,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
     gameLoopRef.current = setTimeout(gameTick, 180);
     return () => clearTimeout(gameLoopRef.current);
-  }, [gameOver, levelSolved]);
+  }, [gameOver, levelSolved, isMenuOpen, phase]);
 
   // Non-stacking, non-wall dynamic pellet spawner using Refs to prevent interval clear loops
   useEffect(() => {
-    if (gameOver || levelSolved) return;
+    if (gameOver || levelSolved || isMenuOpen || phase === 'ready') return;
 
     const spawnTimer = setInterval(() => {
       const currentPellets = pelletsRef.current;
@@ -677,7 +679,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     }, 1500); // 1.5 seconds short delay
 
     return () => clearInterval(spawnTimer);
-  }, [gameOver, levelSolved]);
+  }, [gameOver, levelSolved, isMenuOpen, phase]);
 
   const handleResetGame = () => {
     setPacman(initialPacman);
@@ -979,9 +981,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
       {/* Header UI (Green Highlighted fixes) */}
       <header className="fg-header relative-header">
-        <button className="exit-stage-absolute" onClick={onBackToStages}>
-          <span className="material-symbols-outlined">arrow_back</span>
-          Exit to Stages
+        <button className="exit-stage-absolute" onClick={() => setIsMenuOpen(true)}>
+          <span className="material-symbols-outlined">menu</span>
+          Menu
         </button>
         <div className="fg-header-category indent-header-title">
           {isPlayfair ? "Playfair in Cipher Pac-Man" : (isVigenere ? "Vigenère in Cipher Pac-Man" : "Caesar in Cipher Pac-Man")}
@@ -1105,35 +1107,34 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           <div className="sidebar-action-hud">
             {levelSolved ? (
               <div className="fg-success-panel">
-                <h3>✅ SECURED!</h3>
-                <p>All segments decrypted successfully.</p>
-                <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: '10px' }}>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}>✅ SECURED!</h3>
+                <p style={{ fontSize: '0.75rem', margin: '0 0 8px 0' }}>All segments decrypted successfully.</p>
+                <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', padding: '8px', fontSize: '0.85rem' }}>
                   🚀 Verify & Submit
                 </button>
-                <button className="fg-btn fg-btn-secondary" onClick={onReplayNewQuestion} style={{ width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
+                <button className="fg-btn fg-btn-secondary" onClick={onReplayNewQuestion} style={{ width: '100%', marginTop: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px', fontSize: '0.85rem' }}>
                   🔄 Play Again
                 </button>
               </div>
             ) : ruleViolation ? (
               <div className="fg-alert-panel">
-                <strong>⚠️ Alert Warning:</strong>
-                <p style={{ fontSize: '0.74rem', lineHeight: '1.4', color: '#fda4af' }}>{ruleViolation}</p>
+                <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>warning</span>
+                  Alert
+                </strong>
+                <p style={{ fontSize: '0.7rem', lineHeight: '1.3', color: '#fda4af', marginTop: '6px' }}>{ruleViolation}</p>
               </div>
             ) : (
               <div className="fg-alert-panel default-alert">
-                <strong>📝 Objectives:</strong>
-                <div style={{ fontSize: '0.74rem', lineHeight: '1.45', color: '#cbd5e1' }}>
-                  {isPlayfair ? (
-                    <>• Use the 5x5 key matrix on the left and the active geometry rule to decrypt digraphs.<br /></>
-                  ) : isVigenere ? (
-                    <>• Use the Vigenère keyword clue and Tabula Recta to decrypt empty letters.<br /></>
-                  ) : (
-                    <>• Use the Caesar Shift Key clue to decrypt empty letters.<br /></>
-                  )}
-                  • Eat a yellow Skill Pellet ⚡, then press **SPACEBAR** to activate Decryption Mode.<br />
-                  • While Decryption Mode is active, eat the ghost carrying the correct plaintext letter/pair.<br />
-                  • Avoid decoy ghosts and do not touch ghosts when Decryption Mode is inactive!
-                </div>
+                <strong style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--neon-cyan)', marginBottom: '4px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>assignment</span>
+                  Objectives
+                </strong>
+                <ul style={{ fontSize: '0.65rem', lineHeight: '1.35', color: '#cbd5e1', paddingLeft: '16px', margin: '0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <li>{isPlayfair ? 'Decrypt digraphs using the 5x5 key matrix and geometry rule.' : isVigenere ? 'Decrypt empty letters using the keyword clue and Tabula Recta.' : 'Decrypt empty letters using the Caesar Shift Clue.'}</li>
+                  <li>Eat a yellow pellet ⚡ and press <b style={{color: '#fff'}}>SPACE</b> to enter Decryption Mode.</li>
+                  <li>Eat the correct ghost! Avoid decoys and touching ghosts when inactive!</li>
+                </ul>
               </div>
             )}
           </div>
@@ -1347,6 +1348,43 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           </section>
         </main>
       </div>
+
+      {/* Menu Modal */}
+      {isMenuOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #0f172a, #020617)',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '16px',
+            padding: '32px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            minWidth: '320px',
+            boxShadow: '0 0 30px rgba(0,0,0,0.8)'
+          }}>
+            <h2 style={{ color: 'var(--neon-cyan)', margin: 0, textAlign: 'center', fontSize: '1.6rem', marginBottom: '8px', letterSpacing: '2px' }}>PAUSED</h2>
+            <button className="fg-btn fg-btn-primary" onClick={() => setIsMenuOpen(false)} style={{ padding: '14px', fontSize: '1.1rem', background: 'var(--neon-green)', color: '#000', fontWeight: 'bold' }}>
+              ▶ Resume
+            </button>
+            <button className="fg-btn fg-btn-secondary" onClick={() => { setIsMenuOpen(false); setPhase('ready'); }} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
+              📖 Tutorial
+            </button>
+            <button className="fg-btn" onClick={onBackToStages} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', marginTop: '8px' }}>
+              🚪 Exit Stage
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
