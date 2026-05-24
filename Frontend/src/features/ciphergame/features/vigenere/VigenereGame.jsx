@@ -200,6 +200,7 @@ export default function VigenereGame({
   const [recoveredKey, setRecoveredKey] = useState(Array(keyLen).fill(''));
   const [activeSlot, setActiveSlot] = useState(0);
   const [mistakesThisSlot, setMistakesThisSlot] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const pacmanRef = useRef(pacman);
   const ghostsRef = useRef(ghosts);
@@ -222,6 +223,8 @@ export default function VigenereGame({
   useEffect(() => { isInvulnerableRef.current = isInvulnerable; }, [isInvulnerable]);
   useEffect(() => { activeSlotRef.current = activeSlot; }, [activeSlot]);
   useEffect(() => { mistakesRef.current = mistakesThisSlot; }, [mistakesThisSlot]);
+  const isMenuOpenRef = useRef(isMenuOpen);
+  useEffect(() => { isMenuOpenRef.current = isMenuOpen; }, [isMenuOpen]);
 
   const slotPositions = useMemo(
     () => getSlotPositions(levelData.ciphertext, keyLen),
@@ -270,6 +273,7 @@ export default function VigenereGame({
 
   useEffect(() => {
     setPhase('ready');
+    setIsMenuOpen(false);
     resetRound();
   }, [levelData]);
 
@@ -287,6 +291,7 @@ export default function VigenereGame({
 
   useEffect(() => {
     const handleKeyDown = (event) => {
+      if (isMenuOpen) return;
       if (['ArrowUp', 'KeyW'].includes(event.code)) {
         event.preventDefault();
         triggerSteer('UP');
@@ -312,10 +317,10 @@ export default function VigenereGame({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameOver, hasSkillCharge, levelSolved, phase, skillActive, targetKey]);
+  }, [gameOver, hasSkillCharge, levelSolved, phase, skillActive, targetKey, isMenuOpen]);
 
   useEffect(() => {
-    if (!skillActive) return;
+    if (!skillActive || isMenuOpen) return;
 
     const interval = setInterval(() => {
       setSkillTimeLeft((prev) => {
@@ -330,7 +335,7 @@ export default function VigenereGame({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [skillActive]);
+  }, [skillActive, isMenuOpen]);
 
   const handleLoseHeart = (message) => {
     if (isInvulnerableRef.current) return;
@@ -396,6 +401,10 @@ export default function VigenereGame({
     if (phase !== 'playing' || gameOver || levelSolved) return;
 
     const gameTick = () => {
+      if (isMenuOpenRef.current) {
+        gameLoopRef.current = setTimeout(gameTick, 180);
+        return;
+      }
       const currentPacman = pacmanRef.current;
       const currentPacmanDir = pacmanDirRef.current;
       const currentBufferedDir = bufferedDirRef.current;
@@ -588,6 +597,7 @@ export default function VigenereGame({
     if (phase !== 'playing' || gameOver || levelSolved) return;
 
     const spawnTimer = setInterval(() => {
+      if (isMenuOpenRef.current) return;
       const currentPellets = pelletsRef.current;
       const currentPacman = pacmanRef.current;
       const currentGhosts = ghostsRef.current;
@@ -808,9 +818,9 @@ export default function VigenereGame({
       )}
 
       <header className="fg-header relative-header">
-        <button className="exit-stage-absolute" onClick={onBackToStages}>
-          <span className="material-symbols-outlined">arrow_back</span>
-          Exit to Stages
+        <button className="exit-stage-absolute" onClick={() => setIsMenuOpen(true)}>
+          <span className="material-symbols-outlined">menu</span>
+          Menu
         </button>
         <div className="fg-header-category indent-header-title">Vigenere in Cipher Pac-Man</div>
         <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
@@ -1124,6 +1134,43 @@ export default function VigenereGame({
           </section>
         </main>
       </div>
+
+      {/* Menu Modal */}
+      {isMenuOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #0f172a, #020617)',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '16px',
+            padding: '32px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            minWidth: '320px',
+            boxShadow: '0 0 30px rgba(0,0,0,0.8)'
+          }}>
+            <h2 style={{ color: 'var(--neon-cyan)', margin: 0, textAlign: 'center', fontSize: '1.6rem', marginBottom: '8px', letterSpacing: '2px' }}>PAUSED</h2>
+            <button className="fg-btn fg-btn-primary" onClick={() => setIsMenuOpen(false)} style={{ padding: '14px', fontSize: '1.1rem', background: 'var(--neon-green)', color: '#000', fontWeight: 'bold' }}>
+              ▶ Resume
+            </button>
+            <button className="fg-btn fg-btn-secondary" onClick={() => { setIsMenuOpen(false); resetRound(); setPhase('ready'); }} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
+              📖 Tutorial
+            </button>
+            <button className="fg-btn" onClick={onBackToStages} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', marginTop: '8px' }}>
+              🚪 Exit Stage
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

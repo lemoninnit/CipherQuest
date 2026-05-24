@@ -598,14 +598,8 @@ export function getPlayfairLevelData(difficulty, stageIndex) {
   };
 }
 
-<<<<<<< HEAD
 const GAME_CYCLE_PLAYFAIR = ['PLAYFAIR_FISHING', 'PACMAN', 'PLAYFAIR_FISHING', 'PACMAN', 'PLAYFAIR_FISHING'];
 
 export function getPlayfairGameType(stageIndex = 0) {
   return GAME_CYCLE_PLAYFAIR[stageIndex % GAME_CYCLE_PLAYFAIR.length];
 }
-=======
-export function getPlayfairGameType() {
-  return 'PLAYFAIR_FISHING';
-}
->>>>>>> 375aad3 (Fixes the conflict Lenon & Caliph branch)
