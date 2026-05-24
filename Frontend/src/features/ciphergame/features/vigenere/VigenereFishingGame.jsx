@@ -25,7 +25,7 @@ const applyShiftDelta = (curr, delta) => {
 const FISH_EMOJIS = ['🐟', '🐠', '🐡', '🦈', '🦐'];
 const FISH_VALUES = [+1, -1, +2, -2, +3, -3, +5, -5];
 
-export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
+export default function VigenereFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
   const words         = levelData.plaintext.split(' ');
   const cipherSegs    = levelData.ciphertext.split(' ');
 
@@ -291,7 +291,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         <button className="fg-btn-back-nav" onClick={onBackToStages}>
           <span className="material-symbols-outlined">arrow_back</span> Exit to Stages
         </button>
-        <div className="fg-header-category">Caesar Cipher</div>
+        <div className="fg-header-category">Vigenère Cipher</div>
         <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
           {tier.toUpperCase()} Mode — Stage {levelData.level}
         </div>
@@ -299,14 +299,18 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
         <div className="vg-ready-card" style={{ maxWidth: 540 }}>
           <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🎣</div>
-          <h2 style={{ color: 'var(--neon-cyan)', margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>Caesar Fishing</h2>
+          <h2 style={{ color: 'var(--neon-cyan)', margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>Vigenère Fishing</h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
-            Catch fish carrying shift modifiers (<strong>+1, -1, +2, -2, +3, -3, +5, -5</strong>) to dial in the correct Caesar shift and decrypt the ciphertext.
+            Catch fish carrying shift modifiers (<strong>+1, -1, +2, -2, +3, -3, +5, -5</strong>) to dial in the correct shifts and decrypt the ciphertext.
           </p>
           <div style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: '16px 20px', marginBottom: '20px', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
               <span style={{ color: 'var(--text-muted)' }}>Ciphertext</span>
               <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-cyan)' }}>{levelData.ciphertext}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Keyword Clue</span>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-yellow)' }}>{levelData.keyClue}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
               <span style={{ color: 'var(--text-muted)' }}>Hint</span>
@@ -316,8 +320,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', lineHeight: 1.5 }}>
             <strong style={{ color: 'var(--neon-green)' }}>How it works:</strong>{' '}
             Each cipher segment has a basket shift. Click a fish to reel it in — its value adjusts the current segment's shift.
-            When the decrypted text matches the plaintext, submit! Formula:{' '}
-            <code style={{ color: 'var(--neon-cyan)' }}>Plain = (Cipher − Shift) mod 26</code>
+            When the decrypted text matches the plaintext, submit!
           </p>
           <button className="vg-start-btn" onClick={startGame}>🎣 Start Fishing</button>
         </div>
@@ -375,45 +378,8 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               </div>
             </div>
             <div className="fg-recap-explanation" style={{ background: 'rgba(255,255,255,0.015)' }}>
-              💡 <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is shifted backward by the key value.
-              By catching fish with numeric modifiers, you tuned the basket shift to match the secret key.{' '}
-              <code>Plain = (Cipher − Key) mod 26</code> maps every letter back uniformly.
-              {levelData.targetShifts && levelData.targetShifts.map((shiftVal, sIdx) => {
-                const sAlph = alphabet.map((_, i) => alphabet[(i + shiftVal) % 26]);
-                return (
-                  <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
-                    <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
-                      🔑 Caesar Alphabet Shift Table {levelData.targetShifts.length > 1 ? `— Segment #${sIdx + 1}` : ''} (Key: +{shiftVal})
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
-                            {alphabet.map((ch, i) => (
-                              <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
-                                <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
-                              </td>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
-                            {sAlph.map((ch, i) => (
-                              <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
-                                <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>{ch.charCodeAt(0) - 64}</div>
-                              </td>
-                            ))}
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
+              💡 <strong>Vigenère Cipher Decryption:</strong> This implementation is a playful take using shift modifiers.
+              The real Vigenère uses a repeating keyword, but here you're learning to dial in shifts!
             </div>
             <div className="fg-recap-actions" style={{ marginTop: 16 }}>
               <button
@@ -433,7 +399,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         <button className="fg-btn-back-nav" onClick={() => setIsMenuOpen(true)}>
           <span className="material-symbols-outlined">menu</span> Menu
         </button>
-        <div className="fg-header-category">Caesar Cipher</div>
+        <div className="fg-header-category">Vigenère Cipher</div>
         <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
           {tier.toUpperCase()} Mode — Stage {levelData.level}
         </div>
