@@ -333,24 +333,54 @@ const vigenereData = {
   ],
 };
 
+function buildVigenereLevel(plain, key, stageIndex, difficulty, hint, keyClue, keyInfo) {
+  const ciphertext = vigEnc(plain, key);
+  const len = plain.length;
+  const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0.35;
+  const mask = makeMask(len, reveal);
+  const keyLen = key.length;
+  const targetShifts = [];
+  const startShifts = [];
+  const masks = [];
+  const words = plain.split(' ');
+  let currentMaskIdx = 0;
+  words.forEach(word => {
+    const wordMask = mask.slice(currentMaskIdx, currentMaskIdx + word.length);
+    masks.push(wordMask);
+    currentMaskIdx += word.length;
+  });
+  words.forEach(() => {
+    const shift = Math.floor(Math.random() * 25) + 1;
+    let startShift;
+    do { startShift = Math.floor(Math.random() * 5); } while (startShift === shift);
+    targetShifts.push(shift);
+    startShifts.push(startShift);
+  });
+  return {
+    level: stageIndex + 1,
+    ciphertext,
+    plaintext: plain,
+    targetKey: key,
+    targetShifts,
+    startShifts,
+    masks,
+    hint: hint,
+    keyClue: keyClue,
+    keyInfo: keyInfo,
+  };
+}
+
 export function getVigenereLevelData(difficulty, stageIndex) {
   const pool = vigenereData[difficulty];
   const randIndex = Math.floor(Math.random() * pool.length);
   const d = pool[randIndex];
-  const ciphertext = vigEnc(d.plain, d.key);
-  return {
-    level: stageIndex + 1,
-    ciphertext,
-    plaintext: d.plain,
-    targetKey: d.key,
-    hint: d.hint,
-    keyClue: d.keyClue,
-    keyInfo: d.keyInfo,
-  };
+  return buildVigenereLevel(d.plain, d.key, stageIndex, difficulty, d.hint, d.keyClue, d.keyInfo);
 }
 
-export function getVigenereGameType() {
-  return 'VIGENERE_FISHING'; // always the same game for vigenere
+const GAME_CYCLE_VIGENERE = ['FISHING', 'PACMAN', 'SPRINT', 'FISHING', 'PACMAN'];
+
+export function getVigenereGameType(stageIndex = 0) {
+  return GAME_CYCLE_VIGENERE[stageIndex % GAME_CYCLE_VIGENERE.length];
 }
 
 /* ─────────────────── Playfair levels ─────────────────── */
@@ -577,28 +607,99 @@ export function getPlayfairLevelData(difficulty, stageIndex) {
   const pool = playfairData[difficulty];
   const randIndex = Math.floor(Math.random() * pool.length);
   const data = pool[randIndex];
-  const matrix = generatePlayfairMatrix(data.key);
-  const pairs = preparePlayfairDigraphs(data.plain);
-  const encryptedPairs = pairs.map((pair) => transformPlayfairPair(pair, matrix, 'encrypt'));
+  return buildPlayfairLevel(data.plain, data.key, stageIndex, difficulty, data.hint, data.keyClue, data.lesson);
+}
 
+const GAME_CYCLE_PLAYFAIR = ['FISHING', 'PACMAN', 'SPRINT', 'FISHING', 'PACMAN'];
+
+function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, lesson) {
+  const matrix = generatePlayfairMatrix(key);
+  const pairs = preparePlayfairDigraphs(plain);
+  const encryptedPairs = pairs.map((pair) => transformPlayfairPair(pair, matrix, 'encrypt'));
+  
+  // For PlayfairFishingGame: ciphertext as pairs joined by spaces, plaintext as pairs
+  const pairPlaintext = pairs.join(' ');
+  const pairCiphertext = encryptedPairs.map((pair) => pair.result).join(' ');
+  
+  // For SPRINT and FISHING games: plaintext as original string, ciphertext as... well, let's use a simple Caesar-like ciphertext for sprint?
+  // Or wait, let's just use the original plaintext for sprint's plaintext and make a fake ciphertext using shifts!
+  const len = plain.length;
+  const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0.35;
+  const mask = makeMask(len, reveal);
+  const words = plain.split(' ');
+  const masks = [];
+  let currentMaskIdx = 0;
+  words.forEach(word => {
+    const wordMask = mask.slice(currentMaskIdx, currentMaskIdx + word.length);
+    masks.push(wordMask);
+    currentMaskIdx += word.length + 1; // +1 for space
+  });
+  const targetShifts = [];
+  const startShifts = [];
+  let fakeCiphertext = '';
+  let keyIdx = 0;
+  for (let i = 0; i < plain.length; i++) {
+    const char = plain[i];
+    if (char < 'A' || char > 'Z') {
+      fakeCiphertext += char;
+    } else {
+      const shift = Math.floor(Math.random() * 25) + 1;
+      targetShifts.push(shift); // Wait no, let's have targetShifts per word
+      fakeCiphertext += String.fromCharCode(((char.charCodeAt(0) - 65 + shift) % 26) + 65);
+    }
+  }
+  // Let's reset targetShifts and startShifts per word
+  targetShifts.length = 0;
+  startShifts.length = 0;
+  words.forEach(() => {
+    const shift = Math.floor(Math.random() * 25) + 1;
+    let startShift;
+    do { startShift = Math.floor(Math.random() * 5); } while (startShift === shift);
+    targetShifts.push(shift);
+    startShifts.push(startShift);
+  });
+  // Let's create a fake ciphertext using the target shifts per word
+  fakeCiphertext = '';
+  let wordIdx = 0;
+  keyIdx = 0;
+  for (let i = 0; i < plain.length; i++) {
+    const char = plain[i];
+    if (char === ' ') {
+      fakeCiphertext += ' ';
+      wordIdx++;
+      keyIdx = 0;
+      continue;
+    }
+    if (char < 'A' || char > 'Z') {
+      fakeCiphertext += char;
+      continue;
+    }
+    const shift = targetShifts[wordIdx];
+    fakeCiphertext += String.fromCharCode(((char.charCodeAt(0) - 65 + shift) % 26) + 65);
+    keyIdx++;
+  }
+  
   return {
     level: stageIndex + 1,
     difficulty,
-    plaintext: pairs.join(' '),
-    displayPlaintext: data.plain,
-    ciphertext: encryptedPairs.map((pair) => pair.result).join(' '),
-    key: data.key,
+    plaintext: plain,
+    pairPlaintext,
+    displayPlaintext: plain,
+    ciphertext: fakeCiphertext,
+    pairCiphertext,
+    key,
     matrix,
     pairs,
     cipherPairs: encryptedPairs.map((pair) => pair.result),
     rules: encryptedPairs.map((pair) => pair.rule),
-    hint: data.hint,
-    keyClue: data.keyClue,
-    lesson: data.lesson,
+    targetShifts,
+    startShifts,
+    masks,
+    hint,
+    keyClue,
+    lesson,
   };
 }
-
-const GAME_CYCLE_PLAYFAIR = ['PLAYFAIR_FISHING', 'PACMAN', 'PLAYFAIR_FISHING', 'PACMAN', 'PLAYFAIR_FISHING'];
 
 export function getPlayfairGameType(stageIndex = 0) {
   return GAME_CYCLE_PLAYFAIR[stageIndex % GAME_CYCLE_PLAYFAIR.length];

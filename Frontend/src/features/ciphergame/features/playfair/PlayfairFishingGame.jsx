@@ -272,7 +272,7 @@ export default function PlayfairFishingGame({
             <div className="vg-ready-preview">
               <div className="vg-preview-row">
                 <span className="vg-preview-label">Ciphertext</span>
-                <span className="vg-preview-value">{levelData.ciphertext}</span>
+                <span className="vg-preview-value">{levelData.pairCiphertext}</span>
               </div>
               <div className="vg-preview-row">
                 <span className="vg-preview-label">Keyword</span>

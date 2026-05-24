@@ -12,11 +12,13 @@ import CaesarFishingGame from "./features/caesar/CaesarFishingGame";
 import PacmanGame        from "./features/pacman/PacmanGame";
 import CipherSprint      from "./features/sprint/CipherSprint";
 
-// Vigenere game (its own fishing)
-import VigenereGame      from "./features/vigenere/VigenereGame";
+// Vigenere games
+import VigenereFishingGame from "./features/vigenere/VigenereFishingGame";
+import VigenereSprint      from "./features/vigenere/VigenereSprint";
 
-// Playfair game
+// Playfair games
 import PlayfairFishingGame from "./features/playfair/PlayfairFishingGame";
+import PlayfairSprint      from "./features/playfair/PlayfairSprint";
 
 export default function CipherGame() {
   const game = useGameFlow();
@@ -41,13 +43,25 @@ export default function CipherGame() {
 
     switch (gameType) {
       case 'FISHING':
-        return <CaesarFishingGame {...sharedProps} />;
+        if (category === 'caesar') {
+          return <CaesarFishingGame {...sharedProps} />;
+        } else if (category === 'vigenere') {
+          return <VigenereFishingGame {...sharedProps} />;
+        } else if (category === 'playfair') {
+          return <PlayfairFishingGame {...sharedProps} />;
+        }
+        break;
       case 'PACMAN':
         return <PacmanGame {...sharedProps} />;
       case 'SPRINT':
-        return <CipherSprint {...sharedProps} />;
-      case 'VIGENERE_FISHING':
-        return <VigenereGame {...sharedProps} />;
+        if (category === 'caesar') {
+          return <CipherSprint {...sharedProps} />;
+        } else if (category === 'vigenere') {
+          return <VigenereSprint {...sharedProps} />;
+        } else if (category === 'playfair') {
+          return <PlayfairSprint {...sharedProps} />;
+        }
+        break;
       case 'PLAYFAIR_FISHING':
         return <PlayfairFishingGame {...sharedProps} />;
       default:
