@@ -1,41 +1,35 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import '../sprint/CipherSprint.css';
 import '../../CipherGame.css';
-
-const decryptChar = (char, shift) => {
-  const code = char.charCodeAt(0);
-  if (code >= 65 && code <= 90) {
-    return String.fromCharCode(((code - 65 - shift + 26) % 26 + 26) % 26 + 65);
-  }
-  return char;
-};
+import {
+  transformPlayfairPair,
+} from './PlayfairHelpers';
 
 export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
+  const matrix = levelData.matrix;
+  
+  // Prepare pair data
+  const pairData = useMemo(() => levelData.cipherPairs.map((cipherPair, index) => {
+    const transformed = transformPlayfairPair(cipherPair, matrix, 'decrypt');
+    return {
+      index,
+      cipherPair,
+      plainPair: transformed.result,
+      rule: transformed.rule,
+    };
+  }), [levelData.cipherPairs, matrix]);
+
   const hintIndices = new Set();
   if (tier === 'easy' || tier === 'medium') {
-    const numHints = tier === 'easy' ? 2 : 14;
-    let hintsFound = 0;
-    for (let i = 0; i < levelData.plaintext.length; i++) {
-      if (levelData.plaintext[i] !== ' ' && levelData.masks && levelData.masks[0][i]) {
-        hintIndices.add(i);
-        hintsFound++;
-        if (hintsFound >= numHints) break;
-      }
-    }
-    if (hintsFound < numHints) {
-      for (let i = 0; i < levelData.plaintext.length; i++) {
-        if (levelData.plaintext[i] !== ' ' && !hintIndices.has(i)) {
-          hintIndices.add(i);
-          hintsFound++;
-          if (hintsFound >= numHints) break;
-        }
-      }
+    const numHints = tier === 'easy' ? 2 : 4;
+    for (let i = 0; i < Math.min(numHints, pairData.length); i++) {
+      hintIndices.add(i);
     }
   }
 
   const maskedIndices = [];
-  for (let i = 0; i < levelData.plaintext.length; i++) {
-    if (levelData.plaintext[i] !== ' ' && !hintIndices.has(i)) {
+  for (let i = 0; i < pairData.length; i++) {
+    if (!hintIndices.has(i)) {
       maskedIndices.push(i);
     }
   }
@@ -70,27 +64,15 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
   const requestRef = useRef();
 
   const currentIdx = maskedIndices[currentMaskIndex] ?? 0;
-  const currentBatonLetter = levelData.ciphertext[currentIdx] ?? '';
-  const currentTargetChar = levelData.plaintext[currentIdx] ?? '';
-
-  let segmentIdx = 0;
-  const words = levelData.plaintext.split(' ');
-  let accumulated = 0;
-  for (let i = 0; i < words.length; i++) {
-    if (currentIdx < accumulated + words[i].length + (i > 0 ? 1 : 0)) {
-      segmentIdx = i;
-      break;
-    }
-    accumulated += words[i].length + 1;
-  }
-  const currentShiftKey = levelData.targetShifts[segmentIdx % levelData.targetShifts.length];
+  const currentBatonPair = pairData[currentIdx]?.cipherPair ?? '';
+  const currentTargetPair = pairData[currentIdx]?.plainPair ?? '';
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
   const handleVerifySubmit = () => {
     setShowExplanation(true);
     setExplanationStep(-1);
-    const total = levelData.plaintext.replace(/\s+/g, '').length;
+    const total = pairData.length;
     let step = -1;
     const iv = setInterval(() => {
       step++;
@@ -118,20 +100,33 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
     setSpeedLines(list);
   }, []);
 
+  const makeDecoyPairs = (correctPair, count) => {
+    const letters = matrix.flat();
+    const decoys = new Set();
+    
+    while (decoys.size < count) {
+      const first = letters[Math.floor(Math.random() * letters.length)];
+      const second = letters[Math.floor(Math.random() * letters.length)];
+      if (first !== second) decoys.add(`${first}${second}`);
+    }
+    decoys.delete(correctPair);
+    return [...decoys].slice(0, count);
+  };
+
   const spawnCoinsAndGate = () => {
     collisionHandledRef.current = false;
     const tempIdx = maskedIndices[currentMaskIndex] ?? 0;
-    const tempTargetChar = levelData.plaintext[tempIdx] ?? '';
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const decoyOptions = alphabet.filter(ch => ch !== tempTargetChar);
-    const decoy1 = decoyOptions[Math.floor(Math.random() * decoyOptions.length)];
-    const decoyOptions2 = decoyOptions.filter(ch => ch !== decoy1);
-    const decoy2 = decoyOptions2[Math.floor(Math.random() * decoyOptions2.length)];
+    const tempTargetPair = pairData[tempIdx]?.plainPair ?? '';
+    
+    const decoyOptions = makeDecoyPairs(tempTargetPair, 2);
+    const decoy1 = decoyOptions[0];
+    const decoy2 = decoyOptions[1];
+    
     const correctLane = currentMaskIndex % 3;
     const decoyLanes = [0, 1, 2].filter(l => l !== correctLane);
 
     const newCoins = [
-      { id: 1, lane: correctLane, char: tempTargetChar, x: 85, eaten: false },
+      { id: 1, lane: correctLane, char: tempTargetPair, x: 85, eaten: false },
       { id: 2, lane: decoyLanes[0], char: decoy1, x: 85, eaten: false },
       { id: 3, lane: decoyLanes[1], char: decoy2, x: 85, eaten: false }
     ];
@@ -216,8 +211,8 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
             setCollectedKey(coin.char);
             setIsSpinning(true);
             setTimeout(() => setIsSpinning(false), 500);
-            const isCorrect = coin.char === currentTargetChar;
-            setFeedbackText(`🪙 Letter ${coin.char} Collected!`);
+            const isCorrect = coin.char === currentTargetPair;
+            setFeedbackText(`🪙 Pair ${coin.char} Collected!`);
             setFeedbackColor(isCorrect ? '#22c55e' : '#f87171');
             setFeedbackY(20 + coin.lane * 30 - 8);
             setTimeout(() => setFeedbackText(''), 900);
@@ -245,7 +240,7 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
 
     requestRef.current = requestAnimationFrame(updatePhysics);
     return () => cancelAnimationFrame(requestRef.current);
-  }, [sprintStep, runnerLane, isCrashing, isPaused, isMenuOpen, coins, gateX, collectedKey, isBoosting, currentTargetChar]);
+  }, [sprintStep, runnerLane, isCrashing, isPaused, isMenuOpen, coins, gateX, collectedKey, isBoosting, currentTargetPair]);
 
   useEffect(() => {
     setSprintStep('ready');
@@ -260,15 +255,15 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
   }, [levelData]);
 
   const handleGateCollision = () => {
-    const charUsed = collectedKey;
-    const isCorrect = charUsed === currentTargetChar;
+    const pairUsed = collectedKey;
+    const isCorrect = pairUsed === currentTargetPair;
 
     setAttempts((prev) => [
       ...prev,
       {
         index: currentIdx,
-        cipherChar: currentBatonLetter,
-        keyCollected: charUsed || 'None',
+        cipherPair: currentBatonPair,
+        keyCollected: pairUsed || 'None',
         correct: isCorrect,
         firstTry: firstTryForCurrent
       }
@@ -289,16 +284,17 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
           setFirstTryForCurrent(true);
           const nextIndex = currentMaskIndex + 1;
           const tempIdx = maskedIndices[nextIndex] ?? 0;
-          const tempTargetChar = levelData.plaintext[tempIdx] ?? '';
-          const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-          const decoyOptions = alphabet.filter(ch => ch !== tempTargetChar);
-          const decoy1 = decoyOptions[Math.floor(Math.random() * decoyOptions.length)];
-          const decoyOptions2 = decoyOptions.filter(ch => ch !== decoy1);
-          const decoy2 = decoyOptions2[Math.floor(Math.random() * decoyOptions2.length)];
+          const tempTargetPair = pairData[tempIdx]?.plainPair ?? '';
+          
+          const decoyOptions = makeDecoyPairs(tempTargetPair, 2);
+          const decoy1 = decoyOptions[0];
+          const decoy2 = decoyOptions[1];
+          
           const nextCorrectLane = nextIndex % 3;
           const nextDecoyLanes = [0, 1, 2].filter(l => l !== nextCorrectLane);
+          
           const newCoins = [
-            { id: 1, lane: nextCorrectLane, char: tempTargetChar, x: 85, eaten: false },
+            { id: 1, lane: nextCorrectLane, char: tempTargetPair, x: 85, eaten: false },
             { id: 2, lane: nextDecoyLanes[0], char: decoy1, x: 85, eaten: false },
             { id: 3, lane: nextDecoyLanes[1], char: decoy2, x: 85, eaten: false }
           ];
@@ -320,9 +316,9 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
         if (nextLives <= 0) {
           setSprintStep('gameover');
         } else {
-          const reason = charUsed
-            ? `Wrong Letter! You collected decoy letter '${charUsed}'. Try again to decrypt cipher '${currentBatonLetter}'!`
-            : `Gate Shut! You didn't collect any letter coin to unlock the checkpoint gate. Try again to decrypt cipher '${currentBatonLetter}'!`;
+          const reason = pairUsed
+            ? `Wrong Pair! You collected decoy pair '${pairUsed}'. Try again to decrypt cipher pair '${currentBatonPair}'!`
+            : `Gate Shut! You didn't collect any pair coin to unlock the checkpoint gate. Try again to decrypt cipher pair '${currentBatonPair}'!`;
           setCrashMessage(reason);
           setSprintStep('explanation');
         }
@@ -346,20 +342,12 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
             <p className="fg-recap-subtitle">Why Did This Work?</p>
             <div className="fg-recap-animation-box" style={{ minHeight: 'auto', padding: '16px', marginBottom: '16px' }}>
               <div className="fg-recap-letter-row">
-                {levelData.plaintext.replace(/\s+/g, '').split('').map((plainCh, idx) => {
-                  const cipherCh = levelData.ciphertext.replace(/\s+/g, '')[idx];
-                  let wi = 0, acc = 0;
-                  for (let i = 0; i < words.length; i++) {
-                    if (idx < acc + words[i].length) { wi = i; break; }
-                    acc += words[i].length;
-                  }
-                  const seg = levelData.targetShifts[wi];
+                {pairData.map((pair, idx) => {
                   return (
                     <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}>
-                      <span className="fg-recap-char-cipher">{cipherCh}</span>
-                      <span className="fg-recap-math">-{seg}</span>
+                      <span className="fg-recap-char-cipher">{pair.cipherPair}</span>
                       <span className="fg-recap-arrow">↓</span>
-                      <span className="fg-recap-char-plain">{plainCh}</span>
+                      <span className="fg-recap-char-plain">{pair.plainPair}</span>
                     </div>
                   );
                 })}
@@ -399,7 +387,7 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
               <button
                 className="fg-btn fg-btn-primary"
                 onClick={handleCloseExplanation}
-                disabled={explanationStep < levelData.plaintext.replace(/\s+/g, '').length - 1}
+                disabled={explanationStep < pairData.length - 1}
                 style={{ background: 'var(--neon-green)', color: '#030914' }}
               >
                 Unlock Next Objective ➔
@@ -432,12 +420,12 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
             <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🏃♂️</div>
             <h2 style={{ color: 'var(--neon-cyan)', margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>Playfair Sprint Relay</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
-              Baton relay decryption challenge! Steer the runner into the lane carrying the correct plaintext letter to decrypt checkpoints.
+              Baton relay decryption challenge! Steer the runner into the lane carrying the correct plaintext pair to decrypt checkpoints.
             </p>
             <div style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: '16px 20px', marginBottom: '20px', textAlign: 'left' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Ciphertext</span>
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-cyan)' }}>{levelData.ciphertext}</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-cyan)' }}>{levelData.pairCiphertext}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Hint</span>
@@ -446,7 +434,7 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
             </div>
             <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', lineHeight: 1.5 }}>
               <strong style={{ color: 'var(--neon-green)' }}>How it works:</strong>{' '}
-              Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter!
+              Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext pair!
             </p>
             <button className="vg-start-btn" onClick={handleStartSprint}>🚀 Start Relay Run</button>
           </div>
@@ -470,7 +458,7 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
                 <div className="stat-row">
                   <span className="stat-label">PLAYFAIR CLUE:</span>
                   <span className="stat-value clue-glow" style={{ fontSize: '0.9rem', color: 'var(--neon-cyan)', fontWeight: 'bold' }}>
-                    Plain = Cipher - {currentShiftKey}
+                    Use the Playfair Matrix below
                   </span>
                 </div>
               </div>
@@ -565,8 +553,8 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
                 <div className="sidebar-stats-card" style={{ display: 'flex', flexDirection: 'column', gap: '15px', flex: 1, overflowY: 'auto', textAlign: 'center', justifyContent: 'center' }}>
                   <div className="stats-header" style={{ color: 'var(--neon-cyan)', fontSize: '0.9rem' }}>📝 OBJECTIVES & GUIDE</div>
                   <div style={{ fontSize: '0.85rem', lineHeight: '1.6', color: '#cbd5e1' }}>
-                    • Solve the cipher letter to find the matching lane.<br />
-                    • Avoid decoy letters to prevent crashing!
+                    • Solve the cipher pair to find the matching lane.<br />
+                    • Avoid decoy pairs to prevent crashing!
                   </div>
                   <div style={{
                     background: 'rgba(0,0,0,0.3)',
@@ -579,19 +567,18 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
                     gap: '12px'
                   }}>
                     <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>
-                      Current Letter Decryption
+                      Current Pair Decryption
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '8px', minWidth: '55px' }}>
-                        <span style={{ fontSize: '1.4rem', color: '#fff', fontFamily: 'monospace' }}>{currentBatonLetter}</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '8px 14px', borderRadius: '8px', minWidth: '65px' }}>
+                        <span style={{ fontSize: '1.4rem', color: '#fff', fontFamily: 'monospace' }}>{currentBatonPair}</span>
                         <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: '4px' }}>CIPHER</span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--neon-cyan)' }}>
-                        <span style={{ fontSize: '0.65rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>Shift -{currentShiftKey}</span>
                         <span className="material-symbols-outlined" style={{ fontSize: '1.4rem', margin: '4px 0' }}>arrow_forward</span>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.3)', padding: '8px 14px', borderRadius: '8px', boxShadow: '0 0 10px rgba(0,229,255,0.1) inset', minWidth: '55px' }}>
-                        <span style={{ fontSize: '1.4rem', color: 'var(--neon-green)', fontFamily: 'monospace', fontWeight: 'bold' }}>?</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.3)', padding: '8px 14px', borderRadius: '8px', boxShadow: '0 0 10px rgba(0,229,255,0.1) inset', minWidth: '65px' }}>
+                        <span style={{ fontSize: '1.4rem', color: 'var(--neon-green)', fontFamily: 'monospace', fontWeight: 'bold' }}>??</span>
                         <span style={{ fontSize: '0.55rem', color: 'var(--neon-cyan)', marginTop: '4px' }}>PLAIN</span>
                       </div>
                     </div>
@@ -605,12 +592,12 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
             <div className="sprint-baton-hud" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
               <div className="baton-tag">APPROACHING GATE:</div>
               <div className="baton-letter" style={{ background: 'var(--neon-cyan)', color: '#030914', boxShadow: '0 0 15px rgba(0, 229, 255, 0.4)' }}>
-                {sprintStep === 'finished' ? '🏁' : currentBatonLetter}
+                {sprintStep === 'finished' ? '🏁' : currentBatonPair}
               </div>
               <div className="baton-desc">
                 {sprintStep === 'finished'
                   ? 'Relay run completed! Verify decryption in the sidebar.'
-                  : `Decrypt '${currentBatonLetter}' using Shift -${currentShiftKey}!`
+                  : `Find the plaintext pair for cipher pair '${currentBatonPair}'!`
                 }
               </div>
             </div>
@@ -646,7 +633,7 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
               >
                 <span className="sprint-runner-char">🏃</span>
                 <div className="runner-baton-glow" style={{ background: 'var(--neon-cyan)', color: '#000' }}>
-                  {sprintStep === 'finished' ? '✓' : currentBatonLetter}
+                  {sprintStep === 'finished' ? '✓' : currentBatonPair}
                 </div>
               </div>
 
@@ -692,17 +679,16 @@ export default function PlayfairSprint({ levelData, tier, onVerifySubmit, onBack
             </div>
 
             <div className="sprint-word-progress-card" style={{ marginTop: '20px', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '12px', padding: '16px 20px' }}>
-              <h3 style={{ fontSize: '0.9rem', fontWeight: '700', color: '#94a3b8', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Word Decryption Progress:</h3>
+              <h3 style={{ fontSize: '0.9rem', fontWeight: '700', color: '#94a3b8', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pair Decryption Progress:</h3>
               <div className="sprint-letters-row">
-                {levelData.plaintext.split('').map((char, idx) => {
-                  const isMasked = char !== ' ' && !hintIndices.has(idx);
+                {pairData.map((pair, idx) => {
+                  const isMasked = !hintIndices.has(idx);
                   const isSolved = isMasked && (maskedIndices.indexOf(idx) < currentMaskIndex || sprintStep === 'finished');
-                  const displayChar = !isMasked ? char : (isSolved ? char : '_');
-                  const cipherChar = levelData.ciphertext[idx] !== ' ' ? levelData.ciphertext[idx] : ' ';
+                  const displayPair = !isMasked ? pair.plainPair : (isSolved ? pair.plainPair : '__');
                   return (
-                    <div key={idx} className={`sprint-letter-box ${isSolved ? 'solved' : ''} ${isMasked && idx === currentIdx && sprintStep === 'running' ? 'active' : ''}`} style={char === ' ' ? { visibility: 'hidden', width: '20px' } : {}}>
-                      <span className="sprint-box-cipher">{cipherChar}</span>
-                      <span className="sprint-box-plain">{displayChar}</span>
+                    <div key={idx} className={`sprint-letter-box ${isSolved ? 'solved' : ''} ${isMasked && idx === currentIdx && sprintStep === 'running' ? 'active' : ''}`}>
+                      <span className="sprint-box-cipher">{pair.cipherPair}</span>
+                      <span className="sprint-box-plain">{displayPair}</span>
                     </div>
                   );
                 })}
