@@ -73,17 +73,14 @@ export default function VigenereSprint({ levelData, tier, onVerifySubmit, onBack
   const currentBatonLetter = levelData.ciphertext[currentIdx] ?? '';
   const currentTargetChar = levelData.plaintext[currentIdx] ?? '';
 
-  let segmentIdx = 0;
-  const words = levelData.plaintext.split(' ');
-  let accumulated = 0;
-  for (let i = 0; i < words.length; i++) {
-    if (currentIdx < accumulated + words[i].length + (i > 0 ? 1 : 0)) {
-      segmentIdx = i;
-      break;
+  // For Vigenere, calculate shift based on character index (skipping spaces)
+  let charIdxInText = 0;
+  for (let i = 0; i < currentIdx; i++) {
+    if (levelData.plaintext[i] !== ' ') {
+      charIdxInText++;
     }
-    accumulated += words[i].length + 1;
   }
-  const currentShiftKey = levelData.targetShifts[segmentIdx % levelData.targetShifts.length];
+  const currentShiftKey = levelData.targetShifts[charIdxInText % levelData.targetShifts.length];
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -348,12 +345,7 @@ export default function VigenereSprint({ levelData, tier, onVerifySubmit, onBack
               <div className="fg-recap-letter-row">
                 {levelData.plaintext.replace(/\s+/g, '').split('').map((plainCh, idx) => {
                   const cipherCh = levelData.ciphertext.replace(/\s+/g, '')[idx];
-                  let wi = 0, acc = 0;
-                  for (let i = 0; i < words.length; i++) {
-                    if (idx < acc + words[i].length) { wi = i; break; }
-                    acc += words[i].length;
-                  }
-                  const seg = levelData.targetShifts[wi];
+                  const seg = levelData.targetShifts[idx % levelData.targetShifts.length];
                   return (
                     <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}>
                       <span className="fg-recap-char-cipher">{cipherCh}</span>

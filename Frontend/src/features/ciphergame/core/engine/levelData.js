@@ -2,6 +2,7 @@ import {
   generatePlayfairMatrix,
   preparePlayfairDigraphs,
   transformPlayfairPair,
+  playfairEncrypt,
 } from "./playfair";
 
 /* ─────────────────── helpers ─────────────────── */
@@ -338,7 +339,6 @@ function buildVigenereLevel(plain, key, stageIndex, difficulty, hint, keyClue, k
   const len = plain.length;
   const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0.35;
   const mask = makeMask(len, reveal);
-  const keyLen = key.length;
   const targetShifts = [];
   const startShifts = [];
   const masks = [];
@@ -349,11 +349,12 @@ function buildVigenereLevel(plain, key, stageIndex, difficulty, hint, keyClue, k
     masks.push(wordMask);
     currentMaskIdx += word.length;
   });
-  words.forEach(() => {
-    const shift = Math.floor(Math.random() * 25) + 1;
+  // For Vigenere, targetShifts should be the shift values from the key (A=0, B=1, ..., Z=25)
+  key.split('').forEach(k => {
+    const shift = k.charCodeAt(0) - 65;
+    targetShifts.push(shift);
     let startShift;
     do { startShift = Math.floor(Math.random() * 5); } while (startShift === shift);
-    targetShifts.push(shift);
     startShifts.push(startShift);
   });
   return {
@@ -621,8 +622,28 @@ function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, l
   const pairPlaintext = pairs.join(' ');
   const pairCiphertext = encryptedPairs.map((pair) => pair.result).join(' ');
   
-  // For SPRINT and FISHING games: plaintext as original string, ciphertext as... well, let's use a simple Caesar-like ciphertext for sprint?
-  // Or wait, let's just use the original plaintext for sprint's plaintext and make a fake ciphertext using shifts!
+  // Get actual Playfair ciphertext
+  const playfairCiphertext = playfairEncrypt(plain, key);
+  
+  // Now, we need to map the original plaintext characters to the Playfair ciphertext.
+  // But Playfair processes pairs and may add X's, so let's create a version of ciphertext
+  // that preserves spaces and non-letters from the original plaintext, with Playfair-encrypted letters.
+  let ciphertext = '';
+  let pfIdx = 0;
+  for (let i = 0; i < plain.length; i++) {
+    const char = plain[i];
+    if (char < 'A' || char > 'Z') {
+      ciphertext += char;
+    } else {
+      if (pfIdx < playfairCiphertext.length) {
+        ciphertext += playfairCiphertext[pfIdx];
+        pfIdx++;
+      } else {
+        ciphertext += char;
+      }
+    }
+  }
+  
   const len = plain.length;
   const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0.35;
   const mask = makeMask(len, reveal);
@@ -634,50 +655,17 @@ function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, l
     masks.push(wordMask);
     currentMaskIdx += word.length + 1; // +1 for space
   });
+  
+  // For Playfair sprint, we won't use targetShifts (since it's not a shift cipher). 
+  // But let's keep the structure for compatibility, we'll just use dummy values.
   const targetShifts = [];
   const startShifts = [];
-  let fakeCiphertext = '';
-  let keyIdx = 0;
-  for (let i = 0; i < plain.length; i++) {
-    const char = plain[i];
-    if (char < 'A' || char > 'Z') {
-      fakeCiphertext += char;
-    } else {
-      const shift = Math.floor(Math.random() * 25) + 1;
-      targetShifts.push(shift); // Wait no, let's have targetShifts per word
-      fakeCiphertext += String.fromCharCode(((char.charCodeAt(0) - 65 + shift) % 26) + 65);
-    }
-  }
-  // Let's reset targetShifts and startShifts per word
-  targetShifts.length = 0;
-  startShifts.length = 0;
   words.forEach(() => {
-    const shift = Math.floor(Math.random() * 25) + 1;
-    let startShift;
-    do { startShift = Math.floor(Math.random() * 5); } while (startShift === shift);
+    const shift = 0;
+    let startShift = 1;
     targetShifts.push(shift);
     startShifts.push(startShift);
   });
-  // Let's create a fake ciphertext using the target shifts per word
-  fakeCiphertext = '';
-  let wordIdx = 0;
-  keyIdx = 0;
-  for (let i = 0; i < plain.length; i++) {
-    const char = plain[i];
-    if (char === ' ') {
-      fakeCiphertext += ' ';
-      wordIdx++;
-      keyIdx = 0;
-      continue;
-    }
-    if (char < 'A' || char > 'Z') {
-      fakeCiphertext += char;
-      continue;
-    }
-    const shift = targetShifts[wordIdx];
-    fakeCiphertext += String.fromCharCode(((char.charCodeAt(0) - 65 + shift) % 26) + 65);
-    keyIdx++;
-  }
   
   return {
     level: stageIndex + 1,
@@ -685,7 +673,7 @@ function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, l
     plaintext: plain,
     pairPlaintext,
     displayPlaintext: plain,
-    ciphertext: fakeCiphertext,
+    ciphertext: ciphertext,
     pairCiphertext,
     key,
     matrix,
