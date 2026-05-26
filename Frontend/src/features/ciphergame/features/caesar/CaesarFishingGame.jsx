@@ -2,25 +2,23 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../../CipherGame.css';
 
 /* ─── Caesar math ─── */
-const caesarDecryptChar = (char, shift) => {
+const caesarShiftChar = (char, shift) => {
   const code = char.charCodeAt(0);
   if (code >= 65 && code <= 90) {
-    return String.fromCharCode(((code - 65 - shift + 26) % 26 + 26) % 26 + 65);
+    return String.fromCharCode(((code - 65 + shift) % 26 + 26) % 26 + 65);
   }
   return char;
 };
-const caesarDecryptWord = (word, shift) =>
-  word.split('').map(ch => caesarDecryptChar(ch, shift)).join('');
+const caesarShiftWord = (word, shift) =>
+  word.split('').map(ch => caesarShiftChar(ch, shift)).join('');
+
+const normalizeShift = (shift = 0) => ((shift % 26) + 26) % 26;
 
 const applyShiftDelta = (curr, delta) => {
-  let val = curr + delta;
-  if (val < -25) {
-    val = val + 26;
-  } else if (val > 25) {
-    val = val - 26;
-  }
-  return val;
+  return normalizeShift(curr + delta);
 };
+
+const formatShift = (shift) => `+${normalizeShift(shift)}`;
 
 const FISH_EMOJIS = ['🐟', '🐠', '🐡', '🦈', '🦐'];
 const FISH_VALUES = [+1, -1, +2, -2, +3, -3, +5, -5];
@@ -28,10 +26,12 @@ const FISH_VALUES = [+1, -1, +2, -2, +3, -3, +5, -5];
 export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
   const words         = levelData.plaintext.split(' ');
   const cipherSegs    = levelData.ciphertext.split(' ');
+  const getInitialShift = (segIdx) => normalizeShift(levelData.startShifts?.[segIdx] ?? levelData.startShifts?.[0] ?? 0);
+  const getTargetShift = (segIdx) => normalizeShift(26 - (levelData.targetShifts?.[segIdx] ?? levelData.targetShifts?.[0] ?? 0));
 
   /* ── state ── */
   const [phase, setPhase]                     = useState('ready');
-  const [activeShifts, setActiveShifts]       = useState(cipherSegs.map(() => 0));
+  const [activeShifts, setActiveShifts]       = useState(() => cipherSegs.map((_, idx) => getInitialShift(idx)));
   const [targetSegIdx, setTargetSegIdx]       = useState(0);
   const [attemptsLeft, setAttemptsLeft]       = useState(15);
   const [levelSolved, setLevelSolved]         = useState(false);
@@ -52,24 +52,25 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const animationRef = useRef(null);
 
   /* ── derived ── */
+  const basketShift = normalizeShift(activeShifts[0] ?? getInitialShift(0));
   const decryptedSegs = cipherSegs.map((seg, i) =>
-    caesarDecryptWord(seg, activeShifts[i] ?? 0)
+    caesarShiftWord(seg, activeShifts[i] ?? 0)
   );
 
   // Live hovered preview of decrypted segments (Only in Easy mode!)
   const previewSegs = cipherSegs.map((seg, i) => {
-    if (i !== targetSegIdx || !hoveredFish) return decryptedSegs[i];
+    if (!hoveredFish) return decryptedSegs[i];
     if (tier !== 'easy') return decryptedSegs[i];
 
-    const previewShift = applyShiftDelta(activeShifts[i] ?? 0, hoveredFish.value);
-    return caesarDecryptWord(seg, previewShift);
+    const previewShift = applyShiftDelta(basketShift, hoveredFish.value);
+    return caesarShiftWord(seg, previewShift);
   });
 
   const allCorrect = decryptedSegs.every((dec, i) => dec === words[i]);
 
   /* ── start game ── */
   const startGame = () => {
-    setActiveShifts(cipherSegs.map(() => 0));
+    setActiveShifts(cipherSegs.map((_, idx) => getInitialShift(idx)));
     setTargetSegIdx(0);
     setAttemptsLeft(15);
     setChumCount(3);
@@ -83,6 +84,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   useEffect(() => {
     setPhase('ready');
     setIsMenuOpen(false);
+    setActiveShifts(cipherSegs.map((_, idx) => getInitialShift(idx)));
   }, [levelData]);
 
   /* ── detect solve ── */
@@ -194,9 +196,8 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           setIsCasting(false);
           setCaughtFish(null);
           setActiveShifts(prev => {
-            const next = [...prev];
-            next[targetSegIdx] = applyShiftDelta(next[targetSegIdx], fish.value);
-            return next;
+            const nextShift = applyShiftDelta(prev[0] ?? getInitialShift(0), fish.value);
+            return cipherSegs.map(() => nextShift);
           });
           setBasketShake(true);
           setTimeout(() => setBasketShake(false), 400);
@@ -270,13 +271,13 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     const tWord = words[targetSegIdx];
     const tCiph = cipherSegs[targetSegIdx];
     const dec   = decryptedSegs[targetSegIdx];
-    const pShift = activeShifts[targetSegIdx] ?? 0;
-    const tShift = levelData.targetShifts[targetSegIdx];
+    const pShift = normalizeShift(activeShifts[targetSegIdx] ?? 0);
+    const tShift = getTargetShift(targetSegIdx);
     if (dec === tWord) return null;
     for (let i = 0; i < tWord.length; i++) {
       if (dec[i] !== tWord[i]) {
         return {
-          rule: `Shift ${pShift >= 0 ? '+' : ''}${pShift} is incorrect. The decrypted text doesn't match the required pattern. Keep catching fish to adjust the basket shift!`
+          rule: `Shift ${formatShift(pShift)} is incorrect. The correct basket shift for this ciphertext is ${formatShift(tShift)}. Keep catching fish to adjust the basket shift!`
         };
       }
     }
@@ -315,9 +316,9 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           </div>
           <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', lineHeight: 1.5 }}>
             <strong style={{ color: 'var(--neon-green)' }}>How it works:</strong>{' '}
-            Each cipher segment has a basket shift. Click a fish to reel it in — its value adjusts the current segment's shift.
+            The whole ciphertext uses one Caesar basket shift. Click a fish to reel it in — its value adjusts the active shift key.
             When the decrypted text matches the plaintext, submit! Formula:{' '}
-            <code style={{ color: 'var(--neon-cyan)' }}>Plain = (Cipher − Shift) mod 26</code>
+            <code style={{ color: 'var(--neon-cyan)' }}>Plain = (Cipher + Basket Shift) mod 26</code>
           </p>
           <button className="vg-start-btn" onClick={startGame}>🎣 Start Fishing</button>
         </div>
@@ -326,7 +327,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   );
 
   /* ════ PLAYING ════ */
-  const currentShift = activeShifts[targetSegIdx] ?? 0;
+  const currentShift = basketShift;
 
   return (
     <div className="fg-root">
@@ -362,11 +363,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                     if (idx < acc + words[i].length) { wi = i; break; }
                     acc += words[i].length;
                   }
-                  const seg = levelData.targetShifts[wi];
+                  const seg = getTargetShift(wi);
                   return (
                     <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}>
                       <span className="fg-recap-char-cipher">{cipherCh}</span>
-                      <span className="fg-recap-math">-{seg}</span>
+                      <span className="fg-recap-math">+{seg}</span>
                       <span className="fg-recap-arrow">↓</span>
                       <span className="fg-recap-char-plain">{plainCh}</span>
                     </div>
@@ -375,21 +376,22 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               </div>
             </div>
             <div className="fg-recap-explanation" style={{ background: 'rgba(255,255,255,0.015)' }}>
-              💡 <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is shifted backward by the key value.
-              By catching fish with numeric modifiers, you tuned the basket shift to match the secret key.{' '}
-              <code>Plain = (Cipher − Key) mod 26</code> maps every letter back uniformly.
+              💡 <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is shifted forward by the basket correction value.
+              By catching fish with numeric modifiers, you tuned the basket shift to match the playable decryption key.{' '}
+              <code>Plain = (Cipher + Basket Shift) mod 26</code> maps every letter back uniformly.
               {levelData.targetShifts && levelData.targetShifts.map((shiftVal, sIdx) => {
-                const sAlph = alphabet.map((_, i) => alphabet[(i + shiftVal) % 26]);
+                const decryptShift = normalizeShift(26 - shiftVal);
+                const sAlph = alphabet.map((_, i) => alphabet[(i + decryptShift) % 26]);
                 return (
                   <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
                     <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
-                      🔑 Caesar Alphabet Shift Table {levelData.targetShifts.length > 1 ? `— Segment #${sIdx + 1}` : ''} (Key: +{shiftVal})
+                      🔑 Caesar Decryption Shift Table {levelData.targetShifts.length > 1 ? `— Segment #${sIdx + 1}` : ''} (Basket: +{decryptShift})
                     </div>
                     <div style={{ overflowX: 'auto' }}>
                       <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
+                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
                             {alphabet.map((ch, i) => (
                               <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
                                 <div style={{ fontWeight: 'bold' }}>{ch}</div>
@@ -400,7 +402,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                         </thead>
                         <tbody>
                           <tr>
-                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
+                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
                             {sAlph.map((ch, i) => (
                               <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
                                 <div style={{ fontWeight: 'bold' }}>{ch}</div>
@@ -447,8 +449,8 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         <aside className="fg-sidebar">
           <div className={`fg-basket-card ${levelSolved ? 'active-target' : ''} ${basketShake ? 'shake' : ''}`}>
             <div className="fg-basket-container">🧺</div>
-            <div className="fg-basket-shift-value">{currentShift >= 0 ? `+${currentShift}` : currentShift}</div>
-            <span className="fg-basket-label">Basket Shift (Seg #{targetSegIdx + 1})</span>
+            <div className="fg-basket-shift-value">{formatShift(currentShift)}</div>
+            <span className="fg-basket-label">Basket Shift Key</span>
             {floatingXp && (
               <div className="fg-xp-pop-indicator" style={{ left: `${floatingXp.x}%`, top: `${floatingXp.y}%` }}>
                 +{floatingXp.amount} XP
@@ -483,7 +485,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
           <div className="fg-cipher-ref">
             <p className="fg-ref-title">Target: Segment #{targetSegIdx + 1}</p>
-            <p className="fg-ref-hint"><span>Active Shift:</span><span className="fg-key">{currentShift >= 0 ? `+${currentShift}` : currentShift}</span></p>
+            <p className="fg-ref-hint"><span>Active Shift:</span><span className="fg-key">{formatShift(currentShift)}</span></p>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '8px 0', padding: '8px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', flex: 1, overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
@@ -502,7 +504,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               )}
             </div>
 
-            <p className="fg-ref-formula">Formula:<br />Plain = (Cipher − Shift) mod 26</p>
+            <p className="fg-ref-formula">Formula:<br />Plain = (Cipher + Basket Shift) mod 26</p>
           </div>
 
           <div className="fg-sidebar-alerts">
@@ -527,7 +529,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
             ) : (
               <div className="fg-alert-panel default-alert">
                 <strong>🎣 Status:</strong>
-                <p style={{ marginTop: 6, fontSize: '0.82rem', lineHeight: 1.4 }}>Select a cipher word segment, then catch fish to adjust the basket shift!</p>
+                <p style={{ marginTop: 6, fontSize: '0.82rem', lineHeight: 1.4 }}>Catch fish to adjust the Caesar basket shift, then select word segments to inspect the decrypted letters.</p>
               </div>
             )}
           </div>
@@ -539,7 +541,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
             <div className="fg-word-segments-row">
               {words.map((word, wIdx) => {
                 const isTargeted = targetSegIdx === wIdx;
-                const segShift = activeShifts[wIdx] ?? 0;
+                const segShift = normalizeShift(activeShifts[wIdx] ?? 0);
                 const cipherWord = cipherSegs[wIdx];
                 const decWord = decryptedSegs[wIdx];
                 const prevWord = previewSegs[wIdx];
@@ -573,7 +575,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                         );
                       })}
                     </div>
-                    <div className="fg-segment-basket-badge">Basket Shift: {segShift >= 0 ? `+${segShift}` : segShift}</div>
+                    <div className="fg-segment-basket-badge">Basket Shift: {formatShift(segShift)}</div>
                   </div>
                 );
               })}

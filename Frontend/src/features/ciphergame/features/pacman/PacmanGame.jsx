@@ -285,6 +285,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const skillActiveRef = useRef(skillActive);
   const isPoweredUpRef = useRef(isPoweredUp);
   const isInvulnerableRef = useRef(isInvulnerable);
+  const autoRecapShownRef = useRef(false);
 
   useEffect(() => { pacmanRef.current = pacman; }, [pacman]);
   useEffect(() => { ghostsRef.current = ghosts; }, [ghosts]);
@@ -317,6 +318,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setShowExplanation(false);
     setExplanationStep(-1);
     setIsMenuOpen(false);
+    autoRecapShownRef.current = false;
   }, [levelData]);
 
   const gameLoopRef = useRef(null);
@@ -561,6 +563,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
                   if (nextEaten.length === totalTargets) {
                     setLevelSolved(true);
+                    if (!isVigenere && !isPlayfair && !autoRecapShownRef.current) {
+                      beginExplanation();
+                    }
                   }
                   return nextEaten;
                 });
@@ -697,11 +702,12 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setIsScreenShaking(false);
     setIsInvulnerable(false);
     isInvulnerableRef.current = false;
+    autoRecapShownRef.current = false;
     setPellets(generateRandomPellets(initialGhosts, initialPacman));
   };
 
-  const handleVerifySubmit = () => {
-    if (!levelSolved) return;
+  const beginExplanation = () => {
+    autoRecapShownRef.current = true;
     setShowExplanation(true);
     setExplanationStep(-1);
     const total = isPlayfair 
@@ -715,12 +721,18 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     }, 600);
   };
 
+  const handleVerifySubmit = () => {
+    if (!levelSolved) return;
+    beginExplanation();
+  };
+
   const handleCloseExplanation = () => {
     setShowExplanation(false);
     onVerifySubmit();
   };
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  const words = (levelData.plaintext || '').split(/\s+/).filter(Boolean);
 
   if (phase === 'ready') return (
     <div className="pacman-container fg-root">
