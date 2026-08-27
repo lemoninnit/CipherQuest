@@ -106,8 +106,43 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   /* ── fish physics ── */
   const spawnFish = () => {
     const list = [];
+    const targetShift = normalizeShift(26 - (levelData.targetShifts?.[0] ?? 0));
+    const currentShift = basketShift;
+    const diff = normalizeShift(targetShift - currentShift);
+
+    const helpers = [];
+    if (diff !== 0) {
+      // Direct single-fish solver
+      if (FISH_VALUES.includes(diff)) {
+        helpers.push(diff);
+      } else if (FISH_VALUES.includes(-normalizeShift(26 - diff))) {
+        helpers.push(-normalizeShift(26 - diff));
+      }
+      
+      // Two-fish solvers
+      for (const val of FISH_VALUES) {
+        const remaining = normalizeShift(diff - val);
+        const remNeg = -normalizeShift(26 - remaining);
+        if (FISH_VALUES.includes(remaining)) {
+          helpers.push(val);
+          helpers.push(remaining);
+          break;
+        } else if (FISH_VALUES.includes(remNeg)) {
+          helpers.push(val);
+          helpers.push(remNeg);
+          break;
+        }
+      }
+    }
+
     for (let i = 0; i < 6; i++) {
-      const value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
+      let value;
+      if (helpers.length > 0 && i < helpers.length) {
+        value = helpers[i];
+      } else {
+        value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
+      }
+
       const imgSrc = FISH_IMAGES[Math.floor(Math.random() * FISH_IMAGES.length)];
       list.push({
         id: i,
@@ -212,7 +247,17 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           
           setTimeout(() => {
             setFishList(prev => {
-              const value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
+              const targetShift = normalizeShift(26 - (levelData.targetShifts?.[0] ?? 0));
+              const currentShift = basketShift;
+              const diff = normalizeShift(targetShift - currentShift);
+              let value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
+              if (diff !== 0 && Math.random() > 0.4) {
+                if (FISH_VALUES.includes(diff)) {
+                  value = diff;
+                } else if (FISH_VALUES.includes(-normalizeShift(26 - diff))) {
+                  value = -normalizeShift(26 - diff);
+                }
+              }
               const imgSrc = FISH_IMAGES[Math.floor(Math.random() * FISH_IMAGES.length)];
               return [...prev, {
                 id: Date.now(),
@@ -512,6 +557,16 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
             <p className="fg-ref-formula">Formula:<br />Plain = (Cipher + Basket Shift) mod 26</p>
           </div>
 
+          <div className="fg-cipher-ref" style={{ marginTop: '4px' }}>
+            <p className="fg-ref-title">📖 Caesar Guide</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.74rem', margin: '4px 0', lineHeight: 1.4 }}>
+              The Caesar cipher shifts each letter forward. To decrypt, we must shift it further to complete the 26-letter rotation.
+            </p>
+            <p style={{ color: 'var(--neon-green)', fontSize: '0.74rem', margin: '4px 0 0', fontWeight: 'bold' }}>
+              Catch fish with + / - modifiers to adjust the Basket Shift until words look readable!
+            </p>
+          </div>
+
           <div className="fg-sidebar-alerts">
             {levelSolved ? (
               <div className="fg-success-panel">
@@ -638,7 +693,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                   />
                 </div>
               )}
-              <svg className="fg-pond-svg" viewBox="0 0 500 260">
+              <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">
                 <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
                 {isCasting && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />}
               </svg>

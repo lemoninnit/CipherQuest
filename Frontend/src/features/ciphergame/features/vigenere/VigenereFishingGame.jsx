@@ -542,6 +542,16 @@ export default function VigenereFishingGame({
             <p className="fg-ref-formula">Formula:<br />Plain = Cipher - Keyword Letter</p>
           </div>
 
+          <div className="fg-cipher-ref" style={{ marginTop: '4px' }}>
+            <p className="fg-ref-title">📖 Vigenere Guide</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.74rem', margin: '4px 0', lineHeight: 1.45 }}>
+              Vigenere repeats a keyword across the message. Each letter in the keyword defines a shift value for a repeating set of columns.
+            </p>
+            <p style={{ color: 'var(--neon-green)', fontSize: '0.74rem', margin: '4px 0 0', fontWeight: 'bold' }}>
+              Select a Key Slot button, then catch the fish carrying the matching key letter for that repeating pattern!
+            </p>
+          </div>
+
           <button
             className="fg-btn"
             onClick={handleChumWaters}
@@ -718,7 +728,7 @@ export default function VigenereFishingGame({
                   />
                 </div>
               )}
-              <svg className="fg-pond-svg" viewBox="0 0 500 260">
+              <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">
                 <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
                 {isCasting && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />}
               </svg>
