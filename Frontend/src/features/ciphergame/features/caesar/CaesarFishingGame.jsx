@@ -20,7 +20,16 @@ const applyShiftDelta = (curr, delta) => {
 
 const formatShift = (shift) => `+${normalizeShift(shift)}`;
 
-const FISH_EMOJIS = ['🐟', '🐠', '🐡', '🦈', '🦐'];
+const FISH_IMAGES = [
+  '/assets/fish/fish1.png',
+  '/assets/fish/fish2.png',
+  '/assets/fish/fish3.png',
+  '/assets/fish/fish4.png',
+  '/assets/fish/fish5.png',
+  '/assets/fish/fish6.png',
+  '/assets/fish/fish7.png',
+  '/assets/fish/fish8.png',
+];
 const FISH_VALUES = [+1, -1, +2, -2, +3, -3, +5, -5];
 
 export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
@@ -99,8 +108,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     const list = [];
     for (let i = 0; i < 6; i++) {
       const value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
-      const emoji = FISH_EMOJIS[Math.floor(Math.random() * FISH_EMOJIS.length)];
-      const color = i % 2 === 0 ? 'var(--neon-cyan)' : 'var(--neon-green)';
+      const imgSrc = FISH_IMAGES[Math.floor(Math.random() * FISH_IMAGES.length)];
       list.push({
         id: i,
         value,
@@ -108,8 +116,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         y: 60 + Math.random() * 140,
         speed: 0.3 + Math.random() * 0.4,
         direction: Math.random() > 0.5 ? 1 : -1,
-        emoji,
-        color,
+        imgSrc,
       });
     }
     setFishList(list);
@@ -206,8 +213,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           setTimeout(() => {
             setFishList(prev => {
               const value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
-              const emoji = FISH_EMOJIS[Math.floor(Math.random() * FISH_EMOJIS.length)];
-              const color = Math.random() > 0.5 ? 'var(--neon-cyan)' : 'var(--neon-green)';
+              const imgSrc = FISH_IMAGES[Math.floor(Math.random() * FISH_IMAGES.length)];
               return [...prev, {
                 id: Date.now(),
                 value,
@@ -215,8 +221,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                 y: 60 + Math.random() * 140,
                 speed: 0.3 + Math.random() * 0.4,
                 direction: Math.random() > 0.5 ? 1 : -1,
-                emoji,
-                color,
+                imgSrc,
               }];
             });
           }, 600);
@@ -586,6 +591,16 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           {/* Pond */}
           <section className="fg-pond-wrapper">
             <div className="fg-pond-container">
+              {/* Ocean background video */}
+              <video
+                className="fg-pond-video"
+                src="/assets/fish/ocean_bg.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+              <div className="fg-pond-overlay" />
               <div className="fg-wave" />
               {bubbles.map(b => (
                 <div key={b.id} className="fg-bubble" style={{ left: `${b.x}%`, width: `${b.size}px`, height: `${b.size}px`, animationDelay: `${b.delay}s`, animationDuration: `${b.duration}s` }} />
@@ -600,7 +615,12 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                     onMouseEnter={() => { if (!isCasting) setHoveredFish(f); }}
                     onMouseLeave={() => setHoveredFish(null)}
                     onClick={() => castLineToFish(f)}>
-                    <span className="fg-fish-sprite" style={{ color: f.color }}>{f.emoji}</span>
+                    <img
+                      className="fg-fish-sprite-img"
+                      src={f.imgSrc}
+                      alt="fish"
+                      draggable={false}
+                    />
                     <div className={badgeClass} style={{ transform: `scaleX(${f.direction})` }}>
                       {badgeText}
                     </div>
@@ -609,7 +629,12 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               })}
               {isCasting && caughtFish && castProgress < 1 && (
                 <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
-                  <span className="fg-fish-sprite" style={{ color: caughtFish.color }}>{caughtFish.emoji}</span>
+                  <img
+                    className="fg-fish-sprite-img"
+                    src={caughtFish.imgSrc}
+                    alt="fish"
+                    draggable={false}
+                  />
                 </div>
               )}
               <svg className="fg-pond-svg" viewBox="0 0 500 260">

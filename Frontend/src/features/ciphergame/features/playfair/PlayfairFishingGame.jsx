@@ -6,6 +6,16 @@ import {
 } from './PlayfairHelpers';
 
 const FISH_VALUES = ['fin', 'tide', 'reef', 'wake', 'foam', 'gill', 'sail', 'dock'];
+const FISH_IMAGES = [
+  '/assets/fish/fish1.png',
+  '/assets/fish/fish2.png',
+  '/assets/fish/fish3.png',
+  '/assets/fish/fish4.png',
+  '/assets/fish/fish5.png',
+  '/assets/fish/fish6.png',
+  '/assets/fish/fish7.png',
+  '/assets/fish/fish8.png',
+];
 
 const normalizePair = (value) => String(value || '').replace(/[^A-Z]/g, '').slice(0, 2);
 
@@ -48,7 +58,7 @@ function makeFishForPair(pair, matrix, tier) {
     y: 36 + Math.random() * 160,
     speed: 0.11 + Math.random() * 0.14,
     direction: Math.random() > 0.5 ? 1 : -1,
-    variant: FISH_VALUES[index % FISH_VALUES.length],
+    imgSrc: FISH_IMAGES[index % FISH_IMAGES.length],
   }));
 }
 
@@ -442,6 +452,16 @@ export default function PlayfairFishingGame({
           </div>
 
           <section className="pf-pond">
+              {/* Ocean background video */}
+              <video
+                className="fg-pond-video"
+                src="/assets/fish/ocean_bg.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+              <div className="fg-pond-overlay" />
             <div className="vg-pond-surface" />
             {bubbles.map((bubble) => (
               <div
@@ -459,18 +479,28 @@ export default function PlayfairFishingGame({
             {fishList.map((fish) => (
               <button
                 key={fish.id}
-                className={`pf-fish ${fish.variant}`}
+                className="pf-fish"
                 type="button"
                 style={{ left: `${fish.x}%`, top: fish.y, transform: `scaleX(${fish.direction})` }}
                 onClick={() => castAt(fish)}
               >
-                <span className="pf-fish-body" />
+                <img
+                  className="fg-fish-sprite-img pf-fish-img"
+                  src={fish.imgSrc}
+                  alt="fish"
+                  draggable={false}
+                />
                 <span className="pf-fish-badge" style={{ transform: `scaleX(${fish.direction})` }}>{fish.pair}</span>
               </button>
             ))}
             {caughtFish && (
               <div className="pf-reel-fish" style={{ left: `${(hookX / pondWidth) * 100}%`, top: hookY - 10 }}>
-                <span className="pf-fish-body" />
+                <img
+                  className="fg-fish-sprite-img pf-fish-img"
+                  src={caughtFish.imgSrc}
+                  alt="fish"
+                  draggable={false}
+                />
                 <span className="pf-fish-badge">{caughtFish.pair}</span>
               </div>
             )}

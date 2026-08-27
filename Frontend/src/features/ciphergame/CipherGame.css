@@ -361,12 +361,40 @@
     inset 0 -20px 40px rgba(0, 0, 0, 0.8);
 }
 
+/* Video background for the pond */
+.fg-pond-video {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+/* Overlay tint on top of video */
+.fg-pond-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(3, 9, 20, 0.42) 0%,
+    rgba(3, 11, 23, 0.28) 40%,
+    rgba(1, 4, 8, 0.68) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
 .fg-wave {
   position: absolute;
   bottom: 0; left: 0; right: 0;
   height: 120px;
   background: linear-gradient(180deg, rgba(13, 110, 253, 0.03) 0%, rgba(13, 110, 253, 0.12) 100%);
   animation: waveMotion 6s ease-in-out infinite alternate;
+  z-index: 2;
 }
 @keyframes waveMotion {
   0% { transform: translateY(10px) skewX(-2deg); }
@@ -375,10 +403,11 @@
 
 .fg-bubble {
   position: absolute;
-  background: rgba(0, 229, 255, 0.15);
+  background: rgba(0, 229, 255, 0.18);
   border-radius: 50%;
   animation: floatUp 8s infinite linear;
   bottom: -10px;
+  z-index: 3;
 }
 @keyframes floatUp {
   0% { transform: translateY(0) scale(0.8); opacity: 0; }
@@ -414,23 +443,35 @@
   cursor: pointer;
   user-select: none;
   z-index: 5;
-  transition: transform 0.2s;
+  transition: filter 0.2s, transform 0.2s;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 .fg-fish-entity:hover {
+  filter: brightness(1.25) drop-shadow(0 0 8px rgba(0, 229, 255, 0.7));
   transform: scale(1.15);
 }
 
+/* PNG fish image sprite */
+.fg-fish-sprite-img {
+  width: 62px;
+  height: auto;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.65));
+  animation: fishWiggle 1.4s ease-in-out infinite alternate;
+  display: block;
+}
+
+/* Legacy emoji sprite (fallback) */
 .fg-fish-sprite {
   font-size: 2.3rem;
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
   animation: fishWiggle 0.5s ease-in-out infinite alternate;
 }
 @keyframes fishWiggle {
-  0% { transform: rotate(-4deg); }
-  100% { transform: rotate(4deg); }
+  0%  { transform: translateY(0px)   rotate(-3deg); }
+  100% { transform: translateY(-4px) rotate(3deg); }
 }
 
 .fg-fish-badge {

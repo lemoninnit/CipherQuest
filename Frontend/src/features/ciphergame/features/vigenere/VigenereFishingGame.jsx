@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../CipherGame.css';
 
-const FISH_EMOJIS = ['🐟', '🐠', '🐡', '🦈', '🦐'];
+const FISH_IMAGES = [
+  '/assets/fish/fish1.png',
+  '/assets/fish/fish2.png',
+  '/assets/fish/fish3.png',
+  '/assets/fish/fish4.png',
+  '/assets/fish/fish5.png',
+  '/assets/fish/fish6.png',
+  '/assets/fish/fish7.png',
+  '/assets/fish/fish8.png',
+];
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const normalizeShift = (shift = 0) => ((shift % 26) + 26) % 26;
@@ -132,8 +141,7 @@ export default function VigenereFishingGame({
     }
 
     const list = [...letters].sort(() => Math.random() - 0.5).map((letter, i) => {
-      const emoji = FISH_EMOJIS[Math.floor(Math.random() * FISH_EMOJIS.length)];
-      const color = i % 2 === 0 ? 'var(--neon-cyan)' : 'var(--neon-green)';
+      const imgSrc = FISH_IMAGES[Math.floor(Math.random() * FISH_IMAGES.length)];
       return {
         id: i,
         letter,
@@ -142,8 +150,7 @@ export default function VigenereFishingGame({
         y: 60 + Math.random() * 140,
         speed: 0.3 + Math.random() * 0.4,
         direction: Math.random() > 0.5 ? 1 : -1,
-        emoji,
-        color
+        imgSrc
       };
     });
     setFishList(list);
@@ -298,8 +305,7 @@ export default function VigenereFishingGame({
                 y: 60 + Math.random() * 140,
                 speed: 0.3 + Math.random() * 0.4,
                 direction: Math.random() > 0.5 ? 1 : -1,
-                emoji,
-                color
+                imgSrc: FISH_IMAGES[Math.floor(Math.random() * FISH_IMAGES.length)]
               }];
             });
           }, 600);
@@ -664,6 +670,16 @@ export default function VigenereFishingGame({
 
           <section className="fg-pond-wrapper">
             <div className="fg-pond-container">
+              {/* Ocean background video */}
+              <video
+                className="fg-pond-video"
+                src="/assets/fish/ocean_bg.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+              <div className="fg-pond-overlay" />
               <div className="fg-wave" />
               {bubbles.map(bubble => (
                 <div key={bubble.id} className="fg-bubble" style={{ left: `${bubble.x}%`, width: `${bubble.size}px`, height: `${bubble.size}px`, animationDelay: `${bubble.delay}s`, animationDuration: `${bubble.duration}s` }} />
@@ -681,7 +697,12 @@ export default function VigenereFishingGame({
                     onMouseLeave={() => setHoveredFish(null)}
                     onClick={() => castLineToFish(fish)}
                   >
-                    <span className="fg-fish-sprite" style={{ color: fish.color }}>{fish.emoji}</span>
+                    <img
+                      className="fg-fish-sprite-img"
+                      src={fish.imgSrc}
+                      alt="fish"
+                      draggable={false}
+                    />
                     <div className={badgeClass} style={{ transform: `scaleX(${fish.direction})` }}>
                       {badgeText}
                     </div>
@@ -690,7 +711,12 @@ export default function VigenereFishingGame({
               })}
               {isCasting && caughtFish && castProgress < 1 && (
                 <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
-                  <span className="fg-fish-sprite" style={{ color: caughtFish.color }}>{caughtFish.emoji}</span>
+                  <img
+                    className="fg-fish-sprite-img"
+                    src={caughtFish.imgSrc}
+                    alt="fish"
+                    draggable={false}
+                  />
                 </div>
               )}
               <svg className="fg-pond-svg" viewBox="0 0 500 260">

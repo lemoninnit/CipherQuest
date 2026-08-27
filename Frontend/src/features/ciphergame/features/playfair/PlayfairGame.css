@@ -269,10 +269,17 @@
   gap: 2px;
   user-select: none;
   padding: 0;
+  z-index: 5;
 }
 
 .pf-fish:hover {
-  filter: brightness(1.2);
+  filter: brightness(1.25) drop-shadow(0 0 8px rgba(0, 229, 255, 0.7));
+}
+
+/* Override fg-fish-sprite-img size for the smaller Playfair pond fish */
+.pf-fish-img {
+  width: 54px !important;
+  height: auto;
 }
 
 .pf-fish-body {
@@ -450,4 +457,194 @@
   .pf-pond {
     min-height: 320px;
   }
+}
+
+/* ── Shared vg-* helpers used in PlayfairFishingGame ──────────── */
+
+/* Pond surface shimmer */
+.vg-pond-surface {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 100px;
+  background: linear-gradient(180deg, rgba(0,229,255,0.06) 0%, transparent 100%);
+  z-index: 2;
+  pointer-events: none;
+  animation: waveMotion 8s ease-in-out infinite alternate;
+}
+
+/* Bubbles */
+.vg-bubble {
+  position: absolute;
+  background: rgba(0, 229, 255, 0.18);
+  border-radius: 50%;
+  animation: floatUp 8s infinite linear;
+  bottom: -10px;
+  z-index: 3;
+}
+
+/* SVG rod/line overlay */
+.vg-pond-svg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+.vg-rod-line {
+  stroke: #553c24;
+  stroke-width: 5px;
+  stroke-linecap: round;
+}
+.vg-fish-line {
+  stroke: #cccccc;
+  stroke-width: 1.5px;
+  stroke-dasharray: 4, 2;
+  filter: drop-shadow(0 0 3px rgba(0, 229, 255, 0.5));
+}
+
+/* Sidebar card */
+.vg-sidebar-card {
+  background: rgba(0, 20, 40, 0.45);
+  border: 1px dashed var(--card-border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-size: 0.82rem;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.vg-sidebar-title {
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  margin-bottom: 4px;
+}
+
+/* Progress bar */
+.vg-progress-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.vg-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-green));
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+/* Formula box */
+.vg-formula-box {
+  background: rgba(0,229,255,0.04);
+  border: 1px solid rgba(0,229,255,0.15);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Hint banner */
+.vg-hint-banner {
+  margin-top: 10px;
+  background: rgba(255,215,0,0.06);
+  border: 1px dashed rgba(255,215,0,0.25);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  color: var(--neon-yellow);
+}
+
+/* Word panel title */
+.vg-word-panel-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+/* Recap overlay */
+.vg-recap-overlay {
+  position: fixed; inset: 0;
+  background: rgba(3, 9, 20, 0.95);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  backdrop-filter: blur(15px);
+  animation: overlayFadeIn 0.3s ease forwards;
+}
+.vg-recap-card {
+  background: #061324;
+  border: 1px solid var(--neon-green);
+  border-radius: 24px;
+  width: 95%;
+  max-width: 860px;
+  padding: 32px;
+  box-shadow: 0 0 40px rgba(57, 255, 20, 0.2);
+  overflow-y: auto;
+  max-height: 90vh;
+}
+.vg-recap-title {
+  color: var(--neon-green);
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+.vg-recap-explanation {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: rgba(255,255,255,0.02);
+  border: 1px solid #13243a;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-top: 16px;
+}
+.vg-recap-proceed-btn {
+  display: block;
+  margin: 20px auto 0;
+  padding: 12px 32px;
+  background: var(--neon-green);
+  color: #030914;
+  border: none;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.vg-recap-proceed-btn:hover:not(:disabled) {
+  box-shadow: 0 0 20px rgba(57,255,20,0.5);
+  transform: translateY(-1px);
+}
+.vg-recap-proceed-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Ready screen */
+.vg-ready-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.vg-stage-badge {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: rgba(0,229,255,0.08);
+  border: 1px solid rgba(0,229,255,0.2);
+  padding: 4px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
 }
