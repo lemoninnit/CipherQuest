@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './PacmanGame.css';
 import '../../CipherGame.css';
+import GameHudBar from '../../ui/GameHudBar';
 
 const MAZE_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -736,56 +737,47 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
   if (phase === 'ready') return (
     <div className="pacman-container fg-root">
-      <header className="fg-header relative-header">
-        <button className="exit-stage-absolute" onClick={onBackToStages}>
-          <span className="material-symbols-outlined">arrow_back</span>
-          Exit to Stages
-        </button>
-        <div className="fg-header-category indent-header-title">
-          {isPlayfair ? "Playfair Cipher" : (isVigenere ? "Vigenère Cipher" : "Caesar Cipher")}
-        </div>
-        <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
-          {tier.toUpperCase()} Mode — Stage {levelData.level}
-        </div>
-      </header>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', width: '100%' }}>
-        <div className="vg-ready-card" style={{ maxWidth: 540 }}>
+      <GameHudBar
+        title={isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man")}
+        stage={levelData.level}
+        tier={tier}
+        isReady={true}
+        onBackToStages={onBackToStages}
+      />
+      <div className="cq-brief-screen">
+        <div className="cq-brief-card">
           <div style={{ fontSize: '3rem', marginBottom: '12px' }}>👾</div>
-          <h2 style={{ color: 'var(--neon-cyan)', margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>
+          <h2 className="cq-brief-title">
             {isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man")}
           </h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
+          <p className="cq-brief-subtitle">
             {isPlayfair
               ? "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the Playfair digraph pairs using the key matrix!"
               : (isVigenere 
                 ? "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the Vigenère cipher. Use the repeating keyword to find the shifts!"
                 : "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the ciphertext under Caesar decryption.")}
           </p>
-          <div style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: '16px 20px', marginBottom: '20px', textAlign: 'left' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Ciphertext</span>
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-cyan)', letterSpacing: '1px' }}>{levelData.ciphertext}</span>
+          <div className="cq-brief-preview">
+            <div className="cq-brief-preview-row">
+              <span className="cq-brief-preview-label">Ciphertext</span>
+              <span className="cq-brief-preview-value">{levelData.ciphertext}</span>
             </div>
-            {isPlayfair ? (
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
-                <span style={{ color: 'var(--text-muted)' }}>Keyword</span>
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-yellow)' }}>{levelData.key}</span>
+            {isPlayfair && (
+              <div className="cq-brief-preview-row">
+                <span className="cq-brief-preview-label">Keyword</span>
+                <span className="cq-brief-preview-value" style={{ color: 'var(--neon-yellow)' }}>{levelData.key}</span>
               </div>
-            ) : null}
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Hint</span>
+            )}
+            <div className="cq-brief-preview-row">
+              <span className="cq-brief-preview-label">Hint</span>
               <span style={{ color: '#a0c4d8', fontStyle: 'italic' }}>{levelData.hint}</span>
             </div>
           </div>
-          <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', lineHeight: 1.5 }}>
-            <strong style={{ color: 'var(--neon-green)' }}>How it works:</strong>{' '}
-            {isPlayfair
-              ? "Use the 5x5 key matrix on the side to visually decrypt the active ciphertext digraph. Work out the plaintext letter pair, eat a yellow Skill Pellet ⚡, then press SPACEBAR to activate Decryption Mode and eat the matching ghost! Avoid decoys."
-              : (isVigenere 
-                ? "Use the keyword clue and the Interactive Tabula Recta tool. Work out the plaintext letter for each blank index, eat a yellow Skill Pellet ⚡, then press SPACEBAR to activate Decryption Mode and eat the matching ghost! Avoid decoys."
-                : "Eat a yellow Skill Pellet ⚡, then press SPACEBAR to activate Decryption Mode. While Decryption Mode is active, eat the ghost carrying the correct plaintext letter. Avoid decoy ghosts and do not touch ghosts when Decryption Mode is inactive!")}
+          <p className="cq-brief-how-it-works">
+            <strong>How it works:</strong>{' '}
+            Eat a yellow Skill Pellet ⚡, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct plaintext letter!
           </p>
-          <button className="vg-start-btn" onClick={() => setPhase('playing')}>👾 Start Pac-Man</button>
+          <button className="cq-brief-start-btn" onClick={() => setPhase('playing')}>👾 Start Pac-Man</button>
         </div>
       </div>
     </div>
@@ -991,26 +983,15 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         </div>
       )}
 
-      {/* Header UI (Green Highlighted fixes) */}
-      <header className="fg-header relative-header">
-        <button className="exit-stage-absolute" onClick={() => setIsMenuOpen(true)}>
-          <span className="material-symbols-outlined">menu</span>
-          Menu
-        </button>
-        <div className="fg-header-category indent-header-title">
-          {isPlayfair ? "Playfair in Cipher Pac-Man" : (isVigenere ? "Vigenère in Cipher Pac-Man" : "Caesar in Cipher Pac-Man")}
-        </div>
-        <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
-          {tier.toUpperCase()} Mode — Level {levelData.level}
-        </div>
-        <div className="pacman-hearts-display">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span key={i} className={`material-symbols-outlined heart-icon ${i < lives ? 'active-heart' : 'lost-heart'}`}>
-              favorite
-            </span>
-          ))}
-        </div>
-      </header>
+      {/* Header UI */}
+      <GameHudBar
+        title={isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man")}
+        stage={levelData.level}
+        tier={tier}
+        isReady={false}
+        onOpenMenu={() => setIsMenuOpen(true)}
+        lives={lives}
+      />
 
       <div className="pacman-layout">
         {/* Sidebar Cards */}

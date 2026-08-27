@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './PlayfairGame.css';
+import '../../CipherGame.css';
+import GameHudBar from '../../ui/GameHudBar';
 import {
   describePlayfairRule,
   transformPlayfairPair,
@@ -263,38 +265,38 @@ export default function PlayfairFishingGame({
   if (phase === 'ready') {
     return (
       <div className="pf-root">
-        <header className="pf-header">
-          <button className="fg-btn-back-nav" onClick={onBackToStages}>
-            <span className="material-symbols-outlined">arrow_back</span> Exit to Stages
-          </button>
-          <div className="pf-header-title">Playfair Fishing</div>
-          <div className="vg-stage-badge">{tier.toUpperCase()} · Stage {levelData.level}</div>
-        </header>
+        <GameHudBar
+          title="Playfair Fishing"
+          stage={levelData.level}
+          tier={tier}
+          isReady={true}
+          onBackToStages={onBackToStages}
+        />
 
-        <main className="vg-ready-screen">
-          <section className="vg-ready-card pf-ready-card">
-            <div className="vg-ready-title">Catch Digraphs, Not Letters</div>
-            <div className="vg-ready-subtitle">
+        <main className="cq-brief-screen">
+          <section className="cq-brief-card pf-ready-card">
+            <div className="cq-brief-title">Catch Digraphs, Not Letters</div>
+            <div className="cq-brief-subtitle">
               Playfair encrypts letter pairs through a 5 by 5 matrix. Your line catches candidate plaintext pairs.
               Use row, column, and rectangle rules to recover the message without turning it into a plain quiz.
             </div>
 
-            <div className="vg-ready-preview">
-              <div className="vg-preview-row">
-                <span className="vg-preview-label">Ciphertext</span>
-                <span className="vg-preview-value">{levelData.pairCiphertext}</span>
+            <div className="cq-brief-preview">
+              <div className="cq-brief-preview-row">
+                <span className="cq-brief-preview-label">Ciphertext</span>
+                <span className="cq-brief-preview-value">{levelData.pairCiphertext}</span>
               </div>
-              <div className="vg-preview-row">
-                <span className="vg-preview-label">Keyword</span>
-                <span className="vg-preview-value">{levelData.key}</span>
+              <div className="cq-brief-preview-row">
+                <span className="cq-brief-preview-label">Keyword</span>
+                <span className="cq-brief-preview-value">{levelData.key}</span>
               </div>
-              <div className="vg-preview-row">
-                <span className="vg-preview-label">Hint</span>
-                <span className="vg-preview-value">{levelData.hint}</span>
+              <div className="cq-brief-preview-row">
+                <span className="cq-brief-preview-label">Hint</span>
+                <span className="cq-brief-preview-value">{levelData.hint}</span>
               </div>
-              <div className="vg-preview-row">
-                <span className="vg-preview-label">Key clue</span>
-                <span className="vg-preview-value">{levelData.keyClue}</span>
+              <div className="cq-brief-preview-row">
+                <span className="cq-brief-preview-label">Key clue</span>
+                <span className="cq-brief-preview-value">{levelData.keyClue}</span>
               </div>
             </div>
 
@@ -304,12 +306,12 @@ export default function PlayfairFishingGame({
               ))}
             </div>
 
-            <div className="vg-how-it-works">
+            <div className="cq-brief-how-it-works">
               <strong>Fishing rule:</strong> each fish carries a two-letter plaintext candidate. Correct catches fill the
               message. Wrong catches explain the matrix rule you missed, and after two misses the current rule is revealed.
             </div>
 
-            <button className="vg-start-btn" onClick={startGame}>Start Fishing</button>
+            <button className="cq-brief-start-btn" onClick={startGame}>Start Fishing</button>
           </section>
         </main>
       </div>
@@ -358,13 +360,13 @@ export default function PlayfairFishingGame({
 
   return (
     <div className="pf-root">
-      <header className="pf-header">
-        <button className="fg-btn-back-nav" onClick={() => setIsMenuOpen(true)}>
-          <span className="material-symbols-outlined">menu</span> Menu
-        </button>
-        <div className="pf-header-title">Playfair Fishing</div>
-        <div className="vg-stage-badge">{tier.toUpperCase()} · Stage {levelData.level}</div>
-      </header>
+      <GameHudBar
+        title="Playfair Fishing"
+        stage={levelData.level}
+        tier={tier}
+        isReady={false}
+        onOpenMenu={() => setIsMenuOpen(true)}
+      />
 
       <main className="pf-game">
         <aside className="pf-sidebar">

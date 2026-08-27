@@ -100,7 +100,7 @@ export default function CipherGame() {
   /* ─── Category selector (landing) ─── */
   return (
     <div className="cipher-container">
-      <CategorySelector onSelectCategory={selectCategory} />
+      <CategorySelector onSelectCategory={selectCategory} completedLevels={progress} />
     </div>
   );
 }

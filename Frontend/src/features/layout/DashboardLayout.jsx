@@ -4,10 +4,26 @@ import { useAuth } from '../../context/AuthContext';
 import { userApi } from '../../api/cipherQuestApi';
 import './DashboardLayout.css';
 
+export const DashboardChromeContext = React.createContext({ openSettings: () => {} });
+
 const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+
+  const IMMERSIVE_ROUTES = ['/dashboard', '/dashboard/ciphergame'];
+  const immersive = IMMERSIVE_ROUTES.includes(location.pathname);
+
+  React.useEffect(() => {
+    if (!immersive) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [immersive]);
+
+  const openSettings = React.useCallback(() => setSettingsOpen(true), []);
+  const contextValue = React.useMemo(() => ({ openSettings }), [openSettings]);
 
   const handleLogout = () => {
     logout();
@@ -52,62 +68,65 @@ const DashboardLayout = ({ children }) => {
     return 'Operative';
   };
 
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
-
   return (
-    <div className="dashboard-container">
-      <aside className="sidebar z-50">
-        <div className="sidebar-header">
-          <span className="sidebar-title">CipherQuest</span>
-          <p className="sidebar-subtitle">Level {user?.level ?? 1} {levelLabel()}</p>
-        </div>
-        <nav className="sidebar-nav">
-          <NavItem to="/dashboard"          icon="home"                 label="Home"       active={location.pathname === '/dashboard' && !settingsOpen} />
-          <NavItem to="/dashboard/ciphergame" icon="sports_esports"       label="CipherGame" active={location.pathname === '/dashboard/ciphergame' && !settingsOpen} />
-          <NavItem to="/dashboard/badges"      icon="workspace_premium"    label="Badges"     active={location.pathname === '/dashboard/badges' && !settingsOpen} />
-          <NavItem
-            icon="settings"
-            label="Settings"
-            active={settingsOpen}
-            onClick={() => setSettingsOpen(true)}
-          />
-        </nav>
-      </aside>
-
-      <main className="dashboard-main">
-        <header className="dashboard-header z-40">
-          <h1 className="header-title">Welcome Back, {user?.username ?? 'Operative'}</h1>
-          <div className="header-actions">
-            <div className="stats-badge">
-              <div className="stat-item">
-                <span className="material-symbols-outlined text-primary icon-18">local_fire_department</span>
-                <span className="stat-text">{user?.streak ?? 0} Day Streak</span>
-              </div>
-              <div className="stat-divider"></div>
-              <div className="stat-item">
-                <span className="material-symbols-outlined text-tertiary icon-18">military_tech</span>
-                <span className="stat-text">Level {user?.level ?? 1}</span>
-              </div>
-              <div className="stat-divider"></div>
-              <div className="stat-item">
-                <span className="material-symbols-outlined text-tertiary icon-18">star</span>
-                <span className="stat-text">{user?.xp ?? 0} XP</span>
-              </div>
+    <DashboardChromeContext.Provider value={contextValue}>
+      <div className={`dashboard-container ${immersive ? 'immersive-mode' : ''}`}>
+        {!immersive && (
+          <aside className="sidebar z-50">
+            <div className="sidebar-header">
+              <span className="sidebar-title">CipherQuest</span>
+              <p className="sidebar-subtitle">Level {user?.level ?? 1} {levelLabel()}</p>
             </div>
-            <div className="user-actions">
-              <div className="avatar-wrapper">
-                <div className="avatar-placeholder">
-                  {(user?.username ?? 'O')[0].toUpperCase()}
+            <nav className="sidebar-nav">
+              <NavItem to="/dashboard"          icon="home"                 label="Home"       active={location.pathname === '/dashboard' && !settingsOpen} />
+              <NavItem to="/dashboard/ciphergame" icon="sports_esports"       label="CipherGame" active={location.pathname === '/dashboard/ciphergame' && !settingsOpen} />
+              <NavItem to="/dashboard/badges"      icon="workspace_premium"    label="Badges"     active={location.pathname === '/dashboard/badges' && !settingsOpen} />
+              <NavItem
+                icon="settings"
+                label="Settings"
+                active={settingsOpen}
+                onClick={() => setSettingsOpen(true)}
+              />
+            </nav>
+          </aside>
+        )}
+
+        <main className="dashboard-main">
+          {!immersive && (
+            <header className="dashboard-header z-40">
+              <h1 className="header-title">Welcome Back, {user?.username ?? 'Operative'}</h1>
+              <div className="header-actions">
+                <div className="stats-badge">
+                  <div className="stat-item">
+                    <span className="material-symbols-outlined text-primary icon-18">local_fire_department</span>
+                    <span className="stat-text">{user?.streak ?? 0} Day Streak</span>
+                  </div>
+                  <div className="stat-divider"></div>
+                  <div className="stat-item">
+                    <span className="material-symbols-outlined text-tertiary icon-18">military_tech</span>
+                    <span className="stat-text">Level {user?.level ?? 1}</span>
+                  </div>
+                  <div className="stat-divider"></div>
+                  <div className="stat-item">
+                    <span className="material-symbols-outlined text-tertiary icon-18">star</span>
+                    <span className="stat-text">{user?.xp ?? 0} XP</span>
+                  </div>
+                </div>
+                <div className="user-actions">
+                  <div className="avatar-wrapper">
+                    <div className="avatar-placeholder">
+                      {(user?.username ?? 'O')[0].toUpperCase()}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </header>
+            </header>
+          )}
 
-        <div className={`dashboard-content ${location.pathname === '/dashboard/ciphergame' ? 'dashboard-content-fishing' : ''}`}>
-          {children}
-        </div>
-      </main>
+          <div className={`dashboard-content ${location.pathname === '/dashboard/ciphergame' ? 'dashboard-content-fishing' : ''}`}>
+            {children}
+          </div>
+        </main>
 
       {/* ── Agent Settings Console Modal Overlay ───────────── */}
       {settingsOpen && (
@@ -184,6 +203,7 @@ const DashboardLayout = ({ children }) => {
         </div>
       )}
     </div>
+  </DashboardChromeContext.Provider>
   );
 };
 

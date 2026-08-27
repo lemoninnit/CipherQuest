@@ -17,23 +17,32 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
   const hardCount   = (catProgress.hard   || []).length;
 
   return (
-    <div className="game-lobby">
-      <div className="lobby-header-row">
-        <button className="lobby-back-btn" onClick={onBack}>
+    <div className="game-lobby cq-lobby-screen">
+      {/* ── Top Navigation Row ── */}
+      <div className="lobby-header-row" style={{ width: '100%', marginBottom: '16px' }}>
+        <button className="fg-btn-back-nav" onClick={onBack}>
           <span className="material-symbols-outlined">arrow_back</span>
           <span>Back to Categories</span>
         </button>
       </div>
 
-      <div className="lobby-header" style={{ marginTop: '16px' }}>
-        <span className="material-symbols-outlined fill-1 lobby-badge-icon difficulty">network_intelligence_history</span>
-        <h2 className="lobby-title" style={{ textTransform: 'capitalize' }}>Select {activeCategory} Difficulty</h2>
-        <p className="lobby-subtitle">Unlock advanced cryptographic tiers by completing current levels</p>
+      {/* ── Lobby Header ── */}
+      <div className="lobby-header cq-lobby-header">
+        <div className="cq-lobby-badge-wrapper">
+          <span className="material-symbols-outlined fill-1 lobby-badge-icon difficulty">network_intelligence_history</span>
+        </div>
+        <h2 className="lobby-title cq-lobby-main-title" style={{ textTransform: 'capitalize' }}>
+          Select {activeCategory} Tier
+        </h2>
+        <p className="lobby-subtitle cq-lobby-main-subtitle">
+          Unlock advanced cryptographic operations by mastering current difficulty tiers
+        </p>
       </div>
 
-      <div className="difficulty-grid">
+      {/* ── Tier Selection Cards ── */}
+      <div className="difficulty-grid cq-lobby-grid">
         {/* Easy */}
-        <div className="difficulty-card easy playable" onClick={() => onSelectDifficulty('easy')}>
+        <div className="difficulty-card easy playable cq-lobby-card" onClick={() => onSelectDifficulty('easy')}>
           <div className="difficulty-card-header">
             <span className="diff-label">EASY TIER</span>
             <span className="diff-status active">PLAYABLE</span>
@@ -42,13 +51,13 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
           <p className="diff-desc">Beginner-friendly challenges to master the cipher basics.</p>
           <div className="diff-meta">
             <span>5 Levels ({easyCount}/5 done)</span>
-            <span>+100 XP per level</span>
+            <span className="flow-reward">+100 XP / Level</span>
           </div>
         </div>
 
         {/* Medium */}
         <div
-          className={`difficulty-card medium ${isEasyCompleted ? 'playable' : 'locked'}`}
+          className={`difficulty-card medium cq-lobby-card ${isEasyCompleted ? 'playable' : 'locked'}`}
           onClick={() => { if (isEasyCompleted) onSelectDifficulty('medium'); }}
         >
           <div className="difficulty-card-header">
@@ -66,13 +75,13 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
           </p>
           <div className="diff-meta">
             <span>5 Levels ({mediumCount}/5 done)</span>
-            <span>+250 XP per level</span>
+            <span className="flow-reward">+250 XP / Level</span>
           </div>
         </div>
 
         {/* Hard */}
         <div
-          className={`difficulty-card hard ${isMediumCompleted ? 'playable' : 'locked'}`}
+          className={`difficulty-card hard cq-lobby-card ${isMediumCompleted ? 'playable' : 'locked'}`}
           onClick={() => { if (isMediumCompleted) onSelectDifficulty('hard'); }}
         >
           <div className="difficulty-card-header">
@@ -90,7 +99,7 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
           </p>
           <div className="diff-meta">
             <span>5 Levels ({hardCount}/5 done)</span>
-            <span>+500 XP per level</span>
+            <span className="flow-reward">+500 XP / Level</span>
           </div>
         </div>
       </div>

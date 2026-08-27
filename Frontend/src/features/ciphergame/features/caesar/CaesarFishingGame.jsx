@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../CipherGame.css';
+import GameHudBar from '../../ui/GameHudBar';
 
 /* ─── Caesar math ─── */
 const caesarShiftChar = (char, shift) => {
@@ -338,39 +339,37 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   /* ════ READY ════ */
   if (phase === 'ready') return (
     <div className="fg-root">
-      <header className="fg-header">
-        <button className="fg-btn-back-nav" onClick={onBackToStages}>
-          <span className="material-symbols-outlined">arrow_back</span> Exit to Stages
-        </button>
-        <div className="fg-header-category">Caesar Cipher</div>
-        <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
-          {tier.toUpperCase()} Mode — Stage {levelData.level}
-        </div>
-      </header>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-        <div className="vg-ready-card" style={{ maxWidth: 540 }}>
+      <GameHudBar
+        title="Caesar Fishing"
+        stage={levelData.level}
+        tier={tier}
+        isReady={true}
+        onBackToStages={onBackToStages}
+      />
+      <div className="cq-brief-screen">
+        <div className="cq-brief-card">
           <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🎣</div>
-          <h2 style={{ color: 'var(--neon-cyan)', margin: '0 0 8px', fontSize: '1.5rem', fontWeight: 800 }}>Caesar Fishing</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
+          <h2 className="cq-brief-title">Caesar Fishing</h2>
+          <p className="cq-brief-subtitle">
             Catch fish carrying shift modifiers (<strong>+1, -1, +2, -2, +3, -3, +5, -5</strong>) to dial in the correct Caesar shift and decrypt the ciphertext.
           </p>
-          <div style={{ background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: '16px 20px', marginBottom: '20px', textAlign: 'left' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Ciphertext</span>
-              <span style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--neon-cyan)' }}>{levelData.ciphertext}</span>
+          <div className="cq-brief-preview">
+            <div className="cq-brief-preview-row">
+              <span className="cq-brief-preview-label">Ciphertext</span>
+              <span className="cq-brief-preview-value">{levelData.ciphertext}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Hint</span>
+            <div className="cq-brief-preview-row">
+              <span className="cq-brief-preview-label">Hint</span>
               <span style={{ color: '#a0c4d8', fontStyle: 'italic' }}>{levelData.hint}</span>
             </div>
           </div>
-          <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.5)', marginBottom: '20px', lineHeight: 1.5 }}>
-            <strong style={{ color: 'var(--neon-green)' }}>How it works:</strong>{' '}
+          <p className="cq-brief-how-it-works">
+            <strong>How it works:</strong>{' '}
             The whole ciphertext uses one Caesar basket shift. Click a fish to reel it in — its value adjusts the active shift key.
             When the decrypted text matches the plaintext, submit! Formula:{' '}
             <code style={{ color: 'var(--neon-cyan)' }}>Plain = (Cipher + Basket Shift) mod 26</code>
           </p>
-          <button className="vg-start-btn" onClick={startGame}>🎣 Start Fishing</button>
+          <button className="cq-brief-start-btn" onClick={startGame}>🎣 Start Fishing</button>
         </div>
       </div>
     </div>
@@ -481,18 +480,14 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         </div>
       )}
 
-      <header className="fg-header">
-        <button className="fg-btn-back-nav" onClick={() => setIsMenuOpen(true)}>
-          <span className="material-symbols-outlined">menu</span> Menu
-        </button>
-        <div className="fg-header-category">Caesar Cipher</div>
-        <div className="fg-header-stage" style={{ flex: 1, textAlign: 'center' }}>
-          {tier.toUpperCase()} Mode — Stage {levelData.level}
-        </div>
-        <div className={`fg-header-attempts ${attemptsLeft <= 3 ? 'low-attempts' : ''}`}>
-          Casts Left: {attemptsLeft}
-        </div>
-      </header>
+      <GameHudBar
+        title="Caesar Fishing"
+        stage={levelData.level}
+        tier={tier}
+        isReady={false}
+        onOpenMenu={() => setIsMenuOpen(true)}
+        attempts={attemptsLeft}
+      />
 
       <div className="fg-game-layout">
         {/* Sidebar */}

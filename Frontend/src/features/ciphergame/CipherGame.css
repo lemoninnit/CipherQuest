@@ -1376,4 +1376,210 @@
   border-radius: 99px;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
-}
+}
+
+/* ── Briefing / Intro Screen Styles (Bug A Fix) ───────────── */
+.cq-brief-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.cq-brief-card {
+  background: var(--card-bg, rgba(7, 20, 40, 0.8));
+  border: 1px solid var(--card-border, #1a3a5c);
+  border-radius: 20px;
+  padding: 40px 48px;
+  max-width: 560px;
+  width: 100%;
+  text-align: center;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+}
+
+.cq-brief-title {
+  color: var(--neon-cyan, #00e5ff);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+.cq-brief-subtitle {
+  color: var(--text-muted, #7ba7bc);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.cq-brief-preview {
+  background: rgba(0, 229, 255, 0.05);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 12px;
+  padding: 18px 24px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+
+.cq-brief-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.88rem;
+}
+.cq-brief-preview-row:last-child { margin-bottom: 0; }
+.cq-brief-preview-label { color: var(--text-muted, #7ba7bc); }
+.cq-brief-preview-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: var(--neon-cyan, #00e5ff);
+  letter-spacing: 0.1em;
+  font-size: 1.05rem;
+}
+
+.cq-brief-how-it-works {
+  background: rgba(57, 255, 20, 0.05);
+  border: 1px solid rgba(57, 255, 20, 0.15);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  text-align: left;
+  font-size: 0.83rem;
+  color: var(--text-muted, #7ba7bc);
+  line-height: 1.6;
+}
+.cq-brief-how-it-works strong { color: var(--neon-green, #39ff14); }
+
+.cq-brief-start-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--neon-cyan, #00e5ff);
+  color: #030914;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: box-shadow 0.2s, transform 0.15s;
+  font-family: 'Space Grotesk', sans-serif;
+}
+.cq-brief-start-btn:hover {
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+/* ── Lobby Screen Menu Bar & Cards ────────────────── */
+.cq-lobby-screen {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cq-lobby-header {
+  margin-bottom: 24px;
+}
+
+.cq-lobby-badge-wrapper {
+  margin-bottom: 12px;
+}
+
+.cq-lobby-menu-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 36px;
+  width: 100%;
+}
+
+.cq-lobby-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  background: rgba(6, 19, 36, 0.7);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  color: var(--text-primary);
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.cq-lobby-menu-btn:hover {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
+}
+
+.cq-lobby-menu-btn.primary {
+  background: linear-gradient(135deg, #00e5ff 0%, #0077c2 100%);
+  color: #030914;
+  border: none;
+}
+
+.cq-lobby-menu-btn.primary:hover {
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.5);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.cq-lobby-menu-btn.danger {
+  border-color: rgba(255, 45, 85, 0.3);
+  color: var(--neon-red);
+}
+
+.cq-lobby-menu-btn.danger:hover {
+  background: rgba(255, 45, 85, 0.15);
+  border-color: var(--neon-red);
+  box-shadow: 0 0 20px rgba(255, 45, 85, 0.3);
+}
+
+.cq-lobby-card {
+  outline: none;
+}
+
+.cq-lobby-card:focus-visible {
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 25px rgba(0, 229, 255, 0.4) !important;
+}
+
+.cq-tutorial-modal {
+  max-width: 620px;
+}
+
+.cq-tutorial-section {
+  background: rgba(3, 9, 20, 0.5);
+  border: 1px solid rgba(0, 229, 255, 0.12);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 14px;
+}
+
+.cq-tutorial-section h3 {
+  margin: 0 0 8px 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  color: var(--neon-cyan);
+}
+
+.cq-tutorial-section p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
