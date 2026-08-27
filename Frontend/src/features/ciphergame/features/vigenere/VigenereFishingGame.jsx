@@ -688,11 +688,10 @@ export default function VigenereFishingGame({
                 const badgeText = fish.letter;
                 const badgeClass = 'fg-fish-badge positive';
 
-                return (
                   <div
                     key={fish.id}
                     className="fg-fish-entity"
-                    style={{ left: `${fish.x}%`, top: `${fish.y}px`, transform: `scaleX(${fish.direction})` }}
+                    style={{ left: `${fish.x}%`, top: `${fish.y}px` }}
                     onMouseEnter={() => { if (!isCasting) setHoveredFish(fish); }}
                     onMouseLeave={() => setHoveredFish(null)}
                     onClick={() => castLineToFish(fish)}
@@ -701,13 +700,13 @@ export default function VigenereFishingGame({
                       className="fg-fish-sprite-img"
                       src={fish.imgSrc}
                       alt="fish"
+                      style={{ transform: `scaleX(${-fish.direction})` }}
                       draggable={false}
                     />
-                    <div className={badgeClass} style={{ transform: `scaleX(${fish.direction})` }}>
+                    <div className={badgeClass}>
                       {badgeText}
                     </div>
                   </div>
-                );
               })}
               {isCasting && caughtFish && castProgress < 1 && (
                 <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>

@@ -481,16 +481,17 @@ export default function PlayfairFishingGame({
                 key={fish.id}
                 className="pf-fish"
                 type="button"
-                style={{ left: `${fish.x}%`, top: fish.y, transform: `scaleX(${fish.direction})` }}
+                style={{ left: `${fish.x}%`, top: fish.y }}
                 onClick={() => castAt(fish)}
               >
                 <img
                   className="fg-fish-sprite-img pf-fish-img"
                   src={fish.imgSrc}
                   alt="fish"
+                  style={{ transform: `scaleX(${-fish.direction})` }}
                   draggable={false}
                 />
-                <span className="pf-fish-badge" style={{ transform: `scaleX(${fish.direction})` }}>{fish.pair}</span>
+                <span className="pf-fish-badge">{fish.pair}</span>
               </button>
             ))}
             {caughtFish && (

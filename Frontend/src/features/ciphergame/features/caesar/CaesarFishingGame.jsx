@@ -611,7 +611,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
                 return (
                   <div key={f.id} className="fg-fish-entity"
-                    style={{ left: `${f.x}%`, top: `${f.y}px`, transform: `scaleX(${f.direction})` }}
+                    style={{ left: `${f.x}%`, top: `${f.y}px` }}
                     onMouseEnter={() => { if (!isCasting) setHoveredFish(f); }}
                     onMouseLeave={() => setHoveredFish(null)}
                     onClick={() => castLineToFish(f)}>
@@ -619,9 +619,10 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                       className="fg-fish-sprite-img"
                       src={f.imgSrc}
                       alt="fish"
+                      style={{ transform: `scaleX(${-f.direction})` }}
                       draggable={false}
                     />
-                    <div className={badgeClass} style={{ transform: `scaleX(${f.direction})` }}>
+                    <div className={badgeClass}>
                       {badgeText}
                     </div>
                   </div>
