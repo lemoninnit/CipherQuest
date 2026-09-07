@@ -1,17 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
 
-const FISH_IMAGES = [
-  '/assets/fish/fish1.png',
-  '/assets/fish/fish2.png',
-  '/assets/fish/fish3.png',
-  '/assets/fish/fish4.png',
-  '/assets/fish/fish5.png',
-  '/assets/fish/fish6.png',
-  '/assets/fish/fish7.png',
-  '/assets/fish/fish8.png',
-];
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const normalizeShift = (shift = 0) => ((shift % 26) + 26) % 26;
@@ -137,21 +128,29 @@ export default function VigenereFishingGame({
   const spawnFish = () => {
     const correctLetter = targetKey[activeSlot] || ALPHABET[0];
     const letters = new Set([correctLetter]);
-    while (letters.size < 6) {
+    while (letters.size < 9) {
       letters.add(ALPHABET[Math.floor(Math.random() * ALPHABET.length)]);
     }
 
-    const list = [...letters].sort(() => Math.random() - 0.5).map((letter, i) => {
-      const imgSrc = FISH_IMAGES[Math.floor(Math.random() * FISH_IMAGES.length)];
+    const shuffled = [...letters].sort(() => Math.random() - 0.5);
+    const usedY = [];
+    const list = shuffled.map((letter, i) => {
+      let y;
+      let attempts = 0;
+      do {
+        y = 30 + Math.random() * 200;
+        attempts++;
+      } while (usedY.some(uy => Math.abs(uy - y) < 26) && attempts < 20);
+      usedY.push(y);
       return {
         id: i,
         letter,
         value: charToIdx(letter),
-        x: 10 + Math.random() * 80,
-        y: 60 + Math.random() * 140,
-        speed: 0.3 + Math.random() * 0.4,
-        direction: Math.random() > 0.5 ? 1 : -1,
-        imgSrc
+        x: 2 + Math.random() * 94,
+        y,
+        speed: 0.3 + Math.random() * 0.5,
+        ...randomVisualFrames(),
+        ...makeSwimProps(),
       };
     });
     setFishList(list);
@@ -207,22 +206,7 @@ export default function VigenereFishingGame({
   useEffect(() => {
     if (phase !== 'playing' || isMenuOpen) return;
     const tick = () => {
-      setFishList(prev => prev.map(fish => {
-        let nextX = fish.x + fish.speed * fish.direction * 0.08;
-        let nextDirection = fish.direction;
-        let nextValue = fish.value;
-
-        if (nextX > 92) {
-          nextX = 92;
-          nextDirection = -1;
-        }
-        if (nextX < 8) {
-          nextX = 8;
-          nextDirection = 1;
-        }
-
-        return { ...fish, x: nextX, direction: nextDirection, value: nextValue };
-      }));
+      setFishList(prev => prev.map(fish => tickFish(fish)));
       animationRef.current = requestAnimationFrame(tick);
     };
 
@@ -296,8 +280,6 @@ export default function VigenereFishingGame({
                   letter = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
                 } while (usedLetters.has(letter));
               }
-              const emoji = FISH_EMOJIS[Math.floor(Math.random() * FISH_EMOJIS.length)];
-              const color = Math.random() > 0.5 ? 'var(--neon-cyan)' : 'var(--neon-green)';
               return [...prev, {
                 id: Date.now(),
                 letter,
@@ -305,8 +287,8 @@ export default function VigenereFishingGame({
                 x: Math.random() > 0.5 ? 90 : 10,
                 y: 60 + Math.random() * 140,
                 speed: 0.3 + Math.random() * 0.4,
-                direction: Math.random() > 0.5 ? 1 : -1,
-                imgSrc: FISH_IMAGES[Math.floor(Math.random() * FISH_IMAGES.length)]
+                ...randomVisualFrames(),
+                ...makeSwimProps(),
               }];
             });
           }, 600);
@@ -692,7 +674,7 @@ export default function VigenereFishingGame({
               {fishList.map(fish => {
                 const badgeText = fish.letter;
                 const badgeClass = 'fg-fish-badge positive';
-
+                return (
                   <div
                     key={fish.id}
                     className="fg-fish-entity"
@@ -701,26 +683,30 @@ export default function VigenereFishingGame({
                     onMouseLeave={() => setHoveredFish(null)}
                     onClick={() => castLineToFish(fish)}
                   >
-                    <img
-                      className="fg-fish-sprite-img"
-                      src={fish.imgSrc}
-                      alt="fish"
-                      style={{ transform: `scaleX(${-fish.direction})` }}
-                      draggable={false}
-                    />
+                    <div className="fg-fish-facing" style={{ transform: facingTransform(fish.facing) }}>
+                      <img
+                        className="fg-fish-sprite-img"
+                        src={fish.imgSrc}
+                        alt="fish"
+                        draggable={false}
+                      />
+                    </div>
                     <div className={badgeClass}>
                       {badgeText}
                     </div>
                   </div>
+                );
               })}
               {isCasting && caughtFish && castProgress < 1 && (
                 <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
-                  <img
-                    className="fg-fish-sprite-img"
-                    src={caughtFish.imgSrc}
-                    alt="fish"
-                    draggable={false}
-                  />
+                  <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
+                    <img
+                      className="fg-fish-sprite-img"
+                      src={caughtFish.imgSrc}
+                      alt="fish"
+                      draggable={false}
+                    />
+                  </div>
                 </div>
               )}
               <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">

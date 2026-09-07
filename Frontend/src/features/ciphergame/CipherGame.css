@@ -526,14 +526,24 @@
   transform: scale(1.15);
 }
 
-/* PNG fish image sprite */
+.fg-fish-facing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: center center;
+  line-height: 0;
+}
+
+/* PNG fish image sprite — fixed size prevents frame-switch flicker */
 .fg-fish-sprite-img {
-  width: 62px;
-  height: auto;
-  image-rendering: pixelated;
+  width: 64px;
+  height: 52px;
+  object-fit: contain;
+  image-rendering: auto;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.65));
   animation: fishWiggle 1.4s ease-in-out infinite alternate;
   display: block;
+  flex-shrink: 0;
 }
 
 /* Legacy emoji sprite (fallback) */
