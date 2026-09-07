@@ -1,22 +1,144 @@
-import React, { useState, useRef, useContext } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DashboardChromeContext } from '../../layout/DashboardLayout';
+
+const cipherArtworks = {
+  caesar: (
+    <svg viewBox="0 0 100 100" className="cq-card-svg" aria-hidden="true">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0, 229, 255, 0.25)" strokeWidth="1.5" strokeDasharray="3 3" />
+      <path d="M 32,38 A 22,22 0 1,1 68,38" fill="none" stroke="#00e5ff" strokeWidth="3.5" strokeLinecap="round" />
+      <polyline points="62,31 68,38 76,34" fill="none" stroke="#00e5ff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M 68,62 A 22,22 0 1,1 32,62" fill="none" stroke="#00e5ff" strokeWidth="3.5" strokeLinecap="round" />
+      <polyline points="38,69 32,62 24,66" fill="none" stroke="#00e5ff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+      <text x="26" y="44" fill="#00e5ff" fontSize="10" fontWeight="bold" fontFamily="sans-serif">A</text>
+      <text x="69" y="44" fill="#10b981" fontSize="10" fontWeight="bold" fontFamily="sans-serif">X</text>
+    </svg>
+  ),
+  vigenere: (
+    <svg viewBox="0 0 100 100" className="cq-card-svg" aria-hidden="true">
+      <rect x="2" y="2" width="96" height="96" rx="6" fill="rgba(3, 12, 26, 0.8)" stroke="rgba(0, 229, 255, 0.3)" strokeWidth="1" />
+      <rect x="6" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="14" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">A</text>
+      <rect x="24" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="32" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">B</text>
+      <rect x="42" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="50" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">C</text>
+      <rect x="60" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="68" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">D</text>
+      <rect x="78" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="86" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">E</text>
+
+      <rect x="6" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="14" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">A</text>
+      <rect x="24" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="32" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">P</text>
+      <rect x="42" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="50" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">P</text>
+      <rect x="60" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="68" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">L</text>
+      <rect x="78" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="86" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">E</text>
+
+      <rect x="6" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="14" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">C</text>
+      <rect x="24" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="32" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">D</text>
+      <rect x="42" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="50" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">E</text>
+      <rect x="60" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="68" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">F</text>
+      <rect x="78" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="86" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">G</text>
+
+      <rect x="6" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="14" y="72" textAnchor="middle" fill="#10b981" fontSize="9" fontWeight="bold">C</text>
+      <rect x="24" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="32" y="72" textAnchor="middle" fill="#10b981" fontSize="9" fontWeight="bold">A</text>
+      <rect x="42" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="50" y="72" textAnchor="middle" fill="#10b981" fontSize="9" fontWeight="bold">T</text>
+      <rect x="60" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="68" y="72" textAnchor="middle" fill="#10b981" fontSize="9" fontWeight="bold">C</text>
+      <rect x="78" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="86" y="72" textAnchor="middle" fill="#10b981" fontSize="9" fontWeight="bold">A</text>
+
+      <rect x="6" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="14" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">E</text>
+      <rect x="24" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="32" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">F</text>
+      <rect x="42" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="50" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">G</text>
+      <rect x="60" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="68" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">H</text>
+      <rect x="78" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="86" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">I</text>
+    </svg>
+  ),
+  playfair: (
+    <svg viewBox="0 0 100 100" className="cq-card-svg" aria-hidden="true">
+      <rect x="2" y="2" width="96" height="96" rx="6" fill="rgba(3, 12, 26, 0.8)" stroke="rgba(0, 229, 255, 0.3)" strokeWidth="1" />
+      <rect x="6" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="14" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">T</text>
+      <rect x="24" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="32" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">Y</text>
+      <rect x="42" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="50" y="18" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">P</text>
+      <rect x="60" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="68" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">J</text>
+      <rect x="78" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="86" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">K</text>
+
+      <rect x="6" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="14" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">C</text>
+      <rect x="24" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="32" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">D</text>
+      <rect x="42" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="50" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">E</text>
+      <rect x="60" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="68" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">F</text>
+      <rect x="78" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="86" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">G</text>
+
+      <rect x="6" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="14" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">Z</text>
+      <rect x="24" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="32" y="54" textAnchor="middle" fill="#10b981" fontSize="9" fontWeight="bold">X</text>
+      <rect x="42" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="50" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">C</text>
+      <rect x="60" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="68" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">V</text>
+      <rect x="78" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="86" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">B</text>
+
+      <rect x="6" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="14" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">E</text>
+      <rect x="24" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="32" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">F</text>
+      <rect x="42" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="50" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">G</text>
+      <rect x="60" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="68" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">H</text>
+      <rect x="78" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="86" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">I</text>
+
+      <rect x="6" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="14" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">O</text>
+      <rect x="24" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="32" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">P</text>
+      <rect x="42" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="50" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">Q</text>
+      <rect x="60" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="68" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">R</text>
+      <rect x="78" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="86" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">S</text>
+
+      <rect x="22" y="4" width="36" height="56" rx="4" fill="rgba(0, 229, 255, 0.08)" stroke="#00e5ff" strokeWidth="1.8" />
+      <circle cx="22" cy="60" r="3" fill="#00e5ff" />
+      <circle cx="58" cy="4" r="3" fill="#00e5ff" />
+    </svg>
+  ),
+};
 
 const CategorySelector = ({ onSelectCategory, completedLevels = {} }) => {
   const navigate = useNavigate();
-  const { openSettings } = useContext(DashboardChromeContext);
-  const [showTutorial, setShowTutorial] = useState(false);
-
-  const caesarRef = useRef(null);
-  const vigenereRef = useRef(null);
-  const playfairRef = useRef(null);
-
-  const handleStartQuest = () => {
-    if (caesarRef.current) {
-      caesarRef.current.focus();
-      caesarRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  };
 
   const getCompletedCount = (cat) => {
     const data = completedLevels[cat] || {};
@@ -30,156 +152,120 @@ const CategorySelector = ({ onSelectCategory, completedLevels = {} }) => {
     {
       id: 'caesar',
       title: 'Caesar Cipher',
-      icon: 'sort_by_alpha',
       classKey: 'caesar',
       desc: 'Shift letters of the alphabet by a fixed numeric key. Learn the foundation of monoalphabetic substitution ciphers.',
-      ref: caesarRef,
       stages: 15,
       completed: getCompletedCount('caesar'),
-      reward: '+100 XP / Level',
+      reward: '+100 XP / LEVEL',
     },
     {
       id: 'vigenere',
       title: 'Vigenère Cipher',
-      icon: 'vpn_key',
       classKey: 'vigenere',
       desc: 'Polyalphabetic substitution using a repeating keyword. Decrypt repeating keyword shifts dynamically.',
-      ref: vigenereRef,
       stages: 15,
       completed: getCompletedCount('vigenere'),
-      reward: '+100 XP / Level',
+      reward: '+100 XP / LEVEL',
     },
     {
       id: 'playfair',
       title: 'Playfair Cipher',
-      icon: 'grid_view',
       classKey: 'playfair',
       desc: 'Encrypt pairs of letters (digraphs) inside a 5×5 key matrix. Learn row, column, and rectangular swaps.',
-      ref: playfairRef,
       stages: 15,
       completed: getCompletedCount('playfair'),
-      reward: '+100 XP / Level',
+      reward: '+100 XP / LEVEL',
     },
   ];
 
   return (
     <div className="game-lobby cq-lobby-screen">
-      {/* ── Main Lobby Hero Header ── */}
-      <div className="lobby-header cq-lobby-header">
-        <div className="cq-lobby-badge-wrapper">
-          <span className="material-symbols-outlined fill-1 lobby-badge-icon">sports_esports</span>
+      {/* ── Legibility Scrim Overlay ── */}
+      <div className="cq-lobby-scrim" />
+
+      {/* ── Standardized Left-Aligned Screen Header ── */}
+      <div className="cq-screen-header-block">
+        <div className="cq-top-nav-bar">
+          <button className="cq-back-btn" onClick={() => navigate('/dashboard')}>
+            <span className="cq-back-icon-circle">
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
+            </span>
+            <span>Back to Dashboard</span>
+          </button>
         </div>
-        <h1 className="lobby-title cq-lobby-main-title">CIPHERQUEST TERMINAL</h1>
-        <p className="lobby-subtitle cq-lobby-main-subtitle">
-          Select a cipher module to deploy into tactical arcade operations
-        </p>
-      </div>
 
-      {/* ── Lobby Quick Action Bar ── */}
-      <div className="cq-lobby-menu-bar">
-        <button className="cq-lobby-menu-btn primary" onClick={handleStartQuest}>
-          <span className="material-symbols-outlined">play_arrow</span>
-          <span>Start Quest</span>
-        </button>
-        <button className="cq-lobby-menu-btn" onClick={() => setShowTutorial(true)}>
-          <span className="material-symbols-outlined">menu_book</span>
-          <span>Tutorial</span>
-        </button>
-        <button className="cq-lobby-menu-btn" onClick={openSettings}>
-          <span className="material-symbols-outlined">settings</span>
-          <span>Settings</span>
-        </button>
-        <button className="cq-lobby-menu-btn danger" onClick={() => navigate('/dashboard')}>
-          <span className="material-symbols-outlined">logout</span>
-          <span>Quit Game</span>
-        </button>
-      </div>
-
-      {/* ── Category Modules Grid ── */}
-      <div className="flow-grid cq-lobby-grid">
-        {categories.map((cat) => (
-          <div
-            key={cat.id}
-            ref={cat.ref}
-            tabIndex={0}
-            className={`flow-card active cq-lobby-card cq-card-${cat.classKey}`}
-            onClick={() => onSelectCategory(cat.id)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelectCategory(cat.id); }}
-          >
-            <div className="flow-card-header">
-              <div className={`flow-icon-box ${cat.classKey}`}>
-                <span className="material-symbols-outlined">{cat.icon}</span>
-              </div>
-              <span className="flow-status active">
-                {cat.completed > 0 ? `${cat.completed} / ${cat.stages} DONE` : 'AVAILABLE'}
-              </span>
-            </div>
-
-            <h3 className="flow-card-title">{cat.title}</h3>
-            <p className="flow-card-desc">{cat.desc}</p>
-
-            <div className="flow-card-footer">
-              <span className="flow-stat">{cat.stages} STAGES</span>
-              <span className="flow-reward">{cat.reward}</span>
-            </div>
+        <div className="cq-screen-header">
+          <div className="cq-screen-title-row">
+            <h1 className="cq-screen-title">CIPHERQUEST TERMINAL</h1>
+            <span className="material-symbols-outlined cq-screen-header-icon">sports_esports</span>
           </div>
-        ))}
-      </div>
-
-      {/* ── Tutorial Modal ── */}
-      {showTutorial && (
-        <div className="settings-modal-overlay" onClick={() => setShowTutorial(false)}>
-          <div className="settings-modal-content cq-tutorial-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="settings-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span className="material-symbols-outlined text-primary" style={{ color: 'var(--neon-cyan)' }}>menu_book</span>
-                <h2>CipherQuest Field Manual</h2>
-              </div>
-              <button className="settings-close-btn" onClick={() => setShowTutorial(false)}>
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="settings-modal-body cq-tutorial-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-              <div className="cq-tutorial-section">
-                <h3>🔤 1. Caesar Cipher</h3>
-                <p>
-                  Every letter in the plaintext is shifted by a fixed key number (e.g. key +3 turns A into D). Simple monoalphabetic substitution.
-                </p>
-              </div>
-
-              <div className="cq-tutorial-section">
-                <h3>🔑 2. Vigenère Cipher</h3>
-                <p>
-                  Uses a repeating keyword. Each letter shift is determined by the corresponding key character in the repeating keyword string.
-                </p>
-              </div>
-
-              <div className="cq-tutorial-section">
-                <h3>🗂️ 3. Playfair Cipher</h3>
-                <p>
-                  Encrypts letter pairs (digraphs) using a 5×5 key matrix. Decrypt by reversing row shifts, column shifts, or rectangle corner swaps.
-                </p>
-              </div>
-
-              <div className="cq-tutorial-section">
-                <h3>🎮 4. Arcade Operations</h3>
-                <p>
-                  • 🎣 <strong>Fishing:</strong> Reel in letters or keyword slots using arrow/wasd keys or mouse clicks.<br />
-                  • 🟡 <strong>Pacman:</strong> Navigate ghost-infested mazes to collect plaintext letters.<br />
-                  • 🏃 <strong>Sprint:</strong> Relay run through hurdles by steering into matching ciphertext lanes.
-                </p>
-              </div>
-            </div>
-
-            <div style={{ padding: '16px 28px', borderTop: '1px solid rgba(0, 229, 255, 0.1)', textAlign: 'right' }}>
-              <button className="fg-btn fg-btn-primary" onClick={() => setShowTutorial(false)} style={{ background: 'var(--neon-cyan)', color: '#030914' }}>
-                Got It, Operative!
-              </button>
-            </div>
-          </div>
+          <p className="cq-screen-subtitle">
+            Select a cipher module to deploy into tactical arcade operations
+          </p>
         </div>
-      )}
+      </div>
+
+      {/* ── Centered Category Modules Row ── */}
+      <div className="cq-lobby-center-content">
+        <div className="cq-cards-row">
+          {categories.map((cat) => {
+            const hasCompleted = cat.completed > 0;
+            return (
+              <div
+                key={cat.id}
+                role="button"
+                tabIndex={0}
+                className={`cq-portrait-card cq-card-${cat.classKey}`}
+                onClick={() => onSelectCategory(cat.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectCategory(cat.id);
+                  }
+                }}
+              >
+                {/* Inset Artwork Emblem Panel */}
+                <div className="cq-card-art-panel">
+                  {cipherArtworks[cat.id]}
+                </div>
+
+                {/* Card Body with Uncrowded Hierarchy */}
+                <div className="cq-card-body">
+                  <div>
+                    {/* Meta Strip: Status tag on left, XP on right */}
+                    <div className="cq-card-meta-row">
+                      <span className={`cq-badge-tag ${hasCompleted ? 'green' : 'cyan'}`}>
+                        {hasCompleted ? `${cat.completed} / ${cat.stages} DONE` : 'AVAILABLE'}
+                      </span>
+                      <span className="cq-card-xp-tag">{cat.reward}</span>
+                    </div>
+
+                    {/* Uncrowded Title */}
+                    <h3 className="cq-card-title">{cat.title}</h3>
+
+                    {/* Description */}
+                    <p className="cq-card-desc">{cat.desc}</p>
+                  </div>
+
+                  <div>
+                    <button className="cq-card-action-btn" tabIndex={-1}>
+                      Deploy Module
+                    </button>
+                    <div className="cq-card-footer">
+                      <span>{cat.stages} STAGES AVAILABLE</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Centered Bottom Caption Line ── */}
+      <div className="cq-lobby-bottom-caption">
+        <p>Deploy into tactical cryptographic operations to earn XP and unlock operative badges</p>
+      </div>
     </div>
   );
 };

@@ -1655,4 +1655,690 @@
   color: var(--text-muted);
   line-height: 1.5;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CIPHERGAME SELECTOR SCREENS — HIGH-FIDELITY LOBBY REDESIGN
+   Applies left-aligned headers, compact cards, disciplined cyan palette,
+   and balanced vertical composition across Category, Difficulty, and Stages
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Screen Wrapper & Cathedral Background ── */
+.cipher-container {
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.cq-lobby-screen {
+  --lobby-bg-image: url('/assets/fish/lobbybg/lobbybg.png');
+  background-color: #041525;
+  background-image: var(--lobby-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 100% !important;
+  height: 100% !important;
+  flex: 1 1 auto !important;
+  box-sizing: border-box !important;
+  padding: clamp(22px, 3vh, 36px) clamp(32px, 4.5vw, 64px) clamp(16px, 2vh, 24px) clamp(32px, 4.5vw, 64px) !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+  color: #ffffff;
+  overflow: hidden !important;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Legibility Scrim Overlay */
+.cq-lobby-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(3, 10, 24, 0.35) 0%, rgba(3, 10, 24, 0.82) 100%),
+    linear-gradient(to bottom, rgba(3, 10, 24, 0.7) 0%, transparent 40%, rgba(3, 10, 24, 0.8) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Ensure all interactive/content layers sit above the scrim */
+.cq-lobby-screen > *:not(.cq-lobby-scrim) {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Top Navigation & Back Link ── */
+.cq-top-nav-bar {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  margin-bottom: clamp(6px, 1.2vh, 12px) !important;
+  flex-shrink: 0;
+}
+
+.cq-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  color: rgba(215, 235, 255, 0.85);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px 4px 0;
+  border-radius: 20px;
+  transition: all 0.22s ease;
+  outline: none;
+}
+
+.cq-back-btn:hover,
+.cq-back-btn:focus-visible {
+  color: #00e5ff;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+  transform: translateX(-3px);
+}
+
+.cq-back-btn:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 4px;
+}
+
+.cq-back-icon-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00e5ff;
+  transition: all 0.22s ease;
+  flex-shrink: 0;
+}
+
+.cq-back-btn:hover .cq-back-icon-circle,
+.cq-back-btn:focus-visible .cq-back-icon-circle {
+  background: rgba(0, 229, 255, 0.25);
+  border-color: #00e5ff;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
+}
+
+/* ── Standardized Left-Aligned Screen Header ── */
+.cq-screen-header-block {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  flex-shrink: 0;
+}
+
+.cq-screen-header {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  text-align: left !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+  flex-shrink: 0;
+}
+
+.cq-screen-title-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  margin: 0 !important;
+}
+
+.cq-screen-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(24px, 2.2vw, 32px);
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  margin: 0;
+  text-shadow: 0 0 20px rgba(0, 229, 255, 0.4), 0 2px 8px rgba(0, 0, 0, 0.8);
+  line-height: 1.2;
+}
+
+.cq-screen-header-icon {
+  font-size: clamp(22px, 2vw, 28px);
+  color: #00e5ff;
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.55));
+  flex-shrink: 0;
+}
+
+.cq-screen-subtitle {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(12.5px, 0.9vw, 14px);
+  color: rgba(215, 235, 255, 0.78);
+  margin: 2px 0 0 0;
+  letter-spacing: 0.01em;
+  max-width: 680px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+/* ── Main Content Area: Centered Vertically In Viewport ── */
+.cq-lobby-center-content {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: auto 0 !important; /* Centers block vertically */
+  padding: 6px 0 !important;
+}
+
+/* ── Cards Row: Balanced & Proportionate ── */
+.cq-cards-row {
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: clamp(18px, 2.2vw, 28px) !important;
+  width: 100% !important;
+  max-width: 940px !important;
+  margin: 0 auto !important;
+}
+
+/* ── Portrait Glass Cards ── */
+.cq-portrait-card {
+  background: linear-gradient(165deg, rgba(8, 24, 44, 0.88) 0%, rgba(4, 13, 26, 0.94) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 18px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition:
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+  min-width: 245px;
+  max-width: 275px;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 15px 13px 15px;
+  box-sizing: border-box;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  text-align: left;
+}
+
+.cq-portrait-card:hover,
+.cq-portrait-card.active,
+.cq-portrait-card:focus-visible {
+  transform: translateY(-4px);
+  border-color: #00e5ff;
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.6),
+    0 0 24px rgba(0, 229, 255, 0.35),
+    inset 0 0 10px rgba(0, 229, 255, 0.1);
+  z-index: 5;
+}
+
+.cq-portrait-card:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 3px;
+}
+
+.cq-portrait-card.locked {
+  opacity: 0.68;
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.cq-portrait-card.locked:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* ── Compact Artwork Emblem Panel (Supporting Element ~30% height) ── */
+.cq-card-art-panel {
+  width: 100%;
+  height: 96px;
+  max-height: 96px;
+  background: rgba(2, 8, 18, 0.78);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 16px rgba(0, 229, 255, 0.1);
+  margin-bottom: 11px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.cq-card-svg {
+  max-height: 76px;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.4));
+}
+
+/* Dedicated Lock Badge in Art Panel for locked tiers */
+.cq-tier-lock-icon {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  background: rgba(3, 10, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  z-index: 2;
+}
+
+/* ── Card Body & Uncrowded Header Strip ── */
+.cq-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+/* Dedicated Meta Row: Sits cleanly between Art Panel and Title */
+.cq-card-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+  width: 100%;
+}
+
+/* Badges: Restrained, disciplined palette */
+.cq-badge-tag {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2.5px 7px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cq-badge-tag.cyan {
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.32);
+}
+
+.cq-badge-tag.green {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.32);
+}
+
+.cq-badge-tag.amber {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.32);
+}
+
+.cq-badge-tag.coral {
+  color: #ff4d6d;
+  background: rgba(255, 77, 109, 0.1);
+  border: 1px solid rgba(255, 77, 109, 0.32);
+}
+
+/* Understated Tactical XP Tag */
+.cq-card-xp-tag {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #7feaff;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  padding: 2.5px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+/* Full-Width Uncrowded Card Title */
+.cq-card-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16.5px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 5px 0;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.25);
+  width: 100%;
+  line-height: 1.25;
+}
+
+/* Comfortable Description with Line-clamp */
+.cq-card-desc {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(215, 235, 255, 0.78);
+  line-height: 1.45;
+  margin: 0 0 10px 0;
+  min-height: 48px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Card Action Button */
+.cq-card-action-btn {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: #00e5ff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 7px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  margin-top: auto;
+}
+
+.cq-card-action-btn:hover,
+.cq-portrait-card:hover .cq-card-action-btn {
+  background: rgba(0, 229, 255, 0.25);
+  border-color: #00e5ff;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+}
+
+.cq-portrait-card.locked .cq-card-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* Card Footer Stats */
+.cq-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(180, 215, 245, 0.6);
+  margin-top: 6px;
+  border-top: 1px solid rgba(0, 229, 255, 0.1);
+  padding-top: 5px;
+  letter-spacing: 0.03em;
+}
+
+/* ── Stage Roadmap: Deliberate Vertical Balance ── */
+.cq-stages-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: clamp(22px, 3.5vh, 36px);
+}
+
+.cq-stages-row {
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: clamp(14px, 1.8vw, 22px) !important;
+  width: 100% !important;
+  max-width: 900px !important;
+  margin: 0 auto !important;
+}
+
+.cq-stage-card {
+  background: linear-gradient(165deg, rgba(8, 24, 44, 0.88) 0%, rgba(4, 13, 26, 0.94) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+  min-width: 130px;
+  max-width: 160px;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(18px, 2.4vh, 26px) 12px clamp(14px, 2vh, 20px) 12px;
+  box-sizing: border-box;
+  cursor: pointer;
+  outline: none;
+  position: relative;
+  text-align: center;
+  gap: 12px;
+}
+
+.cq-stage-card:hover,
+.cq-stage-card:focus-visible {
+  transform: translateY(-4px);
+  border-color: #00e5ff;
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.6),
+    0 0 24px rgba(0, 229, 255, 0.35);
+}
+
+.cq-stage-card.completed {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: linear-gradient(165deg, rgba(6, 28, 34, 0.88) 0%, rgba(3, 16, 22, 0.94) 100%);
+}
+
+.cq-stage-card.completed:hover {
+  border-color: #10b981;
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.6),
+    0 0 24px rgba(16, 185, 129, 0.35);
+}
+
+.cq-stage-card:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 3px;
+}
+
+.cq-stage-card-number {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgba(215, 235, 255, 0.7);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cq-stage-card-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: #00e5ff;
+  transition: all 0.2s ease;
+}
+
+.cq-stage-card.completed .cq-stage-card-icon-box {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #10b981;
+}
+
+.cq-stage-card:hover .cq-stage-card-icon-box {
+  transform: scale(1.08);
+}
+
+.cq-stage-card-icon-box .material-symbols-outlined {
+  font-size: 26px;
+}
+
+.cq-stage-card-status {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #00e5ff;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+}
+
+.cq-stage-card.completed .cq-stage-card-status {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+/* Tier Operational Progress Bar */
+.cq-stages-progress-wrap {
+  width: 100%;
+  max-width: 660px;
+  margin: 0 auto;
+  background: rgba(5, 18, 36, 0.75);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 16px;
+  padding: 16px 22px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-sizing: border-box;
+}
+
+.cq-stages-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 9px;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.cq-stages-progress-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgba(215, 235, 255, 0.8);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cq-stages-progress-count {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #00e5ff;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+.cq-stages-progress-track {
+  width: 100%;
+  height: 9px;
+  background: rgba(2, 8, 20, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cq-stages-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00e5ff 0%, #10b981 100%);
+  border-radius: 8px;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Bottom Centered Caption Line ── */
+.cq-lobby-bottom-caption {
+  width: 100% !important;
+  text-align: center !important;
+  padding-top: clamp(8px, 1.4vh, 14px);
+  flex-shrink: 0;
+}
+
+.cq-lobby-bottom-caption p {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(200, 230, 255, 0.6);
+  letter-spacing: 0.02em;
+}
+
+/* ── Responsive Adjustments ── */
+@media (max-width: 960px) {
+  .cq-cards-row {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .cq-portrait-card {
+    min-width: 220px;
+    max-width: 260px;
+  }
+  .cq-stages-row {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .cq-stage-card {
+    min-width: 110px;
+    max-width: 140px;
+  }
+}
+
+@media (max-width: 560px) {
+  .cq-cards-row {
+    flex-direction: column;
+    align-items: center;
+  }
+  .cq-portrait-card {
+    width: 100%;
+    max-width: 300px;
+  }
+  .cq-stages-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .cq-stage-card {
+    max-width: none;
+    width: 100%;
+  }
+}
+
+
 

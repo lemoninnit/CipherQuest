@@ -5,70 +5,96 @@ export default function StageRoadmap({ game }) {
   const catProg = progress[category] || { easy: [], medium: [], hard: [] };
   const completed = catProg[difficulty] || [];
 
+  const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
+
   return (
     <div className="game-lobby cq-lobby-screen">
-      {/* ── Navigation Row ── */}
-      <div className="lobby-header-row" style={{ width: '100%', marginBottom: '16px' }}>
-        <button className="fg-btn-back-nav" onClick={backToDifficulty}>
-          <span className="material-symbols-outlined">arrow_back</span>
-          <span>Back to Difficulty</span>
-        </button>
+      {/* ── Legibility Scrim Overlay ── */}
+      <div className="cq-lobby-scrim" />
+
+      {/* ── Standardized Left-Aligned Screen Header Block ── */}
+      <div className="cq-screen-header-block">
+        <div className="cq-top-nav-bar">
+          <button className="cq-back-btn" onClick={backToDifficulty}>
+            <span className="cq-back-icon-circle">
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
+            </span>
+            <span>Back to Difficulty</span>
+          </button>
+        </div>
+
+        <div className="cq-screen-header">
+          <div className="cq-screen-title-row">
+            <h1 className="cq-screen-title">
+              {capitalize(category)} — {capitalize(difficulty)} Stages
+            </h1>
+            <span className="material-symbols-outlined cq-screen-header-icon">map</span>
+          </div>
+          <p className="cq-screen-subtitle">
+            Complete all 5 operations to master this difficulty tier
+          </p>
+        </div>
       </div>
 
-      {/* ── Stage Header ── */}
-      <div className="lobby-header cq-lobby-header">
-        <div className="cq-lobby-badge-wrapper">
-          <span className="material-symbols-outlined fill-1 lobby-badge-icon stages">map</span>
+      {/* ── Centered Stages Roadmap & Progress Section ── */}
+      <div className="cq-lobby-center-content">
+        <div className="cq-stages-container">
+          {/* 5 Stage Cards in a Centered Row */}
+          <div className="cq-stages-row">
+            {Array.from({ length: 5 }).map((_, i) => {
+              const stageId = `${category}-${difficulty}-${i}`;
+              const done = completed.includes(stageId);
+              return (
+                <div
+                  key={stageId}
+                  role="button"
+                  tabIndex={0}
+                  className={`cq-stage-card ${done ? "completed" : "available"}`}
+                  onClick={() => startStage(category, difficulty, i)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      startStage(category, difficulty, i);
+                    }
+                  }}
+                >
+                  <div className="cq-stage-card-number">Stage {i + 1}</div>
+                  <div className="cq-stage-card-icon-box">
+                    <span className="material-symbols-outlined">
+                      {done ? "check_circle" : "play_circle"}
+                    </span>
+                  </div>
+                  <div className="cq-stage-card-status">
+                    {done ? "COMPLETED" : "PLAY"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── Tier Progress Bar ── */}
+          <div className="cq-stages-progress-wrap">
+            <div className="cq-stages-progress-header">
+              <span className="cq-stages-progress-label">Tier Operational Progress</span>
+              <span className="cq-stages-progress-count">
+                {completed.length} / 5 Operations Cleared
+              </span>
+            </div>
+            <div className="cq-stages-progress-track">
+              <div
+                className="cq-stages-progress-fill"
+                style={{
+                  width: `${(completed.length / 5) * 100}%`,
+                }}
+              />
+            </div>
+          </div>
         </div>
-        <h2 className="lobby-title cq-lobby-main-title" style={{ textTransform: 'capitalize' }}>
-          {category} — {difficulty} Stages
-        </h2>
-        <p className="lobby-subtitle cq-lobby-main-subtitle">
-          Complete all 5 operations to master this difficulty tier
-        </p>
       </div>
 
-      {/* ── Stages Grid ── */}
-      <div className="stages-grid cq-lobby-grid">
-        {Array.from({ length: 5 }).map((_, i) => {
-          const stageId = `${category}-${difficulty}-${i}`;
-          const done = completed.includes(stageId);
-          return (
-            <button
-              key={stageId}
-              className={`stage-card cq-lobby-card ${done ? "completed" : "available"}`}
-              onClick={() => startStage(category, difficulty, i)}
-            >
-              <div className="stage-card-number">Stage {i + 1}</div>
-              <div className="stage-card-icon">
-                {done
-                  ? <span className="material-symbols-outlined">check_circle</span>
-                  : <span className="material-symbols-outlined">play_circle</span>
-                }
-              </div>
-              <div className="stage-card-status">{done ? "COMPLETED" : "PLAY"}</div>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── Tier Progress Bar ── */}
-      <div className="stages-progress-section" style={{ width: '100%', maxWidth: '600px', marginTop: '32px' }}>
-        <div className="stages-progress-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
-          <span className="stages-progress-label" style={{ color: 'var(--text-muted)' }}>Tier Operational Progress</span>
-          <span className="stages-progress-count" style={{ color: 'var(--neon-green)', fontWeight: 'bold' }}>{completed.length} / 5 Operations Cleared</span>
-        </div>
-        <div className="stages-progress-bar" style={{ background: 'rgba(255,255,255,0.06)', borderRadius: '10px', height: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <div
-            className="stages-progress-fill"
-            style={{
-              width: `${(completed.length / 5) * 100}%`,
-              height: '100%',
-              background: 'linear-gradient(90deg, var(--neon-cyan), var(--neon-green))',
-              transition: 'width 0.4s ease'
-            }}
-          />
-        </div>
+      {/* ── Centered Bottom Caption Line ── */}
+      <div className="cq-lobby-bottom-caption">
+        <p>Master each stage operation to advance operative clearance and earn level XP</p>
       </div>
     </div>
   );
