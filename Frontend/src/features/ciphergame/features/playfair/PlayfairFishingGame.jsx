@@ -6,18 +6,9 @@ import {
   describePlayfairRule,
   transformPlayfairPair,
 } from './PlayfairHelpers';
+import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
 
 const FISH_VALUES = ['fin', 'tide', 'reef', 'wake', 'foam', 'gill', 'sail', 'dock'];
-const FISH_IMAGES = [
-  '/assets/fish/fish1.png',
-  '/assets/fish/fish2.png',
-  '/assets/fish/fish3.png',
-  '/assets/fish/fish4.png',
-  '/assets/fish/fish5.png',
-  '/assets/fish/fish6.png',
-  '/assets/fish/fish7.png',
-  '/assets/fish/fish8.png',
-];
 
 const normalizePair = (value) => String(value || '').replace(/[^A-Z]/g, '').slice(0, 2);
 
@@ -49,19 +40,29 @@ function makeDecoyPairs(correctPair, matrix, count) {
 }
 
 function makeFishForPair(pair, matrix, tier) {
-  const decoyCount = tier === 'easy' ? 4 : tier === 'medium' ? 5 : 6;
+  const decoyCount = tier === 'easy' ? 7 : tier === 'medium' ? 8 : 9;
   const choices = [pair, ...makeDecoyPairs(pair, matrix, decoyCount)]
     .sort(() => Math.random() - 0.5);
 
-  return choices.map((candidate, index) => ({
-    id: `${Date.now()}-${index}-${candidate}`,
-    pair: candidate,
-    x: 8 + Math.random() * 84,
-    y: 36 + Math.random() * 160,
-    speed: 0.11 + Math.random() * 0.14,
-    direction: Math.random() > 0.5 ? 1 : -1,
-    imgSrc: FISH_IMAGES[index % FISH_IMAGES.length],
-  }));
+  const usedY = [];
+  return choices.map((candidate, index) => {
+    let y;
+    let attempts = 0;
+    do {
+      y = 30 + Math.random() * 200;
+      attempts++;
+    } while (usedY.some(uy => Math.abs(uy - y) < 26) && attempts < 20);
+    usedY.push(y);
+    return {
+      id: `${Date.now()}-${index}-${candidate}`,
+      pair: candidate,
+      x: 2 + Math.random() * 94,
+      y,
+      speed: 0.11 + Math.random() * 0.18,
+      ...randomVisualFrames(),
+      ...makeSwimProps(),
+    };
+  });
 }
 
 function positionKey(pos) {
@@ -140,19 +141,7 @@ export default function PlayfairFishingGame({
     if (phase !== 'playing' || isMenuOpen) return undefined;
 
     const tick = () => {
-      setFishList((prev) => prev.map((fish) => {
-        let nextX = fish.x + fish.speed * fish.direction * 0.08;
-        let nextDirection = fish.direction;
-        if (nextX > 93) {
-          nextX = 93;
-          nextDirection = -1;
-        }
-        if (nextX < 7) {
-          nextX = 7;
-          nextDirection = 1;
-        }
-        return { ...fish, x: nextX, direction: nextDirection };
-      }));
+      setFishList((prev) => prev.map((fish) => tickFish(fish, { minY: 28, maxY: 196 })));
       animationRef.current = requestAnimationFrame(tick);
     };
 
@@ -203,8 +192,8 @@ export default function PlayfairFishingGame({
         {
           ...fish,
           id: `${Date.now()}-${fish.pair}`,
-          x: Math.random() > 0.5 ? 88 : 12,
-          y: 40 + Math.random() * 150,
+          x: Math.random() > 0.5 ? 94 : 2,
+          y: 30 + Math.random() * 200,
         },
       ]);
     }, 500);
@@ -486,24 +475,27 @@ export default function PlayfairFishingGame({
                 style={{ left: `${fish.x}%`, top: fish.y }}
                 onClick={() => castAt(fish)}
               >
-                <img
-                  className="fg-fish-sprite-img pf-fish-img"
-                  src={fish.imgSrc}
-                  alt="fish"
-                  style={{ transform: `scaleX(${-fish.direction})` }}
-                  draggable={false}
-                />
+                <div className="fg-fish-facing" style={{ transform: facingTransform(fish.facing) }}>
+                  <img
+                    className="fg-fish-sprite-img pf-fish-img"
+                    src={fish.imgSrc}
+                    alt="fish"
+                    draggable={false}
+                  />
+                </div>
                 <span className="pf-fish-badge">{fish.pair}</span>
               </button>
             ))}
             {caughtFish && (
               <div className="pf-reel-fish" style={{ left: `${(hookX / pondWidth) * 100}%`, top: hookY - 10 }}>
-                <img
-                  className="fg-fish-sprite-img pf-fish-img"
-                  src={caughtFish.imgSrc}
-                  alt="fish"
-                  draggable={false}
-                />
+                <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
+                  <img
+                    className="fg-fish-sprite-img pf-fish-img"
+                    src={caughtFish.imgSrc}
+                    alt="fish"
+                    draggable={false}
+                  />
+                </div>
                 <span className="pf-fish-badge">{caughtFish.pair}</span>
               </div>
             )}

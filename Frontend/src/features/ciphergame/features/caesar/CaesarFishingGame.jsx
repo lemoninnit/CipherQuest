@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import { facingTransform, makeSwimProps, tickFish, visualsForValue } from '../../core/engine/fishPhysics';
 
 /* ─── Caesar math ─── */
 const caesarShiftChar = (char, shift) => {
@@ -21,17 +22,7 @@ const applyShiftDelta = (curr, delta) => {
 
 const formatShift = (shift) => `+${normalizeShift(shift)}`;
 
-const FISH_IMAGES = [
-  '/assets/fish/fish1.png',
-  '/assets/fish/fish2.png',
-  '/assets/fish/fish3.png',
-  '/assets/fish/fish4.png',
-  '/assets/fish/fish5.png',
-  '/assets/fish/fish6.png',
-  '/assets/fish/fish7.png',
-  '/assets/fish/fish8.png',
-];
-const FISH_VALUES = [+1, -1, +2, -2, +3, -3, +5, -5];
+const FISH_VALUES = [+1, +2, +3, +4, +5, +6, +7, +8, +9, +10, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10];
 
 export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
   const words         = levelData.plaintext.split(' ');
@@ -136,23 +127,39 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
       }
     }
 
-    for (let i = 0; i < 6; i++) {
+    // Build a diverse base pool: all 8 fish values shuffled, then pad with helpers/randoms
+    const TOTAL_FISH = 9;
+    const shuffledAll = [...FISH_VALUES].sort(() => Math.random() - 0.5);
+    const valuePool = [...shuffledAll];
+    // Inject helpers at the start so at least 1-2 helpful fish are guaranteed
+    helpers.forEach(h => valuePool.unshift(h));
+
+    const usedY = [];
+    for (let i = 0; i < TOTAL_FISH; i++) {
       let value;
-      if (helpers.length > 0 && i < helpers.length) {
-        value = helpers[i];
+      if (i < valuePool.length) {
+        value = valuePool[i];
       } else {
         value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
       }
 
-      const imgSrc = FISH_IMAGES[Math.floor(Math.random() * FISH_IMAGES.length)];
+      // Spread fish vertically so they don't all cluster on the same row
+      let y;
+      let attempts = 0;
+      do {
+        y = 30 + Math.random() * 200;
+        attempts++;
+      } while (usedY.some(uy => Math.abs(uy - y) < 28) && attempts < 20);
+      usedY.push(y);
+
       list.push({
         id: i,
         value,
-        x: 10 + Math.random() * 80,
-        y: 60 + Math.random() * 140,
-        speed: 0.3 + Math.random() * 0.4,
-        direction: Math.random() > 0.5 ? 1 : -1,
-        imgSrc,
+        x: 2 + Math.random() * 94,
+        y,
+        speed: 0.3 + Math.random() * 0.5,
+        ...visualsForValue(value),
+        ...makeSwimProps(),
       });
     }
     setFishList(list);
@@ -174,24 +181,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   useEffect(() => {
     if (phase !== 'playing' || isMenuOpen) return;
     const tick = () => {
-      setFishList(prev => prev.map(f => {
-        let nx = f.x + f.speed * f.direction * 0.08;
-        let nd = f.direction;
-        let nv = f.value;
-        
-        // Spawn fresh modifiers on screen bounce for variety
-        if (nx > 92) {
-          nx = 92;
-          nd = -1;
-          if (typeof nv === 'number') nv = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
-        }
-        if (nx < 8)  {
-          nx = 8;
-          nd = 1;
-          if (typeof nv === 'number') nv = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
-        }
-        return { ...f, x: nx, direction: nd, value: nv };
-      }));
+      setFishList(prev => prev.map(f => tickFish(f)));
       animationRef.current = requestAnimationFrame(tick);
     };
     animationRef.current = requestAnimationFrame(tick);
@@ -259,15 +249,14 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                   value = -normalizeShift(26 - diff);
                 }
               }
-              const imgSrc = FISH_IMAGES[Math.floor(Math.random() * FISH_IMAGES.length)];
               return [...prev, {
                 id: Date.now(),
                 value,
-                x: Math.random() > 0.5 ? 90 : 10,
-                y: 60 + Math.random() * 140,
-                speed: 0.3 + Math.random() * 0.4,
-                direction: Math.random() > 0.5 ? 1 : -1,
-                imgSrc,
+                x: Math.random() > 0.5 ? 94 : 2,
+                y: 30 + Math.random() * 200,
+                speed: 0.3 + Math.random() * 0.5,
+                ...visualsForValue(value),
+                ...makeSwimProps(),
               }];
             });
           }, 600);
@@ -665,13 +654,14 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                     onMouseEnter={() => { if (!isCasting) setHoveredFish(f); }}
                     onMouseLeave={() => setHoveredFish(null)}
                     onClick={() => castLineToFish(f)}>
-                    <img
-                      className="fg-fish-sprite-img"
-                      src={f.imgSrc}
-                      alt="fish"
-                      style={{ transform: `scaleX(${-f.direction})` }}
-                      draggable={false}
-                    />
+                    <div className="fg-fish-facing" style={{ transform: facingTransform(f.facing) }}>
+                      <img
+                        className="fg-fish-sprite-img"
+                        src={f.imgSrc}
+                        alt="fish"
+                        draggable={false}
+                      />
+                    </div>
                     <div className={badgeClass}>
                       {badgeText}
                     </div>
@@ -680,12 +670,14 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               })}
               {isCasting && caughtFish && castProgress < 1 && (
                 <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
-                  <img
-                    className="fg-fish-sprite-img"
-                    src={caughtFish.imgSrc}
-                    alt="fish"
-                    draggable={false}
-                  />
+                  <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
+                    <img
+                      className="fg-fish-sprite-img"
+                      src={caughtFish.imgSrc}
+                      alt="fish"
+                      draggable={false}
+                    />
+                  </div>
                 </div>
               )}
               <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">
