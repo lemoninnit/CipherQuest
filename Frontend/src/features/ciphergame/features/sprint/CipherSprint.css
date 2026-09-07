@@ -1,4 +1,15 @@
-/* Cipher Sprint relay css */
+:root {
+  --transition-fast: 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --transition-smooth: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Lane center positions — center of each 33.33% strip */
+  --lane-0-top: 16.67%;
+  --lane-1-top: 50%;
+  --lane-2-top: 83.33%;
+  /* Lane boundary colors for visual separation */
+  --lane-edge: rgba(56, 189, 248, 0.35);
+  --lane-edge-glow: rgba(56, 189, 248, 0.18);
+}
+
 .sprint-container {
   display: flex;
   flex-direction: column;
@@ -13,8 +24,43 @@
   font-family: 'Outfit', 'Inter', sans-serif;
   overflow: hidden;
   position: relative;
+  box-sizing: border-box;
 }
 
+/* ───────────────────────────────────────────────
+   WIDESCREEN LAYOUT — single authoritative source
+   ─────────────────────────────────────────────── */
+.sprint-widescreen {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 20px;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.sprint-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.sprint-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ───────────────────────────────────────────────
+   HEADER / HUD
+   ─────────────────────────────────────────────── */
 .sprint-header {
   display: flex;
   align-items: center;
@@ -51,7 +97,9 @@
   text-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
 }
 
-/* Ready Card */
+/* ───────────────────────────────────────────────
+   READY SCREEN CARD
+   ─────────────────────────────────────────────── */
 .sprint-ready-card {
   display: flex;
   flex-direction: column;
@@ -72,6 +120,7 @@
   background: linear-gradient(135deg, #38bdf8, #818cf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .sprint-ready-desc {
@@ -92,7 +141,6 @@
   line-height: 1.4;
 }
 
-/* Controls / Buttons */
 .sprint-btn-primary {
   background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
   color: #ffffff;
@@ -128,7 +176,9 @@
   color: #fff;
 }
 
-/* Baton display */
+/* ───────────────────────────────────────────────
+   BATON DISPLAY HUD
+   ─────────────────────────────────────────────── */
 .sprint-baton-hud {
   display: flex;
   align-items: center;
@@ -139,6 +189,7 @@
   border-radius: 12px;
   margin-bottom: 20px;
   box-shadow: inset 0 0 10px rgba(6, 182, 212, 0.05);
+  box-sizing: border-box;
 }
 
 .baton-tag {
@@ -146,6 +197,7 @@
   font-weight: 700;
   letter-spacing: 1px;
   color: #67e8f9;
+  white-space: nowrap;
 }
 
 .baton-letter {
@@ -155,6 +207,7 @@
   background: #06b6d4;
   width: 44px;
   height: 44px;
+  min-width: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -164,307 +217,774 @@
 }
 
 @keyframes pulseGlow {
-  0% {
-    box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
-  }
-
-  100% {
-    box-shadow: 0 0 20px rgba(6, 182, 212, 0.8);
-  }
+  0% { box-shadow: 0 0 8px rgba(6, 182, 212, 0.4); }
+  100% { box-shadow: 0 0 20px rgba(6, 182, 212, 0.8); }
 }
 
 .baton-desc {
   font-size: 0.85rem;
   color: #94a3b8;
+  line-height: 1.4;
 }
 
-/* Gameplay Grid / Track */
-.sprint-widescreen {
-  display: flex;
-  gap: 20px;
-  flex: 1;
-  height: 100%;
-  overflow: hidden;
-}
-
-.sprint-sidebar {
-  width: 280px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
-}
-
-.sprint-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  overflow: hidden;
-  min-width: 0;
-}
-
-.sprint-gameplay-area {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
+/* ───────────────────────────────────────────────
+   SPRINT TRACK — base container
+   ─────────────────────────────────────────────── */
 .sprint-track-container {
   flex: 1;
-  min-height: 240px;
+  min-height: 580px;
   position: relative;
-  background: linear-gradient(180deg, #111827 0%, #030712 100%);
+  background: #060b18;
   border-radius: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+  border: 2px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.9), inset 0 0 40px rgba(0, 0, 0, 0.8);
   overflow: hidden;
+  user-select: none;
+  will-change: transform;
 }
 
+/* ───────────────────────────────────────────────
+   PARALLAX BACKGROUND LAYERS
+   ─────────────────────────────────────────────── */
+.sprint-parallax-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background-repeat: repeat-x;
+  will-change: background-position;
+}
+
+.sprint-bg-sky {
+  /* Use layer 5 (sky gradient) as base */
+  background-image: url('/assets/sprint/background/GandalfHardcore%20Background%20layers_layer%205.png');
+  background-size: cover;
+  background-position: center;
+  z-index: 1;
+}
+
+.sprint-bg-hills-far {
+  z-index: 2;
+  /* Layer 4 — distant blue mountains */
+  background-image: url('/assets/sprint/background/GandalfHardcore%20Background%20layers_layer%204.png');
+  background-size: 1024px auto;
+  background-position: 0 80%;
+  opacity: 0.7;
+  animation: parallaxHillsFar 60s linear infinite;
+}
+
+.sprint-bg-hills-near {
+  z-index: 3;
+  /* Layer 3 — dense treeline far */
+  background-image: url('/assets/sprint/background/GandalfHardcore%20Background%20layers_layer%203.png');
+  background-size: 1024px auto;
+  background-position: 0 85%;
+  opacity: 0.75;
+  animation: parallaxHillsNear 35s linear infinite;
+}
+
+.sprint-bg-ruins {
+  z-index: 4;
+  /* Layer 2 — closer tree silhouettes */
+  background-image: url('/assets/sprint/background/GandalfHardcore%20Background%20layers_layer%202.png');
+  background-size: 1024px auto;
+  background-position: 0 90%;
+  opacity: 0.6;
+  animation: parallaxRuins 20s linear infinite;
+}
+
+/* Layer 1 — closest tree foreground layer */
+.sprint-bg-trees-front {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background-repeat: repeat-x;
+  will-change: background-position;
+  z-index: 5;
+  background-image: url('/assets/sprint/background/GandalfHardcore%20Background%20layers_layer%201.png');
+  background-size: 1024px auto;
+  background-position: 0 95%;
+  opacity: 0.5;
+  animation: parallaxFront 12s linear infinite;
+}
+
+/* Dark top & bottom vignette to give depth and frame the lanes */
+.sprint-track-vignette {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 9;
+  background:
+    linear-gradient(180deg,
+      rgba(3,7,18,0.7) 0%,
+      rgba(3,7,18,0.1) 20%,
+      rgba(3,7,18,0.0) 45%,
+      rgba(3,7,18,0.0) 55%,
+      rgba(3,7,18,0.2) 80%,
+      rgba(3,7,18,0.6) 100%
+    );
+}
+
+/* Boost mode — speed up parallax */
+.sprint-track-container.is-boosting .sprint-bg-hills-far { animation-duration: 15s; }
+.sprint-track-container.is-boosting .sprint-bg-hills-near { animation-duration: 9s; }
+.sprint-track-container.is-boosting .sprint-bg-ruins { animation-duration: 5s; }
+.sprint-track-container.is-boosting .sprint-bg-trees-front { animation-duration: 3s; }
+.sprint-track-container.is-boosting .sprint-lane-platform { animation-duration: 0.9s; }
+
+/* Paused mode — pause ALL animations inside track */
+.sprint-track-container.is-paused .sprint-parallax-layer,
+.sprint-track-container.is-paused .sprint-bg-trees-front,
+.sprint-track-container.is-paused .sprint-lane-platform,
+.sprint-track-container.is-paused .sprint-speed-line,
+.sprint-track-container.is-paused .sprint-runner-char-sprite,
+.sprint-track-container.is-paused .sprint-target-gem-sprite,
+.sprint-track-container.is-paused .sprint-slime-obstacle-sprite,
+.sprint-track-container.is-paused .gate-rune-glyph {
+  animation-play-state: paused !important;
+}
+
+@keyframes parallaxHillsFar {
+  from { background-position-x: 0px; }
+  to   { background-position-x: -1024px; }
+}
+@keyframes parallaxHillsNear {
+  from { background-position-x: 0px; }
+  to   { background-position-x: -1024px; }
+}
+@keyframes parallaxRuins {
+  from { background-position-x: 0px; }
+  to   { background-position-x: -1024px; }
+}
+@keyframes parallaxFront {
+  from { background-position-x: 0px; }
+  to   { background-position-x: -1024px; }
+}
+@keyframes canopySway {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(3px) translateX(1px); }
+}
+
+/* ───────────────────────────────────────────────
+   LANES + FLOATING PLATFORMS
+   ─────────────────────────────────────────────── */
 .sprint-lane {
   position: absolute;
   left: 0;
   right: 0;
   height: 33.33%;
-  border-bottom: 2px dashed rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
-  padding-left: 15px;
+  padding-left: 18px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  z-index: 6;
+  transition: background-color 0.2s ease;
+  overflow: hidden;
+  contain: layout paint;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.18);
+  box-shadow:
+    inset 0 1px 0 var(--lane-edge-glow),
+    inset 0 -1px 0 var(--lane-edge-glow);
+}
+/* Lane background tinting for clarity */
+.sprint-lane.lane-0 {
+  top: 0;
+  background: linear-gradient(180deg, rgba(0, 229, 255, 0.06) 0%, rgba(0, 229, 255, 0.02) 100%);
+  border-top: 1px solid rgba(56, 189, 248, 0.22);
+}
+.sprint-lane.lane-1 {
+  top: 33.33%;
+  background: linear-gradient(180deg, rgba(139, 92, 246, 0.03) 0%, rgba(0, 0, 0, 0) 50%, rgba(139, 92, 246, 0.03) 100%);
+}
+.sprint-lane.lane-2 {
+  top: 66.66%;
+  background: linear-gradient(180deg, rgba(0, 50, 30, 0.02) 0%, rgba(34, 197, 94, 0.05) 100%);
+  border-bottom: 1px solid rgba(34, 197, 94, 0.22);
 }
 
-.sprint-lane:last-child {
-  border-bottom: none;
-}
-
-.sprint-lane:hover {
-  background: rgba(255, 255, 255, 0.02);
+.sprint-lane::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  transition: border-color 0.2s ease;
 }
 
 .sprint-lane.highlighted {
-  background: rgba(56, 189, 248, 0.03);
+  background: rgba(0, 229, 255, 0.09) !important;
+}
+.sprint-lane.highlighted::before {
+  border-left-color: var(--lane-edge);
+  border-right-color: var(--lane-edge);
+  box-shadow:
+    inset 8px 0 20px -10px var(--lane-edge-glow),
+    inset -8px 0 20px -10px var(--lane-edge-glow);
 }
 
-.lane-0 {
-  top: 0;
-}
-
-.lane-1 {
-  top: 33.33%;
-}
-
-.lane-2 {
-  top: 66.66%;
-}
-
-.lane-number-badge {
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.2);
-  letter-spacing: 0.5px;
-}
-
-/* Runner Sprite */
-.sprint-runner-sprite {
-  position: absolute;
-  left: 15%;
-  font-size: 2.2rem;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: -24px;
-  transition: top 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index: 10;
-  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.5));
-}
-
-.sprint-runner-char {
-  display: inline-block;
-  transform: scaleX(-1);
-  /* Face right */
-}
-
-.sprint-runner-sprite:not(.crash):not(.moving-up):not(.moving-down) {
-  animation: runCycle 0.28s infinite ease-in-out;
-}
-
-.sprint-runner-sprite.moving-up {
-  transform: rotate(-18deg) scale(1.05) skewX(8deg);
-  transition: transform 0.1s ease-out;
-}
-
-.sprint-runner-sprite.moving-down {
-  transform: rotate(18deg) scale(1.05) skewX(-8deg);
-  transition: transform 0.1s ease-out;
-}
-
-.sprint-runner-sprite.crash {
-  animation: crashSpin 0.5s ease-out forwards;
-}
-
-@keyframes runCycle {
-  0% {
-    transform: translateY(0px) scaleY(1);
-  }
-
-  50% {
-    transform: translateY(-4px) scaleY(1.03);
-  }
-
-  100% {
-    transform: translateY(0px) scaleY(1);
-  }
-}
-
-@keyframes crashSpin {
-  0% {
-    transform: rotate(0) scale(1);
-    filter: hue-rotate(0deg);
-  }
-
-  50% {
-    transform: rotate(180deg) scale(0.8);
-    filter: hue-rotate(90deg) saturate(3);
-  }
-
-  100% {
-    transform: rotate(360deg) scale(1);
-    filter: grayscale(1);
-  }
-}
-
-.runner-baton-glow {
-  position: absolute;
-  right: -8px;
-  top: -4px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  background: #22d3ee;
-  color: #030712;
-  padding: 2px 5px;
-  border-radius: 4px;
-  box-shadow: 0 0 8px #22d3ee;
-}
-
-.runner-coin-carried {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: -22px;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #facc15;
-  text-shadow: 0 0 5px rgba(250, 204, 21, 0.8);
-  white-space: nowrap;
-}
-
-/* Coins */
-.sprint-coin-sprite {
-  position: absolute;
-  font-size: 1.8rem;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: -18px;
-  z-index: 8;
-  filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.6));
-  animation: coinFloat 2s ease-in-out infinite;
-}
-
-@keyframes coinFloat {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
-.coin-value {
-  position: absolute;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #ffffff;
-  bottom: -16px;
-  background: rgba(3, 7, 18, 0.75);
-  border: 1px solid rgba(250, 204, 21, 0.4);
-  padding: 1px 4px;
-  border-radius: 4px;
-  white-space: nowrap;
-}
-
-/* Checkpoint Gate */
-.sprint-checkpoint-gate {
-  position: absolute;
-  width: 12px;
-  top: 0;
-  bottom: 0;
-  z-index: 9;
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
-}
-
-.gate-beam {
+.sprint-lane-platform {
   position: absolute;
   left: 0;
-  top: 0;
+  right: 0;
   bottom: 0;
-  width: 4px;
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0) 0%, rgba(239, 68, 68, 0.8) 50%, rgba(239, 68, 68, 0) 100%);
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+  height: 34px;
+  /* Use actual ground.jpg tileset */
+  background-image: url('/assets/sprint/tileset/ground.jpg');
+  background-size: 256px auto;
+  background-repeat: repeat-x;
+  background-position: 0 center;
+  border-radius: 0;
+  opacity: 0.92;
+  box-shadow:
+    0 -6px 20px rgba(0, 0, 0, 0.7),
+    0 0 12px rgba(0, 229, 255, 0.2),
+    inset 0 2px 0 rgba(255, 255, 255, 0.08);
+  border-top: 2px solid rgba(0, 229, 255, 0.35);
+  transition: all 0.2s ease;
+  animation: trackScroll 2.5s linear infinite;
+  will-change: background-position;
 }
 
-.gate-pillar {
+@keyframes trackScroll {
+  from { background-position-x: 0px; }
+  to   { background-position-x: -2048px; }
+}
+
+.sprint-lane:hover .sprint-lane-platform {
+  opacity: 0.95;
+  filter: brightness(1.15);
+}
+
+.sprint-lane.highlighted .sprint-lane-platform {
+  opacity: 1;
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.45), inset 0 2px 8px rgba(0, 229, 255, 0.5);
+  border-top: 1px solid rgba(0, 229, 255, 0.5);
+}
+
+.sprint-lane-badge {
   position: absolute;
-  width: 12px;
-  height: 24px;
-  background: #374151;
-  border: 1px solid #4b5563;
+  left: 14px;
+  top: 10px;
+  z-index: 8;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(3, 7, 18, 0.7);
+  backdrop-filter: blur(5px);
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  pointer-events: none;
 }
 
-.gate-pillar.left {
+.sprint-lane.highlighted .sprint-lane-badge {
+  color: #00e5ff;
+  border-color: rgba(0, 229, 255, 0.6);
+  background: rgba(0, 229, 255, 0.15);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+}
+
+/* ───────────────────────────────────────────────
+   RUNNER SPRITE — top-based lane positioning
+   Each lane class sets top to the lane's center.
+   Transition is on `top` for smooth lane switching.
+   ─────────────────────────────────────────────── */
+.sprint-runner-sprite {
+  position: absolute;
+  left: 14%;
+  width: 96px;
+  height: 88px;
+  max-height: 30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 22;
+  pointer-events: none;
+  /* Default: center of lane 1 */
+  top: var(--lane-1-top);
+  transform: translateY(-50%);
+  transition: top var(--transition-fast);
+  will-change: top;
+  /* Visual lane-constraint glow to show lane bounds */
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.15));
+}
+
+/* Lane positions — simply move top to each lane's center */
+.sprint-runner-sprite.lane-0 { top: var(--lane-0-top); }
+.sprint-runner-sprite.lane-1 { top: var(--lane-1-top); }
+.sprint-runner-sprite.lane-2 { top: var(--lane-2-top); }
+
+/* Lane-change brightness flash — no transform conflict */
+.sprint-runner-sprite.moving-up   { filter: brightness(1.2) drop-shadow(0 -2px 8px rgba(0,229,255,0.6)); }
+.sprint-runner-sprite.moving-down { filter: brightness(1.2) drop-shadow(0  2px 8px rgba(0,229,255,0.6)); }
+
+/* Character sprite itself */
+.sprint-runner-char-sprite {
+  width: 96px;
+  height: 84px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transform: scale(1.15);
+  transform-origin: center center;
+  position: relative;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8));
+  will-change: background-position;
+  backface-visibility: hidden;
+}
+
+.sprint-runner-char-sprite.run {
+  background: url('/assets/sprint/user/RUN.png') 0 0 no-repeat;
+  animation: spriteRun 0.62s steps(8) infinite;
+}
+.sprint-runner-char-sprite.idle {
+  background: url('/assets/sprint/user/IDLE.png') 0 0 no-repeat;
+  animation: spriteIdle 0.88s steps(7) infinite;
+}
+.sprint-runner-char-sprite.jump {
+  background: url('/assets/sprint/user/JUMP.png') 0 0 no-repeat;
+  animation: spriteJump 0.42s steps(5) forwards;
+}
+.sprint-runner-char-sprite.death {
+  background: url('/assets/sprint/user/DEATH.png') 0 0 no-repeat;
+  animation: spriteDeath 0.85s steps(12) forwards;
+}
+
+@keyframes spriteRun    { from { background-position: 0 0; } to { background-position: -768px 0; } }
+@keyframes spriteIdle   { from { background-position: 0 0; } to { background-position: -672px 0; } }
+@keyframes spriteJump   { from { background-position: 0 0; } to { background-position: -480px 0; } }
+@keyframes spriteDeath  { from { background-position: 0 0; } to { background-position: -1152px 0; } }
+
+/* Boost trail — drop-shadow based, no conflicting translate */
+.sprint-runner-sprite.boost-trail {
+  filter: drop-shadow(0 0 16px #00e5ff) drop-shadow(-16px 0 10px rgba(0, 255, 136, 0.65));
+  animation: boostGlow 0.12s steps(2) infinite;
+}
+@keyframes boostGlow {
+  0%   { filter: drop-shadow(0 0 14px #00e5ff) drop-shadow(-14px 0 8px rgba(0, 255, 136, 0.6)); }
+  100% { filter: drop-shadow(0 0 22px #00ff88) drop-shadow(-22px 0 14px rgba(0, 229, 255, 0.8)); }
+}
+
+/* Spin collection effect — scale flash ONLY, no rotation (rotation made the character look broken) */
+.sprint-runner-sprite.spin-effect .sprint-runner-char-sprite {
+  animation: spinCollect 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+@keyframes spinCollect {
+  0%   { transform: scale(1.35); filter: brightness(1) drop-shadow(0 4px 10px rgba(0,0,0,0.7)); }
+  30%  { transform: scale(1.7);  filter: brightness(2) drop-shadow(0 0 18px #00e5ff); }
+  60%  { transform: scale(1.5);  filter: brightness(1.5) drop-shadow(0 0 12px #00ff88); }
+  100% { transform: scale(1.35); filter: brightness(1) drop-shadow(0 4px 10px rgba(0,0,0,0.7)); }
+}
+
+/* Baton glow badge */
+.runner-baton-glow {
+  position: absolute;
+  right: 8px;
+  top: 4px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+  background: linear-gradient(135deg, #00e5ff, #00ff88);
+  color: #030712;
+  padding: 2px 7px;
+  border-radius: 6px;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  z-index: 25;
+  animation: pulseBaton 1.2s infinite alternate;
+  white-space: nowrap;
+}
+@keyframes pulseBaton {
+  0%   { box-shadow: 0 0 8px rgba(0, 229, 255, 0.6); }
+  100% { box-shadow: 0 0 20px rgba(0, 229, 255, 1); }
+}
+
+/* ───────────────────────────────────────────────
+   TARGET GEM — top-based lane positioning
+   ─────────────────────────────────────────────── */
+.sprint-target-gem-sprite {
+  position: absolute;
+  width: 56px;
+  height: 72px;
+  max-height: 28%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+  animation: runeFloat 1.8s ease-in-out infinite;
+  will-change: left;
+  /* Lane-sticking: hard clip to stay within bounds */
+  clip-path: inset(-5% 0 -5% 0);
+  contain: layout paint style;
+}
+.sprint-target-gem-sprite.lane-0 { top: var(--lane-0-top); }
+.sprint-target-gem-sprite.lane-1 { top: var(--lane-1-top); }
+.sprint-target-gem-sprite.lane-2 { top: var(--lane-2-top); }
+
+.target-gem-aura {
+  position: absolute;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.55) 0%, rgba(0, 255, 136, 0) 72%);
+  filter: blur(4px);
+  animation: gemPulse 1.4s ease-in-out infinite alternate;
+}
+.target-gem-diamond {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #00e5ff 0%, #0088ff 50%, #00ff88 100%);
+  transform: rotate(45deg);
+  border-radius: 6px;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.6);
+}
+.target-gem-char {
+  transform: rotate(-45deg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #030712;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+}
+.target-gem-label {
+  position: absolute;
+  bottom: -20px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: #00ff88;
+  background: rgba(3, 7, 18, 0.9);
+  border: 1px solid rgba(0, 255, 136, 0.5);
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+}
+
+@keyframes runeFloat {
+  /* Use translateY to float without disrupting the translate(-50%,-50%) centering */
+  0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+  50%       { transform: translate(-50%, -50%) translateY(-8px); }
+}
+@keyframes gemPulse {
+  0%   { transform: scale(0.9); opacity: 0.6; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+/* ───────────────────────────────────────────────
+   SLIME OBSTACLE — top-based lane positioning
+   ─────────────────────────────────────────────── */
+.sprint-slime-obstacle-sprite {
+  position: absolute;
+  width: 84px;
+  height: 90px;
+  max-height: 32%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 14;
+  animation: slimeHop 2s ease-in-out infinite;
+  will-change: left;
+  /* Lane-sticking: hard clip to prevent bleed across lanes */
+  clip-path: inset(-4% 0 -2% 0);
+  contain: layout paint style;
+  /* Subtle lane boundary frame when obstacle enters view */
+  border-radius: 6px;
+}
+.sprint-slime-obstacle-sprite.lane-0 { top: var(--lane-0-top); }
+.sprint-slime-obstacle-sprite.lane-1 { top: var(--lane-1-top); }
+.sprint-slime-obstacle-sprite.lane-2 { top: var(--lane-2-top); }
+
+.sprint-slime-img {
+  width: 76px;
+  max-width: 100%;
+  height: auto;
+  max-height: 76%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.75));
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.slime-decoy-plate {
+  position: absolute;
+  top: -16px;
+  font-size: 0.8rem;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+  color: #ffffff;
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 1px 7px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+  white-space: nowrap;
+  z-index: 5;
+}
+
+@keyframes slimeHop {
+  0%, 100% { filter: none; }
+  40%      { filter: brightness(1.05) saturate(1.1); }
+}
+
+/* ───────────────────────────────────────────────
+   FLORA / DECORATIVE ACCENTS (CSS-only — no broken images)
+   ─────────────────────────────────────────────── */
+.sprint-track-plants {
+  position: absolute;
   top: 0;
-  border-radius: 0 0 4px 4px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 7;
 }
 
-.gate-pillar.right {
+.sprint-plant-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: orbFloat 3s ease-in-out infinite alternate;
+}
+.plant-orb-1 {
+  left: 6%;
+  bottom: 30px;
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle, rgba(0,255,136,0.9) 0%, rgba(0,200,100,0) 70%);
+  box-shadow: 0 0 14px rgba(0,255,136,0.7), 0 0 28px rgba(0,200,100,0.4);
+  animation-delay: 0s;
+}
+.plant-orb-2 {
+  left: 80%;
+  bottom: 30px;
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle, rgba(0,229,255,0.9) 0%, rgba(0,150,255,0) 70%);
+  box-shadow: 0 0 12px rgba(0,229,255,0.7), 0 0 24px rgba(0,150,255,0.4);
+  animation-delay: 1.4s;
+}
+@keyframes orbFloat {
+  0%   { transform: translateY(0) scale(1); opacity: 0.7; }
+  100% { transform: translateY(-8px) scale(1.2); opacity: 1; }
+}
+
+/* ───────────────────────────────────────────────
+   CHECKPOINT GATE — full-height spanning all 3 lanes
+   ─────────────────────────────────────────────── */
+.sprint-checkpoint-gate {
+  position: absolute;
+  width: 60px;
+  top: 0;
   bottom: 0;
-  border-radius: 4px 4px 0 0;
+  z-index: 18;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  pointer-events: none;
+  will-change: left;
+}
+
+.gate-mossy-arch {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Top cap pillar */
+.gate-pillar.top {
+  width: 34px;
+  height: 56px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #1a3a2a 0%, #0d2219 60%, #0a1a14 100%);
+  border: 2px solid rgba(56, 189, 248, 0.5);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.35), inset 0 0 10px rgba(0, 229, 255, 0.15);
+  /* Mossy texture overlay */
+  background-image: url('/assets/sprint/tileset/Mossy - TileSet.png');
+  background-size: 200px auto;
+  background-position: -10px -5px;
+  background-blend-mode: luminosity;
+}
+
+/* Bottom cap pillar */
+.gate-pillar.bottom {
+  width: 34px;
+  height: 56px;
+  flex-shrink: 0;
+  background: linear-gradient(0deg, #1a3a2a 0%, #0d2219 60%, #0a1a14 100%);
+  border: 2px solid rgba(56, 189, 248, 0.5);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.35), inset 0 0 10px rgba(0, 229, 255, 0.15);
+  background-image: url('/assets/sprint/tileset/Mossy - TileSet.png');
+  background-size: 200px auto;
+  background-position: -10px -40px;
+  background-blend-mode: luminosity;
+}
+
+.gate-energy-barrier {
+  flex: 1;
+  width: 14px;
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    rgba(239, 68, 68, 0.05) 0%,
+    rgba(239, 68, 68, 0.85) 30%,
+    rgba(239, 68, 68, 1) 50%,
+    rgba(239, 68, 68, 0.85) 70%,
+    rgba(239, 68, 68, 0.05) 100%
+  );
+  box-shadow:
+    0 0 20px rgba(239, 68, 68, 0.9),
+    0 0 45px rgba(239, 68, 68, 0.5),
+    inset 0 0 8px rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Scanline shimmer */
+  animation: barrierFlicker 0.08s steps(2) infinite;
+}
+
+@keyframes barrierFlicker {
+  0%   { opacity: 0.92; }
+  100% { opacity: 1; }
+}
+
+.gate-rune-glyph {
+  font-size: 1.4rem;
+  color: #ffffff;
+  text-shadow: 0 0 10px #ef4444, 0 0 20px #ef4444;
+  animation: runePulse 1s infinite alternate;
+  writing-mode: vertical-lr;
+  letter-spacing: 4px;
+}
+@keyframes runePulse {
+  0%   { opacity: 0.7; transform: scale(0.9); }
+  100% { opacity: 1;   transform: scale(1.1); }
 }
 
 .gate-badge {
   position: absolute;
-  left: -32px;
-  top: 45%;
-  font-size: 0.55rem;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.68rem;
   font-weight: 900;
-  text-transform: uppercase;
-  color: #f9fafb;
+  letter-spacing: 1px;
+  font-family: 'JetBrains Mono', monospace;
+  color: #ffffff;
   background: #dc2626;
-  border: 1px solid #ef4444;
-  padding: 2px 4px;
-  border-radius: 3px;
+  border: 2px solid #ff4040;
+  padding: 4px 10px;
+  border-radius: 6px;
   white-space: nowrap;
-  letter-spacing: 0.5px;
-  box-shadow: 0 0 5px rgba(220, 38, 38, 0.8);
+  box-shadow: 0 0 16px rgba(220, 38, 38, 0.95), 0 0 30px rgba(220, 38, 38, 0.5);
+  z-index: 20;
+  animation: gateBadgePulse 1.2s infinite alternate;
+}
+@keyframes gateBadgePulse {
+  0%   { box-shadow: 0 0 10px rgba(220,38,38,0.8); }
+  100% { box-shadow: 0 0 24px rgba(220,38,38,1), 0 0 40px rgba(220,38,38,0.6); }
 }
 
-/* Side Hud Progress */
+/* Gate cleared (green) state */
+.sprint-checkpoint-gate.gate-cleared .gate-energy-barrier {
+  background: linear-gradient(
+    180deg,
+    rgba(34, 197, 94, 0.05) 0%,
+    rgba(34, 197, 94, 0.85) 30%,
+    rgba(34, 197, 94, 1) 50%,
+    rgba(34, 197, 94, 0.85) 70%,
+    rgba(34, 197, 94, 0.05) 100%
+  );
+  box-shadow: 0 0 30px rgba(34, 197, 94, 1), 0 0 60px rgba(34, 197, 94, 0.7);
+  animation: none;
+}
+.sprint-checkpoint-gate.gate-cleared .gate-pillar.top,
+.sprint-checkpoint-gate.gate-cleared .gate-pillar.bottom {
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.5);
+}
+.sprint-checkpoint-gate.gate-cleared .gate-rune-glyph {
+  text-shadow: 0 0 10px #22c55e, 0 0 20px #22c55e;
+}
+.sprint-checkpoint-gate.gate-cleared .gate-badge {
+  background: #16a34a;
+  border-color: #22c55e;
+  box-shadow: 0 0 16px rgba(34, 197, 94, 1);
+  animation: none;
+}
+
+/* ───────────────────────────────────────────────
+   READY SCREEN PREVIEW STAGE
+   ─────────────────────────────────────────────── */
+.sprint-preview-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: radial-gradient(circle at center, rgba(0, 229, 255, 0.1) 0%, rgba(3, 7, 18, 0.8) 80%);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 12px;
+  padding: 24px 20px 16px;
+  margin-bottom: 20px;
+  min-height: 120px;
+  overflow: hidden;
+}
+.sprint-preview-stage::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 16px;
+  background-image: url('/assets/sprint/tileset/ground.jpg');
+  background-size: 256px auto;
+  background-position: 0 center;
+  background-repeat: repeat-x;
+  opacity: 0.85;
+}
+.sprint-preview-stage img {
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+/* ───────────────────────────────────────────────
+   WORD / PAIR DECRYPTION PROGRESS BAR
+   ─────────────────────────────────────────────── */
 .sprint-side-hud {
   background: rgba(15, 23, 42, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   padding: 16px;
 }
-
 .sprint-side-hud h3 {
   font-size: 0.9rem;
   font-weight: 700;
@@ -489,14 +1009,14 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
-
 .sprint-letter-box.active {
   border-color: #06b6d4;
-  box-shadow: 0 0 8px rgba(6, 182, 212, 0.4);
-  background: rgba(6, 182, 212, 0.05);
+  box-shadow: 0 0 8px rgba(6, 182, 212, 0.4), 0 0 14px rgba(6, 182, 212, 0.15);
+  background: rgba(6, 182, 212, 0.08);
+  transform: translateY(-2px);
 }
-
 .sprint-letter-box.solved {
   border-color: #22c55e;
   box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
@@ -510,28 +1030,21 @@
   text-transform: uppercase;
   margin-bottom: 2px;
 }
-
 .sprint-box-plain {
   font-size: 1.15rem;
   font-weight: 800;
   color: #cbd5e1;
+  font-family: 'JetBrains Mono', monospace;
 }
+.sprint-letter-box.solved .sprint-box-plain { color: #22c55e; text-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
+.sprint-letter-box.active .sprint-box-plain { color: #06b6d4; }
 
-.sprint-letter-box.solved .sprint-box-plain {
-  color: #22c55e;
-}
-
-.sprint-letter-box.active .sprint-box-plain {
-  color: #06b6d4;
-}
-
-/* Explanation crash overlay */
+/* ───────────────────────────────────────────────
+   EXPLANATION / CRASH OVERLAY CARD
+   ─────────────────────────────────────────────── */
 .sprint-explanation-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(3, 7, 18, 0.85);
   backdrop-filter: blur(8px);
   display: flex;
@@ -539,7 +1052,6 @@
   justify-content: center;
   z-index: 100;
 }
-
 .sprint-explanation-card {
   max-width: 500px;
   width: 90%;
@@ -550,18 +1062,11 @@
   text-align: center;
   box-shadow: 0 0 30px rgba(239, 68, 68, 0.25);
   animation: cardEntrance 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-sizing: border-box;
 }
-
 @keyframes cardEntrance {
-  0% {
-    transform: scale(0.85);
-    opacity: 0;
-  }
-
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
+  0%   { transform: scale(0.85); opacity: 0; }
+  100% { transform: scale(1);    opacity: 1; }
 }
 
 .sprint-crash-icon {
@@ -569,14 +1074,12 @@
   display: block;
   margin-bottom: 12px;
 }
-
 .sprint-explanation-card h3 {
   font-size: 1.35rem;
   color: #ef4444;
   margin-bottom: 12px;
   font-weight: 700;
 }
-
 .sprint-explanation-text {
   color: #cbd5e1;
   font-size: 0.9rem;
@@ -588,7 +1091,9 @@
   border-radius: 8px;
 }
 
-/* Finished screen */
+/* ───────────────────────────────────────────────
+   FINISHED SCREEN
+   ─────────────────────────────────────────────── */
 .sprint-finished-card {
   display: flex;
   flex-direction: column;
@@ -600,7 +1105,6 @@
   box-shadow: 0 0 25px rgba(34, 197, 94, 0.15);
   backdrop-filter: blur(10px);
 }
-
 .sprint-finished-card h2 {
   font-size: 1.6rem;
   color: #22c55e;
@@ -608,13 +1112,11 @@
   font-weight: 800;
   letter-spacing: 0.5px;
 }
-
 .sprint-finished-desc {
   color: #94a3b8;
   font-size: 0.9rem;
   margin-bottom: 20px;
 }
-
 .sprint-finish-banner {
   background: rgba(34, 197, 94, 0.08);
   border: 1px solid rgba(34, 197, 94, 0.2);
@@ -624,13 +1126,17 @@
   width: 100%;
   display: flex;
   justify-content: center;
+  box-sizing: border-box;
 }
 
+/* ───────────────────────────────────────────────
+   RECAP TABLE
+   ─────────────────────────────────────────────── */
 .sprint-recap-table-container {
   width: 100%;
   margin-bottom: 28px;
+  box-sizing: border-box;
 }
-
 .sprint-recap-table-container h3 {
   font-size: 0.95rem;
   color: #cbd5e1;
@@ -638,14 +1144,12 @@
   font-weight: 700;
   text-align: left;
 }
-
 .sprint-recap-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.82rem;
   text-align: left;
 }
-
 .sprint-recap-table th {
   background: rgba(255, 255, 255, 0.04);
   color: #94a3b8;
@@ -653,118 +1157,40 @@
   padding: 8px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-
 .sprint-recap-table td {
   padding: 8px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
+.row-correct   { background: rgba(34, 197, 94, 0.02); color: #4ade80; }
+.row-incorrect { background: rgba(239, 68, 68, 0.02); color: #f87171; }
 
-.row-correct {
-  background: rgba(34, 197, 94, 0.02);
-  color: #4ade80;
-}
+.sprint-action-row    { display: flex; gap: 16px; }
+.justify-center       { justify-content: center; }
 
-.row-incorrect {
-  background: rgba(239, 68, 68, 0.02);
-  color: #f87171;
-}
-
-.sprint-action-row {
-  display: flex;
-  gap: 16px;
-}
-
-.justify-center {
-  justify-content: center;
-}
-
-/* ─── Sprint Interactive FX Classes ─── */
+/* ───────────────────────────────────────────────
+   FX CLASSES — speed lines, shake, spin, feedback
+   ─────────────────────────────────────────────── */
 .sprint-speed-line {
   position: absolute;
   height: 2px;
   background: linear-gradient(90deg, rgba(56, 189, 248, 0.35) 0%, rgba(56, 189, 248, 0) 100%);
   z-index: 1;
   pointer-events: none;
+  will-change: left;
 }
 
 .shake-track {
-  animation: trackShakeAnimation 0.4s cubic-bezier(.36, .07, .19, .97) both;
+  animation: trackShakeAnimation 0.4s cubic-bezier(.36,.07,.19,.97) both;
 }
-
 @keyframes trackShakeAnimation {
-
-  10%,
-  90% {
-    transform: translate3d(-3px, 0, 0);
-  }
-
-  20%,
-  80% {
-    transform: translate3d(5px, 0, 0);
-  }
-
-  30%,
-  50%,
-  70% {
-    transform: translate3d(-7px, 0, 0);
-  }
-
-  40%,
-  60% {
-    transform: translate3d(7px, 0, 0);
-  }
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+  100% { transform: translateX(0); }
 }
 
-.spin-effect {
-  animation: spinVisual 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@keyframes spinVisual {
-  0% {
-    transform: rotate(0) scale(1);
-  }
-
-  50% {
-    transform: rotate(180deg) scale(1.35);
-  }
-
-  100% {
-    transform: rotate(360deg) scale(1);
-  }
-}
-
-.boost-trail::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 50%;
-  background: rgba(6, 182, 212, 0.4);
-  filter: blur(8px);
-  z-index: -1;
-  animation: boostTrailAnimation 0.4s linear infinite;
-}
-
-@keyframes boostTrailAnimation {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-
-  100% {
-    transform: scale(1.6);
-    opacity: 0;
-  }
-}
-
-.sprint-checkpoint-gate.gate-cleared .gate-beam {
-  background: linear-gradient(180deg, rgba(34, 197, 94, 0) 0%, rgba(34, 197, 94, 0.8) 50%, rgba(34, 197, 94, 0) 100%) !important;
-  box-shadow: 0 0 20px rgba(34, 197, 94, 1) !important;
-  width: 8px;
-}
-
+/* Floating feedback popup */
 .sprint-floating-feedback {
   position: absolute;
   left: 20%;
@@ -773,45 +1199,18 @@
   pointer-events: none;
   animation: floatFeedback 0.9s cubic-bezier(0.25, 1, 0.5, 1) forwards;
   z-index: 100;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9), 0 2px 4px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
 }
-
 @keyframes floatFeedback {
-  0% {
-    transform: translateY(0);
-    opacity: 1;
-  }
-
-  100% {
-    transform: translateY(-30px);
-    opacity: 0;
-  }
+  0%   { transform: translateY(0) scale(0.9); opacity: 0; }
+  15%  { transform: translateY(-4px) scale(1.05); opacity: 1; }
+  100% { transform: translateY(-36px) scale(1);   opacity: 0; }
 }
 
-/* Widescreen Layout */
-.sprint-widescreen {
-  display: grid;
-  grid-template-columns: 290px 1fr;
-  gap: 20px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.sprint-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  height: 100%;
-}
-
-.sprint-main {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  flex: 1;
-}
-
-/* Sidebar Stats Card */
+/* ───────────────────────────────────────────────
+   SIDEBAR STATS / ACTION HUD
+   ─────────────────────────────────────────────── */
 .sidebar-stats-card {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(0, 229, 255, 0.15);
@@ -821,6 +1220,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-sizing: border-box;
 }
 
 .sidebar-action-hud {
@@ -828,6 +1228,7 @@
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  gap: 12px;
 }
 
 .stats-header {
@@ -851,17 +1252,20 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .stat-label {
   font-size: 0.72rem;
   font-weight: 700;
   color: #94a3b8;
+  white-space: nowrap;
 }
 
 .stat-value {
   font-size: 0.85rem;
   font-weight: 700;
+  text-align: right;
 }
 
 .hearts-glow {
@@ -874,12 +1278,7 @@
   text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
 }
 
-.sidebar-action-hud {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
+/* Success / Alert panels */
 .fg-success-panel {
   background: rgba(57, 255, 20, 0.08);
   border: 1px solid rgba(57, 255, 20, 0.3);
@@ -896,14 +1295,12 @@
   justify-content: center;
   text-align: left;
 }
-
 .fg-success-panel h3 {
   margin: 0;
-  color: var(--neon-green);
+  color: var(--neon-green, #39ff14);
   font-size: 1.1rem;
   font-weight: 800;
 }
-
 .fg-success-panel p {
   margin: 0;
   color: #a3ff90;
@@ -924,23 +1321,37 @@
   flex-direction: column;
   justify-content: center;
   text-align: left;
+  gap: 8px;
 }
-
 .fg-alert-panel.default-alert {
   background: rgba(0, 229, 255, 0.05);
   border: 1px solid rgba(0, 229, 255, 0.2);
   color: #a0efff;
 }
-
 .fg-alert-panel strong {
   font-size: 0.85rem;
-  color: var(--neon-cyan);
+  color: var(--neon-cyan, #06b6d4);
 }
-
 .fg-alert-panel code {
   background: rgba(0, 229, 255, 0.1);
   padding: 1px 4px;
   border-radius: 4px;
-  color: var(--neon-cyan);
+  color: var(--neon-cyan, #06b6d4);
   font-family: 'JetBrains Mono', monospace;
+}
+
+/* ───────────────────────────────────────────────
+   RESPONSIVE — small screens collapse the sidebar
+   ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .sprint-widescreen {
+    grid-template-columns: 1fr;
+  }
+  .sprint-sidebar {
+    order: 2;
+    max-height: 240px;
+  }
+  .sprint-main {
+    order: 1;
+  }
 }
