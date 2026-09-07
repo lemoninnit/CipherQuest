@@ -9,6 +9,7 @@ const DashboardHome = () => {
   const { user, logout } = useAuth();
   const { openSettings } = useContext(DashboardChromeContext);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [activeCardId, setActiveCardId] = useState('caesar');
 
   const xpToNextLevel = 1000;
   const xpProgress = user ? ((user.xp % xpToNextLevel) / xpToNextLevel) * 100 : 0;
@@ -29,12 +30,13 @@ const DashboardHome = () => {
       art: 'caesar',
       svg: (
         <svg viewBox="0 0 100 100" className="dh-card-svg">
-          <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0, 229, 255, 0.4)" strokeWidth="2" strokeDasharray="3 3" />
-          <circle cx="50" cy="50" r="28" fill="none" stroke="rgba(0, 229, 255, 0.8)" strokeWidth="2" />
-          <circle cx="50" cy="50" r="14" fill="rgba(0, 229, 255, 0.15)" stroke="#00e5ff" strokeWidth="1.5" />
-          <text x="50" y="16" textAnchor="middle" fill="#00e5ff" fontSize="8" fontWeight="bold">A B C D E</text>
-          <text x="50" y="30" textAnchor="middle" fill="#39ff14" fontSize="7" fontWeight="bold">D E F G H</text>
-          <path d="M50 20 L50 24 M50 76 L50 80 M20 50 L24 50 M76 50 L80 50" stroke="#00e5ff" strokeWidth="2" />
+          <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0, 229, 255, 0.25)" strokeWidth="1.5" strokeDasharray="3 3" />
+          <path d="M 32,38 A 22,22 0 1,1 68,38" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" />
+          <polyline points="62,30 68,38 76,34" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M 68,62 A 22,22 0 1,1 32,62" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" />
+          <polyline points="38,70 32,62 24,66" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <text x="26" y="44" fill="#00e5ff" fontSize="11" fontWeight="bold" fontFamily="sans-serif">A</text>
+          <text x="70" y="44" fill="#39ff14" fontSize="11" fontWeight="bold" fontFamily="sans-serif">X</text>
         </svg>
       )
     },
@@ -46,13 +48,62 @@ const DashboardHome = () => {
       art: 'vigenere',
       svg: (
         <svg viewBox="0 0 100 100" className="dh-card-svg">
-          <rect x="10" y="22" width="80" height="22" rx="4" fill="rgba(0, 229, 255, 0.15)" stroke="rgba(0, 229, 255, 0.6)" strokeWidth="1.5" />
-          <text x="50" y="36" textAnchor="middle" fill="#e8f4f8" fontSize="9" fontFamily="monospace" fontWeight="bold">P L A I N T E X T</text>
+          <rect x="2" y="2" width="96" height="96" rx="6" fill="rgba(3, 12, 26, 0.8)" stroke="rgba(0, 229, 255, 0.3)" strokeWidth="1" />
           
-          <rect x="10" y="56" width="80" height="22" rx="4" fill="rgba(255, 0, 127, 0.15)" stroke="rgba(255, 0, 127, 0.6)" strokeWidth="1.5" />
-          <text x="50" y="70" textAnchor="middle" fill="#ff007f" fontSize="9" fontFamily="monospace" fontWeight="bold">K E Y K E Y K E Y</text>
-          
-          <path d="M30 44 L30 56 M50 44 L50 56 M70 44 L70 56" stroke="#ffd700" strokeWidth="1.5" strokeDasharray="2 2" />
+          <rect x="6" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="14" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">A</text>
+          <rect x="24" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="32" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">B</text>
+          <rect x="42" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="50" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">C</text>
+          <rect x="60" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="68" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">D</text>
+          <rect x="78" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="86" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">E</text>
+
+          <rect x="6" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="14" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">A</text>
+          <rect x="24" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="32" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">P</text>
+          <rect x="42" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="50" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">P</text>
+          <rect x="60" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="68" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">L</text>
+          <rect x="78" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="86" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">E</text>
+
+          <rect x="6" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="14" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">C</text>
+          <rect x="24" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="32" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">D</text>
+          <rect x="42" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="50" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">E</text>
+          <rect x="60" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="68" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">F</text>
+          <rect x="78" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="86" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">G</text>
+
+          <rect x="6" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="14" y="72" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">C</text>
+          <rect x="24" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="32" y="72" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">A</text>
+          <rect x="42" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="50" y="72" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">T</text>
+          <rect x="60" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="68" y="72" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">C</text>
+          <rect x="78" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="86" y="72" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">A</text>
+
+          <rect x="6" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="14" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">E</text>
+          <rect x="24" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="32" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">F</text>
+          <rect x="42" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="50" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">G</text>
+          <rect x="60" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="68" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">H</text>
+          <rect x="78" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+          <text x="86" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">I</text>
         </svg>
       )
     },
@@ -64,18 +115,66 @@ const DashboardHome = () => {
       art: 'playfair',
       svg: (
         <svg viewBox="0 0 100 100" className="dh-card-svg">
-          <rect x="10" y="10" width="80" height="80" rx="6" fill="rgba(6, 19, 36, 0.6)" stroke="rgba(57, 255, 20, 0.4)" strokeWidth="1.5" />
-          <line x1="26" y1="10" x2="26" y2="90" stroke="rgba(255,255,255,0.12)" />
-          <line x1="42" y1="10" x2="42" y2="90" stroke="rgba(255,255,255,0.12)" />
-          <line x1="58" y1="10" x2="58" y2="90" stroke="rgba(255,255,255,0.12)" />
-          <line x1="74" y1="10" x2="74" y2="90" stroke="rgba(255,255,255,0.12)" />
-          <line x1="10" y1="26" x2="90" y2="26" stroke="rgba(255,255,255,0.12)" />
-          <line x1="10" y1="42" x2="90" y2="42" stroke="rgba(255,255,255,0.12)" />
-          <line x1="10" y1="58" x2="90" y2="58" stroke="rgba(255,255,255,0.12)" />
-          <line x1="10" y1="74" x2="90" y2="74" stroke="rgba(255,255,255,0.12)" />
-          <rect x="26" y="26" width="32" height="32" fill="rgba(57, 255, 20, 0.2)" stroke="#39ff14" strokeWidth="2" rx="2" />
-          <circle cx="34" cy="34" r="3.5" fill="#39ff14" />
-          <circle cx="50" cy="50" r="3.5" fill="#39ff14" />
+          <rect x="2" y="2" width="96" height="96" rx="6" fill="rgba(3, 12, 26, 0.8)" stroke="rgba(0, 229, 255, 0.3)" strokeWidth="1" />
+          
+          <rect x="6" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="14" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">T</text>
+          <rect x="24" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="32" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">Y</text>
+          <rect x="42" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="50" y="18" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">P</text>
+          <rect x="60" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="68" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">J</text>
+          <rect x="78" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="86" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">K</text>
+
+          <rect x="6" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="14" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">C</text>
+          <rect x="24" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="32" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">D</text>
+          <rect x="42" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="50" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">E</text>
+          <rect x="60" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="68" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">F</text>
+          <rect x="78" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="86" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">G</text>
+
+          <rect x="6" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="14" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">Z</text>
+          <rect x="24" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="32" y="54" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">X</text>
+          <rect x="42" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="50" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">C</text>
+          <rect x="60" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="68" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">V</text>
+          <rect x="78" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="86" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">B</text>
+
+          <rect x="6" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="14" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">E</text>
+          <rect x="24" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="32" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">F</text>
+          <rect x="42" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="50" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">G</text>
+          <rect x="60" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="68" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">H</text>
+          <rect x="78" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="86" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">I</text>
+
+          <rect x="6" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="14" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">O</text>
+          <rect x="24" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="32" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">P</text>
+          <rect x="42" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="50" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">Q</text>
+          <rect x="60" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="68" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">R</text>
+          <rect x="78" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+          <text x="86" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">S</text>
+
+          <rect x="22" y="4" width="36" height="56" rx="4" fill="rgba(255, 230, 0, 0.08)" stroke="#d4ff00" strokeWidth="2" />
+          <circle cx="22" cy="60" r="3" fill="#d4ff00" />
+          <circle cx="58" cy="4" r="3" fill="#d4ff00" />
         </svg>
       )
     }
@@ -90,7 +189,11 @@ const DashboardHome = () => {
       <header className="dh-header-bar">
         <div className="dh-wordmark-container">
           <div className="dh-wordmark-title">
-            CipherQuest <span className="dh-lock-icon">🔒</span>
+            CipherQuest{' '}
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#00e5ff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dh-lock-svg">
+              <rect x="5" y="11" width="14" height="10" rx="3" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
           </div>
           <div className="dh-wordmark-subtitle">
             OPERATIVE: {user?.username ?? 'OPERATIVE'} &nbsp;•&nbsp; LEVEL {user?.level ?? 1} OPERATIVE
@@ -123,11 +226,11 @@ const DashboardHome = () => {
           <button className="dh-menu-item primary" onClick={() => navigate('/dashboard/ciphergame')}>
             Start Quest
           </button>
-          <button className="dh-menu-item" onClick={() => setShowTutorial(true)}>
-            Tutorial
-          </button>
           <button className="dh-menu-item" onClick={() => navigate('/dashboard/badges')}>
             Badges
+          </button>
+          <button className="dh-menu-item" onClick={() => setShowTutorial(true)}>
+            Tutorial
           </button>
           <button className="dh-menu-item" onClick={openSettings}>
             Settings
@@ -137,37 +240,64 @@ const DashboardHome = () => {
           </button>
         </nav>
 
-        {/* Cards Row */}
-        <div className="dh-cards-row">
-          {cardsData.map((card) => (
-            <div
-              key={card.id}
-              role="button"
-              tabIndex={0}
-              className="dh-quest-card"
+        {/* Center Section: Cards & Bottom Action Controls */}
+        <div className="dh-center-section">
+          {/* Cards Row */}
+          <div className="dh-cards-row">
+            {cardsData.map((card) => {
+              const isExpanded = card.id === activeCardId;
+              return (
+                <div
+                  key={card.id}
+                  role="button"
+                  tabIndex={0}
+                  className={`dh-quest-card ${isExpanded ? 'active' : ''}`}
+                  onMouseEnter={() => setActiveCardId(card.id)}
+                  onFocus={() => setActiveCardId(card.id)}
+                  onClick={() => setActiveCardId(card.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActiveCardId(card.id);
+                    }
+                  }}
+                >
+                  <div className="dh-card-art-panel">
+                    {card.svg}
+                  </div>
+                  <div className="dh-card-body">
+                    <h3 className="dh-card-title">{card.title}</h3>
+                    <div className="dh-card-expanded-wrapper">
+                      <p className="dh-card-desc">{card.desc}</p>
+                      <button
+                        className="dh-card-show-tutorial-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowTutorial(true);
+                        }}
+                      >
+                        Show Tutorial
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Bottom Action Section: Select Button & Mini Description */}
+          <div className="dh-bottom-action-container">
+            <button
+              className="dh-select-btn"
               onClick={() => navigate('/dashboard/ciphergame')}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  navigate('/dashboard/ciphergame');
-                }
-              }}
             >
-              <div className="dh-card-art-panel">
-                {card.svg}
-              </div>
-              <div className="dh-card-body">
-                <h3 className="dh-card-title">{card.title}</h3>
-                <p className="dh-card-desc">{card.desc}</p>
-              </div>
-              <div className="dh-card-footer">
-                <span className="dh-card-xp">{card.xp}</span>
-                <button className="dh-card-play-btn" tabIndex={-1} aria-label="Play">
-                  <span className="material-symbols-outlined fill-1">play_arrow</span>
-                </button>
-              </div>
+              Select
+            </button>
+            <div className="dh-mini-desc">
+              <p>This game contains randomize game mode</p>
+              <p>Game mode: Sprint, Pacman, Fishing</p>
             </div>
-          ))}
+          </div>
         </div>
       </div>
 

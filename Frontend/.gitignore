@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Maven build output
+backend/target/
+*.class
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
