@@ -202,6 +202,18 @@
   line-height: 1.2;
 }
 
+/* Sprite styling for replaced pacman/ghost emojis */
+.pacman-sprite-absolute { position: absolute; width: 46px; height: 46px; z-index: 40; }
+.pacman-sprite-absolute .vg-pacman-img { width: 40px; height: 40px; display:block; transform: translate(3px,3px); image-rendering: pixelated; }
+
+.ghost-sprite-absolute { position: absolute; width: 46px; height: 46px; z-index: 38; display:flex; align-items:center; justify-content:center }
+.ghost-sprite-absolute .ghost-sprite-body { position: relative; width: 36px; height: 36px; display:flex; align-items:center; justify-content:center }
+.ghost-sprite-absolute .vg-ghost-img { width: 32px; height: 32px; display:block; image-rendering: pixelated }
+.ghost-sprite-absolute .ghost-inner-letter { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); font-size: 0.62rem; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.08); color: #fff; padding: 2px 6px; border-radius: 6px; }
+
+.invulnerable-blink { animation: pacman-blink 0.3s steps(2) infinite; }
+@keyframes pacman-blink { from { opacity: 1 } to { opacity: 0.35 } }
+
 /* ── Recap Table ──────────────────────────────────────────── */
 .vg-recap-table-wrap { overflow-x: auto; margin-bottom: 20px; }
 .vg-recap-table {

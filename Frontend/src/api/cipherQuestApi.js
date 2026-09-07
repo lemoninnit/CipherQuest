@@ -1,4 +1,6 @@
-const BASE_URL = 'http://localhost:8080/api';
+// Allow overriding the backend base URL via Vite env `VITE_API_BASE`.
+// Falls back to relative `/api` so the app works behind a proxy or in production.
+const BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE) || (window && window.__API_BASE__) || (window && window.location.origin + '/api');
 
 const getToken = () => localStorage.getItem('cq_token');
 
@@ -8,14 +10,34 @@ const headers = () => ({
 });
 
 async function request(method, path, body) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: headers(),
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
-  return data;
+  // Small fetch wrapper with network error handling and clearer messages.
+  const url = `${BASE_URL}${path}`;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+
+    const res = await fetch(url, {
+      method,
+      headers: headers(),
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    // attempt to parse JSON safely
+    const text = await res.text().catch(() => '');
+    const data = text ? JSON.parse(text) : {};
+
+    if (!res.ok) {
+      const msg = data && data.message ? data.message : `HTTP ${res.status}`;
+      throw new Error(msg);
+    }
+    return data;
+  } catch (err) {
+    if (err.name === 'AbortError') throw new Error('Network timeout: backend did not respond');
+    // map typical network failure into a friendlier message
+    throw new Error(err.message || 'Network error: could not reach backend');
+  }
 }
 
 export const authApi = {

@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import './PacmanGame.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import {
+  CELL,
+  MAZE_DECOR,
+  WATER_ROCKS,
+  hedgeClass,
+  pathVariant,
+  facingFromDir
+} from './pacmanWorld';
 
 const MAZE_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -253,6 +261,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const [pacman, setPacman] = useState(initialPacman);
   const [pacmanDir, setPacmanDir] = useState('NONE');
   const [bufferedDir, setBufferedDir] = useState('NONE');
+  const [knightFacing, setKnightFacing] = useState('RIGHT');
+  const [knightAttacking, setKnightAttacking] = useState(false);
+  const [strikingGhosts, setStrikingGhosts] = useState({});
 
   const [activeShift, setActiveShift] = useState(0); // starts at 0
   const [eatenGhosts, setEatenGhosts] = useState([]); // indices of eaten target letters
@@ -303,6 +314,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setPacman(initialPacman);
     setPacmanDir('NONE');
     setBufferedDir('NONE');
+    setKnightFacing('RIGHT');
+    setKnightAttacking(false);
+    setStrikingGhosts({});
     setActiveShift(0);
     setEatenGhosts([]);
     setLives(5);
@@ -439,7 +453,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           pRow = nextRow;
           pCol = nextCol;
           setPacman({ row: nextRow, col: nextCol });
+          // update facing based on direction
+          setKnightFacing(activeDir);
         } else {
+          setKnightFacing(activeDir);
           setPacmanDir('NONE');
         }
       }
@@ -494,8 +511,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             const isNextTileOpen = MAZE_GRID[nextRow] && MAZE_GRID[nextRow][nextCol] === 0;
             const isNextOccupied = isTileOccupiedByOtherGhost(nextRow, nextCol);
 
-            if (isNextTileOpen && !isNextOccupied) {
-              updated.push({ ...ghost, row: nextRow, col: nextCol });
+                if (isNextTileOpen && !isNextOccupied) {
+                  updated.push({ ...ghost, row: nextRow, col: nextCol, moving: true });
             } else {
               // Wall collision OR other ghost in the way! Choose new direction
               const directions = [
@@ -525,10 +542,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   ...ghost,
                   row: gRow + chosenDir.r,
                   col: gCol + chosenDir.c,
-                  dir: chosenDir
+                  dir: chosenDir,
+                  moving: true
                 });
               } else {
-                updated.push(ghost); // Stand still if blocked
+                updated.push({ ...ghost, moving: false }); // Stand still if blocked
               }
             }
           }
@@ -556,7 +574,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               }
 
               if (ghost.index !== -1) {
-                // Correct ghost letter is safe and updates progress
+                // Correct ghost letter: trigger death animation then remove
                 setEatenGhosts((prevEaten) => {
                   const nextEaten = prevEaten.includes(ghost.index)
                     ? prevEaten
@@ -570,7 +588,18 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   }
                   return nextEaten;
                 });
-                return { ...ghost, eaten: true };
+
+                // start dying animation for this ghost
+                setGhosts((prev) => prev.map((g) => g.id === ghost.id ? { ...g, dying: true } : g));
+                setStrikingGhosts((prev) => ({ ...prev, [ghost.id]: true }));
+                setKnightAttacking(true);
+                // Remove ghost after animation (480ms matches CSS animation)
+                setTimeout(() => {
+                  setGhosts((prev) => prev.map((g) => g.id === ghost.id ? { ...g, eaten: true } : g));
+                  setStrikingGhosts((prev) => { const np = { ...prev }; delete np[ghost.id]; return np; });
+                  setKnightAttacking(false);
+                }, 520);
+                return ghost; // keep ghost in list until timeout cleanup
               } else {
                 // Decoy ghost! Lose heart, trigger screen shake, rebound ghost
                 if (!currentIsInvulnerable && !hurtTriggered) {
@@ -593,7 +622,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   ...ghost,
                   dir: oppositeDir,
                   row: canRebound ? rbRow : ghost.row,
-                  col: canRebound ? rbCol : ghost.col
+                  col: canRebound ? rbCol : ghost.col,
+                  moving: true
                 };
               }
             } else {
@@ -603,7 +633,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 setIsScreenShaking(true);
                 setTimeout(() => setIsScreenShaking(false), 450);
                 handleLoseHeart(
-                  `Ghost captured Pac-Man! Eat a yellow pellet 🟡 and press SPACEBAR to activate Decryption Mode first.`
+                  `Ghost captured Pac-Man! Eat a yellow pellet and press SPACEBAR to activate Decryption Mode first.`
                 );
               }
 
@@ -616,7 +646,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 ...ghost,
                 dir: oppositeDir,
                 row: canRebound ? rbRow : ghost.row,
-                col: canRebound ? rbCol : ghost.col
+                col: canRebound ? rbCol : ghost.col,
+                moving: true
               };
             }
           }
@@ -691,6 +722,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setPacman(initialPacman);
     setPacmanDir('NONE');
     setBufferedDir('NONE');
+    setKnightFacing('RIGHT');
+    setKnightAttacking(false);
+    setStrikingGhosts({});
     setActiveShift(0);
     setEatenGhosts([]);
     setLives(5);
@@ -746,7 +780,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       />
       <div className="cq-brief-screen">
         <div className="cq-brief-card">
-          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>👾</div>
+          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>Pac-Man</div>
           <h2 className="cq-brief-title">
             {isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man")}
           </h2>
@@ -775,9 +809,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           </div>
           <p className="cq-brief-how-it-works">
             <strong>How it works:</strong>{' '}
-            Eat a yellow Skill Pellet ⚡, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct plaintext letter!
+            Eat a yellow Skill Pellet, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct plaintext letter!
           </p>
-          <button className="cq-brief-start-btn" onClick={() => setPhase('playing')}>👾 Start Pac-Man</button>
+          <button className="cq-brief-start-btn" onClick={() => setPhase('playing')}>Start Pac-Man</button>
         </div>
       </div>
     </div>
@@ -1071,7 +1105,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             ) : hasSkillCharge ? (
               <button className="activate-skill-btn" onClick={activateSkill}>Press SPACEBAR</button>
             ) : (
-              <div className="skill-hint-label">Eat yellow pellet 🟡 to charge</div>
+              <div className="skill-hint-label">Eat yellow pellet to charge</div>
             )}
           </div>
 
@@ -1125,7 +1159,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 </strong>
                 <ul style={{ fontSize: '0.65rem', lineHeight: '1.35', color: '#cbd5e1', paddingLeft: '16px', margin: '0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <li>{isPlayfair ? 'Decrypt digraphs using the 5x5 key matrix and geometry rule.' : isVigenere ? 'Decrypt empty letters using the keyword clue and Tabula Recta.' : 'Decrypt empty letters using the Caesar Shift Clue.'}</li>
-                  <li>Eat a yellow pellet ⚡ and press <b style={{color: '#fff'}}>SPACE</b> to enter Decryption Mode.</li>
+                  <li>Eat a yellow pellet and press <b style={{color: '#fff'}}>SPACE</b> to enter Decryption Mode.</li>
                   <li>Eat the correct ghost! Avoid decoys and touching ghosts when inactive!</li>
                 </ul>
               </div>
@@ -1220,13 +1254,25 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   top: `${pacman.row * 46}px`
                 }}
               >
-                😮
+                <div className="knight-actor">
+                  {(() => {
+                    const facing = facingFromDir(pacmanDir);
+                    const faceClass = facing === 'LEFT' ? 'face-left' : (facing === 'UP' ? 'face-up' : (facing === 'DOWN' ? 'face-down' : ''));
+                    const movementClass = (pacmanDir && pacmanDir !== 'NONE') ? 'run' : 'idle';
+                    const attackClass = knightAttacking ? 'attack' : '';
+                    return <div className={`knight-sheet ${faceClass} ${movementClass} ${attackClass}`} />;
+                  })()}
+                </div>
               </div>
 
               {/* Slower gliding Ghosts (0.5x speed) */}
               {ghosts.map((ghost) => {
                 if (ghost.eaten) return null;
                 const isVulnerable = skillActive;
+                const facing = facingFromDir(null, ghost.dir);
+                const faceClass = facing === 'LEFT' ? 'face-left' : (facing === 'UP' ? 'face-up' : (facing === 'DOWN' ? 'face-down' : ''));
+                const movementClass = ghost.moving ? 'run' : 'idle';
+                const dyingClass = ghost.dying ? 'attack' : '';
                 return (
                   <div
                     key={ghost.id}
@@ -1236,10 +1282,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                       top: `${ghost.row * 46}px`
                     }}
                   >
-                    <div className="ghost-sprite-body">
-                      👻
-                      <span className="ghost-inner-letter">{ghost.char}</span>
-                    </div>
+                      <div className="goblin-actor">
+                        <div className={`goblin-sheet ${faceClass} ${movementClass} ${dyingClass}`} />
+                        <span className="ghost-inner-letter">{ghost.char}</span>
+                      </div>
                   </div>
                 );
               })}
@@ -1257,13 +1303,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     }}
                   >
                     {pellet.isSkill ? (
-                      <div className="circle-pellet-badge skill animate-pulse">
-                        ⚡
-                      </div>
+                      <div className="gold-pellet-sheet" />
                     ) : (
-                      <div className="circle-pellet-badge score-dot">
-                        •
-                      </div>
+                      <div className="circle-pellet-badge score-dot" />
                     )}
                   </div>
                 );
@@ -1274,7 +1316,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             {gameOver && (
               <div className="game-over-overlay">
                 <div className="game-over-card glass-card">
-                  <h2 className="game-over-title">💔 GAME OVER</h2>
+                  <h2 className="game-over-title">GAME OVER</h2>
                   <p className="game-over-text">Pacman has run out of cryptographic operational hearts.</p>
                   <button className="fg-btn fg-btn-primary play-again-btn" onClick={handleResetGame}>
                     <span className="material-symbols-outlined">restart_alt</span>
