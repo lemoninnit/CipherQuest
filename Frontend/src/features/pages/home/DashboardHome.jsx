@@ -11,8 +11,6 @@ const DashboardHome = () => {
   const [showTutorial, setShowTutorial] = useState(false);
   const [activeCardId, setActiveCardId] = useState('caesar');
 
-  const xpToNextLevel = 1000;
-  const xpProgress = user ? ((user.xp % xpToNextLevel) / xpToNextLevel) * 100 : 0;
 
   const handleQuit = () => {
     if (window.confirm("Are you sure you want to quit and sign out?")) {
@@ -301,22 +299,6 @@ const DashboardHome = () => {
         </div>
       </div>
 
-      {/* Bottom Stats & XP Strip */}
-      <footer className="dh-bottom-strip">
-        <div className="dh-stats-row">
-          <span>▸ {user?.fishingGamesPlayed ?? 0} Games</span>
-          <span className="dh-stat-sep">•</span>
-          <span>{user?.fishingBestScore ?? 0} Best Score</span>
-          <span className="dh-stat-sep">•</span>
-          <span>{user?.totalCiphersSolved ?? 0} Solved</span>
-        </div>
-        <div className="dh-xp-bar-container">
-          <span className="dh-xp-label">XP {Math.round(xpProgress)}% ({user?.xp ?? 0}/{xpToNextLevel})</span>
-          <div className="dh-xp-track">
-            <div className="dh-xp-fill" style={{ width: `${xpProgress}%` }} />
-          </div>
-        </div>
-      </footer>
 
       {/* Tutorial Modal */}
       {showTutorial && (
