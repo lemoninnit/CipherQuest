@@ -1,0 +1,733 @@
+/* src/features/ciphergame/pacman/PacmanGame.css */
+
+.pacman-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: radial-gradient(circle at 50% 25%, #050f24 0%, #010408 100%);
+  color: #e2e8f0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Green Highlighted: Highly structured, professional Header UI */
+.relative-header {
+  position: relative;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 2px solid rgba(0, 229, 255, 0.2);
+  background: rgba(10, 20, 42, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 10;
+}
+
+.exit-stage-absolute {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(239, 68, 68, 0.08) !important;
+  border: 1px solid rgba(239, 68, 68, 0.4) !important;
+  color: #ef4444 !important;
+  padding: 8px 16px !important;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  z-index: 100;
+}
+
+.exit-stage-absolute:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+.indent-header-title {
+  margin-left: 170px !important;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 0 15px rgba(0, 229, 255, 0.35);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Hearts Display */
+.pacman-hearts-display {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.heart-icon {
+  font-size: 1.9rem !important;
+  transition: transform 0.25s ease;
+}
+
+.heart-icon.active-heart {
+  color: #ff2d55;
+  filter: drop-shadow(0 0 8px rgba(255, 45, 85, 0.8));
+  animation: heartPulse 1.2s infinite alternate;
+}
+
+.heart-icon.lost-heart {
+  color: #334155;
+  opacity: 0.25;
+}
+
+@keyframes heartPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); }
+}
+
+/* Layout */
+.pacman-layout {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 20px;
+  padding: 16px 24px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+/* Sidebar with stretched vertical distribution */
+.fg-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.fg-basket-card {
+  flex: 0 0 auto;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.skill-charge-card {
+  flex: 0 0 auto;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.skill-charge-card.charged {
+  border-color: #eab308;
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.2);
+  background: rgba(234, 179, 8, 0.06);
+}
+
+.skill-charge-card.active {
+  border-color: #06b6d4;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.25);
+  background: rgba(6, 182, 212, 0.08);
+}
+
+.skill-charge-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.skill-charge-card.charged .skill-charge-title {
+  color: #eab308;
+}
+
+.skill-charge-card.active .skill-charge-title {
+  color: #06b6d4;
+}
+
+.skill-pellet-icon-wrapper {
+  margin: 10px 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.skill-charge-card.charged .skill-pellet-icon-wrapper {
+  background: rgba(234, 179, 8, 0.15);
+  border-color: rgba(234, 179, 8, 0.5);
+  animation: wiggleBolt 0.8s infinite alternate;
+}
+
+.skill-bolt {
+  font-size: 26px !important;
+  color: #475569;
+}
+
+.skill-charge-card.charged .skill-bolt {
+  color: #eab308;
+  filter: drop-shadow(0 0 8px #eab308);
+}
+
+.skill-charge-card.active .skill-bolt {
+  color: #06b6d4;
+  filter: drop-shadow(0 0 10px #06b6d4);
+}
+
+.activate-skill-btn {
+  background: #eab308;
+  color: #0f172a;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(234, 179, 8, 0.3);
+  transition: all 0.15s ease;
+}
+
+.activate-skill-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(234, 179, 8, 0.4);
+}
+
+.skill-timer-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #06b6d4;
+}
+
+.skill-hint-label {
+  font-size: 0.7rem;
+  color: #64748b;
+}
+
+/* Steering console */
+.joystick-panel {
+  flex: 0 0 auto;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.joystick-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.joystick-row {
+  display: flex;
+  gap: 16px;
+}
+
+.joystick-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #1e293b 0%, #0f172a 100%);
+  border: 2px solid #475569;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+}
+
+.joystick-btn:hover {
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.joystick-btn:active {
+  transform: scale(0.92);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+}
+
+/* Sidebar action objectives panel (Yellow Highlighted: educational clues instead of giving answers) */
+.sidebar-action-hud {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.sidebar-action-hud .fg-alert-panel {
+  background: rgba(9, 15, 30, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.sidebar-action-hud .fg-alert-panel strong {
+  color: #00e5ff;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* Red Highlighted: Larger, taller, and wider board space */
+.pacman-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  height: 100%;
+}
+
+.pacman-board-wrapper.bigger-board {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #071018;
+  border: 2px solid rgba(90, 160, 120, 0.35);
+  border-radius: 20px;
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.75);
+  position: relative;
+  overflow: hidden;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.maze-realm {
+  position: relative;
+  padding: 34px;
+  border-radius: 18px;
+  background-color: #3aa0a4;
+  background-image: url('/assets/pacman/Terrain/Water/Water.png');
+  background-repeat: repeat;
+  background-size: 32px 32px;
+  image-rendering: pixelated;
+  box-shadow: 0 0 0 3px #1d4e52, 0 12px 28px rgba(0, 0, 0, 0.55);
+}
+
+.maze-foam-ring {
+  position: absolute;
+  inset: 6px;
+  border-radius: 16px;
+  pointer-events: none;
+  background-image: url('/assets/pacman/Terrain/Water/Foam/Foam.png');
+  background-repeat: repeat-x;
+  background-size: 256px 32px;
+  animation: foam-scroll 0.7s steps(8) infinite;
+  opacity: 0.42;
+  mix-blend-mode: screen;
+}
+
+@keyframes foam-scroll {
+  from { background-position: 0 0; }
+  to { background-position: -256px 0; }
+}
+
+.maze-rock {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Explosion sprite: plays once when ghost.dying is set */
+.ghost-explosion {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 96px;
+  height: 96px;
+  margin-left: -48px;
+  margin-top: -48px;
+  background-image: url('/assets/pacman/Resources/Explosion/Explosions.png');
+  background-repeat: no-repeat;
+  background-size: 576px 96px;
+  image-rendering: pixelated;
+  z-index: 60;
+  pointer-events: none;
+  animation: ghost-explode 0.48s steps(6) 1 forwards;
+}
+
+@keyframes ghost-explode {
+  from { background-position: 0 0; }
+  to { background-position: -576px 0; }
+}
+
+.maze-rock.rock1 {
+  background-image: url('/assets/pacman/Terrain/Water/Rocks/Rocks_01.png');
+  background-size: 336px 42px;
+}
+.maze-rock.rock2 {
+  background-image: url('/assets/pacman/Terrain/Water/Rocks/Rocks_02.png');
+  background-size: 336px 42px;
+}
+.maze-rock.rock3 {
+  background-image: url('/assets/pacman/Terrain/Water/Rocks/Rocks_03.png');
+  background-size: 336px 42px;
+}
+.maze-rock.rock4 {
+  background-image: url('/assets/pacman/Terrain/Water/Rocks/Rocks_04.png');
+  background-size: 336px 42px;
+}
+.maze-rock.f0 { background-position: 0 0; }
+.maze-rock.f1 { background-position: -42px 0; }
+.maze-rock.f2 { background-position: -84px 0; }
+.maze-rock.f3 { background-position: -126px 0; }
+
+/* 21-Column Widescreen Arena Grid (46px cells) */
+.maze-grid.size-larger {
+  display: grid;
+  grid-template-columns: repeat(21, 46px);
+  grid-template-rows: repeat(9, 46px);
+  gap: 0;
+  background: #c9a45c;
+  border: 3px solid #2b2114;
+  border-radius: 8px;
+  box-shadow: 0 8px 0 #163036, 0 0 28px rgba(0, 0, 0, 0.35);
+  position: relative;
+  width: 966px;
+  height: 414px;
+  overflow: visible;
+  image-rendering: pixelated;
+}
+
+.maze-grid.is-paused .knight-sheet,
+.maze-grid.is-paused .goblin-sheet,
+.maze-grid.is-paused .sheep-sprite,
+.maze-grid.is-paused .gold-pellet-sheet,
+.maze-grid.is-paused .maze-foam-ring {
+  animation-play-state: paused;
+}
+
+.maze-cell {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  box-sizing: border-box;
+  image-rendering: pixelated;
+  background-repeat: no-repeat;
+}
+
+.maze-cell.path {
+  background-image: url('/assets/pacman/Terrain/Ground/Tilemap_Flat.png');
+  background-size: 640px 256px;
+  background-position: -384px -64px;
+}
+
+.maze-cell.path.v1 { background-position: -320px -64px; }
+.maze-cell.path.v2 { background-position: -448px -64px; }
+
+.maze-cell.wall {
+  background-image: url('/assets/pacman/Terrain/Ground/Tilemap_Flat.png');
+  background-size: 640px 256px;
+  background-position: -64px -64px;
+  z-index: 4;
+}
+
+.maze-cell.wall.hedge-tl { background-position: 0 0; }
+.maze-cell.wall.hedge-top { background-position: -64px 0; }
+.maze-cell.wall.hedge-tr { background-position: -128px 0; }
+.maze-cell.wall.hedge-left { background-position: 0 -64px; }
+.maze-cell.wall.hedge-fill { background-position: -64px -64px; }
+.maze-cell.wall.hedge-right { background-position: -128px -64px; }
+.maze-cell.wall.hedge-bl { background-position: 0 -128px; }
+.maze-cell.wall.hedge-bottom { background-position: -64px -128px; }
+.maze-cell.wall.hedge-br { background-position: -128px -128px; }
+.maze-cell.wall.hedge-alone { background-position: -192px 0; }
+
+.maze-cell.wall.stone {
+  background-image: url('/assets/pacman/Terrain/Ground/Tilemap_Elevation.png');
+  background-size: 256px 512px;
+  background-position: 0 -64px;
+}
+.maze-cell.wall.stone.hedge-tl { background-position: 0 0; }
+.maze-cell.wall.stone.hedge-top { background-position: -64px 0; }
+.maze-cell.wall.stone.hedge-tr { background-position: -128px 0; }
+.maze-cell.wall.stone.hedge-left { background-position: 0 -128px; }
+.maze-cell.wall.stone.hedge-fill { background-position: -64px -128px; }
+.maze-cell.wall.stone.hedge-right { background-position: -128px -128px; }
+.maze-cell.wall.stone.hedge-bl,
+.maze-cell.wall.stone.hedge-bottom,
+.maze-cell.wall.stone.hedge-br { background-position: 0 -384px; }
+
+.maze-prop {
+  position: absolute;
+  pointer-events: none;
+  image-rendering: pixelated;
+  z-index: 8;
+}
+
+.maze-prop.castle {
+  width: 110px;
+  height: 88px;
+  background: url('/assets/pacman/Buildings/Castle/Castle_Blue.png') center / contain no-repeat;
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.35));
+}
+
+.maze-prop.tower {
+  width: 46px;
+  height: 86px;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: bottom center;
+}
+.maze-prop.tower.blue { background-image: url('/assets/pacman/Buildings/Tower/Tower_Blue.png'); }
+.maze-prop.tower.red { background-image: url('/assets/pacman/Buildings/Tower/Tower_Red.png'); }
+
+.maze-prop.house {
+  width: 58px;
+  height: 72px;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: bottom center;
+}
+.maze-prop.house.red { background-image: url('/assets/pacman/Buildings/House/House_Red.png'); }
+.maze-prop.house.blue { background-image: url('/assets/pacman/Buildings/House/House_Blue.png'); }
+
+.maze-prop.mine {
+  width: 78px;
+  height: 52px;
+  background: url('/assets/pacman/Resources/Gold Mine/GoldMine_Active.png') center / contain no-repeat;
+}
+
+.maze-prop.tree {
+  width: 56px;
+  height: 72px;
+  background-image: url('/assets/pacman/Resources/Trees/Tree.png');
+  background-repeat: no-repeat;
+  background-size: 224px 216px;
+}
+
+.maze-prop.wood,
+.maze-prop.meat {
+  width: 34px;
+  height: 34px;
+  background-repeat: no-repeat;
+  background-size: contain;
+  z-index: 6;
+}
+.maze-prop.wood { background-image: url('/assets/pacman/Resources/Resources/W_Idle.png'); }
+.maze-prop.meat { background-image: url('/assets/pacman/Resources/Resources/M_Idle.png'); }
+
+.sheep-sprite {
+  width: 44px;
+  height: 44px;
+  background-image: url('/assets/pacman/Resources/Sheep/HappySheep_Idle.png');
+  background-repeat: no-repeat;
+  background-size: 352px 44px;
+  animation: sheep-idle 0.96s steps(8) infinite;
+  z-index: 9;
+}
+
+@keyframes sheep-idle {
+  from { background-position: 0 0; }
+  to { background-position: -352px 0; }
+}
+
+.knight-actor,
+.goblin-actor {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  pointer-events: none;
+  will-change: auto;
+}
+
+.knight-actor {
+  z-index: 30;
+  transition: none;
+}
+
+/* Container positioning for moving sprites (used by JS inline left/top) */
+.pacman-sprite-absolute {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  z-index: 40;
+  transition: none !important;
+  transform: none !important;
+  will-change: auto;
+}
+
+.pacman-sprite-absolute .knight-actor { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; transform: none !important; }
+
+.ghost-sprite-absolute {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  z-index: 38;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: none !important;
+  transform: none !important;
+  will-change: auto;
+}
+
+.ghost-sprite-absolute .goblin-actor { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; position:relative; transform: none !important; }
+
+.goblin-actor {
+  z-index: 25;
+  transition: none !important;
+  transform: none !important;
+  overflow: visible;
+}
+
+.ghost-inner-letter {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  background: rgba(26,18,8,0.95);
+  border: 1.5px solid rgba(255, 236, 179, 0.95);
+  color: #fff7d6;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1;
+  min-width: 14px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  z-index: 20;
+  text-align: center;
+  pointer-events: none;
+  text-shadow: 0 0 8px rgba(255,255,255,0.2);
+}
+
+.knight-sheet,
+.goblin-sheet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  background-repeat: no-repeat;
+  background-position: center center;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events: none;
+  transform-origin: center center;
+  transition: none !important;
+}
+
+.knight-sheet {
+  width: 96px;
+  height: 96px;
+  margin-left: -48px;
+  margin-top: -52px;
+  background-image: url('/assets/pacman/Knight/Warrior_Blue.png');
+  background-size: 576px 768px;
+  filter: drop-shadow(0 3px 0 rgba(20, 16, 8, 0.45));
+}
+
+.goblin-sheet {
+  width: 88px;
+  height: 88px;
+  margin-left: -44px;
+  margin-top: -48px;
+  background-image: url('/assets/pacman/Enemy%20Goblins/Torch_Red.png');
+  background-size: 616px 440px;
+  filter: drop-shadow(0 3px 0 rgba(20, 8, 8, 0.4));
+}
+
+/* Hard disable interpolation for the entire sprite layer so the gameplay stays snap-to-grid */
+.knight-actor,
+.goblin-actor,
+.pacman-sprite-absolute,
+.ghost-sprite-absolute,
+.knight-sheet,
+.goblin-sheet,
+.ghost-inner-letter {
+  transition: none !important;
+  transform: none !important;
+}
+
+.knight-actor,
+.goblin-actor {
+  will-change: auto;
+}
+
+/* keep face flips only where needed; no movement interpolation */
+.knight-sheet.face-left,
+.knight-sheet.face-left.face-up,
+.knight-sheet.face-left.face-down,
+.goblin-sheet.face-left {
+  transform: scaleX(-1) !important;
+}
+
+/* ── Sliding-animation kill-switch ─────────────────────────────
+   Absolute guarantee: nothing inside the maze board is allowed to
+   transition/animate its position. Movement must be instant,
+   grid-cell-snap. This overrides any transition inherited from
+   parent/global stylesheets (e.g. CipherGame.css) that isn't scoped
+   to this component, and covers every descendant (pellets, ghost
+   wrappers, <img> tags, the explosion overlay) even ones not
+   explicitly targeted above. */
+.maze-grid,
+.maze-grid * {
+  transition: none !important;
+}
+
+/* The rule above only disables `transition`, not `animation`, so the
+   sprite-sheet frame-stepping keyframe animations below are
+   unaffected and continue to play normally. This block just
+   documents that intent. */
+.maze-grid .maze-foam-ring,
+.maze-grid .sheep-sprite,
+.maze-grid .gold-pellet-sheet,
+.maze-grid .knight-sheet.run,
+.maze-grid .goblin-sheet.run,
+.maze-grid .knight-sheet.attack,
+.maze-grid .goblin-sheet.attack,
+.maze-grid .ghost-explosion,
+.maze-grid .skill-pellet-icon-wrapper {
+  animation-duration: inherit;
+}

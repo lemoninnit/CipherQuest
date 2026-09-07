@@ -328,15 +328,76 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background: rgba(2, 6, 16, 0.85);
-  border: 2px solid rgba(0, 229, 255, 0.4);
+  background: #071018;
+  border: 2px solid rgba(90, 160, 120, 0.35);
   border-radius: 20px;
-  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.95);
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.75);
   position: relative;
   overflow: hidden;
-  padding: 16px;
+  padding: 12px;
   box-sizing: border-box;
 }
+
+.maze-realm {
+  position: relative;
+  padding: 34px;
+  border-radius: 18px;
+  background-color: #3aa0a4;
+  background-image: url('/assets/pacman/Terrain/Water/Water.png');
+  background-repeat: repeat;
+  background-size: 32px 32px;
+  image-rendering: pixelated;
+  box-shadow: 0 0 0 3px #1d4e52, 0 12px 28px rgba(0, 0, 0, 0.55);
+}
+
+.maze-foam-ring {
+  position: absolute;
+  inset: 6px;
+  border-radius: 16px;
+  pointer-events: none;
+  background-image: url('/assets/pacman/Terrain/Water/Foam/Foam.png');
+  background-repeat: repeat-x;
+  background-size: 256px 32px;
+  animation: foam-scroll 0.7s steps(8) infinite;
+  opacity: 0.42;
+  mix-blend-mode: screen;
+}
+
+@keyframes foam-scroll {
+  from { background-position: 0 0; }
+  to { background-position: -256px 0; }
+}
+
+.maze-rock {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.maze-rock.rock1 {
+  background-image: url('/assets/pacman/Terrain/Water/Rocks/Rocks_01.png');
+  background-size: 336px 42px;
+}
+.maze-rock.rock2 {
+  background-image: url('/assets/pacman/Terrain/Water/Rocks/Rocks_02.png');
+  background-size: 336px 42px;
+}
+.maze-rock.rock3 {
+  background-image: url('/assets/pacman/Terrain/Water/Rocks/Rocks_03.png');
+  background-size: 336px 42px;
+}
+.maze-rock.rock4 {
+  background-image: url('/assets/pacman/Terrain/Water/Rocks/Rocks_04.png');
+  background-size: 336px 42px;
+}
+.maze-rock.f0 { background-position: 0 0; }
+.maze-rock.f1 { background-position: -42px 0; }
+.maze-rock.f2 { background-position: -84px 0; }
+.maze-rock.f3 { background-position: -126px 0; }
 
 /* 21-Column Widescreen Arena Grid (46px cells) */
 .maze-grid.size-larger {
@@ -344,13 +405,23 @@
   grid-template-columns: repeat(21, 46px);
   grid-template-rows: repeat(9, 46px);
   gap: 0;
-  background: #010307;
-  border: 4px solid #00e5ff;
-  border-radius: 16px;
-  box-shadow: 0 0 45px rgba(0, 229, 255, 0.35);
+  background: #c9a45c;
+  border: 3px solid #2b2114;
+  border-radius: 8px;
+  box-shadow: 0 8px 0 #163036, 0 0 28px rgba(0, 0, 0, 0.35);
   position: relative;
   width: 966px;
   height: 414px;
+  overflow: visible;
+  image-rendering: pixelated;
+}
+
+.maze-grid.is-paused .knight-sheet,
+.maze-grid.is-paused .goblin-sheet,
+.maze-grid.is-paused .sheep-sprite,
+.maze-grid.is-paused .gold-pellet-sheet,
+.maze-grid.is-paused .maze-foam-ring {
+  animation-play-state: paused;
 }
 
 .maze-cell {
@@ -358,88 +429,346 @@
   width: 46px;
   height: 46px;
   box-sizing: border-box;
-}
-
-.maze-cell.wall {
-  background: #051428;
-  border: 1.5px solid #00e5ff;
-  box-shadow: inset 0 0 6px rgba(0, 229, 255, 0.4);
+  image-rendering: pixelated;
+  background-repeat: no-repeat;
 }
 
 .maze-cell.path {
-  background: rgba(1, 4, 10, 0.95);
+  background-image: url('/assets/pacman/Terrain/Ground/Tilemap_Flat.png');
+  background-size: 640px 256px;
+  background-position: -384px -64px;
 }
 
-/* Smooth Linear Glides (Instant responsive transitions) */
+.maze-cell.path.v1 { background-position: -320px -64px; }
+.maze-cell.path.v2 { background-position: -448px -64px; }
+
+.maze-cell.wall {
+  background-image: url('/assets/pacman/Terrain/Ground/Tilemap_Flat.png');
+  background-size: 640px 256px;
+  background-position: -64px -64px;
+  z-index: 4;
+}
+
+.maze-cell.wall.hedge-tl { background-position: 0 0; }
+.maze-cell.wall.hedge-top { background-position: -64px 0; }
+.maze-cell.wall.hedge-tr { background-position: -128px 0; }
+.maze-cell.wall.hedge-left { background-position: 0 -64px; }
+.maze-cell.wall.hedge-fill { background-position: -64px -64px; }
+.maze-cell.wall.hedge-right { background-position: -128px -64px; }
+.maze-cell.wall.hedge-bl { background-position: 0 -128px; }
+.maze-cell.wall.hedge-bottom { background-position: -64px -128px; }
+.maze-cell.wall.hedge-br { background-position: -128px -128px; }
+.maze-cell.wall.hedge-alone { background-position: -192px 0; }
+
+.maze-cell.wall.stone {
+  background-image: url('/assets/pacman/Terrain/Ground/Tilemap_Elevation.png');
+  background-size: 256px 512px;
+  background-position: 0 -64px;
+}
+.maze-cell.wall.stone.hedge-tl { background-position: 0 0; }
+.maze-cell.wall.stone.hedge-top { background-position: -64px 0; }
+.maze-cell.wall.stone.hedge-tr { background-position: -128px 0; }
+.maze-cell.wall.stone.hedge-left { background-position: 0 -128px; }
+.maze-cell.wall.stone.hedge-fill { background-position: -64px -128px; }
+.maze-cell.wall.stone.hedge-right { background-position: -128px -128px; }
+.maze-cell.wall.stone.hedge-bl,
+.maze-cell.wall.stone.hedge-bottom,
+.maze-cell.wall.stone.hedge-br { background-position: 0 -384px; }
+
+.maze-prop {
+  position: absolute;
+  pointer-events: none;
+  image-rendering: pixelated;
+  z-index: 8;
+}
+
+.maze-prop.castle {
+  width: 110px;
+  height: 88px;
+  background: url('/assets/pacman/Buildings/Castle/Castle_Blue.png') center / contain no-repeat;
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.35));
+}
+
+.maze-prop.tower {
+  width: 46px;
+  height: 86px;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: bottom center;
+}
+.maze-prop.tower.blue { background-image: url('/assets/pacman/Buildings/Tower/Tower_Blue.png'); }
+.maze-prop.tower.red { background-image: url('/assets/pacman/Buildings/Tower/Tower_Red.png'); }
+
+.maze-prop.house {
+  width: 58px;
+  height: 72px;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: bottom center;
+}
+.maze-prop.house.red { background-image: url('/assets/pacman/Buildings/House/House_Red.png'); }
+.maze-prop.house.blue { background-image: url('/assets/pacman/Buildings/House/House_Blue.png'); }
+
+.maze-prop.mine {
+  width: 78px;
+  height: 52px;
+  background: url('/assets/pacman/Resources/Gold Mine/GoldMine_Active.png') center / contain no-repeat;
+}
+
+.maze-prop.tree {
+  width: 56px;
+  height: 72px;
+  background-image: url('/assets/pacman/Resources/Trees/Tree.png');
+  background-repeat: no-repeat;
+  background-size: 224px 216px;
+}
+
+.maze-prop.wood,
+.maze-prop.meat {
+  width: 34px;
+  height: 34px;
+  background-repeat: no-repeat;
+  background-size: contain;
+  z-index: 6;
+}
+.maze-prop.wood { background-image: url('/assets/pacman/Resources/Resources/W_Idle.png'); }
+.maze-prop.meat { background-image: url('/assets/pacman/Resources/Resources/M_Idle.png'); }
+
+.sheep-sprite {
+  width: 44px;
+  height: 44px;
+  background-image: url('/assets/pacman/Resources/Sheep/HappySheep_Idle.png');
+  background-repeat: no-repeat;
+  background-size: 352px 44px;
+  animation: sheep-idle 0.96s steps(8) infinite;
+  z-index: 9;
+}
+
+@keyframes sheep-idle {
+  from { background-position: 0 0; }
+  to { background-position: -352px 0; }
+}
+
+.knight-actor,
+.goblin-actor {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  pointer-events: none;
+  will-change: left, top;
+}
+
+.knight-actor {
+  z-index: 30;
+  transition: left 0.18s linear, top 0.18s linear;
+}
+
+/* Container positioning for moving sprites (used by JS inline left/top) */
 .pacman-sprite-absolute {
   position: absolute;
   width: 46px;
   height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.1rem;
-  z-index: 30;
+  z-index: 40;
   transition: left 0.18s linear, top 0.18s linear;
-  pointer-events: none;
-  animation: pacChompAnim 0.3s steps(2) infinite alternate;
 }
 
-@keyframes pacChompAnim {
-  0% { transform: scale(1.05) rotate(0deg); }
-  100% { transform: scale(1.05) rotate(15deg); }
-}
+.pacman-sprite-absolute .knight-actor { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center }
 
-/* Gliding Ghosts (Slower transitions for 0.5x speed) */
 .ghost-sprite-absolute {
   position: absolute;
   width: 46px;
   height: 46px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  z-index: 38;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: left 0.36s linear, top 0.36s linear;
+}
+
+.ghost-sprite-absolute .goblin-actor { width: 100%; height: 100%; display:flex; align-items:center; justify-content:center; position:relative }
+
+.goblin-actor {
   z-index: 25;
-  transition: left 0.36s linear, top 0.36s linear; /* Slower transition for 0.5x speed */
-  animation: ghostFloatingWiggle 0.4s ease-in-out infinite alternate;
+  transition: left 0.36s linear, top 0.36s linear;
 }
 
-@keyframes ghostFloatingWiggle {
-  0% { transform: translateY(-2px); }
-  100% { transform: translateY(2px); }
+.knight-sheet,
+.goblin-sheet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events: none;
 }
 
-.ghost-sprite-body {
-  font-size: 2rem;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.knight-sheet {
+  width: 76px;
+  height: 76px;
+  margin-left: -38px;
+  margin-top: -48px;
+  background-image: url('/assets/pacman/Knight/Warrior_Blue.png');
+  background-size: 456px 608px;
+  filter: drop-shadow(0 3px 0 rgba(20, 16, 8, 0.45));
 }
 
-.ghost-sprite-absolute.vulnerable .ghost-sprite-body {
-  filter: drop-shadow(0 0 10px #06b6d4) brightness(1.2);
+.knight-sheet.idle { animation: knight-idle 0.72s steps(6) infinite; }
+.knight-sheet.run { animation: knight-run 0.48s steps(6) infinite; }
+.knight-sheet.attack { animation: knight-attack 0.42s steps(6) forwards; }
+
+.knight-sheet.face-up.idle { animation: knight-idle-up 0.72s steps(6) infinite; }
+.knight-sheet.face-up.run { animation: knight-run-up 0.48s steps(6) infinite; }
+.knight-sheet.face-up.attack { animation: knight-attack-up 0.42s steps(6) forwards; }
+
+.knight-sheet.face-down.idle { animation: knight-idle-down 0.72s steps(6) infinite; }
+.knight-sheet.face-down.run { animation: knight-run-down 0.48s steps(6) infinite; }
+.knight-sheet.face-down.attack { animation: knight-attack-down 0.42s steps(6) forwards; }
+
+.knight-sheet.face-left { transform: scaleX(-1); }
+.knight-sheet.face-left.face-up,
+.knight-sheet.face-left.face-down { transform: scaleX(-1); }
+
+@keyframes knight-idle {
+  from { background-position: 0 0; }
+  to { background-position: -456px 0; }
+}
+@keyframes knight-run {
+  from { background-position: 0 -76px; }
+  to { background-position: -456px -76px; }
+}
+@keyframes knight-attack {
+  from { background-position: 0 -152px; }
+  to { background-position: -456px -152px; }
+}
+@keyframes knight-idle-down {
+  from { background-position: 0 -228px; }
+  to { background-position: -456px -228px; }
+}
+@keyframes knight-run-down {
+  from { background-position: 0 -304px; }
+  to { background-position: -456px -304px; }
+}
+@keyframes knight-attack-down {
+  from { background-position: 0 -228px; }
+  to { background-position: -456px -228px; }
+}
+@keyframes knight-idle-up {
+  from { background-position: 0 -456px; }
+  to { background-position: -456px -456px; }
+}
+@keyframes knight-run-up {
+  from { background-position: 0 -532px; }
+  to { background-position: -456px -532px; }
+}
+@keyframes knight-attack-up {
+  from { background-position: 0 -304px; }
+  to { background-position: -456px -304px; }
 }
 
-/* Ghost Letters fitted precisely inside grid cells */
+.goblin-sheet {
+  width: 70px;
+  height: 70px;
+  margin-left: -35px;
+  margin-top: -44px;
+  background-image: url('/assets/pacman/Enemy Goblins/Torch_Red.png');
+  background-size: 490px 350px;
+  filter: drop-shadow(0 3px 0 rgba(20, 8, 8, 0.4));
+}
+
+.goblin-sheet.idle { animation: goblin-idle 0.84s steps(7) infinite; }
+.goblin-sheet.run { animation: goblin-run 0.54s steps(6) infinite; }
+.goblin-sheet.attack { animation: goblin-attack 0.48s steps(6) forwards; }
+.goblin-sheet.face-down.idle,
+.goblin-sheet.face-down.run { animation: goblin-front 0.72s steps(6) infinite; }
+.goblin-sheet.face-down.attack { animation: goblin-front 0.48s steps(6) forwards; }
+.goblin-sheet.face-up.idle,
+.goblin-sheet.face-up.run { animation: goblin-back 0.72s steps(6) infinite; }
+.goblin-sheet.face-up.attack { animation: goblin-back 0.48s steps(6) forwards; }
+.goblin-sheet.face-left { transform: scaleX(-1); }
+
+@keyframes goblin-idle {
+  from { background-position: 0 0; }
+  to { background-position: -490px 0; }
+}
+@keyframes goblin-run {
+  from { background-position: 0 -70px; }
+  to { background-position: -420px -70px; }
+}
+@keyframes goblin-attack {
+  from { background-position: 0 -140px; }
+  to { background-position: -420px -140px; }
+}
+@keyframes goblin-front {
+  from { background-position: 0 -210px; }
+  to { background-position: -420px -210px; }
+}
+@keyframes goblin-back {
+  from { background-position: 0 -280px; }
+  to { background-position: -420px -280px; }
+}
+
+.goblin-actor.vulnerable .goblin-sheet {
+  filter: hue-rotate(160deg) saturate(1.35) brightness(1.18) drop-shadow(0 0 8px #5eead4);
+}
+
 .ghost-inner-letter {
   position: absolute;
-  bottom: -4px;
-  background: #020715;
-  border: 1.5px solid rgba(255, 255, 255, 0.8);
-  color: #ffffff;
+  left: 50%;
+  bottom: -2px;
+  transform: translateX(-50%);
+  background: #1a1208;
+  border: 1.5px solid rgba(255, 236, 179, 0.9);
+  color: #fff7d6;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 800;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.8);
   line-height: 1;
+  z-index: 2;
 }
 
-.ghost-sprite-absolute.vulnerable .ghost-inner-letter {
-  border-color: #06b6d4;
-  color: #06b6d4;
+.goblin-actor.vulnerable .ghost-inner-letter {
+  border-color: #5eead4;
+  color: #99f6e4;
+}
+
+.gold-pellet-sheet {
+  width: 36px;
+  height: 36px;
+  background-image: url('/assets/pacman/Resources/Resources/G_Idle.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  animation: gold-bob 0.9s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.85));
+}
+
+@keyframes gold-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.brief-knight {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 8px;
+  background-image: url('/assets/pacman/Knight/Warrior_Blue.png');
+  background-size: 576px 768px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  animation: knight-idle 0.72s steps(6) infinite;
+  filter: drop-shadow(0 6px 0 rgba(0,0,0,0.35));
+}
+
+.cq-brief-start-btn.asset-start {
+  background-image: url('/assets/pacman/UI/Buttons/Button_Blue_9Slides.png');
+  background-size: 100% 100%;
+  background-color: transparent;
+  border: none;
+  color: #f8fafc;
+  text-shadow: 0 1px 0 #0f172a;
 }
 
 /* Pellet shapes - white background with clear high contrast labels */
@@ -529,8 +858,8 @@
 }
 
 /* Blinking invulnerability animation to prevent damage stack and provide visual feedback */
-.invulnerable-blink {
-  animation: blinkAnim 0.20s linear infinite, pacChompAnim 0.3s steps(2) infinite alternate !important;
+.knight-actor.invulnerable-blink {
+  animation: blinkAnim 0.20s linear infinite;
 }
 
 @keyframes blinkAnim {

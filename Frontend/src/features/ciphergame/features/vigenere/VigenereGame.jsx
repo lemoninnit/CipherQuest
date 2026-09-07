@@ -726,7 +726,7 @@ export default function VigenereGame({
             </div>
 
             <button className="vg-start-btn" onClick={() => { resetRound(); setPhase('playing'); }}>
-              👾 Start Keyword Hunt
+              Start Keyword Hunt
             </button>
           </div>
         </div>
@@ -1050,7 +1050,7 @@ export default function VigenereGame({
                 className={`pacman-sprite-absolute ${isInvulnerable ? 'invulnerable-blink' : ''}`}
                 style={{ left: `${pacman.col * 46}px`, top: `${pacman.row * 46}px` }}
               >
-                😮
+                <img src="/assets/pacman/Knight/Warrior_Blue.png" alt="knight" className="vg-pacman-img" />
               </div>
 
               {ghosts.map((ghost) => {
@@ -1067,15 +1067,15 @@ export default function VigenereGame({
                       filter: revealCorrectGhost ? 'drop-shadow(0 0 12px #ffd700)' : undefined
                     }}
                   >
-                    <div className="ghost-sprite-body">
-                      {revealCorrectGhost ? '👑' : '👻'}
-                      <span
-                        className="ghost-inner-letter"
-                        style={revealCorrectGhost ? { borderColor: '#ffd700', color: '#ffd700' } : undefined}
-                      >
-                        {ghost.char}
-                      </span>
-                    </div>
+                      <div className="ghost-sprite-body">
+                        <img src="/assets/pacman/Enemy Goblins/Torch_Red.png" alt="goblin" className="vg-ghost-img" />
+                        <span
+                          className="ghost-inner-letter"
+                          style={revealCorrectGhost ? { borderColor: '#ffd700', color: '#ffd700' } : undefined}
+                        >
+                          {ghost.char}
+                        </span>
+                      </div>
                   </div>
                 );
               })}
@@ -1088,7 +1088,7 @@ export default function VigenereGame({
                     className="pellet-entity"
                     style={{ left: `${pellet.col * 46}px`, top: `${pellet.row * 46}px` }}
                   >
-                    <div className="circle-pellet-badge skill animate-pulse">⚡</div>
+                    <div className="gold-pellet-sheet" />
                   </div>
                 );
               })}
