@@ -367,54 +367,7 @@
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
 }
 
-/* Bottom Action Section: Repositioned with Clear Separation */
-.dh-bottom-action-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  margin-top: clamp(24px, 3.8vh, 44px); /* Clear separation from cards */
-}
 
-.dh-select-btn {
-  background: linear-gradient(135deg, #00bce6 0%, #0096c7 100%);
-  color: #ffffff;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(16px, 1.1vw, 18px);
-  font-weight: 800;
-  padding: 11px 64px;
-  border-radius: 24px;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(0, 188, 230, 0.45);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
-  letter-spacing: 0.02em;
-}
-
-.dh-select-btn:hover,
-.dh-select-btn:focus-visible {
-  background: #39ff14;
-  color: #030914;
-  transform: scale(1.05);
-  box-shadow: 0 0 30px rgba(57, 255, 20, 0.7);
-  outline: none;
-}
-
-.dh-mini-desc {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin-top: 2px;
-}
-
-.dh-mini-desc p {
-  margin: 0;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(11.5px, 0.82vw, 13px);
-  color: rgba(220, 240, 255, 0.75);
-  letter-spacing: 0.01em;
-}
 
 /* Responsive Styles for smaller screens */
 @media (max-width: 1024px) {
@@ -458,7 +411,6 @@
 @media (prefers-reduced-motion: reduce) {
   .dh-quest-card,
   .dh-menu-item,
-  .dh-select-btn,
   .dh-card-expanded-wrapper {
     animation: none !important;
     transition: none !important;

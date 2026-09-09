@@ -2350,5 +2350,692 @@
   }
 }
 
+/* ─────────────────────────────────────────────────────────────
+   DIFFICULTY SCREEN TARGET REDESIGN (Additive Rules)
+   ───────────────────────────────────────────────────────────── */
+
+/* Centers the difficulty cards with adequate breathing room */
+.cq-diff-cards-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 2.5vw, 32px);
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Base Difficulty Card - unselected state */
+.cq-diff-card {
+  min-width: clamp(240px, 20vw, 275px);
+  max-width: clamp(265px, 22vw, 290px);
+  flex: 0 1 auto;
+  background: linear-gradient(165deg, rgba(8, 24, 44, 0.88) 0%, rgba(4, 13, 26, 0.94) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: clamp(12px, 1.6vh, 16px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.28s ease,
+              box-shadow 0.28s ease,
+              min-width 0.28s ease,
+              max-width 0.28s ease;
+  position: relative;
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+}
+
+/* Active Difficulty Card - Prominently bigger, taller, and strong cyan glow */
+.cq-diff-card.active {
+  min-width: clamp(285px, 24vw, 320px);
+  max-width: clamp(305px, 26vw, 340px);
+  border: 2px solid #00e5ff;
+  transform: translateY(-8px);
+  box-shadow:
+    0 0 25px rgba(0, 229, 255, 0.55),
+    0 0 10px rgba(0, 229, 255, 0.4),
+    0 20px 48px rgba(0, 0, 0, 0.65),
+    inset 0 0 15px rgba(0, 229, 255, 0.12);
+  z-index: 5;
+}
+
+.cq-diff-card:hover:not(.active) {
+  transform: translateY(-4px);
+  border-color: rgba(0, 229, 255, 0.6);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 14px rgba(0, 229, 255, 0.25);
+}
+
+.cq-diff-card:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 3px;
+}
+
+/* Large square/portrait artwork panel filling upper card */
+.cq-diff-card .cq-card-art-panel {
+  width: 100%;
+  aspect-ratio: 1 / 0.96;
+  height: auto;
+  max-height: none;
+  background: radial-gradient(circle at center, rgba(6, 20, 38, 0.94) 0%, rgba(2, 8, 18, 0.98) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.24);
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 24px rgba(0, 229, 255, 0.08);
+  margin-bottom: clamp(10px, 1.4vh, 14px);
+  flex-shrink: 0;
+}
+
+.cq-diff-card.active .cq-card-art-panel {
+  border-color: rgba(0, 229, 255, 0.45);
+  background: radial-gradient(circle at center, rgba(8, 28, 54, 0.96) 0%, rgba(2, 8, 18, 0.99) 100%);
+  box-shadow: inset 0 0 30px rgba(0, 229, 255, 0.14);
+}
+
+/* Scattered letter pattern in the artwork background */
+.cq-diff-art-bg-pattern {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+  opacity: 0.85;
+}
+
+.cq-diff-pattern-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Plain colored tier label overlaid inside the artwork's top-left corner */
+.cq-tier-corner-label {
+  position: absolute;
+  top: clamp(10px, 1.4vh, 14px);
+  left: clamp(10px, 1.4vh, 14px);
+  z-index: 3;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(16px, 2vh, 19px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  user-select: none;
+}
+
+.cq-tier-corner-label.easy {
+  color: #00ff44;
+  text-shadow: 0 0 10px rgba(0, 255, 68, 0.45);
+}
+
+.cq-tier-corner-label.medium {
+  color: #ffd600;
+  text-shadow: 0 0 10px rgba(255, 214, 0, 0.45);
+}
+
+.cq-tier-corner-label.hard {
+  color: #ff0033;
+  text-shadow: 0 0 10px rgba(255, 0, 51, 0.45);
+}
+
+/* Padlock icon in bottom-right of artwork for locked tiers */
+.cq-tier-corner-lock {
+  position: absolute;
+  bottom: clamp(10px, 1.4vh, 14px);
+  right: clamp(10px, 1.4vh, 14px);
+  z-index: 3;
+  color: #00e5ff;
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.7));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+}
+
+/* Cipher SVG scaling inside Difficulty artwork panel */
+.cq-diff-card .cq-card-svg {
+  width: 58%;
+  height: 58%;
+  max-width: 135px;
+  max-height: 135px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.45));
+  position: relative;
+  z-index: 2;
+  transition: transform 0.25s ease;
+}
+
+.cq-diff-card.active .cq-card-svg {
+  width: 62%;
+  height: 62%;
+  max-width: 145px;
+  max-height: 145px;
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, 0.65));
+}
+
+/* Card Body */
+.cq-diff-card .cq-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+/* Title row with right-aligned XP tag on active card */
+.cq-diff-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.cq-diff-card .cq-card-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(15px, 1.8vh, 17px);
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+/* XP tag right-aligned on same line as title */
+.cq-diff-xp-tag {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(11px, 1.3vh, 12px);
+  font-weight: 700;
+  color: #a3e635;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  margin-left: auto;
+  text-shadow: 0 0 8px rgba(163, 230, 53, 0.3);
+}
+
+/* Card Description */
+.cq-diff-card .cq-card-desc {
+  font-size: clamp(11px, 1.3vh, 12px);
+  font-weight: 400;
+  color: rgba(205, 228, 250, 0.75);
+  line-height: 1.42;
+  margin: 0 0 10px 0;
+  min-height: 36px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Bottom elements stack */
+.cq-diff-bottom-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: auto;
+}
+
+/* Action button on active card */
+.cq-diff-card .cq-card-action-btn {
+  background: rgba(14, 40, 62, 0.85);
+  border: 1.5px solid #00e5ff;
+  color: #00e5ff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(12px, 1.4vh, 13.5px);
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 8px 14px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
+  transition: all 0.2s ease;
+  margin-bottom: 7px;
+  box-sizing: border-box;
+}
+
+.cq-diff-card .cq-card-action-btn:hover {
+  background: rgba(0, 229, 255, 0.22);
+  color: #ffffff;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.5);
+}
+
+/* Footer line */
+.cq-diff-card .cq-card-footer {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(11px, 1.3vh, 12px);
+  font-weight: 500;
+  color: rgba(145, 185, 220, 0.6);
+  text-align: center;
+  width: 100%;
+}
+
+.cq-diff-card.active .cq-card-footer {
+  color: rgba(0, 229, 255, 0.9);
+  font-weight: 600;
+}
+
+/* Height-constrained viewports (e.g. 1366x768 or 1440x900) */
+@media (max-height: 820px) {
+  .cq-diff-card .cq-card-art-panel {
+    aspect-ratio: 1 / 0.88;
+    margin-bottom: 8px;
+    padding: 8px;
+  }
+  .cq-diff-card .cq-card-svg {
+    width: 54%;
+    height: 54%;
+    max-width: 110px;
+    max-height: 110px;
+  }
+  .cq-diff-card.active .cq-card-svg {
+    width: 58%;
+    height: 58%;
+    max-width: 120px;
+    max-height: 120px;
+  }
+  .cq-diff-card .cq-card-desc {
+    margin-bottom: 6px;
+    min-height: 32px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DIFFICULTY SCREEN REFINEMENTS (Additive Rules)
+   - Shorter card height & no empty gap on unselected cards
+   - Wider spacing between cards and generous side margins
+   - Steady vertical layout with zero jump on hover
+   ───────────────────────────────────────────────────────────── */
+
+/* Problem 2: Wider side margins and increased horizontal breathing room */
+.cq-diff-cards-row {
+  max-width: 860px !important;
+  gap: clamp(28px, 3.8vw, 46px) !important;
+  min-height: clamp(390px, 48vh, 450px) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+  padding: 10px 0 !important;
+}
+
+/* Problem 2: Shorter cards & narrower resting width */
+.cq-diff-card {
+  min-width: clamp(215px, 17vw, 240px) !important;
+  max-width: clamp(230px, 18vw, 250px) !important;
+  padding: clamp(10px, 1.4vh, 14px) !important;
+  height: auto !important;
+}
+
+/* Problem 2 & 3: Active card clearly enlarged, lifted, and glowing */
+.cq-diff-card.active {
+  min-width: clamp(255px, 21vw, 285px) !important;
+  max-width: clamp(270px, 22vw, 295px) !important;
+  transform: translateY(-6px) !important;
+}
+
+/* Problem 2: Shorter, compact artwork panel matching target */
+.cq-diff-card .cq-card-art-panel {
+  width: 100% !important;
+  aspect-ratio: 1 / 0.92 !important;
+  height: clamp(155px, 19vh, 185px) !important;
+  padding: 8px 10px !important;
+  margin-bottom: clamp(8px, 1.2vh, 11px) !important;
+}
+
+.cq-diff-card.active .cq-card-art-panel {
+  aspect-ratio: 1 / 0.94 !important;
+  height: clamp(175px, 21vh, 205px) !important;
+  padding: 10px 12px !important;
+}
+
+/* Artwork SVG scale inside compact panel */
+.cq-diff-card .cq-card-svg {
+  width: 52% !important;
+  height: 52% !important;
+  max-width: 105px !important;
+  max-height: 105px !important;
+}
+
+.cq-diff-card.active .cq-card-svg {
+  width: 58% !important;
+  height: 58% !important;
+  max-width: 125px !important;
+  max-height: 125px !important;
+}
+
+/* Problem 1: Unselected card has NO empty gap — description flows straight to 5 stages */
+.cq-diff-card:not(.active) .cq-card-body {
+  justify-content: flex-start !important;
+  flex: 0 0 auto !important;
+}
+
+.cq-diff-card:not(.active) .cq-card-desc {
+  margin-bottom: 6px !important;
+  min-height: 0 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+.cq-diff-card:not(.active) .cq-diff-bottom-stack {
+  margin-top: 4px !important;
+}
+
+.cq-diff-card:not(.active) .cq-card-footer {
+  margin-top: 2px !important;
+  padding-top: 2px !important;
+}
+
+/* Active card spacing */
+.cq-diff-card.active .cq-card-desc {
+  margin-bottom: 8px !important;
+  min-height: 32px !important;
+}
+
+.cq-diff-card.active .cq-diff-bottom-stack {
+  margin-top: auto !important;
+}
+
+/* Viewport height scaling (1366x768 and smaller) */
+@media (max-height: 800px) {
+  .cq-diff-cards-row {
+    min-height: clamp(350px, 46vh, 400px) !important;
+    gap: clamp(20px, 2.8vw, 36px) !important;
+  }
+  .cq-diff-card .cq-card-art-panel {
+    height: clamp(140px, 17vh, 165px) !important;
+  }
+  .cq-diff-card.active .cq-card-art-panel {
+    height: clamp(155px, 19vh, 180px) !important;
+  }
+  .cq-diff-card .cq-card-svg {
+    max-width: 90px !important;
+    max-height: 90px !important;
+  }
+  .cq-diff-card.active .cq-card-svg {
+    max-width: 105px !important;
+    max-height: 105px !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DIFFICULTY TIER CARDS — EXACT MATCH TO DASHBOARD CARDS
+   Values copied directly from DashboardHome.css:
+   - .dh-cards-row (line 213)
+   - .dh-quest-card (line 222)
+   - .dh-card-art-panel (line 268)
+   - .dh-card-svg (line 284)
+   - .dh-card-body (line 290)
+   - .dh-card-title (line 296)
+   - .dh-card-desc (line 335)
+   ───────────────────────────────────────────────────────────── */
+
+/* Matches .dh-cards-row line 213 */
+.cq-tier-cards-row {
+  display: flex !important;
+  align-items: stretch !important; /* All three cards exactly same height */
+  justify-content: center !important;
+  gap: clamp(16px, 2vw, 26px) !important;
+  width: 100% !important;
+  max-width: 1100px !important;
+  margin: 0 auto !important;
+}
+
+/* Matches .dh-quest-card line 222 */
+.cq-tier-card {
+  --card-art: none;
+  background: linear-gradient(165deg, rgba(8, 26, 48, 0.85) 0%, rgba(4, 14, 28, 0.92) 100%) !important;
+  border: 1px solid rgba(0, 229, 255, 0.35) !important;
+  border-radius: 20px !important;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  transition: border-color 0.28s ease !important;
+  min-width: 240px !important;
+  max-width: 300px !important;
+  flex: 1 1 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 14px !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  position: relative !important;
+  transform: none !important;
+  text-align: left !important;
+}
+
+/* Problem 2: Only hover feedback allowed is cursor: pointer and subtle border-colour change */
+.cq-tier-card:hover {
+  border-color: #00e5ff !important;
+  transform: none !important;
+}
+
+/* Keyboard focus - focus ring visible without resizing card */
+.cq-tier-card:focus-visible {
+  outline: 2px solid #00e5ff !important;
+  outline-offset: 4px !important;
+  border-color: #00e5ff !important;
+  transform: none !important;
+}
+
+/* Matches .dh-card-art-panel line 268 */
+.cq-tier-art-panel {
+  width: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  height: auto !important;
+  max-height: none !important;
+  background: rgba(3, 10, 22, 0.75) !important;
+  border: 1px solid rgba(0, 229, 255, 0.25) !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 10px !important;
+  box-sizing: border-box !important;
+  box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.15) !important;
+  margin-bottom: 10px !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Problem 1: Matches .dh-card-svg line 284 — artwork graphic fills panel */
+.cq-tier-card-svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.5)) !important;
+  display: block !important;
+}
+
+/* Matches .dh-card-body line 290 */
+.cq-tier-card-body {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  flex: 1 1 auto !important;
+}
+
+.cq-tier-title-row {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+  margin-bottom: 4px !important;
+}
+
+/* Matches .dh-card-title line 296 */
+.cq-tier-card-title {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: clamp(17px, 1.2vw, 20px) !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  margin: 0 !important;
+  letter-spacing: -0.01em !important;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.cq-tier-xp-tag {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  color: #a3e635 !important;
+  white-space: nowrap !important;
+  letter-spacing: 0.02em !important;
+  margin-left: auto !important;
+  text-shadow: 0 0 8px rgba(163, 230, 53, 0.3) !important;
+}
+
+/* Matches .dh-card-desc line 335 */
+.cq-tier-card-desc {
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: rgba(220, 240, 255, 0.85) !important;
+  line-height: 1.45 !important;
+  margin: 0 0 8px 0 !important;
+  min-height: 54px !important; /* Uniform reserved height across all cards from DashboardHome.css line 341 */
+  display: -webkit-box !important;
+  -webkit-line-clamp: 3 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+/* Stages line at the bottom of the card */
+.cq-tier-card-footer {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: rgba(145, 185, 220, 0.75) !important;
+  text-align: center !important;
+  width: 100% !important;
+  margin-top: auto !important;
+  padding-top: 4px !important;
+}
+
+/* Tier label overlaid in top-left of artwork panel */
+.cq-tier-art-label {
+  position: absolute !important;
+  top: 10px !important;
+  left: 10px !important;
+  z-index: 3 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1 !important;
+  user-select: none !important;
+}
+
+.cq-tier-art-label.easy {
+  color: #00ff44 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 68, 0.45) !important;
+}
+
+.cq-tier-art-label.medium {
+  color: #ffd600 !important;
+  text-shadow: 0 0 10px rgba(255, 214, 0, 0.45) !important;
+}
+
+.cq-tier-art-label.hard {
+  color: #ff0033 !important;
+  text-shadow: 0 0 10px rgba(255, 0, 51, 0.45) !important;
+}
+
+/* Padlock icon for locked tiers */
+.cq-tier-corner-lock {
+  position: absolute !important;
+  bottom: 10px !important;
+  right: 10px !important;
+  z-index: 3 !important;
+  color: #00e5ff !important;
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.7)) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  user-select: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DIFFICULTY SCREEN TIER LABELS & TITLE WRAP (Additive Rules)
+   - Position Easy/Medium/Hard inside artwork panel with padding
+   - Clear of panel border, plain text, no pill background
+   - Fix middle card title truncation: allow wrapping without clipping
+   ───────────────────────────────────────────────────────────── */
+
+.cq-tier-art-label {
+  position: absolute !important;
+  top: clamp(14px, 1.8vh, 16px) !important;
+  left: clamp(14px, 1.8vw, 16px) !important;
+  z-index: 3 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: clamp(15px, 1.1vw, 17px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1 !important;
+  user-select: none !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.cq-tier-corner-lock {
+  position: absolute !important;
+  bottom: clamp(12px, 1.6vh, 15px) !important;
+  right: clamp(12px, 1.6vw, 15px) !important;
+}
+
+.cq-tier-title-row {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+  margin-bottom: 4px !important;
+  min-height: clamp(42px, 4.4vh, 46px) !important;
+}
+
+.cq-tier-card-title {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  line-height: 1.2 !important;
+  font-size: clamp(15.5px, 1.1vw, 18px) !important;
+  flex: 1 1 auto !important;
+  word-break: normal !important;
+}
+
+.cq-tier-xp-tag {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  font-size: 11px !important;
+  padding-top: 2px !important;
+  margin-left: auto !important;
+}
 
 

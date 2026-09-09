@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthContext";
 import { userApi } from "../../../../api/cipherQuestApi";
 import {
@@ -6,6 +7,8 @@ import {
   getVigenereLevelData, getVigenereGameType,
   getPlayfairLevelData, getPlayfairGameType,
 } from "../engine/levelData";
+
+const VALID_CATEGORIES = ['caesar', 'vigenere', 'playfair'];
 
 const defaultProgress = () => ({
   caesar:   { easy: [], medium: [], hard: [] },
@@ -35,9 +38,13 @@ const convertBackendProgress = (backendMap) => {
 
 export function useGameFlow() {
   const { user, refreshProfile } = useAuth();
+  const location = useLocation();
+  const routeCategory = location.state?.category;
+  const initialCategory = VALID_CATEGORIES.includes(routeCategory) ? routeCategory : null;
+
   const [progress, setProgress] = useState(defaultProgress());
 
-  const [category,   setCategory]   = useState(null);
+  const [category,   setCategory]   = useState(initialCategory);
   const [difficulty, setDifficulty] = useState(null);
   const [currentStage, setCurrentStage] = useState(null);
 

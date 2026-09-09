@@ -1,9 +1,11 @@
+import { Navigate } from "react-router-dom";
 import "./CipherGame.css";
 
 import { useGameFlow } from "./core/hooks/useGameFlow";
 
 // UI selectors
-import CategorySelector  from "./ui/CategorySelector";
+// CategorySelector kept in codebase for potential future use
+// import CategorySelector  from "./ui/CategorySelector";
 import DifficultySelector from "./ui/DifficultySelector";
 import StageRoadmap      from "./features/stages/StageRoadmap";
 
@@ -25,7 +27,7 @@ export default function CipherGame() {
   const {
     category, difficulty, currentStage,
     progress,
-    goToCategories, selectCategory, selectDifficulty,
+    goToCategories, selectDifficulty,
     completeStage, backToStages, replayCurrentStage,
   } = game;
 
@@ -97,10 +99,6 @@ export default function CipherGame() {
     );
   }
 
-  /* ─── Category selector (landing) ─── */
-  return (
-    <div className="cipher-container">
-      <CategorySelector onSelectCategory={selectCategory} completedLevels={progress} />
-    </div>
-  );
+  /* ─── Fallback redirect to dashboard when no category selected ─── */
+  return <Navigate to="/dashboard" replace />;
 }

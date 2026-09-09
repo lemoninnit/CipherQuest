@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { DashboardChromeContext } from '../../layout/DashboardLayout';
@@ -9,7 +9,7 @@ const DashboardHome = () => {
   const { user, logout } = useAuth();
   const { openSettings } = useContext(DashboardChromeContext);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [activeCardId, setActiveCardId] = useState('caesar');
+  const [activeCardId, setActiveCardId] = useState(null);
 
 
   const handleQuit = () => {
@@ -221,7 +221,7 @@ const DashboardHome = () => {
       <div className="dh-lobby-content">
         {/* Vertical Left Menu */}
         <nav className="dh-side-menu">
-          <button className="dh-menu-item primary" onClick={() => navigate('/dashboard/ciphergame')}>
+          <button className="dh-menu-item primary" onClick={() => navigate('/dashboard/ciphergame', { state: { category: activeCardId || 'caesar' } })}>
             Start Quest
           </button>
           <button className="dh-menu-item" onClick={() => navigate('/dashboard/badges')}>
@@ -238,10 +238,18 @@ const DashboardHome = () => {
           </button>
         </nav>
 
-        {/* Center Section: Cards & Bottom Action Controls */}
+        {/* Center Section: Cards */}
         <div className="dh-center-section">
           {/* Cards Row */}
-          <div className="dh-cards-row">
+          <div
+            className="dh-cards-row"
+            onMouseLeave={() => setActiveCardId(null)}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) {
+                setActiveCardId(null);
+              }
+            }}
+          >
             {cardsData.map((card) => {
               const isExpanded = card.id === activeCardId;
               return (
@@ -252,11 +260,15 @@ const DashboardHome = () => {
                   className={`dh-quest-card ${isExpanded ? 'active' : ''}`}
                   onMouseEnter={() => setActiveCardId(card.id)}
                   onFocus={() => setActiveCardId(card.id)}
-                  onClick={() => setActiveCardId(card.id)}
+                  onClick={() => {
+                    setActiveCardId(card.id);
+                    navigate('/dashboard/ciphergame', { state: { category: card.id } });
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       setActiveCardId(card.id);
+                      navigate('/dashboard/ciphergame', { state: { category: card.id } });
                     }
                   }}
                 >
@@ -281,20 +293,6 @@ const DashboardHome = () => {
                 </div>
               );
             })}
-          </div>
-
-          {/* Bottom Action Section: Select Button & Mini Description */}
-          <div className="dh-bottom-action-container">
-            <button
-              className="dh-select-btn"
-              onClick={() => navigate('/dashboard/ciphergame')}
-            >
-              Select
-            </button>
-            <div className="dh-mini-desc">
-              <p>This game contains randomize game mode</p>
-              <p>Game mode: Sprint, Pacman, Fishing</p>
-            </div>
           </div>
         </div>
       </div>

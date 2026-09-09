@@ -1,39 +1,139 @@
-import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const tierArtworks = {
-  easy: (
-    <svg viewBox="0 0 100 100" className="cq-card-svg" aria-hidden="true">
-      <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(0, 229, 255, 0.2)" strokeWidth="1.5" strokeDasharray="3 3" />
-      <circle cx="50" cy="50" r="27" fill="rgba(0, 229, 255, 0.06)" stroke="#00e5ff" strokeWidth="2" />
-      <circle cx="50" cy="50" r="13" fill="rgba(0, 229, 255, 0.25)" stroke="#00e5ff" strokeWidth="2.5" />
-      <circle cx="50" cy="50" r="4" fill="#ffffff" />
-      <line x1="50" y1="6" x2="50" y2="18" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" />
-      <line x1="50" y1="82" x2="50" y2="94" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" />
-      <line x1="6" y1="50" x2="18" y2="50" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" />
-      <line x1="82" y1="50" x2="94" y2="50" stroke="#00e5ff" strokeWidth="2" strokeLinecap="round" />
+const cipherArtworks = {
+  caesar: (
+    <svg viewBox="0 0 100 100" className="cq-tier-card-svg" aria-hidden="true">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0, 229, 255, 0.25)" strokeWidth="1.5" strokeDasharray="3 3" />
+      <path d="M 32,38 A 22,22 0 1,1 68,38" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" />
+      <polyline points="62,30 68,38 76,34" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M 68,62 A 22,22 0 1,1 32,62" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" />
+      <polyline points="38,70 32,62 24,66" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      <text x="26" y="44" fill="#00e5ff" fontSize="11" fontWeight="bold" fontFamily="sans-serif">A</text>
+      <text x="70" y="44" fill="#39ff14" fontSize="11" fontWeight="bold" fontFamily="sans-serif">X</text>
     </svg>
   ),
-  medium: (
-    <svg viewBox="0 0 100 100" className="cq-card-svg" aria-hidden="true">
-      <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(251, 191, 36, 0.2)" strokeWidth="1.5" strokeDasharray="4 3" />
-      <ellipse cx="50" cy="50" rx="36" ry="16" transform="rotate(-30 50 50)" fill="none" stroke="#fbbf24" strokeWidth="2" />
-      <ellipse cx="50" cy="50" rx="36" ry="16" transform="rotate(30 50 50)" fill="none" stroke="#fbbf24" strokeWidth="2" />
-      <polygon points="50,38 62,50 50,62 38,50" fill="rgba(251, 191, 36, 0.25)" stroke="#fbbf24" strokeWidth="2" />
-      <circle cx="50" cy="50" r="3.5" fill="#ffffff" />
-      <circle cx="76" cy="35" r="3.5" fill="#fbbf24" />
-      <circle cx="24" cy="65" r="3.5" fill="#fbbf24" />
+  vigenere: (
+    <svg viewBox="0 0 100 100" className="cq-tier-card-svg" aria-hidden="true">
+      <rect x="2" y="2" width="96" height="96" rx="6" fill="rgba(3, 12, 26, 0.8)" stroke="rgba(0, 229, 255, 0.3)" strokeWidth="1" />
+      
+      <rect x="6" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="14" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">A</text>
+      <rect x="24" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="32" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">B</text>
+      <rect x="42" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="50" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">C</text>
+      <rect x="60" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="68" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">D</text>
+      <rect x="78" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="86" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">E</text>
+
+      <rect x="6" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="14" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">A</text>
+      <rect x="24" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="32" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">P</text>
+      <rect x="42" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="50" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">P</text>
+      <rect x="60" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="68" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">L</text>
+      <rect x="78" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="86" y="36" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">E</text>
+
+      <rect x="6" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="14" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">C</text>
+      <rect x="24" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="32" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">D</text>
+      <rect x="42" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="50" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">E</text>
+      <rect x="60" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="68" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">F</text>
+      <rect x="78" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="86" y="54" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">G</text>
+
+      <rect x="6" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="14" y="72" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">C</text>
+      <rect x="24" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="32" y="72" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">A</text>
+      <rect x="42" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="50" y="72" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">T</text>
+      <rect x="60" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="68" y="72" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">C</text>
+      <rect x="78" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="86" y="72" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">A</text>
+
+      <rect x="6" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="14" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">E</text>
+      <rect x="24" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="32" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">F</text>
+      <rect x="42" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="50" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">G</text>
+      <rect x="60" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="68" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">H</text>
+      <rect x="78" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
+      <text x="86" y="90" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">I</text>
     </svg>
   ),
-  hard: (
-    <svg viewBox="0 0 100 100" className="cq-card-svg" aria-hidden="true">
-      <polygon points="50,8 86,28 86,72 50,92 14,72 14,28" fill="rgba(255, 77, 109, 0.05)" stroke="rgba(255, 77, 109, 0.25)" strokeWidth="1.5" strokeDasharray="4 3" />
-      <polygon points="50,18 78,34 78,66 50,82 22,66 22,34" fill="rgba(255, 77, 109, 0.12)" stroke="#ff4d6d" strokeWidth="2" />
-      <polygon points="50,30 66,40 66,60 50,70 34,60 34,40" fill="rgba(255, 77, 109, 0.3)" stroke="#ff4d6d" strokeWidth="2" />
-      <circle cx="50" cy="50" r="5" fill="#ffffff" />
-      <line x1="50" y1="22" x2="50" y2="30" stroke="#ffffff" strokeWidth="2" />
-      <line x1="50" y1="70" x2="50" y2="78" stroke="#ffffff" strokeWidth="2" />
-      <line x1="26" y1="50" x2="34" y2="50" stroke="#ffffff" strokeWidth="2" />
-      <line x1="66" y1="50" x2="74" y2="50" stroke="#ffffff" strokeWidth="2" />
+  playfair: (
+    <svg viewBox="0 0 100 100" className="cq-tier-card-svg" aria-hidden="true">
+      <rect x="2" y="2" width="96" height="96" rx="6" fill="rgba(3, 12, 26, 0.8)" stroke="rgba(0, 229, 255, 0.3)" strokeWidth="1" />
+      
+      <rect x="6" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="14" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">T</text>
+      <rect x="24" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="32" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">Y</text>
+      <rect x="42" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="50" y="18" textAnchor="middle" fill="#00e5ff" fontSize="9" fontWeight="bold">P</text>
+      <rect x="60" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="68" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">J</text>
+      <rect x="78" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="86" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">K</text>
+
+      <rect x="6" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="14" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">C</text>
+      <rect x="24" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="32" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">D</text>
+      <rect x="42" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="50" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">E</text>
+      <rect x="60" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="68" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">F</text>
+      <rect x="78" y="24" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="86" y="36" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">G</text>
+
+      <rect x="6" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="14" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">Z</text>
+      <rect x="24" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="32" y="54" textAnchor="middle" fill="#39ff14" fontSize="9" fontWeight="bold">X</text>
+      <rect x="42" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="50" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">C</text>
+      <rect x="60" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="68" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">V</text>
+      <rect x="78" y="42" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="86" y="54" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">B</text>
+
+      <rect x="6" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="14" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">E</text>
+      <rect x="24" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="32" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">F</text>
+      <rect x="42" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="50" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">G</text>
+      <rect x="60" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="68" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">H</text>
+      <rect x="78" y="60" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="86" y="72" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">I</text>
+
+      <rect x="6" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="14" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">O</text>
+      <rect x="24" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="32" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">P</text>
+      <rect x="42" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="50" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">Q</text>
+      <rect x="60" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="68" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">R</text>
+      <rect x="78" y="78" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
+      <text x="86" y="90" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">S</text>
+
+      <rect x="22" y="4" width="36" height="56" rx="4" fill="rgba(255, 230, 0, 0.08)" stroke="#d4ff00" strokeWidth="2" />
+      <circle cx="22" cy="60" r="3" fill="#d4ff00" />
+      <circle cx="58" cy="4" r="3" fill="#d4ff00" />
     </svg>
   ),
 };
@@ -57,7 +157,12 @@ const categoryMetadata = {
 };
 
 const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caesar', completedLevels = {} }) => {
-  const [hoveredTier, setHoveredTier] = useState('easy');
+  const navigate = useNavigate();
+
+  const handleBack = () => {
+    if (onBack) onBack();
+    navigate('/dashboard');
+  };
 
   const catProgress = completedLevels[activeCategory] || { easy: [], medium: [], hard: [] };
   const isEasyCompleted   = true;
@@ -75,12 +180,59 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
   const mediumCount = (catProgress.medium || []).length;
   const hardCount   = (catProgress.hard   || []).length;
 
-  const getButtonLabel = (tier, count, isPlayable) => {
-    if (!isPlayable) return 'Locked';
-    if (count === 0) return 'Start Stage 1';
-    if (count >= 5) return 'Replay Tier (5/5)';
-    return `Continue stage ${count + 1}`;
+  const getTierDesc = (tierId, isPlayable) => {
+    if (!isPlayable) {
+      if (tierId === 'medium') return 'Complete all 5 Easy stages to unlock.';
+      if (tierId === 'hard') return 'Complete all 5 Medium stages to unlock.';
+    }
+    if (activeCategory === 'caesar') {
+      if (tierId === 'easy') return 'Beginner-friendly challenges to master the cipher basics.';
+      if (tierId === 'medium') return 'Intermediate challenges with more complex keys.';
+      if (tierId === 'hard') return 'Decrypt alphabet letters using mathematical modular arithmetic key offsets.';
+    } else if (activeCategory === 'vigenere') {
+      if (tierId === 'easy') return 'Polyalphabetic substitution with short keyword repetitions.';
+      if (tierId === 'medium') return 'Intermediate challenges with dynamic keyword shifts.';
+      if (tierId === 'hard') return 'Full tableau cipher challenges with extended keyword cycles.';
+    } else if (activeCategory === 'playfair') {
+      if (tierId === 'easy') return 'Basic digraph substitutions using standard coordinate rules.';
+      if (tierId === 'medium') return 'Intermediate challenges with row, column, and rectangle swaps.';
+      if (tierId === 'hard') return 'Master 5×5 key matrix operations across full-text digraphs.';
+    }
+    return 'Challenge stages to master this cipher.';
   };
+
+  const tiers = [
+    {
+      id: 'easy',
+      name: 'Easy',
+      colorClass: 'easy',
+      title: labels.easy,
+      desc: getTierDesc('easy', true),
+      xp: '+100 XP / Level',
+      count: easyCount,
+      isPlayable: true,
+    },
+    {
+      id: 'medium',
+      name: 'Medium',
+      colorClass: 'medium',
+      title: labels.medium,
+      desc: getTierDesc('medium', isEasyCompleted),
+      xp: '+250 XP / Level',
+      count: mediumCount,
+      isPlayable: isEasyCompleted,
+    },
+    {
+      id: 'hard',
+      name: 'Hard',
+      colorClass: 'hard',
+      title: labels.hard,
+      desc: getTierDesc('hard', isMediumCompleted),
+      xp: '+500 XP / Level',
+      count: hardCount,
+      isPlayable: isMediumCompleted,
+    },
+  ];
 
   return (
     <div className="game-lobby cq-lobby-screen">
@@ -90,11 +242,11 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
       {/* ── Standardized Left-Aligned Screen Header Block ── */}
       <div className="cq-screen-header-block">
         <div className="cq-top-nav-bar">
-          <button className="cq-back-btn" onClick={onBack}>
+          <button className="cq-back-btn" onClick={handleBack}>
             <span className="cq-back-icon-circle">
               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
             </span>
-            <span>Back to Quest Categories</span>
+            <span>Back to Dashboard</span>
           </button>
         </div>
 
@@ -111,153 +263,62 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
 
       {/* ── Centered Tier Selection Cards Row ── */}
       <div className="cq-lobby-center-content">
-        <div className="cq-cards-row">
-          {/* Easy Tier */}
-          <div
-            role="button"
-            tabIndex={0}
-            className={`cq-portrait-card playable ${hoveredTier === 'easy' ? 'active' : ''}`}
-            onMouseEnter={() => setHoveredTier('easy')}
-            onFocus={() => setHoveredTier('easy')}
-            onClick={() => onSelectDifficulty('easy')}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onSelectDifficulty('easy');
-              }
-            }}
-          >
-            {/* Inset Artwork Emblem Panel (Unique Easy Emblem) */}
-            <div className="cq-card-art-panel">
-              {tierArtworks.easy}
-            </div>
-
-            <div className="cq-card-body">
-              <div>
-                {/* Meta Strip: Tier tag on left (tier color in ONE place), XP on right */}
-                <div className="cq-card-meta-row">
-                  <span className="cq-badge-tag cyan">Easy</span>
-                  <span className="cq-card-xp-tag">+100 XP / Level</span>
-                </div>
-
-                <h3 className="cq-card-title">{labels.easy}</h3>
-                <p className="cq-card-desc">Beginner-friendly challenges to master the cipher basics.</p>
-              </div>
-
-              <div>
-                <button className="cq-card-action-btn" tabIndex={-1}>
-                  {getButtonLabel('easy', easyCount, true)}
-                </button>
-                <div className="cq-card-footer">
-                  <span>5 stages ({easyCount}/5 done)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Medium Tier */}
-          <div
-            role="button"
-            tabIndex={0}
-            className={`cq-portrait-card ${isEasyCompleted ? 'playable' : 'locked'} ${hoveredTier === 'medium' ? 'active' : ''}`}
-            onMouseEnter={() => setHoveredTier('medium')}
-            onFocus={() => setHoveredTier('medium')}
-            onClick={() => { if (isEasyCompleted) onSelectDifficulty('medium'); }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                if (isEasyCompleted) onSelectDifficulty('medium');
-              }
-            }}
-          >
-            {/* Inset Artwork Emblem Panel (Unique Medium Emblem) */}
-            <div className="cq-card-art-panel">
-              {!isEasyCompleted && (
-                <span className="cq-tier-lock-icon">
-                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>lock</span>
+        <div className="cq-tier-cards-row">
+          {tiers.map((tier) => (
+            <div
+              key={tier.id}
+              role="button"
+              tabIndex={0}
+              className={`cq-tier-card ${tier.isPlayable ? 'playable' : 'locked'}`}
+              onClick={() => {
+                if (tier.isPlayable) onSelectDifficulty(tier.id);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  if (tier.isPlayable) onSelectDifficulty(tier.id);
+                }
+              }}
+            >
+              {/* Inset Artwork Emblem Panel */}
+              <div className="cq-tier-art-panel">
+                {/* Plain colored tier label overlaid inside the artwork's top-left corner */}
+                <span className={`cq-tier-art-label ${tier.colorClass}`}>
+                  {tier.name}
                 </span>
-              )}
-              {tierArtworks.medium}
-            </div>
 
-            <div className="cq-card-body">
-              <div>
-                {/* Meta Strip: Amber Tier tag on left (tier color in ONE place), XP on right */}
-                <div className="cq-card-meta-row">
-                  <span className="cq-badge-tag amber">Medium</span>
-                  <span className="cq-card-xp-tag">+250 XP / Level</span>
-                </div>
+                {/* Padlock icon in bottom-right of artwork for locked tiers */}
+                {!tier.isPlayable && (
+                  <div className="cq-tier-corner-lock">
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>lock</span>
+                  </div>
+                )}
 
-                <h3 className="cq-card-title">{labels.medium}</h3>
-                <p className="cq-card-desc">
-                  {isEasyCompleted
-                    ? 'Intermediate challenges with more complex keys.'
-                    : 'Complete all 5 Easy stages to unlock.'}
-                </p>
+                {/* Cipher Artwork Vector */}
+                {cipherArtworks[activeCategory] || cipherArtworks.caesar}
               </div>
 
-              <div>
-                <button className="cq-card-action-btn" tabIndex={-1}>
-                  {getButtonLabel('medium', mediumCount, isEasyCompleted)}
-                </button>
-                <div className="cq-card-footer">
-                  <span>5 stages ({mediumCount}/5 done)</span>
-                </div>
-              </div>
-            </div>
-          </div>
+              {/* Card Body */}
+              <div className="cq-tier-card-body">
+                <div>
+                  {/* Title Row with XP tag */}
+                  <div className="cq-tier-title-row">
+                    <h3 className="cq-tier-card-title">{tier.title}</h3>
+                    <span className="cq-tier-xp-tag">{tier.xp}</span>
+                  </div>
 
-          {/* Hard Tier */}
-          <div
-            role="button"
-            tabIndex={0}
-            className={`cq-portrait-card ${isMediumCompleted ? 'playable' : 'locked'} ${hoveredTier === 'hard' ? 'active' : ''}`}
-            onMouseEnter={() => setHoveredTier('hard')}
-            onFocus={() => setHoveredTier('hard')}
-            onClick={() => { if (isMediumCompleted) onSelectDifficulty('hard'); }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                if (isMediumCompleted) onSelectDifficulty('hard');
-              }
-            }}
-          >
-            {/* Inset Artwork Emblem Panel (Unique Hard Emblem) */}
-            <div className="cq-card-art-panel">
-              {!isMediumCompleted && (
-                <span className="cq-tier-lock-icon">
-                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>lock</span>
-                </span>
-              )}
-              {tierArtworks.hard}
-            </div>
-
-            <div className="cq-card-body">
-              <div>
-                {/* Meta Strip: Coral/Red Tier tag on left (tier color in ONE place), XP on right */}
-                <div className="cq-card-meta-row">
-                  <span className="cq-badge-tag coral">Hard</span>
-                  <span className="cq-card-xp-tag">+500 XP / Level</span>
+                  <p className="cq-tier-card-desc">{tier.desc}</p>
                 </div>
 
-                <h3 className="cq-card-title">{labels.hard}</h3>
-                <p className="cq-card-desc">
-                  {isMediumCompleted
-                    ? 'Advanced challenges using full key-space encryption.'
-                    : 'Complete all 5 Medium stages to unlock.'}
-                </p>
-              </div>
-
-              <div>
-                <button className="cq-card-action-btn" tabIndex={-1}>
-                  {getButtonLabel('hard', hardCount, isMediumCompleted)}
-                </button>
-                <div className="cq-card-footer">
-                  <span>5 stages ({hardCount}/5 done)</span>
+                {/* Stages Footer */}
+                <div className="cq-tier-card-footer">
+                  <span>
+                    {tier.count > 0 ? `5 stages (${tier.count}/5 done)` : '5 stages'}
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
+          ))}
         </div>
       </div>
 
