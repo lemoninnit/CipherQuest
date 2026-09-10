@@ -3038,4 +3038,341 @@
   margin-left: auto !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   HEADER TYPE CONSISTENCY, CARD SPACING, & HIGH-FIDELITY POLISH
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Part 1: Header Inset, Offset, and Typography (Matching DashboardHome.css) ── */
+.cq-lobby-screen {
+  padding: clamp(18px, 2.4vh, 28px) clamp(24px, 3.5vw, 48px) !important;
+}
+
+.cq-screen-header-block {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.cq-top-nav-bar {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  margin-bottom: clamp(4px, 0.8vh, 8px) !important;
+  padding: 0 !important;
+}
+
+/* Wordmark container structure with gap: 4px matching .dh-wordmark-container */
+.cq-screen-header {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  text-align: left !important;
+  align-items: flex-start !important;
+  width: 100% !important;
+}
+
+/* Title row with gap: 12px matching .dh-wordmark-title */
+.cq-screen-title-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 12px !important;
+  margin: 0 !important;
+}
+
+/* Exact values from .dh-wordmark-title (DashboardHome.css line 51) */
+.cq-screen-title {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: clamp(34px, 2.6vw, 46px) !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.02em !important;
+  text-shadow: 0 0 24px rgba(0, 229, 255, 0.6), 0 2px 10px rgba(0, 0, 0, 0.8) !important;
+  line-height: 1.15 !important;
+  margin: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* Cipher icon inline with title, vertically centered against cap height */
+.cq-screen-header-icon {
+  font-size: clamp(28px, 2.2vw, 36px) !important;
+  color: #00e5ff !important;
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.7)) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+/* Exact values from .dh-wordmark-subtitle (DashboardHome.css line 68), sentence-case kept */
+.cq-screen-subtitle {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: clamp(12px, 0.9vw, 13.5px) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.12em !important;
+  color: rgba(0, 229, 255, 0.85) !important;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.35) !important;
+  text-transform: none !important;
+  margin: 0 !important;
+  line-height: 1.45 !important;
+  max-width: 720px !important;
+}
+
+/* ── Part 2: Unified Card Row Gap, Container Width & Padding ── */
+.cq-lobby-center-content {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: auto 0 !important;
+  padding: 0 !important;
+}
+
+/* Difficulty Cards Row — Matches Dashboard row rhythm exactly */
+.cq-tier-cards-row {
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: clamp(24px, 2.6vw, 36px) !important;
+  width: 100% !important;
+  max-width: clamp(960px, 75vw, 1080px) !important;
+  padding: 0 clamp(20px, 2.8vw, 40px) !important;
+  box-sizing: border-box !important;
+  margin: 0 auto !important;
+}
+
+.cq-tier-card {
+  min-width: 240px !important;
+  max-width: 310px !important;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 20px rgba(0, 229, 255, 0.04) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+/* Stages Container & Row — Matches Dashboard & Difficulty rhythm exactly */
+.cq-stages-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: clamp(960px, 75vw, 1080px) !important;
+  padding: 0 clamp(20px, 2.8vw, 40px) !important;
+  box-sizing: border-box !important;
+  margin: 0 auto !important;
+  gap: clamp(24px, 3.6vh, 38px) !important;
+}
+
+.cq-stages-row {
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: clamp(18px, 2vw, 28px) !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ── Part 3: Visual Polish & Tier Artwork Differentiation ── */
+
+/* Easy Tier (Tier 01 — Baseline / Calibration) */
+.cq-tier-card:nth-child(1) .cq-tier-art-panel {
+  background: radial-gradient(circle at 50% 50%, rgba(0, 255, 68, 0.09) 0%, rgba(3, 10, 24, 0.95) 75%) !important;
+  border: 1px solid rgba(0, 255, 68, 0.35) !important;
+  box-shadow: inset 0 0 22px rgba(0, 255, 68, 0.12), 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+.cq-tier-card:nth-child(1) .cq-tier-art-panel::after {
+  content: 'TIER 01';
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: rgba(0, 255, 68, 0.7);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cq-tier-card:nth-child(1) .cq-tier-card-svg {
+  filter: drop-shadow(0 0 10px rgba(0, 255, 68, 0.45)) !important;
+  transform: scale(0.96);
+}
+
+/* Medium Tier (Tier 02 — Compound / Cyber Amber) */
+.cq-tier-card:nth-child(2) .cq-tier-art-panel {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 214, 0, 0.11) 0%, rgba(6, 12, 22, 0.95) 75%) !important;
+  border: 1px solid rgba(255, 214, 0, 0.35) !important;
+  box-shadow: inset 0 0 24px rgba(255, 214, 0, 0.14), 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+.cq-tier-card:nth-child(2) .cq-tier-art-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 5px, rgba(255, 214, 0, 0.04) 6px) !important;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cq-tier-card:nth-child(2) .cq-tier-art-panel::after {
+  content: 'TIER 02';
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: rgba(255, 214, 0, 0.75);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cq-tier-card:nth-child(2) .cq-tier-card-svg {
+  filter: hue-rotate(220deg) saturate(1.8) drop-shadow(0 0 12px rgba(255, 214, 0, 0.5)) !important;
+  transform: scale(1.02);
+}
+
+/* Hard Tier (Tier 03 — Full Key-Space / Threat Crimson) */
+.cq-tier-card:nth-child(3) .cq-tier-art-panel {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 0, 51, 0.14) 0%, rgba(14, 4, 18, 0.95) 75%) !important;
+  border: 1px solid rgba(255, 0, 51, 0.4) !important;
+  box-shadow: inset 0 0 26px rgba(255, 0, 51, 0.18), 0 6px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+.cq-tier-card:nth-child(3) .cq-tier-art-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(45deg, transparent, transparent 7px, rgba(255, 0, 51, 0.04) 8px) !important;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cq-tier-card:nth-child(3) .cq-tier-art-panel::after {
+  content: 'TIER 03';
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: rgba(255, 0, 51, 0.75);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.cq-tier-card:nth-child(3) .cq-tier-card-svg {
+  filter: hue-rotate(160deg) saturate(2.2) drop-shadow(0 0 14px rgba(255, 0, 51, 0.6)) !important;
+  transform: scale(1.04);
+}
+
+/* ── Part 3: Stages Screen Substantial Composition ── */
+.cq-stage-card {
+  min-width: 150px !important;
+  max-width: 185px !important;
+  min-height: clamp(220px, 28vh, 270px) !important;
+  padding: clamp(20px, 2.6vh, 28px) 12px clamp(16px, 2vh, 22px) 12px !important;
+  border-radius: 20px !important;
+  background: linear-gradient(165deg, rgba(8, 26, 48, 0.88) 0%, rgba(4, 14, 28, 0.94) 100%) !important;
+  border: 1px solid rgba(0, 229, 255, 0.32) !important;
+  box-shadow:
+    0 14px 34px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 20px rgba(0, 229, 255, 0.04) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  gap: 14px !important;
+}
+
+.cq-stage-card-number {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: clamp(12px, 0.9vw, 13.5px) !important;
+  font-weight: 800 !important;
+  color: rgba(0, 229, 255, 0.85) !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
+}
+
+.cq-stage-card-icon-box {
+  width: clamp(58px, 7vh, 70px) !important;
+  height: clamp(58px, 7vh, 70px) !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at center, rgba(0, 229, 255, 0.18) 0%, rgba(3, 12, 26, 0.85) 100%) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.45) !important;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.35), inset 0 0 12px rgba(0, 229, 255, 0.2) !important;
+}
+
+.cq-stage-card-icon-box .material-symbols-outlined {
+  font-size: clamp(32px, 3.8vh, 38px) !important;
+  color: #00e5ff !important;
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.6)) !important;
+}
+
+.cq-stage-card.completed .cq-stage-card-icon-box {
+  background: radial-gradient(circle at center, rgba(16, 185, 129, 0.2) 0%, rgba(3, 20, 16, 0.85) 100%) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), inset 0 0 12px rgba(16, 185, 129, 0.25) !important;
+}
+
+.cq-stage-card.completed .cq-stage-card-icon-box .material-symbols-outlined {
+  color: #10b981 !important;
+  filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.7)) !important;
+}
+
+.cq-stage-card-status {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.1em !important;
+  padding: 5px 14px !important;
+  border-radius: 20px !important;
+}
+
+.cq-stages-progress-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  background: linear-gradient(165deg, rgba(8, 24, 46, 0.85) 0%, rgba(4, 13, 26, 0.92) 100%) !important;
+  border: 1px solid rgba(0, 229, 255, 0.32) !important;
+  border-radius: 20px !important;
+  padding: clamp(16px, 2vh, 22px) clamp(22px, 2.6vw, 32px) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  box-sizing: border-box !important;
+}
+
+.cq-stages-progress-track {
+  height: 11px !important;
+  border-radius: 8px !important;
+}
+
+.cq-lobby-bottom-caption {
+  padding-top: clamp(8px, 1.4vh, 14px) !important;
+  padding-bottom: clamp(4px, 0.8vh, 8px) !important;
+}
+
+.cq-lobby-bottom-caption p {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  color: rgba(185, 220, 250, 0.7) !important;
+  letter-spacing: 0.03em !important;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.2) !important;
+}
 

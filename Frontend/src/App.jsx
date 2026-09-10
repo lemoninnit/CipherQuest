@@ -8,6 +8,7 @@ import DashboardLayout from './features/layout/DashboardLayout';
 import DashboardHome from './features/pages/home/DashboardHome';
 import CipherGame from './features/ciphergame/CipherGame';
 import BadgesPage from './features/badges/BadgesPage';
+import LeaderboardPage from './features/leaderboard/LeaderboardPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
@@ -38,6 +39,16 @@ function App() {
               <ProtectedRoute>
                 <DashboardLayout>
                   <CipherGame />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/leaderboard"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <LeaderboardPage />
                 </DashboardLayout>
               </ProtectedRoute>
             }

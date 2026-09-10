@@ -69,6 +69,11 @@ export const fishingApi = {
   getLeaderboard: ()               => request('GET',  '/fishing/leaderboard'),
 };
 
+export const leaderboardApi = {
+  getGlobalLeaderboard: (scope = 'overall') =>
+    request('GET', `/leaderboard?scope=${encodeURIComponent(scope)}`),
+};
+
 export const saveToken  = (token) => localStorage.setItem('cq_token', token);
 export const clearToken = ()      => localStorage.removeItem('cq_token');
 export const isLoggedIn = ()      => !!getToken();

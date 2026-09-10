@@ -41,4 +41,10 @@ public interface UserProgressRepository extends JpaRepository<UserProgress, Long
             @Param("userId") Long userId,
             @Param("cipherType") String cipherType,
             @Param("difficultyTier") String difficultyTier);
+
+    @Query("SELECT p.user.id, COUNT(p) FROM UserProgress p GROUP BY p.user.id")
+    List<Object[]> countTotalCompletedPerUser();
+
+    @Query("SELECT p.user.id, COUNT(p) FROM UserProgress p WHERE UPPER(p.cipherType) = UPPER(:cipherType) GROUP BY p.user.id")
+    List<Object[]> countCompletedByCipherPerUser(@Param("cipherType") String cipherType);
 }

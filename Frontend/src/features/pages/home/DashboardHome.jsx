@@ -224,6 +224,9 @@ const DashboardHome = () => {
           <button className="dh-menu-item primary" onClick={() => navigate('/dashboard/ciphergame', { state: { category: activeCardId || 'caesar' } })}>
             Start Quest
           </button>
+          <button className="dh-menu-item" onClick={() => navigate('/dashboard/leaderboard')}>
+            Leaderboards
+          </button>
           <button className="dh-menu-item" onClick={() => navigate('/dashboard/badges')}>
             Badges
           </button>
