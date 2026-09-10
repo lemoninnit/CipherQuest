@@ -13,38 +13,70 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   box-sizing: border-box;
-  padding: clamp(18px, 2.4vh, 28px) clamp(24px, 3.5vw, 48px);
+  padding: clamp(14px, 2vh, 24px) clamp(24px, 3.5vw, 48px);
+  gap: clamp(12px, 1.8vh, 18px);
   font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
   color: #ffffff;
 }
 
+/* ── Screen-Reader Utility ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Content Layout: 2 Columns (Side Menu + Expanded Console Panel) ── */
 .lb-content-layout {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(160px, 200px) 1fr minmax(160px, 200px);
-  align-items: center;
+  grid-template-columns: minmax(160px, 200px) 1fr;
+  gap: clamp(24px, 2.5vw, 44px);
+  align-items: stretch;
   width: 100%;
   flex: 1;
   min-height: 0;
 }
 
+/* Suppress the 3rd column ::after spacer inherited from .dh-lobby-content */
+.lb-content-layout::after {
+  content: none;
+  display: none;
+}
+
+/* Keep the side menu vertically centered in its column */
+.lb-content-layout .dh-side-menu {
+  align-self: center;
+}
+
+/* ── Expanded Console Section ── */
 .lb-center-section {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
+  justify-content: stretch;
   width: 100%;
-  max-width: clamp(940px, 78vw, 1140px);
-  margin: 0 auto;
+  max-width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
   box-sizing: border-box;
 }
 
-/* ── Console Glass Card ── */
+/* ── Console Glass Card: Fills Vertical & Horizontal Space ── */
 .lb-console-card {
   width: 100%;
+  height: 100%;
+  min-height: 0;
   background: linear-gradient(165deg, rgba(8, 26, 48, 0.9) 0%, rgba(4, 14, 28, 0.96) 100%);
   border: 1.5px solid rgba(0, 229, 255, 0.38);
   border-radius: 22px;
@@ -54,19 +86,20 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  padding: clamp(14px, 1.8vh, 22px) clamp(18px, 2.2vw, 30px);
+  padding: clamp(14px, 1.8vh, 22px) clamp(20px, 2.2vw, 34px);
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: clamp(10px, 1.5vh, 18px);
+  gap: clamp(10px, 1.4vh, 16px);
 }
 
 /* ── Top Bar (Centered Title + Scope Selector on Right) ── */
 .lb-card-top-bar {
   display: grid;
-  grid-template-columns: 140px 1fr 140px;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   width: 100%;
+  flex-shrink: 0;
 }
 
 .lb-header-spacer {
@@ -110,6 +143,7 @@
 .lb-filter-wrapper {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .lb-select-container {
@@ -165,10 +199,11 @@
 .lb-podium-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: clamp(14px, 1.8vw, 24px);
-  align-items: flex-end;
+  gap: clamp(14px, 1.6vw, 24px);
+  align-items: stretch;
   width: 100%;
-  margin-top: 4px;
+  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .lb-podium-card {
@@ -176,11 +211,11 @@
   background: linear-gradient(165deg, rgba(8, 24, 46, 0.85) 0%, rgba(4, 13, 26, 0.94) 100%);
   border: 1px solid rgba(0, 229, 255, 0.28);
   border-radius: 18px;
-  padding: clamp(12px, 1.6vh, 18px) 14px;
+  padding: clamp(12px, 1.6vh, 18px) clamp(16px, 1.4vw, 22px);
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: clamp(12px, 1.2vw, 18px);
   box-shadow:
     0 10px 24px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -194,7 +229,7 @@
     0 14px 32px rgba(0, 0, 0, 0.6),
     0 0 24px rgba(255, 215, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  transform: translateY(-4px);
+  transform: translateY(-3px);
 }
 
 /* Current user highlighted card */
@@ -350,28 +385,32 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
+  min-height: 0;
   margin-top: 4px;
 }
 
 .lb-table-header {
   display: grid;
-  grid-template-columns: 70px 1fr 140px 120px 100px;
-  padding: 6px 16px;
+  grid-template-columns: 80px 1fr 160px 140px 120px;
+  padding: 8px 18px;
   font-family: 'Space Grotesk', sans-serif;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: rgba(0, 229, 255, 0.85);
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 
 .lb-table-body {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  max-height: clamp(180px, 24vh, 230px);
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 6px;
 }
 
 /* Custom scrollbar for table */
@@ -389,15 +428,16 @@
 
 .lb-table-row {
   display: grid;
-  grid-template-columns: 70px 1fr 140px 120px 100px;
+  grid-template-columns: 80px 1fr 160px 140px 120px;
   align-items: center;
-  padding: 8px 16px;
+  padding: clamp(8px, 1.2vh, 11px) 18px;
   background: rgba(6, 18, 36, 0.6);
   border: 1px solid rgba(0, 229, 255, 0.16);
   border-radius: 12px;
   transition: all 0.18s ease;
   font-family: 'Space Grotesk', sans-serif;
   font-size: 13.5px;
+  flex-shrink: 0;
 }
 
 .lb-table-row:hover {
@@ -474,9 +514,10 @@
 
 /* ── PINNED ROW (When user is outside top 10) ── */
 .lb-pinned-row-wrapper {
-  margin-top: 4px;
+  margin-top: auto;
   padding-top: 6px;
   border-top: 1px dashed rgba(0, 229, 255, 0.25);
+  flex-shrink: 0;
 }
 
 .lb-pinned-row {
@@ -500,6 +541,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  flex: 1;
+  min-height: 0;
   padding: 48px 24px;
   gap: 16px;
   color: rgba(0, 229, 255, 0.85);
@@ -550,20 +593,65 @@
 }
 
 .lb-no-table-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
   text-align: center;
   padding: 24px;
   color: rgba(200, 230, 255, 0.6);
-  font-size: 13px;
+  font-size: 13.5px;
   font-family: 'Space Grotesk', sans-serif;
 }
 
 /* Screen Resolution Adaptations */
 @media (max-width: 1024px) {
+  .lb-lobby {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+
   .lb-content-layout {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    overflow-y: auto;
+    height: auto;
+    min-height: auto;
+  }
+
+  .lb-content-layout .dh-side-menu {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    align-self: auto;
+  }
+
+  .lb-center-section {
+    height: auto;
+    min-height: auto;
+  }
+
+  .lb-console-card {
+    height: auto;
+    min-height: auto;
+  }
+
+  .lb-podium-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .lb-table-header,
+  .lb-table-row {
+    grid-template-columns: 50px 1fr 90px 80px 70px;
+    font-size: 12.5px;
+    padding: 8px 12px;
+  }
+
+  .lb-table-body {
+    max-height: 350px;
   }
 }
