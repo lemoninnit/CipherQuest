@@ -76,25 +76,42 @@ export default function CipherGame() {
     }
   }
 
-  /* ─── Stage roadmap ─── */
-  if (category && difficulty) {
-    return (
-      <div className="cipher-container">
-        <StageRoadmap game={game} />
-      </div>
-    );
-  }
-
-  /* ─── Difficulty selector ─── */
+  /* ─── Selector Screens (Difficulty & Stage Roadmap) ─── */
   if (category) {
     return (
       <div className="cipher-container">
-        <DifficultySelector
-          activeCategory={category}
-          completedLevels={progress}
-          onSelectDifficulty={selectDifficulty}
-          onBack={goToCategories}
+        {/* Background Looping Fog Video */}
+        <video
+          className="cq-bg-video cq-bg-video-blur"
+          src="/assets/fish/lobbybg/lobby-bg.mp4"
+          poster="/assets/fish/lobbybg/lobbybg.png"
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-hidden="true"
         />
+        <video
+          className="cq-bg-video cq-bg-video-contain"
+          src="/assets/fish/lobbybg/lobby-bg.mp4"
+          poster="/assets/fish/lobbybg/lobbybg.png"
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-hidden="true"
+        />
+
+        {difficulty ? (
+          <StageRoadmap game={game} />
+        ) : (
+          <DifficultySelector
+            activeCategory={category}
+            completedLevels={progress}
+            onSelectDifficulty={selectDifficulty}
+            onBack={goToCategories}
+          />
+        )}
       </div>
     );
   }

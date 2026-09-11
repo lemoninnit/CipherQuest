@@ -4543,6 +4543,72 @@
   z-index: 4;
 }
 
+/* ==========================================================================
+   CipherGame Selector Screens: Looping Fog Video Background
+   ========================================================================== */
+
+.cipher-container {
+  position: relative !important;
+  background-color: #041525;
+  background-image: var(--lobby-bg-image, url('/assets/fish/lobbybg/lobbybg.png'));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Video Background Layering for Selector Screens */
+.cq-bg-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.cq-bg-video-blur {
+  filter: blur(28px) brightness(0.65);
+  transform: scale(1.08);
+}
+
+.cq-bg-video-contain {
+  object-fit: contain;
+}
+
+/* Allow video to display through selector screens while keeping the scrim active */
+.cipher-container > .cq-lobby-screen {
+  background-color: transparent !important;
+  background-image: none !important;
+  position: relative;
+  z-index: 1;
+}
+
+.cipher-container > .cq-lobby-screen > .cq-lobby-scrim {
+  z-index: 1;
+}
+
+.cipher-container > .cq-lobby-screen > *:not(.cq-lobby-scrim) {
+  position: relative;
+  z-index: 2;
+}
+
+/* Reduced motion preference falls back to static PNG */
+@media (prefers-reduced-motion: reduce) {
+  .cq-bg-video {
+    display: none !important;
+  }
+  .cipher-container > .cq-lobby-screen {
+    background-color: #041525 !important;
+    background-image: var(--lobby-bg-image, url('/assets/fish/lobbybg/lobbybg.png')) !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+  }
+}
+
+
 
 
 
