@@ -4474,4 +4474,75 @@
   }
 }
 
+/* ==========================================================================
+   Caesar Pac-Man: Dungeon Background & Brick Wall Theme (Image 2)
+   ========================================================================== */
+
+/* 1. Play Area Dungeon Background with dark fallback and subtle depth scrim */
+.pacman-layout.caesar-pacman-fullscreen {
+  background-color: #020712 !important;
+  background-image: 
+    linear-gradient(180deg, rgba(2, 7, 18, 0.22) 0%, rgba(2, 7, 18, 0.08) 40%, rgba(2, 7, 18, 0.35) 100%),
+    url('/assets/pacman/pacman-bg.png') !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+
+/* 2. Transparent Maze Grid Container (removes yellow background and outer brown border) */
+.caesar-pacman-fullscreen .maze-grid.size-larger {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 3. Dungeon Brick Wall Cells (scaled cleanly to 46px square cell) */
+.caesar-pacman-fullscreen .maze-cell.wall {
+  background-image: url('/assets/pacman/pacman-brick.png') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  image-rendering: auto !important;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.45);
+  z-index: 4;
+}
+
+/* 4. Fully Transparent Corridors (removes yellow tile fill completely so dungeon shows through) */
+.caesar-pacman-fullscreen .maze-cell.path,
+.caesar-pacman-fullscreen .maze-cell.path.v1,
+.caesar-pacman-fullscreen .maze-cell.path.v2 {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+/* 5. Flash error damage feedback on dungeon maze */
+.caesar-pacman-fullscreen .maze-grid.flash-error {
+  filter: brightness(1.6) drop-shadow(0 0 24px rgba(255, 45, 85, 0.9));
+}
+
+/* 6. Single-layer Blurred Dark-Teal Wash for Corridors (Image 2) */
+.caesar-pacman-fullscreen .maze-grid {
+  position: relative !important;
+}
+
+.caesar-pacman-fullscreen .maze-grid::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: rgba(4, 30, 38, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: inherit;
+}
+
+/* Ensure walls remain 100% opaque and sharp above the corridor blur wash */
+.caesar-pacman-fullscreen .maze-cell.wall {
+  background-color: #121824 !important;
+  z-index: 4;
+}
+
+
+
 

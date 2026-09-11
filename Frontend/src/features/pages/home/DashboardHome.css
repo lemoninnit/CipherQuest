@@ -20,6 +20,18 @@
   color: #ffffff;
 }
 
+/* Background Looping Fog Video */
+.dh-lobby-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* Legibility Scrim Overlay */
 .dh-lobby-scrim {
   position: absolute;
@@ -412,6 +424,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .dh-lobby-video {
+    display: none;
+  }
   .dh-quest-card,
   .dh-menu-item,
   .dh-card-expanded-wrapper {
