@@ -306,6 +306,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const skillActiveRef = useRef(skillActive);
   const isPoweredUpRef = useRef(isPoweredUp);
   const isInvulnerableRef = useRef(isInvulnerable);
+  const invulnerabilityTimerRef = useRef(null);
   const autoRecapShownRef = useRef(false);
   const resumeBtnRef = useRef(null);
   const retryBtnRef = useRef(null);
@@ -365,6 +366,12 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setExplanationStep(-1);
     setIsMenuOpen(false);
     autoRecapShownRef.current = false;
+    if (invulnerabilityTimerRef.current) {
+      clearTimeout(invulnerabilityTimerRef.current);
+      invulnerabilityTimerRef.current = null;
+    }
+    setIsInvulnerable(false);
+    isInvulnerableRef.current = false;
   }, [levelData]);
 
   const gameLoopRef = useRef(null);
@@ -372,15 +379,23 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   // ghostMoveTick toggle to limit ghost speed to exactly 0.5x of Pac-man's speed
   const ghostMoveTickRef = useRef(false);
 
+  const triggerInvulnerability = (duration = 1200) => {
+    if (invulnerabilityTimerRef.current) {
+      clearTimeout(invulnerabilityTimerRef.current);
+    }
+    setIsInvulnerable(true);
+    isInvulnerableRef.current = true;
+    invulnerabilityTimerRef.current = setTimeout(() => {
+      setIsInvulnerable(false);
+      isInvulnerableRef.current = false;
+      invulnerabilityTimerRef.current = null;
+    }, duration);
+  };
+
   const handleLoseHeart = (message) => {
     if (isInvulnerableRef.current) return;
 
-    setIsInvulnerable(true);
-    isInvulnerableRef.current = true;
-    setTimeout(() => {
-      setIsInvulnerable(false);
-      isInvulnerableRef.current = false;
-    }, 1200); // 1.2s invulnerability window
+    triggerInvulnerability(1200); // 1.2s invulnerability window
 
     setFlashError(true);
     setTimeout(() => setFlashError(false), 300);
@@ -449,6 +464,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       setSkillTimeLeft((prev) => {
         if (prev <= 1) {
           setSkillActive(false);
+          skillActiveRef.current = false;
+          triggerInvulnerability(1000); // Grace period on skill freeze natural expiration to absorb lingering overlap
           clearInterval(interval);
           return 0;
         }
@@ -528,7 +545,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           const updated = [];
           for (let i = 0; i < prevGhosts.length; i++) {
             const ghost = prevGhosts[i];
-            if (ghost.eaten) {
+            if (ghost.eaten || ghost.dying) {
               updated.push(ghost);
               continue;
             }
@@ -539,11 +556,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
             // Helper to check if a tile is occupied by another active ghost
             const isTileOccupiedByOtherGhost = (r, c) => {
-              const inUpdated = updated.some(ug => !ug.eaten && ug.row === r && ug.col === c);
+              const inUpdated = updated.some(ug => !ug.eaten && !ug.dying && ug.row === r && ug.col === c);
               if (inUpdated) return true;
               for (let j = i + 1; j < prevGhosts.length; j++) {
                 const pg = prevGhosts[j];
-                if (!pg.eaten && pg.row === r && pg.col === c) return true;
+                if (!pg.eaten && !pg.dying && pg.row === r && pg.col === c) return true;
               }
               return false;
             };
@@ -601,13 +618,15 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       setGhosts((prevGhosts) => {
         let hurtTriggered = false;
         let skillDisabledThisTick = false;
+        let correctGhostEatenThisTick = false;
+        const tickSkillActive = currentSkillActive; // Locked skill state at start of tick
 
-        return prevGhosts.map((ghost) => {
-          if (ghost.eaten) return ghost;
+        const nextGhosts = prevGhosts.map((ghost) => {
+          if (ghost.eaten || ghost.dying) return ghost;
 
           if (ghost.row === pRow && ghost.col === pCol) {
             // Collision detected!
-            if (currentSkillActive) {
+            if (tickSkillActive) {
               // Skill pellet can be used only once per pickup; immediately disable on touch.
               if (!skillDisabledThisTick) {
                 skillDisabledThisTick = true;
@@ -618,6 +637,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
               if (ghost.index !== -1) {
                 // Correct ghost letter: trigger death animation then remove
+                correctGhostEatenThisTick = true;
                 setEatenGhosts((prevEaten) => {
                   const nextEaten = prevEaten.includes(ghost.index)
                     ? prevEaten
@@ -633,7 +653,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 });
 
                 // start dying animation for this ghost
-                setGhosts((prev) => prev.map((g) => g.id === ghost.id ? { ...g, dying: true } : g));
                 setStrikingGhosts((prev) => ({ ...prev, [ghost.id]: true }));
                 setKnightAttacking(true);
                 // Remove ghost after animation (480ms matches CSS animation)
@@ -642,7 +661,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   setStrikingGhosts((prev) => { const np = { ...prev }; delete np[ghost.id]; return np; });
                   setKnightAttacking(false);
                 }, 520);
-                return ghost; // keep ghost in list until timeout cleanup
+                return { ...ghost, dying: true }; // Atomically mark dying in the returned array
               } else {
                 // Decoy ghost! Lose heart, trigger screen shake, rebound ghost
                 if (!currentIsInvulnerable && !hurtTriggered) {
@@ -696,6 +715,13 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           }
           return ghost;
         });
+
+        // If a correct ghost was eaten and no decoy damage was taken this tick, grant invulnerability grace period
+        if (correctGhostEatenThisTick && !hurtTriggered) {
+          triggerInvulnerability(1200);
+        }
+
+        return nextGhosts;
       });
 
       // Chain next game tick loop (180ms constant interval)
