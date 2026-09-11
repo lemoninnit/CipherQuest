@@ -80,25 +80,11 @@ export default function CipherGame() {
   if (category) {
     return (
       <div className="cipher-container">
-        {/* Background Looping Fog Video */}
-        <video
-          className="cq-bg-video cq-bg-video-blur"
-          src="/assets/fish/lobbybg/lobby-bg.mp4"
-          poster="/assets/fish/lobbybg/lobbybg.png"
-          autoPlay
-          loop
-          muted
-          playsInline
-          aria-hidden="true"
-        />
-        <video
-          className="cq-bg-video cq-bg-video-contain"
-          src="/assets/fish/lobbybg/lobby-bg.mp4"
-          poster="/assets/fish/lobbybg/lobbybg.png"
-          autoPlay
-          loop
-          muted
-          playsInline
+        {/* 21:9 Ratio Background Image */}
+        <img
+          className="cq-bg-img"
+          src="/assets/fish/lobbybg/lobbybg.png"
+          alt="Lobby Background"
           aria-hidden="true"
         />
 

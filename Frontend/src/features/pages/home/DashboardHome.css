@@ -32,6 +32,26 @@
   pointer-events: none;
 }
 
+.dh-lobby-video-blur {
+  filter: blur(28px) brightness(0.65);
+  transform: scale(1.08);
+}
+
+.dh-lobby-video-contain {
+  object-fit: fill;
+}
+
+.dh-lobby-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* Legibility Scrim Overlay */
 .dh-lobby-scrim {
   position: absolute;

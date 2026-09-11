@@ -4577,6 +4577,17 @@
   object-fit: contain;
 }
 
+.cq-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* Allow video to display through selector screens while keeping the scrim active */
 .cipher-container > .cq-lobby-screen {
   background-color: transparent !important;

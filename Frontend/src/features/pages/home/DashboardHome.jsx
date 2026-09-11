@@ -180,15 +180,11 @@ const DashboardHome = () => {
 
   return (
     <div className="dh-lobby">
-      {/* Background Looping Fog Video */}
-      <video
-        className="dh-lobby-video"
-        src="/assets/fish/lobbybg/lobby-bg.mp4"
-        poster="/assets/fish/lobbybg/lobbybg.png"
-        autoPlay
-        loop
-        muted
-        playsInline
+      {/* 21:9 Ratio Background Image */}
+      <img
+        className="dh-lobby-bg-img"
+        src="/assets/fish/lobbybg/lobbybg.png"
+        alt="Lobby Background"
         aria-hidden="true"
       />
 
