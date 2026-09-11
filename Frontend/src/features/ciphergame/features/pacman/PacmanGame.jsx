@@ -838,53 +838,90 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const words = (levelData.plaintext || '').split(/\s+/).filter(Boolean);
 
-  if (phase === 'ready') return (
-    <div className="pacman-container fg-root">
-      <GameHudBar
-        title={isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man")}
-        stage={levelData.level}
-        tier={tier}
-        isReady={true}
-        onBackToStages={onBackToStages}
-      />
-      <div className="cq-brief-screen">
-        <div className="cq-brief-card">
-          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>Pac-Man</div>
-          <h2 className="cq-brief-title">
-            {isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man")}
-          </h2>
-          <p className="cq-brief-subtitle">
-            {isPlayfair
-              ? "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the Playfair digraph pairs using the key matrix!"
-              : (isVigenere 
-                ? "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the Vigenère cipher. Use the repeating keyword to find the shifts!"
-                : "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the ciphertext under Caesar decryption.")}
-          </p>
-          <div className="cq-brief-preview">
-            <div className="cq-brief-preview-row">
-              <span className="cq-brief-preview-label">Ciphertext</span>
-              <span className="cq-brief-preview-value">{levelData.ciphertext}</span>
-            </div>
-            {isPlayfair && (
-              <div className="cq-brief-preview-row">
-                <span className="cq-brief-preview-label">Keyword</span>
-                <span className="cq-brief-preview-value" style={{ color: 'var(--neon-yellow)' }}>{levelData.key}</span>
+  if (phase === 'ready') {
+    const stageCode = `OP-${String(levelData.level || 1).padStart(2, '0')}`;
+    const gameTitle = isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man");
+    return (
+      <div className="pacman-container fg-root">
+        <GameHudBar
+          title={gameTitle}
+          stage={levelData.level}
+          tier={tier}
+          isReady={true}
+          onBackToStages={onBackToStages}
+        />
+        <div className="cq-brief-screen">
+          <video
+            className="cq-bg-video cq-bg-video-blur"
+            src="/assets/fish/lobbybg/lobby-bg.mp4"
+            poster="/assets/fish/lobbybg/lobbybg.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <video
+            className="cq-bg-video cq-bg-video-contain"
+            src="/assets/fish/lobbybg/lobby-bg.mp4"
+            poster="/assets/fish/lobbybg/lobbybg.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <div className="cq-lobby-scrim" />
+          <div className="cq-dossier-card">
+            {/* Left Column: Sprite Frame & Stage Code */}
+            <div className="cq-dossier-left-col">
+              <div className="cq-dossier-sprite-frame">
+                <div className="cq-dossier-sprite cq-dossier-sprite-pacman" aria-hidden="true" />
               </div>
-            )}
-            <div className="cq-brief-preview-row">
-              <span className="cq-brief-preview-label">Hint</span>
-              <span style={{ color: '#a0c4d8', fontStyle: 'italic' }}>{levelData.hint}</span>
+              <div className="cq-dossier-stage-code">{stageCode}</div>
+            </div>
+
+            {/* Right Column: Briefing Content */}
+            <div className="cq-dossier-right-col">
+              <div className="cq-dossier-tag">MISSION BRIEF</div>
+              <h2 className="cq-dossier-title">{gameTitle}</h2>
+              <p className="cq-dossier-subtitle">
+                {isPlayfair
+                  ? "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the Playfair digraph pairs using the key matrix!"
+                  : (isVigenere 
+                    ? "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the Vigenère cipher. Use the repeating keyword to find the shifts!"
+                    : "Navigate the maze, eat skill freeze charges to slow down decoys, and eat the correct ghosts to decrypt the ciphertext under Caesar decryption.")}
+              </p>
+              <hr className="cq-dossier-divider" />
+              <div className="cq-dossier-data">
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">CIPHERTEXT</span>
+                  <span className="cq-dossier-value cyan-mono">{levelData.ciphertext}</span>
+                </div>
+                {isPlayfair && (
+                  <div className="cq-dossier-row">
+                    <span className="cq-dossier-label">KEYWORD</span>
+                    <span className="cq-dossier-value yellow-mono">{levelData.key}</span>
+                  </div>
+                )}
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">HINT</span>
+                  <span className="cq-dossier-value hint-text">{levelData.hint}</span>
+                </div>
+              </div>
+              <p className="cq-dossier-how-it-works">
+                <strong>How it works:</strong>{' '}
+                Eat a yellow Skill Pellet, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct plaintext letter!
+              </p>
+              <button className="cq-dossier-action-btn" onClick={() => setPhase('playing')}>
+                Begin operation
+              </button>
             </div>
           </div>
-          <p className="cq-brief-how-it-works">
-            <strong>How it works:</strong>{' '}
-            Eat a yellow Skill Pellet, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct plaintext letter!
-          </p>
-          <button className="cq-brief-start-btn" onClick={() => setPhase('playing')}>Start Pac-Man</button>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   // 1. Find the first unsolved digraph index for active highlight
   let activeIndex = -1;

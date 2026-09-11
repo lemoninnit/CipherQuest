@@ -342,43 +342,81 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   };
 
   /* ════ READY ════ */
-  if (phase === 'ready') return (
-    <div className="fg-root">
-      <GameHudBar
-        title="Caesar Fishing"
-        stage={levelData.level}
-        tier={tier}
-        isReady={true}
-        onBackToStages={onBackToStages}
-      />
-      <div className="cq-brief-screen">
-        <div className="cq-brief-card">
-          <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🎣</div>
-          <h2 className="cq-brief-title">Caesar Fishing</h2>
-          <p className="cq-brief-subtitle">
-            Catch fish carrying shift modifiers (<strong>+1, -1, +2, -2, +3, -3, +5, -5</strong>) to dial in the correct Caesar shift and decrypt the ciphertext.
-          </p>
-          <div className="cq-brief-preview">
-            <div className="cq-brief-preview-row">
-              <span className="cq-brief-preview-label">Ciphertext</span>
-              <span className="cq-brief-preview-value">{levelData.ciphertext}</span>
+  if (phase === 'ready') {
+    const stageCode = `OP-${String(levelData.level || 1).padStart(2, '0')}`;
+    return (
+      <div className="fg-root">
+        <GameHudBar
+          title="Caesar Fishing"
+          stage={levelData.level}
+          tier={tier}
+          isReady={true}
+          onBackToStages={onBackToStages}
+        />
+        <div className="cq-brief-screen">
+          <video
+            className="cq-bg-video cq-bg-video-blur"
+            src="/assets/fish/lobbybg/lobby-bg.mp4"
+            poster="/assets/fish/lobbybg/lobbybg.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <video
+            className="cq-bg-video cq-bg-video-contain"
+            src="/assets/fish/lobbybg/lobby-bg.mp4"
+            poster="/assets/fish/lobbybg/lobbybg.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <div className="cq-lobby-scrim" />
+          <div className="cq-dossier-card">
+            {/* Left Column: Sprite Frame & Stage Code */}
+            <div className="cq-dossier-left-col">
+              <div className="cq-dossier-sprite-frame">
+                <div className="cq-dossier-sprite cq-dossier-sprite-fish" aria-hidden="true" />
+              </div>
+              <div className="cq-dossier-stage-code">{stageCode}</div>
             </div>
-            <div className="cq-brief-preview-row">
-              <span className="cq-brief-preview-label">Hint</span>
-              <span style={{ color: '#a0c4d8', fontStyle: 'italic' }}>{levelData.hint}</span>
+
+            {/* Right Column: Briefing Content */}
+            <div className="cq-dossier-right-col">
+              <div className="cq-dossier-tag">MISSION BRIEF</div>
+              <h2 className="cq-dossier-title">Caesar Fishing</h2>
+              <p className="cq-dossier-subtitle">
+                Catch fish carrying shift modifiers to dial in the correct Caesar shift and decrypt the ciphertext.
+              </p>
+              <hr className="cq-dossier-divider" />
+              <div className="cq-dossier-data">
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">CIPHERTEXT</span>
+                  <span className="cq-dossier-value cyan-mono">{levelData.ciphertext}</span>
+                </div>
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">HINT</span>
+                  <span className="cq-dossier-value hint-text">{levelData.hint}</span>
+                </div>
+              </div>
+              <p className="cq-dossier-how-it-works">
+                <strong>How it works:</strong>{' '}
+                Click fish carrying shift modifiers (<strong>+1, -1, +2, -2, +3, -3, +5, -5</strong>) to adjust the active shift key.
+                When the decrypted text matches the plaintext, submit! Formula:{' '}
+                <code>Plain = (Cipher + Basket Shift) mod 26</code>
+              </p>
+              <button className="cq-dossier-action-btn" onClick={startGame}>
+                Begin operation
+              </button>
             </div>
           </div>
-          <p className="cq-brief-how-it-works">
-            <strong>How it works:</strong>{' '}
-            The whole ciphertext uses one Caesar basket shift. Click a fish to reel it in — its value adjusts the active shift key.
-            When the decrypted text matches the plaintext, submit! Formula:{' '}
-            <code style={{ color: 'var(--neon-cyan)' }}>Plain = (Cipher + Basket Shift) mod 26</code>
-          </p>
-          <button className="cq-brief-start-btn" onClick={startGame}>🎣 Start Fishing</button>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   /* ════ PLAYING ════ */
   const currentShift = basketShift;

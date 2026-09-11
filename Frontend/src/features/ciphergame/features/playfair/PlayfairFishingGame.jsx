@@ -263,45 +263,82 @@ export default function PlayfairFishingGame({
         />
 
         <main className="cq-brief-screen">
-          <section className="cq-brief-card pf-ready-card">
-            <div className="cq-brief-title">Catch Digraphs, Not Letters</div>
-            <div className="cq-brief-subtitle">
-              Playfair encrypts letter pairs through a 5 by 5 matrix. Your line catches candidate plaintext pairs.
-              Use row, column, and rectangle rules to recover the message without turning it into a plain quiz.
+          <video
+            className="cq-bg-video cq-bg-video-blur"
+            src="/assets/fish/lobbybg/lobby-bg.mp4"
+            poster="/assets/fish/lobbybg/lobbybg.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <video
+            className="cq-bg-video cq-bg-video-contain"
+            src="/assets/fish/lobbybg/lobby-bg.mp4"
+            poster="/assets/fish/lobbybg/lobbybg.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <div className="cq-lobby-scrim" />
+          <div className="cq-dossier-card">
+            {/* Left Column: Sprite Frame & Stage Code */}
+            <div className="cq-dossier-left-col">
+              <div className="cq-dossier-sprite-frame">
+                <div className="cq-dossier-sprite cq-dossier-sprite-fish" aria-hidden="true" />
+              </div>
+              <div className="cq-dossier-stage-code">
+                {`OP-${String(levelData.level || 1).padStart(2, '0')}`}
+              </div>
             </div>
 
-            <div className="cq-brief-preview">
-              <div className="cq-brief-preview-row">
-                <span className="cq-brief-preview-label">Ciphertext</span>
-                <span className="cq-brief-preview-value">{levelData.pairCiphertext}</span>
+            {/* Right Column: Briefing Content */}
+            <div className="cq-dossier-right-col">
+              <div className="cq-dossier-tag">MISSION BRIEF</div>
+              <h2 className="cq-dossier-title">Playfair Fishing</h2>
+              <p className="cq-dossier-subtitle">
+                Playfair encrypts letter pairs through a 5×5 matrix. Use row, column, and rectangle rules to recover candidate plaintext pairs.
+              </p>
+              <hr className="cq-dossier-divider" />
+              <div className="cq-dossier-data">
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">CIPHERTEXT</span>
+                  <span className="cq-dossier-value cyan-mono">{levelData.pairCiphertext}</span>
+                </div>
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">KEYWORD</span>
+                  <span className="cq-dossier-value yellow-mono">{levelData.key}</span>
+                </div>
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">HINT</span>
+                  <span className="cq-dossier-value hint-text">{levelData.hint}</span>
+                </div>
+                {levelData.keyClue && (
+                  <div className="cq-dossier-row">
+                    <span className="cq-dossier-label">KEY CLUE</span>
+                    <span className="cq-dossier-value yellow-mono">{levelData.keyClue}</span>
+                  </div>
+                )}
               </div>
-              <div className="cq-brief-preview-row">
-                <span className="cq-brief-preview-label">Keyword</span>
-                <span className="cq-brief-preview-value">{levelData.key}</span>
-              </div>
-              <div className="cq-brief-preview-row">
-                <span className="cq-brief-preview-label">Hint</span>
-                <span className="cq-brief-preview-value">{levelData.hint}</span>
-              </div>
-              <div className="cq-brief-preview-row">
-                <span className="cq-brief-preview-label">Key clue</span>
-                <span className="cq-brief-preview-value">{levelData.keyClue}</span>
-              </div>
-            </div>
 
-            <div className="pf-matrix-preview" aria-label="Playfair key matrix">
-              {matrix.flat().map((letter) => (
-                <span key={letter}>{letter}</span>
-              ))}
-            </div>
+              <div className="pf-matrix-preview" aria-label="Playfair key matrix" style={{ margin: '8px auto 16px' }}>
+                {matrix.flat().map((letter) => (
+                  <span key={letter}>{letter}</span>
+                ))}
+              </div>
 
-            <div className="cq-brief-how-it-works">
-              <strong>Fishing rule:</strong> each fish carries a two-letter plaintext candidate. Correct catches fill the
-              message. Wrong catches explain the matrix rule you missed, and after two misses the current rule is revealed.
-            </div>
+              <p className="cq-dossier-how-it-works">
+                <strong>Fishing rule:</strong> each fish carries a two-letter plaintext candidate. Correct catches fill the message. Wrong catches explain the matrix rule you missed.
+              </p>
 
-            <button className="cq-brief-start-btn" onClick={startGame}>Start Fishing</button>
-          </section>
+              <button className="cq-dossier-action-btn" onClick={startGame}>
+                Begin operation
+              </button>
+            </div>
+          </div>
         </main>
       </div>
     );

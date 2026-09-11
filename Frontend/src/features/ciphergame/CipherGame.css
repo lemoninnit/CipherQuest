@@ -4907,6 +4907,408 @@
   outline-offset: 4px !important;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════════
+   MISSION DOSSIER BRIEFING SCREEN (Overhaul)
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* Cathedral background & Scrim for all briefing screens */
+.cq-brief-screen {
+  --lobby-bg-image: url('/assets/fish/lobbybg/lobbybg.png');
+  background-color: #041525;
+  background-image: var(--lobby-bg-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: hidden !important;
+  min-height: calc(100vh - 64px);
+  width: 100%;
+  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: clamp(16px, 2vh, 28px) !important;
+}
+
+/* Background video layers inside briefing screens */
+.cq-brief-screen .cq-bg-video {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+/* Substantially reduce background blur: readable cathedral architecture, soft backdrop */
+.cq-brief-screen .cq-bg-video-blur {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  filter: blur(4px) brightness(0.75) !important;
+  transform: scale(1.02) !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+.cq-brief-screen .cq-bg-video-contain {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+}
+
+/* Scrim overlay inside briefing screens */
+.cq-brief-screen .cq-lobby-scrim {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(3, 10, 24, 0.3) 0%, rgba(3, 10, 24, 0.78) 100%),
+    linear-gradient(to bottom, rgba(3, 10, 24, 0.5) 0%, transparent 40%, rgba(3, 10, 24, 0.78) 100%) !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+/* Ensure the dossier card sits firmly on top of all background & scrim layers */
+.cq-brief-screen .cq-dossier-card {
+  position: relative !important;
+  z-index: 10 !important;
+  margin: auto !important;
+}
+
+/* ── Sprint Screen Full-Bleed Treatment (Bug 3 Fix) ── */
+/* Remove inset container border, rounded corners, box-shadow, and padding so Sprint matches Fishing and Pac-Man */
+.sprint-container {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.sprint-container .sprint-widescreen {
+  padding: 16px 24px !important;
+  box-sizing: border-box !important;
+}
+
+/* Restyle red "Exit to Stages" button to match cyan selector back buttons */
+.fg-btn-back-nav {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: rgba(0, 229, 255, 0.08) !important;
+  border: 1px solid rgba(0, 229, 255, 0.35) !important;
+  color: #00e5ff !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  outline: none !important;
+}
+
+.fg-btn-back-nav:hover {
+  background: rgba(0, 229, 255, 0.18) !important;
+  border-color: #00e5ff !important;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+
+.fg-btn-back-nav:focus-visible {
+  background: rgba(0, 229, 255, 0.18) !important;
+  border-color: #00e5ff !important;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.4) !important;
+  outline: 2px solid #00e5ff !important;
+  outline-offset: 3px !important;
+  color: #ffffff !important;
+}
+
+/* Dossier Card Container */
+.cq-dossier-card {
+  background: rgba(6, 18, 36, 0.88);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 14px;
+  padding: clamp(20px, 2.8vh, 32px) clamp(24px, 3.2vw, 36px);
+  max-width: 680px;
+  width: 100%;
+  box-sizing: border-box;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 229, 255, 0.08);
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: clamp(20px, 2.5vw, 32px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Left Column: Fixed ~110px */
+.cq-dossier-left-col {
+  width: 100px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 86px Square Bordered Frame */
+.cq-dossier-sprite-frame {
+  width: 86px;
+  height: 86px;
+  border: 1.5px solid rgba(0, 229, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(0, 229, 255, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+  box-shadow: inset 0 0 12px rgba(0, 229, 255, 0.06), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Base Sprite Rules */
+.cq-dossier-sprite {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  flex-shrink: 0;
+}
+
+/* Fishing Sprite: P Fish 1.1.png (260x213) */
+.cq-dossier-sprite-fish {
+  width: 68px;
+  height: 68px;
+  background-image: url('/assets/fish/positive%20fish%20(freshwater)/P%20Fish%201.1.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* Pac-Man Sprite: Torch_Red.png (1344x960, 7 cols x 5 rows = 192x192 per frame)
+   Displaying frame 0 (idle) at 70x70px:
+   7 cols * 70px = 490px width, 5 rows * 70px = 350px height */
+.cq-dossier-sprite-pacman {
+  width: 70px;
+  height: 70px;
+  background-image: url('/assets/pacman/Enemy%20Goblins/Torch_Red.png');
+  background-size: 490px 350px;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+}
+
+/* Sprint Sprite: IDLE.png (672x84, 8 cols x 1 row = 84x84 per frame)
+   Displaying frame 0 (idle) at 72x72px:
+   8 cols * 72px = 576px width, 1 row * 72px = 72px height */
+.cq-dossier-sprite-sprint {
+  width: 72px;
+  height: 72px;
+  background-image: url('/assets/sprint/user/IDLE.png');
+  background-size: 576px 72px;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+}
+
+/* Small Mono Stage Code beneath the sprite frame */
+.cq-dossier-stage-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #5a7d9a;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Right Column: Fills remaining space */
+.cq-dossier-right-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Small Mono Cyan Tag */
+.cq-dossier-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #00e5ff;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* Game Title */
+.cq-dossier-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.4rem, 2.2vw, 1.7rem);
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 6px 0;
+  line-height: 1.2;
+}
+
+/* Description Subtitle */
+.cq-dossier-subtitle {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #94a3b8;
+  margin: 0 0 14px 0;
+}
+
+/* Hairline Divider */
+.cq-dossier-divider {
+  border: none;
+  border-top: 1px solid rgba(0, 229, 255, 0.16);
+  margin: 0 0 14px 0;
+  width: 100%;
+}
+
+/* Briefing Data Rows Container */
+.cq-dossier-data {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* Single Briefing Data Row */
+.cq-dossier-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+/* Data Row Label */
+.cq-dossier-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #5a7d9a;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  min-width: 105px;
+  padding-top: 2px;
+}
+
+/* Data Row Value */
+.cq-dossier-value {
+  flex: 1;
+  text-align: right;
+  word-break: break-word;
+  color: #e2e8f0;
+}
+
+.cq-dossier-value.cyan-mono {
+  font-family: 'JetBrains Mono', monospace;
+  color: #00e5ff;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  font-size: 0.98rem;
+}
+
+.cq-dossier-value.yellow-mono {
+  font-family: 'JetBrains Mono', monospace;
+  color: #facc15;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  font-size: 0.95rem;
+}
+
+.cq-dossier-value.hint-text {
+  color: #cbd5e1;
+  font-size: 0.88rem;
+}
+
+/* Explanation / How It Works */
+.cq-dossier-how-it-works {
+  background: rgba(0, 229, 255, 0.03);
+  border-left: 2px solid rgba(0, 229, 255, 0.4);
+  padding: 8px 12px;
+  margin-bottom: 18px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #7ba7bc;
+  border-radius: 0 6px 6px 0;
+}
+
+.cq-dossier-how-it-works strong {
+  color: #39ff14;
+}
+
+.cq-dossier-how-it-works code {
+  color: #00e5ff;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Ghost Outline Action Button */
+.cq-dossier-action-btn {
+  width: 100%;
+  padding: 11px 20px;
+  background: transparent;
+  border: 1.5px solid #00e5ff;
+  border-radius: 8px;
+  color: #00e5ff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.cq-dossier-action-btn:hover {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: #00e5ff;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.35);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.cq-dossier-action-btn:focus-visible {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: #00e5ff;
+  outline: 2px solid #00e5ff;
+  outline-offset: 3px;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.4);
+  color: #ffffff;
+}
+
+/* Responsive adjustment for compact screens (e.g. mobile/small tablet) */
+@media (max-width: 640px) {
+  .cq-dossier-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .cq-dossier-left-col {
+    width: 100%;
+  }
+  .cq-dossier-value {
+    text-align: left;
+  }
+}
+
 
 
 

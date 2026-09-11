@@ -720,28 +720,64 @@ export default function CipherSprint({
       {/* ───── Ready Screen ───── */}
       {sprintStep === 'ready' ? (
         <div className="cq-brief-screen">
-          <div className="cq-brief-card">
-            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🏃</div>
-            <h2 className="cq-brief-title">Cipher Sprint Relay</h2>
-            <p className="cq-brief-subtitle">
-              Baton relay decryption challenge! Steer the runner into the lane carrying the correct plaintext letter to decrypt checkpoints.
-            </p>
-
-            <div className="cq-brief-preview">
-              <div className="cq-brief-preview-row">
-                <span className="cq-brief-preview-label">Ciphertext</span>
-                <span className="cq-brief-preview-value">{levelData.ciphertext}</span>
+          <video
+            className="cq-bg-video cq-bg-video-blur"
+            src="/assets/fish/lobbybg/lobby-bg.mp4"
+            poster="/assets/fish/lobbybg/lobbybg.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <video
+            className="cq-bg-video cq-bg-video-contain"
+            src="/assets/fish/lobbybg/lobby-bg.mp4"
+            poster="/assets/fish/lobbybg/lobbybg.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <div className="cq-lobby-scrim" />
+          <div className="cq-dossier-card">
+            {/* Left Column: Sprite Frame & Stage Code */}
+            <div className="cq-dossier-left-col">
+              <div className="cq-dossier-sprite-frame">
+                <div className="cq-dossier-sprite cq-dossier-sprite-sprint" aria-hidden="true" />
               </div>
-              <div className="cq-brief-preview-row">
-                <span className="cq-brief-preview-label">Hint</span>
-                <span style={{ color: '#a0c4d8', fontStyle: 'italic' }}>{levelData.hint}</span>
+              <div className="cq-dossier-stage-code">
+                {`OP-${String(levelData.level || 1).padStart(2, '0')}`}
               </div>
             </div>
-            <p className="cq-brief-how-it-works">
-              <strong>How it works:</strong>{' '}
-              Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter based on the Caesar Shift Key clue to clear the checkpoint gate. Decoy letters will cause a crash! Press <strong>F</strong> to toggle fullscreen.
-            </p>
-            <button className="cq-brief-start-btn" onClick={handleStartSprint}>🚀 Start Relay Run</button>
+
+            {/* Right Column: Briefing Content */}
+            <div className="cq-dossier-right-col">
+              <div className="cq-dossier-tag">MISSION BRIEF</div>
+              <h2 className="cq-dossier-title">Cipher Sprint Relay</h2>
+              <p className="cq-dossier-subtitle">
+                Baton relay decryption challenge! Steer the runner into the lane carrying the correct plaintext letter to decrypt checkpoints.
+              </p>
+              <hr className="cq-dossier-divider" />
+              <div className="cq-dossier-data">
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">CIPHERTEXT</span>
+                  <span className="cq-dossier-value cyan-mono">{levelData.ciphertext}</span>
+                </div>
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">HINT</span>
+                  <span className="cq-dossier-value hint-text">{levelData.hint}</span>
+                </div>
+              </div>
+              <p className="cq-dossier-how-it-works">
+                <strong>How it works:</strong>{' '}
+                Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter based on the Caesar Shift Key clue to clear the checkpoint gate. Decoy letters will cause a crash! Press <strong>F</strong> to toggle fullscreen.
+              </p>
+              <button className="cq-dossier-action-btn" onClick={handleStartSprint}>
+                Begin operation
+              </button>
+            </div>
           </div>
         </div>
       ) : (

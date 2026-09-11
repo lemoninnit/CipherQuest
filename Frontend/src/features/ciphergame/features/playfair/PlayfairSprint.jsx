@@ -621,31 +621,68 @@ export default function PlayfairSprint({
 
       {sprintStep === 'ready' ? (
         <div className="cq-brief-screen">
-          <div className="cq-brief-card">
-            <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🏃</div>
-            <h2 className="cq-brief-title">Playfair Relay Run</h2>
-            <p className="cq-brief-subtitle">
-              Sprint through Playfair hurdles! Decode each digraph pair using the 5×5 matrix before the timer expires.
-            </p>
-            <div className="cq-brief-preview">
-              <div className="cq-brief-preview-row">
-                <span className="cq-brief-preview-label">Ciphertext</span>
-                <span className="cq-brief-preview-value">{levelData.pairCiphertext}</span>
+          <video
+            className="cq-bg-video cq-bg-video-blur"
+            src="/assets/fish/lobbybg/lobby-bg.mp4"
+            poster="/assets/fish/lobbybg/lobbybg.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <video
+            className="cq-bg-video cq-bg-video-contain"
+            src="/assets/fish/lobbybg/lobby-bg.mp4"
+            poster="/assets/fish/lobbybg/lobbybg.png"
+            autoPlay
+            loop
+            muted
+            playsInline
+            aria-hidden="true"
+          />
+          <div className="cq-lobby-scrim" />
+          <div className="cq-dossier-card">
+            {/* Left Column: Sprite Frame & Stage Code */}
+            <div className="cq-dossier-left-col">
+              <div className="cq-dossier-sprite-frame">
+                <div className="cq-dossier-sprite cq-dossier-sprite-sprint" aria-hidden="true" />
               </div>
-              <div className="cq-brief-preview-row">
-                <span className="cq-brief-preview-label">Keyword</span>
-                <span className="cq-brief-preview-value" style={{ color: 'var(--neon-yellow)' }}>{levelData.key}</span>
-              </div>
-              <div className="cq-brief-preview-row">
-                <span className="cq-brief-preview-label">Hint</span>
-                <span style={{ color: '#a0c4d8', fontStyle: 'italic' }}>{levelData.hint}</span>
+              <div className="cq-dossier-stage-code">
+                {`OP-${String(levelData.level || 1).padStart(2, '0')}`}
               </div>
             </div>
-            <p className="cq-brief-how-it-works">
-              <strong>How it works:</strong>{' '}
-              Switch lanes to pick the correct digraph pair for each hurdle! Press <strong>F</strong> to toggle fullscreen.
-            </p>
-            <button className="cq-brief-start-btn" onClick={handleStartSprint}>🚀 Start Relay Run</button>
+
+            {/* Right Column: Briefing Content */}
+            <div className="cq-dossier-right-col">
+              <div className="cq-dossier-tag">MISSION BRIEF</div>
+              <h2 className="cq-dossier-title">Playfair Relay Run</h2>
+              <p className="cq-dossier-subtitle">
+                Sprint through Playfair hurdles! Decode each digraph pair using the 5×5 matrix before the timer expires.
+              </p>
+              <hr className="cq-dossier-divider" />
+              <div className="cq-dossier-data">
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">CIPHERTEXT</span>
+                  <span className="cq-dossier-value cyan-mono">{levelData.pairCiphertext}</span>
+                </div>
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">KEYWORD</span>
+                  <span className="cq-dossier-value yellow-mono">{levelData.key}</span>
+                </div>
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">HINT</span>
+                  <span className="cq-dossier-value hint-text">{levelData.hint}</span>
+                </div>
+              </div>
+              <p className="cq-dossier-how-it-works">
+                <strong>How it works:</strong>{' '}
+                Switch lanes to pick the correct digraph pair for each hurdle! Press <strong>F</strong> to toggle fullscreen.
+              </p>
+              <button className="cq-dossier-action-btn" onClick={handleStartSprint}>
+                Begin operation
+              </button>
+            </div>
           </div>
         </div>
       ) : (
