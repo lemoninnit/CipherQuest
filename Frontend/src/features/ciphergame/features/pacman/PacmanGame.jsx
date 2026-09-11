@@ -60,6 +60,14 @@ const caesarDecryptChar = (char, shift) => {
   return char;
 };
 
+const caesarShiftChar = (char, shift) => {
+  const code = char.charCodeAt(0);
+  if (code >= 65 && code <= 90) {
+    return String.fromCharCode(((code - 65 + shift) % 26 + 26) % 26 + 65);
+  }
+  return char;
+};
+
 // Pure utility to dynamically spawn pellets randomly on paths (MAZE_GRID[r][c] === 0)
 // and never on walls or initial sprite positions, ensuring variety on resets.
 const generateRandomPellets = (ghostList, pacmanPos) => {
@@ -238,7 +246,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
   const isVigenere = !!levelData.targetKey;
   const isPlayfair = !!levelData.matrix;
-  const targetShift = isVigenere ? 0 : (levelData.targetShifts && levelData.targetShifts[0] ? levelData.targetShifts[0] : 0);
+  const isCaesar = !isVigenere && !isPlayfair;
+  const targetShift = isVigenere ? 0 : (levelData.targetShifts?.[0] ?? levelData.shift ?? levelData.targetShift ?? 0);
 
   // Initial Coordinates
   const initialPacman = { row: 1, col: 1 };
@@ -298,6 +307,28 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const isPoweredUpRef = useRef(isPoweredUp);
   const isInvulnerableRef = useRef(isInvulnerable);
   const autoRecapShownRef = useRef(false);
+  const resumeBtnRef = useRef(null);
+  const retryBtnRef = useRef(null);
+  const wasMenuOpenRef = useRef(false);
+
+  /* ── Focus management for pause menu ── */
+  useEffect(() => {
+    if (isMenuOpen) {
+      wasMenuOpenRef.current = true;
+      setTimeout(() => resumeBtnRef.current?.focus(), 50);
+    } else if (wasMenuOpenRef.current) {
+      wasMenuOpenRef.current = false;
+      const menuBtn = document.querySelector('.fg-header-left .fg-btn-back-nav');
+      menuBtn?.focus();
+    }
+  }, [isMenuOpen]);
+
+  /* ── Focus management for game over modal ── */
+  useEffect(() => {
+    if (gameOver) {
+      setTimeout(() => retryBtnRef.current?.focus(), 50);
+    }
+  }, [gameOver]);
 
   useEffect(() => { pacmanRef.current = pacman; }, [pacman]);
   useEffect(() => { ghostsRef.current = ghosts; }, [ghosts]);
@@ -372,6 +403,18 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   // Key hooks
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // ESC key toggle for pause menu (active playing state only)
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        if (phase === 'playing' && !gameOver && !levelSolved) {
+          e.preventDefault();
+          setIsMenuOpen((prev) => !prev);
+        }
+        return;
+      }
+
+      // Block controls when menu is open
+      if (isMenuOpen) return;
+
       if (['ArrowUp', 'KeyW'].includes(e.code)) {
         e.preventDefault();
         triggerSteer('UP');
@@ -842,6 +885,85 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     if (lookup[b]) cipherHighlight.add(`${lookup[b].row}-${lookup[b].col}`);
   }
 
+  const renderMazeBoard = () => (
+    <div className={`maze-grid size-larger ${flashError ? 'flash-error' : ''} ${isScreenShaking ? 'screen-shake' : ''}`}>
+      {/* Static grid board paths and walls */}
+      {MAZE_GRID.map((rowArr, rIdx) =>
+        rowArr.map((cellVal, cIdx) => {
+          let cellClass = "maze-cell";
+          if (cellVal === 1) cellClass += " wall";
+          else cellClass += " path";
+          return <div key={`bg-${rIdx}-${cIdx}`} className={cellClass}></div>;
+        })
+      )}
+
+      {/* Absolute 30fps gliding Pac-Man sprite (No delay) */}
+      <div 
+        className={`pacman-sprite-absolute ${isInvulnerable ? 'invulnerable-blink' : ''}`}
+        style={{
+          left: `${pacman.col * 46}px`,
+          top: `${pacman.row * 46}px`
+        }}
+      >
+        <div className="knight-actor">
+          {(() => {
+            const facing = facingFromDir(pacmanDir);
+            const faceClass = facing === 'LEFT' ? 'face-left' : (facing === 'UP' ? 'face-up' : (facing === 'DOWN' ? 'face-down' : ''));
+            const movementClass = (pacmanDir && pacmanDir !== 'NONE') ? 'run' : 'idle';
+            const attackClass = knightAttacking ? 'attack' : '';
+            return <div className={`knight-sheet ${faceClass} ${movementClass} ${attackClass}`} />;
+          })()}
+        </div>
+      </div>
+
+      {/* Slower gliding Ghosts (0.5x speed) */}
+      {ghosts.map((ghost) => {
+        if (ghost.eaten) return null;
+        const isVulnerable = skillActive;
+        const facing = facingFromDir(null, ghost.dir);
+        const faceClass = facing === 'LEFT' ? 'face-left' : (facing === 'UP' ? 'face-up' : (facing === 'DOWN' ? 'face-down' : ''));
+        const movementClass = ghost.moving ? 'run' : 'idle';
+        const dyingClass = ghost.dying ? 'attack' : '';
+        return (
+          <div
+            key={ghost.id}
+            className={`ghost-sprite-absolute ${isVulnerable ? 'vulnerable' : ''}`}
+            style={{
+              left: `${ghost.col * 46}px`,
+              top: `${ghost.row * 46}px`
+            }}
+          >
+              <div className="goblin-actor">
+                <div className={`goblin-sheet ${faceClass} ${movementClass} ${dyingClass}`} />
+                <span className="ghost-inner-letter">{ghost.char}</span>
+              </div>
+          </div>
+        );
+      })}
+
+      {/* Absolute Pellet positions (Non-stacking) */}
+      {pellets.map((pellet) => {
+        if (pellet.eaten) return null;
+        return (
+          <div
+            key={pellet.id}
+            className="pellet-entity"
+            style={{
+              left: `${pellet.col * 46}px`,
+              top: `${pellet.row * 46}px`
+            }}
+          >
+            {pellet.isSkill ? (
+              <div className="gold-pellet-sheet" />
+            ) : (
+              <div className="circle-pellet-badge score-dot" />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="pacman-container fg-root">
       {showExplanation && (
@@ -1027,395 +1149,459 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         lives={lives}
       />
 
-      <div className="pacman-layout">
-        {/* Sidebar Cards */}
-        <aside className="fg-sidebar">
-          {/* Active Shift Card */}
-          {isPlayfair ? (
-            <div className="fg-basket-card">
-              <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔲</div>
-              <div className="fg-basket-shift-value" style={{ color: 'var(--neon-yellow)', fontSize: '1.3rem', letterSpacing: '1px' }}>{levelData.key}</div>
-              <span className="fg-basket-label">Playfair Key Clue</span>
+      {isCaesar ? (
+        <div className="pacman-layout caesar-pacman-fullscreen">
+          <div className="pacman-fullscreen-stage">
+            {/* 1. Centered Maze Board Area */}
+            <div className="pacman-fullscreen-board-area">
+              {renderMazeBoard()}
             </div>
-          ) : isVigenere ? (
-            <div className="fg-basket-card">
-              <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔑</div>
-              <div className="fg-basket-shift-value" style={{ color: 'var(--neon-green)', fontSize: '1.4rem' }}>{levelData.targetKey}</div>
-              <span className="fg-basket-label">{levelData.keyClue || "Vigenère Key"}</span>
-            </div>
-          ) : (
-            <div className="fg-basket-card">
-              <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔑</div>
-              <div className="fg-basket-shift-value" style={{ color: 'var(--neon-green)' }}>+{targetShift}</div>
-              <span className="fg-basket-label">Caesar Shift Key Clue</span>
-            </div>
-          )}
 
-          {isVigenere && (
-            <button className="vg-tabula-modal-btn" onClick={() => setShowTabula(true)} style={{ marginTop: '4px', marginBottom: '4px' }}>
-              <span className="material-symbols-outlined">grid_on</span>
-              <span>View Tabula Recta</span>
-            </button>
-          )}
+            {/* 2. Top-Center Floating Word Panel */}
+            <section className="caesar-pacman-floating-word-panel">
+              <div className="caesar-pacman-word-card">
+                <div className="caesar-pacman-word-top-row">
+                  <span className="caesar-pacman-shift-label">Active Shift:</span>
+                  <span className="caesar-pacman-shift-badge">+{targetShift}</span>
+                </div>
+                <div className="fg-letter-cells">
+                  {(levelData.plaintext || '').split('').map((char, idx) => {
+                    const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
+                    const isGhostIndex = !mask;
+                    const isEaten = eatenGhosts.includes(idx);
+                    const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
 
-          {/* Playfair 5x5 Matrix Guide */}
-          {isPlayfair && (
-            <div className="sidebar-matrix-hud vg-sidebar-card" style={{ width: '100%', background: 'rgba(6,19,36,0.5)', border: '1px solid rgba(0, 229, 255, 0.25)', borderRadius: '12px', padding: '12px' }}>
-              <div className="vg-sidebar-title" style={{ fontSize: '0.85rem', color: 'var(--neon-cyan)', marginBottom: '8px', fontWeight: 'bold', textAlign: 'center' }}>🔲 Key Matrix</div>
-              <div className="pf-matrix" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', maxWidth: '170px', margin: '0 auto' }}>
-                {(levelData.matrix || []).map((row, rowIndex) => row.map((letter, colIndex) => {
-                  const key = `${rowIndex}-${colIndex}`;
-                  const isHighlighted = cipherHighlight.has(key);
-                  return (
-                    <span key={letter} className={isHighlighted ? 'cipher-cell' : ''} style={{ fontSize: '0.8rem', padding: '4px 0', border: isHighlighted ? '1px solid var(--neon-yellow)' : '1px solid rgba(0, 229, 255, 0.1)', background: isHighlighted ? 'rgba(255, 215, 0, 0.15)' : 'rgba(0, 229, 255, 0.03)', color: isHighlighted ? 'var(--neon-yellow)' : '#fff', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>
-                      {letter}
-                    </span>
-                  );
-                }))}
-              </div>
-              
-              <div className="vg-active-pair-info" style={{ marginTop: '12px', textAlign: 'center', fontSize: '0.78rem', background: 'rgba(255, 255, 255, 0.03)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                <div>Active Ciphertext: <strong style={{ color: 'var(--neon-yellow)', fontSize: '0.95rem', letterSpacing: '1px' }}>{cipherPair || 'N/A'}</strong></div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Find highlighted letters in matrix above & decrypt!</div>
-              </div>
-            </div>
-          )}
+                    let cellClass = "fg-letter-cell";
+                    if (mask) {
+                      cellClass += " correct-plain";
+                    } else if (isGhostIndex) {
+                      cellClass += isEaten ? " correct-plain" : " masked";
+                    }
 
-          {/* Playfair Active Rule Clue Card */}
-          {isPlayfair && cipherPair && (
-            <div className="sidebar-matrix-hud vg-sidebar-card" style={{ width: '100%', background: 'rgba(6,19,36,0.5)', border: '1px solid rgba(0, 229, 255, 0.25)', borderRadius: '12px', padding: '12px' }}>
-              <div className="vg-sidebar-title" style={{ fontSize: '0.85rem', color: 'var(--neon-cyan)', marginBottom: '8px', fontWeight: 'bold', textAlign: 'center' }}>🔬 Geometry Rule</div>
-              <div className="pf-rule-pill revealed" style={{ margin: '0 auto', fontSize: '0.75rem', fontWeight: 'bold', textAlign: 'center' }}>
-                {levelData.rules ? levelData.rules[activeIndex] : ''}
-              </div>
-              <p className="pf-sidebar-note" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '6px', lineHeight: '1.4' }}>
-                {describePlayfairRule(levelData.rules ? levelData.rules[activeIndex] : '', 'decrypt')}
-              </p>
-            </div>
-          )}
-
-          {/* Skill Charge */}
-          <div className={`skill-charge-card ${hasSkillCharge ? 'charged' : ''} ${skillActive ? 'active' : ''}`}>
-            <div className="skill-charge-title">Skill Freeze Charge</div>
-            <div className="skill-pellet-icon-wrapper">
-              <span className="material-symbols-outlined skill-bolt">flash_on</span>
-            </div>
-            {skillActive ? (
-              <div className="skill-timer-badge">FREEZE ACTIVE: {skillTimeLeft}s</div>
-            ) : hasSkillCharge ? (
-              <button className="activate-skill-btn" onClick={activateSkill}>Press SPACEBAR</button>
-            ) : (
-              <div className="skill-hint-label">Eat yellow pellet to charge</div>
-            )}
-          </div>
-
-          {/* Steer controls */}
-          <div className="joystick-panel">
-            <span className="fg-ref-title" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Steering Console</span>
-            <div className="joystick-controls">
-              <button className="joystick-btn" onClick={() => triggerSteer('UP')}>
-                <span className="material-symbols-outlined">keyboard_arrow_up</span>
-              </button>
-              <div className="joystick-row">
-                <button className="joystick-btn" onClick={() => triggerSteer('LEFT')}>
-                  <span className="material-symbols-outlined">keyboard_arrow_left</span>
-                </button>
-                <button className="joystick-btn" onClick={() => triggerSteer('DOWN')}>
-                  <span className="material-symbols-outlined">keyboard_arrow_down</span>
-                </button>
-                <button className="joystick-btn" onClick={() => triggerSteer('RIGHT')}>
-                  <span className="material-symbols-outlined">keyboard_arrow_right</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Yellow Highlighted: Educational Clues (No direct answers) */}
-          <div className="sidebar-action-hud">
-            {levelSolved ? (
-              <div className="fg-success-panel">
-                <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}>✅ SECURED!</h3>
-                <p style={{ fontSize: '0.75rem', margin: '0 0 8px 0' }}>All segments decrypted successfully.</p>
-                <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', padding: '8px', fontSize: '0.85rem' }}>
-                  🚀 Verify & Submit
-                </button>
-                <button className="fg-btn fg-btn-secondary" onClick={onReplayNewQuestion} style={{ width: '100%', marginTop: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px', fontSize: '0.85rem' }}>
-                  🔄 Play Again
-                </button>
-              </div>
-            ) : ruleViolation ? (
-              <div className="fg-alert-panel">
-                <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>warning</span>
-                  Alert
-                </strong>
-                <p style={{ fontSize: '0.7rem', lineHeight: '1.3', color: '#fda4af', marginTop: '6px' }}>{ruleViolation}</p>
-              </div>
-            ) : (
-              <div className="fg-alert-panel default-alert">
-                <strong style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--neon-cyan)', marginBottom: '4px' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>assignment</span>
-                  Objectives
-                </strong>
-                <ul style={{ fontSize: '0.65rem', lineHeight: '1.35', color: '#cbd5e1', paddingLeft: '16px', margin: '0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <li>{isPlayfair ? 'Decrypt digraphs using the 5x5 key matrix and geometry rule.' : isVigenere ? 'Decrypt empty letters using the keyword clue and Tabula Recta.' : 'Decrypt empty letters using the Caesar Shift Clue.'}</li>
-                  <li>Eat a yellow pellet and press <b style={{color: '#fff'}}>SPACE</b> to enter Decryption Mode.</li>
-                  <li>Eat the correct ghost! Avoid decoys and touching ghosts when inactive!</li>
-                </ul>
-              </div>
-            )}
-          </div>
-        </aside>
-
-        {/* Widescreen Board Area */}
-        <main className="pacman-main">
-          {/* Header Letters panel */}
-          <section className="fg-word-panel">
-            {isPlayfair ? (
-              <div className="pf-pair-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', margin: '10px 0' }}>
-                {(levelData.pairs || []).map((plainPair, idx) => {
-                  const cipherPair = levelData.cipherPairs ? levelData.cipherPairs[idx] : '';
-                  const isSolved = eatenGhosts.includes(idx);
-                  const isActive = activeIndex === idx;
-                  
-                  return (
-                    <div 
-                      key={idx} 
-                      className={`pf-pair-card playfair-digraph-cell ${isSolved ? 'solved' : ''} ${isActive ? 'active' : ''}`}
-                      style={{
-                        minWidth: '74px',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '9px',
-                        background: 'rgba(255, 255, 255, 0.04)',
-                        color: 'var(--text-primary)',
-                        padding: '8px 10px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '2px',
-                        fontFamily: 'JetBrains Mono, monospace',
-                        transition: 'transform 0.16s, border-color 0.16s, box-shadow 0.16s'
-                      }}
-                    >
-                      <span className="pf-cipher" style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{cipherPair}</span>
-                      <span className="pf-arrow" style={{ color: 'rgba(255, 255, 255, 0.26)', fontSize: '0.62rem', textTransform: 'uppercase' }}>↓</span>
-                      <strong style={{ color: isSolved ? 'var(--neon-green)' : 'var(--neon-yellow)', fontSize: '1rem' }}>{isSolved ? plainPair : '__'}</strong>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="fg-letter-cells" style={{ justifyContent: 'center' }}>
-                {(levelData.plaintext || '').split('').map((char, idx) => {
-                  const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
-                  const isGhostIndex = !mask;
-                  const isEaten = eatenGhosts.includes(idx);
-                  const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
-                  
-                  let cellClass = "fg-letter-cell";
-                  if (mask) {
-                    cellClass += " correct-plain";
-                  } else if (isGhostIndex) {
-                    cellClass += isEaten ? " correct-plain" : " masked";
-                  }
-
-                  return (
-                    <div key={idx} className={cellClass}>
-                      <span className="fg-cell-ciphertext">{levelData.ciphertext ? levelData.ciphertext[idx] : ''}</span>
-                      <span className="fg-cell-plaintext">{displayChar}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <div className="fg-clue-banner" style={{ marginTop: '8px' }}>
-              💡 Clue Context: <strong>"{levelData.hint}"</strong>
-            </div>
-          </section>
-
-          {/* Red Highlighted: Wider, taller board container */}
-          <section className="pacman-board-wrapper bigger-board">
-            <div className={`maze-grid size-larger ${flashError ? 'flash-error' : ''} ${isScreenShaking ? 'screen-shake' : ''}`}>
-              {/* Static grid board paths and walls */}
-              {MAZE_GRID.map((rowArr, rIdx) =>
-                rowArr.map((cellVal, cIdx) => {
-                  let cellClass = "maze-cell";
-                  if (cellVal === 1) cellClass += " wall";
-                  else cellClass += " path";
-                  return <div key={`bg-${rIdx}-${cIdx}`} className={cellClass}></div>;
-                })
-              )}
-
-              {/* Absolute 30fps gliding Pac-Man sprite (No delay) */}
-              <div 
-                className={`pacman-sprite-absolute ${isInvulnerable ? 'invulnerable-blink' : ''}`}
-                style={{
-                  left: `${pacman.col * 46}px`,
-                  top: `${pacman.row * 46}px`
-                }}
-              >
-                <div className="knight-actor">
-                  {(() => {
-                    const facing = facingFromDir(pacmanDir);
-                    const faceClass = facing === 'LEFT' ? 'face-left' : (facing === 'UP' ? 'face-up' : (facing === 'DOWN' ? 'face-down' : ''));
-                    const movementClass = (pacmanDir && pacmanDir !== 'NONE') ? 'run' : 'idle';
-                    const attackClass = knightAttacking ? 'attack' : '';
-                    return <div className={`knight-sheet ${faceClass} ${movementClass} ${attackClass}`} />;
-                  })()}
+                    return (
+                      <div key={idx} className={cellClass}>
+                        <span className="fg-cell-ciphertext">{levelData.ciphertext ? levelData.ciphertext[idx] : ''}</span>
+                        <span className="fg-cell-plaintext">{displayChar}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
+              <div className="caesar-pacman-clue-banner">
+                💡 Clue Context: <strong>"{levelData.hint}"</strong>
+              </div>
+            </section>
 
-              {/* Slower gliding Ghosts (0.5x speed) */}
-              {ghosts.map((ghost) => {
-                if (ghost.eaten) return null;
-                const isVulnerable = skillActive;
-                const facing = facingFromDir(null, ghost.dir);
-                const faceClass = facing === 'LEFT' ? 'face-left' : (facing === 'UP' ? 'face-up' : (facing === 'DOWN' ? 'face-down' : ''));
-                const movementClass = ghost.moving ? 'run' : 'idle';
-                const dyingClass = ghost.dying ? 'attack' : '';
-                return (
-                  <div
-                    key={ghost.id}
-                    className={`ghost-sprite-absolute ${isVulnerable ? 'vulnerable' : ''}`}
-                    style={{
-                      left: `${ghost.col * 46}px`,
-                      top: `${ghost.row * 46}px`
-                    }}
-                  >
-                      <div className="goblin-actor">
-                        <div className={`goblin-sheet ${faceClass} ${movementClass} ${dyingClass}`} />
-                        <span className="ghost-inner-letter">{ghost.char}</span>
-                      </div>
-                  </div>
-                );
-              })}
-
-              {/* Absolute Pellet positions (Non-stacking) */}
-              {pellets.map((pellet) => {
-                if (pellet.eaten) return null;
-                return (
-                  <div
-                    key={pellet.id}
-                    className="pellet-entity"
-                    style={{
-                      left: `${pellet.col * 46}px`,
-                      top: `${pellet.row * 46}px`
-                    }}
-                  >
-                    {pellet.isSkill ? (
-                      <div className="gold-pellet-sheet" />
-                    ) : (
-                      <div className="circle-pellet-badge score-dot" />
-                    )}
-                  </div>
-                );
-              })}
+            {/* 3. Bottom-Left Floating Cipher Cheat Sheet */}
+            <div className="caesar-floating-cheat-sheet caesar-pacman-cheat-sheet">
+              <div className="caesar-cheat-header">
+                <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
+                <span className="caesar-cheat-badge">Shift +{targetShift}</span>
+              </div>
+              <div className="caesar-cheat-body">
+                <div className="caesar-cheat-labels">
+                  <span className="caesar-cheat-label-plain">PLAIN</span>
+                  <span className="caesar-cheat-label-shift">SHIFT</span>
+                </div>
+                <div className="caesar-cheat-columns">
+                  {alphabet.map((ch) => (
+                    <div key={ch} className="caesar-cheat-col">
+                      <span className="caesar-cheat-plain">{ch}</span>
+                      <span className="caesar-cheat-shifted">{caesarShiftChar(ch, targetShift)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* Game Over modal overlay */}
-            {gameOver && (
-              <div className="game-over-overlay">
-                <div className="game-over-card glass-card">
-                  <h2 className="game-over-title">GAME OVER</h2>
-                  <p className="game-over-text">Pacman has run out of cryptographic operational hearts.</p>
-                  <button className="fg-btn fg-btn-primary play-again-btn" onClick={handleResetGame}>
-                    <span className="material-symbols-outlined">restart_alt</span>
-                    <span>Retry Level</span>
+            {/* 4. Bottom-Center Floating Caesar Shift Key Clue */}
+            <div className="caesar-floating-basket-card caesar-pacman-clue-card">
+              <div className="caesar-basket-icon">🔑</div>
+              <div className="caesar-basket-badge">+{targetShift}</div>
+              <span className="caesar-basket-label">Caesar Shift Key Clue</span>
+            </div>
+
+            {/* 5. Bottom-Right Floating Skill Freeze Charge */}
+            <div className={`skill-charge-card caesar-pacman-skill-card ${hasSkillCharge ? 'charged' : ''} ${skillActive ? 'active' : ''}`}>
+              <div className="skill-charge-title">Skill Freeze Charge</div>
+              <div className="skill-pellet-icon-wrapper">
+                <span className="material-symbols-outlined skill-bolt">flash_on</span>
+              </div>
+              {skillActive ? (
+                <div className="skill-timer-badge">FREEZE ACTIVE: {skillTimeLeft}s</div>
+              ) : hasSkillCharge ? (
+                <button className="activate-skill-btn" onClick={activateSkill}>Press SPACEBAR</button>
+              ) : (
+                <div className="skill-hint-label">Eat yellow pellet to charge</div>
+              )}
+            </div>
+
+            {/* 6. Non-disruptive Floating Alert Message (Top-Left) */}
+            {ruleViolation && (
+              <div className="caesar-floating-rule-violation caesar-pacman-floating-alert">
+                <div className="caesar-violation-header" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>warning</span>
+                  Alert
+                </div>
+                <p className="caesar-violation-body">{ruleViolation}</p>
+              </div>
+            )}
+
+            {/* 7. Floating Secured Victory Panel when level solved */}
+            {levelSolved && (
+              <div className="caesar-floating-victory-panel caesar-pacman-victory-panel">
+                <h3 className="caesar-victory-title">✅ SECURED!</h3>
+                <p className="caesar-victory-desc">All segments decrypted successfully.</p>
+                <button
+                  className="fg-btn fg-btn-primary"
+                  onClick={handleVerifySubmit}
+                  style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: 10 }}
+                >
+                  🚀 Verify & Submit
+                </button>
+                {onReplayNewQuestion && (
+                  <button
+                    className="fg-btn fg-btn-secondary"
+                    onClick={onReplayNewQuestion}
+                    style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                  >
+                    🔄 Play Again
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="pacman-layout">
+          {/* Sidebar Cards */}
+          <aside className="fg-sidebar">
+            {/* Active Shift Card */}
+            {isPlayfair ? (
+              <div className="fg-basket-card">
+                <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔲</div>
+                <div className="fg-basket-shift-value" style={{ color: 'var(--neon-yellow)', fontSize: '1.3rem', letterSpacing: '1px' }}>{levelData.key}</div>
+                <span className="fg-basket-label">Playfair Key Clue</span>
+              </div>
+            ) : isVigenere ? (
+              <div className="fg-basket-card">
+                <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔑</div>
+                <div className="fg-basket-shift-value" style={{ color: 'var(--neon-green)', fontSize: '1.4rem' }}>{levelData.targetKey}</div>
+                <span className="fg-basket-label">{levelData.keyClue || "Vigenère Key"}</span>
+              </div>
+            ) : (
+              <div className="fg-basket-card">
+                <div className="fg-basket-container" style={{ fontSize: '2.2rem' }}>🔑</div>
+                <div className="fg-basket-shift-value" style={{ color: 'var(--neon-green)' }}>+{targetShift}</div>
+                <span className="fg-basket-label">Caesar Shift Key Clue</span>
+              </div>
+            )}
+
+            {isVigenere && (
+              <button className="vg-tabula-modal-btn" onClick={() => setShowTabula(true)} style={{ marginTop: '4px', marginBottom: '4px' }}>
+                <span className="material-symbols-outlined">grid_on</span>
+                <span>View Tabula Recta</span>
+              </button>
+            )}
+
+            {/* Playfair 5x5 Matrix Guide */}
+            {isPlayfair && (
+              <div className="sidebar-matrix-hud vg-sidebar-card" style={{ width: '100%', background: 'rgba(6,19,36,0.5)', border: '1px solid rgba(0, 229, 255, 0.25)', borderRadius: '12px', padding: '12px' }}>
+                <div className="vg-sidebar-title" style={{ fontSize: '0.85rem', color: 'var(--neon-cyan)', marginBottom: '8px', fontWeight: 'bold', textAlign: 'center' }}>🔲 Key Matrix</div>
+                <div className="pf-matrix" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', maxWidth: '170px', margin: '0 auto' }}>
+                  {(levelData.matrix || []).map((row, rowIndex) => row.map((letter, colIndex) => {
+                    const key = `${rowIndex}-${colIndex}`;
+                    const isHighlighted = cipherHighlight.has(key);
+                    return (
+                      <span key={letter} className={isHighlighted ? 'cipher-cell' : ''} style={{ fontSize: '0.8rem', padding: '4px 0', border: isHighlighted ? '1px solid var(--neon-yellow)' : '1px solid rgba(0, 229, 255, 0.1)', background: isHighlighted ? 'rgba(255, 215, 0, 0.15)' : 'rgba(0, 229, 255, 0.03)', color: isHighlighted ? 'var(--neon-yellow)' : '#fff', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>
+                        {letter}
+                      </span>
+                    );
+                  }))}
+                </div>
+                
+                <div className="vg-active-pair-info" style={{ marginTop: '12px', textAlign: 'center', fontSize: '0.78rem', background: 'rgba(255, 255, 255, 0.03)', padding: '8px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                  <div>Active Ciphertext: <strong style={{ color: 'var(--neon-yellow)', fontSize: '0.95rem', letterSpacing: '1px' }}>{cipherPair || 'N/A'}</strong></div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>Find highlighted letters in matrix above & decrypt!</div>
+                </div>
+              </div>
+            )}
+
+            {/* Playfair Active Rule Clue Card */}
+            {isPlayfair && cipherPair && (
+              <div className="sidebar-matrix-hud vg-sidebar-card" style={{ width: '100%', background: 'rgba(6,19,36,0.5)', border: '1px solid rgba(0, 229, 255, 0.25)', borderRadius: '12px', padding: '12px' }}>
+                <div className="vg-sidebar-title" style={{ fontSize: '0.85rem', color: 'var(--neon-cyan)', marginBottom: '8px', fontWeight: 'bold', textAlign: 'center' }}>🔬 Geometry Rule</div>
+                <div className="pf-rule-pill revealed" style={{ margin: '0 auto', fontSize: '0.75rem', fontWeight: 'bold', textAlign: 'center' }}>
+                  {levelData.rules ? levelData.rules[activeIndex] : ''}
+                </div>
+                <p className="pf-sidebar-note" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '6px', lineHeight: '1.4' }}>
+                  {describePlayfairRule(levelData.rules ? levelData.rules[activeIndex] : '', 'decrypt')}
+                </p>
+              </div>
+            )}
+
+            {/* Skill Charge */}
+            <div className={`skill-charge-card ${hasSkillCharge ? 'charged' : ''} ${skillActive ? 'active' : ''}`}>
+              <div className="skill-charge-title">Skill Freeze Charge</div>
+              <div className="skill-pellet-icon-wrapper">
+                <span className="material-symbols-outlined skill-bolt">flash_on</span>
+              </div>
+              {skillActive ? (
+                <div className="skill-timer-badge">FREEZE ACTIVE: {skillTimeLeft}s</div>
+              ) : hasSkillCharge ? (
+                <button className="activate-skill-btn" onClick={activateSkill}>Press SPACEBAR</button>
+              ) : (
+                <div className="skill-hint-label">Eat yellow pellet to charge</div>
+              )}
+            </div>
+
+            {/* Steer controls */}
+            <div className="joystick-panel">
+              <span className="fg-ref-title" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Steering Console</span>
+              <div className="joystick-controls">
+                <button className="joystick-btn" onClick={() => triggerSteer('UP')}>
+                  <span className="material-symbols-outlined">keyboard_arrow_up</span>
+                </button>
+                <div className="joystick-row">
+                  <button className="joystick-btn" onClick={() => triggerSteer('LEFT')}>
+                    <span className="material-symbols-outlined">keyboard_arrow_left</span>
+                  </button>
+                  <button className="joystick-btn" onClick={() => triggerSteer('DOWN')}>
+                    <span className="material-symbols-outlined">keyboard_arrow_down</span>
+                  </button>
+                  <button className="joystick-btn" onClick={() => triggerSteer('RIGHT')}>
+                    <span className="material-symbols-outlined">keyboard_arrow_right</span>
                   </button>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Tabula Recta Modal for Vigenère Mode */}
-            {showTabula && isVigenere && (
-              <div className="vg-modal-overlay" onClick={() => setShowTabula(false)}>
-                <div className="vg-modal-card tabula-modal" onClick={e => e.stopPropagation()}>
-                  <div className="vg-modal-header">
-                    <h3>📊 Interactive Tabula Recta</h3>
-                    <button className="vg-modal-close" onClick={() => setShowTabula(false)}>×</button>
-                  </div>
-                  <div className="vg-modal-body">
-                    <p className="vg-modal-instructions">
-                      The Tabula Recta is a 26×26 grid of shifted alphabets. Find the column of your <strong>Cipher letter (C)</strong>,
-                      then look at the row of your <strong>Key letter (K)</strong> to find the intersection, which is the <strong>Plain letter (P)</strong>!
-                      <br />
-                      <span style={{ color: 'var(--neon-yellow)' }}>★ Gold Rows: rows containing key letters for this level's key ("{levelData.targetKey}") are highlighted.</span>
-                    </p>
-                    <div className="vg-tabula-scroll-wrapper">
-                      <table className="vg-tabula-full-grid">
-                        <thead>
-                          <tr>
-                            <th className="corner-cell">K \ P</th>
-                            {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(ch => (
-                              <th key={ch} className="col-header">{ch}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((kChar, rIdx) => {
-                            const isCorrectKey = levelData.targetKey ? levelData.targetKey.includes(kChar) : false;
-                            const rowLetters = tabulaRow(kChar);
-                            return (
-                              <tr key={kChar} className={isCorrectKey ? 'correct-key-row' : ''}>
-                                <td className="row-header">{kChar}</td>
-                                {rowLetters.map((cChar, cIdx) => {
-                                  const plainLetter = idxToChar(cIdx);
-                                  return (
-                                    <td 
-                                      key={cIdx} 
-                                      className="cell"
-                                      title={`Key: ${kChar}, Plain: ${plainLetter} → Cipher: ${cChar}`}
-                                    >
-                                      {cChar}
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+            {/* Educational Clues */}
+            <div className="sidebar-action-hud">
+              {levelSolved ? (
+                <div className="fg-success-panel">
+                  <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem' }}>✅ SECURED!</h3>
+                  <p style={{ fontSize: '0.75rem', margin: '0 0 8px 0' }}>All segments decrypted successfully.</p>
+                  <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', padding: '8px', fontSize: '0.85rem' }}>
+                    🚀 Verify & Submit
+                  </button>
+                  <button className="fg-btn fg-btn-secondary" onClick={onReplayNewQuestion} style={{ width: '100%', marginTop: '6px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', padding: '8px', fontSize: '0.85rem' }}>
+                    🔄 Play Again
+                  </button>
+                </div>
+              ) : ruleViolation ? (
+                <div className="fg-alert-panel">
+                  <strong style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>warning</span>
+                    Alert
+                  </strong>
+                  <p style={{ fontSize: '0.7rem', lineHeight: '1.3', color: '#fda4af', marginTop: '6px' }}>{ruleViolation}</p>
+                </div>
+              ) : (
+                <div className="fg-alert-panel default-alert">
+                  <strong style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--neon-cyan)', marginBottom: '4px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>assignment</span>
+                    Objectives
+                  </strong>
+                  <ul style={{ fontSize: '0.65rem', lineHeight: '1.35', color: '#cbd5e1', paddingLeft: '16px', margin: '0', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <li>{isPlayfair ? 'Decrypt digraphs using the 5x5 key matrix and geometry rule.' : isVigenere ? 'Decrypt empty letters using the keyword clue and Tabula Recta.' : 'Decrypt empty letters using the Caesar Shift Clue.'}</li>
+                    <li>Eat a yellow pellet and press <b style={{color: '#fff'}}>SPACE</b> to enter Decryption Mode.</li>
+                    <li>Eat the correct ghost! Avoid decoys and touching ghosts when inactive!</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* Widescreen Board Area */}
+          <main className="pacman-main">
+            <section className="fg-word-panel">
+              {isPlayfair ? (
+                <div className="pf-pair-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', margin: '10px 0' }}>
+                  {(levelData.pairs || []).map((plainPair, idx) => {
+                    const cipherPair = levelData.cipherPairs ? levelData.cipherPairs[idx] : '';
+                    const isSolved = eatenGhosts.includes(idx);
+                    const isActive = activeIndex === idx;
+                    
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`pf-pair-card playfair-digraph-cell ${isSolved ? 'solved' : ''} ${isActive ? 'active' : ''}`}
+                        style={{
+                          minWidth: '74px',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '9px',
+                          background: 'rgba(255, 255, 255, 0.04)',
+                          color: 'var(--text-primary)',
+                          padding: '8px 10px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '2px',
+                          fontFamily: 'JetBrains Mono, monospace',
+                          transition: 'transform 0.16s, border-color 0.16s, box-shadow 0.16s'
+                        }}
+                      >
+                        <span className="pf-cipher" style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{cipherPair}</span>
+                        <span className="pf-arrow" style={{ color: 'rgba(255, 255, 255, 0.26)', fontSize: '0.62rem', textTransform: 'uppercase' }}>↓</span>
+                        <strong style={{ color: isSolved ? 'var(--neon-green)' : 'var(--neon-yellow)', fontSize: '1rem' }}>{isSolved ? plainPair : '__'}</strong>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="fg-letter-cells" style={{ justifyContent: 'center' }}>
+                  {(levelData.plaintext || '').split('').map((char, idx) => {
+                    const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
+                    const isGhostIndex = !mask;
+                    const isEaten = eatenGhosts.includes(idx);
+                    const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
+                    
+                    let cellClass = "fg-letter-cell";
+                    if (mask) {
+                      cellClass += " correct-plain";
+                    } else if (isGhostIndex) {
+                      cellClass += isEaten ? " correct-plain" : " masked";
+                    }
+
+                    return (
+                      <div key={idx} className={cellClass}>
+                        <span className="fg-cell-ciphertext">{levelData.ciphertext ? levelData.ciphertext[idx] : ''}</span>
+                        <span className="fg-cell-plaintext">{displayChar}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div className="fg-clue-banner" style={{ marginTop: '8px' }}>
+                💡 Clue Context: <strong>"{levelData.hint}"</strong>
+              </div>
+            </section>
+
+            <section className="pacman-board-wrapper bigger-board">
+              {renderMazeBoard()}
+
+              {/* Tabula Recta Modal for Vigenère Mode */}
+              {showTabula && isVigenere && (
+                <div className="vg-modal-overlay" onClick={() => setShowTabula(false)}>
+                  <div className="vg-modal-card tabula-modal" onClick={e => e.stopPropagation()}>
+                    <div className="vg-modal-header">
+                      <h3>📊 Interactive Tabula Recta</h3>
+                      <button className="vg-modal-close" onClick={() => setShowTabula(false)}>×</button>
+                    </div>
+                    <div className="vg-modal-body">
+                      <p className="vg-modal-instructions">
+                        The Tabula Recta is a 26×26 grid of shifted alphabets. Find the column of your <strong>Cipher letter (C)</strong>,
+                        then look at the row of your <strong>Key letter (K)</strong> to find the intersection, which is the <strong>Plain letter (P)</strong>!
+                        <br />
+                        <span style={{ color: 'var(--neon-yellow)' }}>★ Gold Rows: rows containing key letters for this level's key ("{levelData.targetKey}") are highlighted.</span>
+                      </p>
+                      <div className="vg-tabula-scroll-wrapper">
+                        <table className="vg-tabula-full-grid">
+                          <thead>
+                            <tr>
+                              <th className="corner-cell">K \ P</th>
+                              {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(ch => (
+                                <th key={ch} className="col-header">{ch}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((kChar, rIdx) => {
+                              const isCorrectKey = levelData.targetKey ? levelData.targetKey.includes(kChar) : false;
+                              const rowLetters = tabulaRow(kChar);
+                              return (
+                                <tr key={kChar} className={isCorrectKey ? 'correct-key-row' : ''}>
+                                  <td className="row-header">{kChar}</td>
+                                  {rowLetters.map((cChar, cIdx) => {
+                                    const plainLetter = idxToChar(cIdx);
+                                    return (
+                                      <td 
+                                        key={cIdx} 
+                                        className="cell"
+                                        title={`Key: ${kChar}, Plain: ${plainLetter} → Cipher: ${cChar}`}
+                                      >
+                                        {cChar}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </section>
-        </main>
-      </div>
+              )}
+            </section>
+          </main>
+        </div>
+      )}
 
-      {/* Menu Modal */}
+      {/* Game Over modal overlay */}
+      {gameOver && (
+        <div
+          className="caesar-pause-overlay pacman-gameover-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pacman-gameover-title"
+        >
+          <div className="caesar-pause-card pacman-gameover-card">
+            <h2 id="pacman-gameover-title" className="caesar-pause-title">GAME OVER</h2>
+            <p className="pacman-gameover-text">Pac-Man has run out of cryptographic operational hearts.</p>
+            <button
+              ref={retryBtnRef}
+              className="caesar-pause-btn caesar-pause-btn-resume"
+              onClick={handleResetGame}
+            >
+              <span className="material-symbols-outlined">restart_alt</span>
+              <span>Retry Level</span>
+            </button>
+            <button
+              className="caesar-pause-btn caesar-pause-btn-exit"
+              onClick={onBackToStages}
+            >
+              <span className="material-symbols-outlined">logout</span>
+              <span>Exit Stage</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Menu / Pause Modal */}
       {isMenuOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #0f172a, #020617)',
-            border: '1px solid rgba(56, 189, 248, 0.3)',
-            borderRadius: '16px',
-            padding: '32px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            minWidth: '320px',
-            boxShadow: '0 0 30px rgba(0,0,0,0.8)'
-          }}>
-            <h2 style={{ color: 'var(--neon-cyan)', margin: 0, textAlign: 'center', fontSize: '1.6rem', marginBottom: '8px', letterSpacing: '2px' }}>PAUSED</h2>
-            <button className="fg-btn fg-btn-primary" onClick={() => setIsMenuOpen(false)} style={{ padding: '14px', fontSize: '1.1rem', background: 'var(--neon-green)', color: '#000', fontWeight: 'bold' }}>
-              ▶ Resume
+        <div
+          className="caesar-pause-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pacman-pause-title"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsMenuOpen(false); }}
+        >
+          <div className="caesar-pause-card">
+            <h2 id="pacman-pause-title" className="caesar-pause-title">PAUSED</h2>
+            <button
+              ref={resumeBtnRef}
+              className="caesar-pause-btn caesar-pause-btn-resume"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <span className="material-symbols-outlined">play_arrow</span>
+              <span>Resume</span>
             </button>
-            <button className="fg-btn fg-btn-secondary" onClick={() => { setIsMenuOpen(false); setPhase('ready'); }} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
-              📖 Tutorial
+            <button
+              className="caesar-pause-btn caesar-pause-btn-tutorial"
+              onClick={() => { setIsMenuOpen(false); setPhase('ready'); }}
+            >
+              <span className="material-symbols-outlined">menu_book</span>
+              <span>Tutorial</span>
             </button>
-            <button className="fg-btn" onClick={onBackToStages} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', marginTop: '8px' }}>
-              🚪 Exit Stage
+            <button
+              className="caesar-pause-btn caesar-pause-btn-exit"
+              onClick={onBackToStages}
+            >
+              <span className="material-symbols-outlined">logout</span>
+              <span>Exit Stage</span>
             </button>
           </div>
         </div>

@@ -48,24 +48,42 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const [showExplanation, setShowExplanation] = useState(false);
   const [explanationStep, setExplanationStep] = useState(-1);
   const [chumCount, setChumCount]             = useState(3);
-  const [hoveredFish, setHoveredFish]         = useState(null);
   const [isMenuOpen, setIsMenuOpen]           = useState(false);
   const animationRef = useRef(null);
+  const resumeBtnRef = useRef(null);
+  const wasMenuOpenRef = useRef(false);
+
+  /* ── ESC key to toggle pause menu ── */
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (phase === 'playing' && !showExplanation) {
+          e.preventDefault();
+          setIsMenuOpen(prev => !prev);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase, showExplanation]);
+
+  /* ── Focus management for pause menu ── */
+  useEffect(() => {
+    if (isMenuOpen) {
+      wasMenuOpenRef.current = true;
+      setTimeout(() => resumeBtnRef.current?.focus(), 50);
+    } else if (wasMenuOpenRef.current) {
+      wasMenuOpenRef.current = false;
+      const menuBtn = document.querySelector('.fg-header-left .fg-btn-back-nav');
+      menuBtn?.focus();
+    }
+  }, [isMenuOpen]);
 
   /* ── derived ── */
   const basketShift = normalizeShift(activeShifts[0] ?? getInitialShift(0));
   const decryptedSegs = cipherSegs.map((seg, i) =>
     caesarShiftWord(seg, activeShifts[i] ?? 0)
   );
-
-  // Live hovered preview of decrypted segments (Only in Easy mode!)
-  const previewSegs = cipherSegs.map((seg, i) => {
-    if (!hoveredFish) return decryptedSegs[i];
-    if (tier !== 'easy') return decryptedSegs[i];
-
-    const previewShift = applyShiftDelta(basketShift, hoveredFish.value);
-    return caesarShiftWord(seg, previewShift);
-  });
 
   const allCorrect = decryptedSegs.every((dec, i) => dec === words[i]);
 
@@ -202,7 +220,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     if (isCasting || levelSolved) return;
     setIsCasting(true);
     setCaughtFish(fish);
-    setHoveredFish(null);
     const tx = (fish.x / 100) * 500;
     const ty = fish.y;
     setCastTarget({ x: tx, y: ty });
@@ -323,7 +340,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     }
     return null;
   };
-  const ruleViolation = phase === 'playing' ? getRuleViolation() : null;
 
   /* ════ READY ════ */
   if (phase === 'ready') return (
@@ -368,12 +384,8 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const currentShift = basketShift;
 
   return (
-    <div className="fg-root">
+    <div className="fg-root caesar-fishing-fullscreen">
       <style>{`
-        @keyframes pulse {
-          0% { opacity: 0.6; box-shadow: 0 0 4px rgba(0, 229, 255, 0.4); }
-          100% { opacity: 1; box-shadow: 0 0 12px rgba(0, 229, 255, 0.8); }
-        }
         .golden-badge {
           background: #ffd700 !important;
           color: #000 !important;
@@ -478,252 +490,234 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         attempts={attemptsLeft}
       />
 
-      <div className="fg-game-layout">
-        {/* Sidebar */}
-        <aside className="fg-sidebar">
-          <div className={`fg-basket-card ${levelSolved ? 'active-target' : ''} ${basketShake ? 'shake' : ''}`}>
-            <div className="fg-basket-container">🧺</div>
-            <div className="fg-basket-shift-value">{formatShift(currentShift)}</div>
-            <span className="fg-basket-label">Basket Shift Key</span>
-            {floatingXp && (
-              <div className="fg-xp-pop-indicator" style={{ left: `${floatingXp.x}%`, top: `${floatingXp.y}%` }}>
-                +{floatingXp.amount} XP
+      <div className="caesar-fullscreen-stage">
+        {/* Fullscreen Ocean Background Video */}
+        <video
+          className="fg-pond-video"
+          src="/assets/fish/ocean_bg.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="fg-pond-overlay" />
+        <div className="fg-wave" />
+        {bubbles.map(b => (
+          <div key={b.id} className="fg-bubble" style={{ left: `${b.x}%`, width: `${b.size}px`, height: `${b.size}px`, animationDelay: `${b.delay}s`, animationDuration: `${b.duration}s` }} />
+        ))}
+
+        {/* Fish Swim Lane & Rod */}
+        <div className="caesar-fish-swim-lane">
+          {fishList.map(f => {
+            const badgeText = f.value > 0 ? `+${f.value}` : `${f.value}`;
+            const badgeClass = `fg-fish-badge ${f.value > 0 ? 'positive' : 'negative'}`;
+
+            return (
+              <div
+                key={f.id}
+                className="fg-fish-entity"
+                style={{ left: `${f.x}%`, top: `${f.y}px` }}
+                onClick={() => castLineToFish(f)}
+              >
+                <div className="fg-fish-facing" style={{ transform: facingTransform(f.facing) }}>
+                  <img
+                    className="fg-fish-sprite-img"
+                    src={f.imgSrc}
+                    alt="fish"
+                    draggable={false}
+                  />
+                </div>
+                <div className={badgeClass}>
+                  {badgeText}
+                </div>
               </div>
-            )}
+            );
+          })}
+          {isCasting && caughtFish && castProgress < 1 && (
+            <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
+              <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
+                <img
+                  className="fg-fish-sprite-img"
+                  src={caughtFish.imgSrc}
+                  alt="fish"
+                  draggable={false}
+                />
+              </div>
+            </div>
+          )}
+          <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">
+            <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
+            {isCasting && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />}
+          </svg>
+          {splash.show && (
+            <div className="fg-splash-effect" style={{ left: `${splash.x}%`, top: `${splash.y}px` }}>💦</div>
+          )}
+        </div>
+
+        {/* Floating Overlays */}
+        {/* 1. Top-Center Word Segment Panel + Hint */}
+        <div className="caesar-floating-word-panel">
+          <div className="fg-word-segments-row">
+            {words.map((word, wIdx) => {
+              const isTargeted = targetSegIdx === wIdx;
+              const segShift = normalizeShift(activeShifts[wIdx] ?? 0);
+              const cipherWord = cipherSegs[wIdx];
+              const decWord = decryptedSegs[wIdx];
+
+              return (
+                <div
+                  key={wIdx}
+                  className={`fg-word-segment-card ${isTargeted ? 'targeted' : ''}`}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Segment ${wIdx + 1}`}
+                  onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !isCasting) setTargetSegIdx(wIdx); }}
+                  onClick={() => { if (!isCasting) setTargetSegIdx(wIdx); }}
+                >
+                  <div className="caesar-segment-top-row">
+                    <span className="caesar-active-shift-label">Active Shift:</span>
+                    <span className="caesar-active-shift-badge">{formatShift(segShift)}</span>
+                  </div>
+                  <div className="fg-letter-cells">
+                    {cipherWord.split('').map((cipherCh, chIdx) => {
+                      const maskList = levelData.masks[wIdx];
+                      const isPrefilled = tier === 'easy' && maskList?.[chIdx];
+                      const isCorrect = decWord[chIdx] === word[chIdx];
+                      const letterToShow = isPrefilled ? word[chIdx] : decWord[chIdx];
+
+                      const cellClass = (isPrefilled || isCorrect)
+                        ? 'fg-letter-cell correct-plain'
+                        : 'fg-letter-cell unmatched-plain';
+
+                      return (
+                        <div key={chIdx} className={cellClass}>
+                          <span className="fg-cell-ciphertext">{cipherCh}</span>
+                          <span className="fg-cell-plaintext">{letterToShow}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="fg-segment-basket-badge">Basket Shift: {formatShift(segShift)}</div>
+                </div>
+              );
+            })}
           </div>
+          <div className="caesar-floating-hint">Hint: “{levelData.hint}”</div>
+        </div>
 
-          <button
-            className="fg-btn"
-            onClick={handleChumWaters}
-            disabled={chumCount <= 0 || isCasting}
-            style={{
-              width: '100%',
-              flex: '0 0 auto',
-              padding: '12px',
-              fontWeight: 'bold',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              transition: 'all 0.2s',
-              background: chumCount > 0 ? 'rgba(0, 229, 255, 0.12)' : 'rgba(255, 255, 255, 0.03)',
-              border: chumCount > 0 ? '1px solid var(--neon-cyan)' : '1px solid rgba(255, 255, 255, 0.08)',
-              color: chumCount > 0 ? 'var(--neon-cyan)' : 'var(--text-muted)',
-              cursor: chumCount > 0 ? 'pointer' : 'not-allowed',
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>waves</span>
-            Chum the Waters ({chumCount} left)
-          </button>
+        {/* 2. Floating Caesar Guide (Bottom-Left) */}
+        <div className="caesar-floating-guide">
+          <h3 className="caesar-guide-title">Ceasar Guide</h3>
+          <p className="caesar-guide-desc">
+            The Caesar cipher shifts each letter forward. To decrypt, we must shift it further to complete the 26-letter rotation
+          </p>
+          <p className="caesar-guide-tip">
+            Catch fish with + / - modifiers to adjust the Basket Shift until words look readable!
+          </p>
+        </div>
 
-          <div className="fg-cipher-ref">
-            <p className="fg-ref-title">Target: Segment #{targetSegIdx + 1}</p>
-            <p className="fg-ref-hint"><span>Active Shift:</span><span className="fg-key">{formatShift(currentShift)}</span></p>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '8px 0', padding: '8px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', flex: 1, overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <span>CIPHER</span>
-                <span>PLAIN</span>
-              </div>
-              {cipherSegs[targetSegIdx].split('').slice(0, 5).map((char, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontFamily: 'monospace' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>{char}</span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>↓</span>
-                  <span style={{ color: 'var(--neon-green)', fontWeight: 'bold' }}>{decryptedSegs[targetSegIdx][idx]}</span>
+        {/* 3. Floating Chum the Waters Button (Bottom-Right, above Basket Key) */}
+        <button
+          className="caesar-floating-chum-btn"
+          onClick={handleChumWaters}
+          disabled={chumCount <= 0 || isCasting}
+          aria-label={`Chum the Waters, ${chumCount} left`}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>waves</span>
+          Chum the Waters ({chumCount} left)
+        </button>
+
+        {/* 4. Floating Basket Shift Key Card (Bottom-Right) */}
+        <div className={`caesar-floating-basket-card ${basketShake ? 'shake' : ''}`}>
+          <div className="caesar-basket-icon">🧺</div>
+          <div className="caesar-basket-badge">{formatShift(currentShift)}</div>
+          <div className="caesar-basket-label">BASKET SHIFT KEY</div>
+          {floatingXp && (
+            <div className="fg-xp-pop-indicator" style={{ left: `${floatingXp.x}%`, top: `${floatingXp.y}%` }}>
+              +{floatingXp.amount} XP
+            </div>
+          )}
+        </div>
+
+        {/* 5. Floating Cipher Cheat Sheet (Top-Left) */}
+        <div className="caesar-floating-cheat-sheet">
+          <div className="caesar-cheat-header">
+            <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
+            <span className="caesar-cheat-badge">Shift {formatShift(currentShift)}</span>
+          </div>
+          <div className="caesar-cheat-body">
+            <div className="caesar-cheat-labels">
+              <span className="caesar-cheat-label-plain">PLAIN</span>
+              <span className="caesar-cheat-label-shift">SHIFT</span>
+            </div>
+            <div className="caesar-cheat-columns">
+              {alphabet.map(ch => (
+                <div key={ch} className="caesar-cheat-col">
+                  <span className="caesar-cheat-plain">{ch}</span>
+                  <span className="caesar-cheat-shifted">{caesarShiftChar(ch, currentShift)}</span>
                 </div>
               ))}
-              {cipherSegs[targetSegIdx].length > 5 && (
-                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.7rem' }}>...</div>
-              )}
             </div>
-
-            <p className="fg-ref-formula">Formula:<br />Plain = (Cipher + Basket Shift) mod 26</p>
           </div>
+        </div>
 
-          <div className="fg-cipher-ref" style={{ marginTop: '4px' }}>
-            <p className="fg-ref-title">📖 Caesar Guide</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.74rem', margin: '4px 0', lineHeight: 1.4 }}>
-              The Caesar cipher shifts each letter forward. To decrypt, we must shift it further to complete the 26-letter rotation.
-            </p>
-            <p style={{ color: 'var(--neon-green)', fontSize: '0.74rem', margin: '4px 0 0', fontWeight: 'bold' }}>
-              Catch fish with + / - modifiers to adjust the Basket Shift until words look readable!
-            </p>
-          </div>
-
-          <div className="fg-sidebar-alerts">
-            {levelSolved ? (
-              <div className="fg-success-panel">
-                <h3>✅ SECURED!</h3>
-                <p>All segments decrypted successfully.</p>
-                <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: 10 }}>
-                  🚀 Verify & Submit
-                </button>
-                {onReplayNewQuestion && (
-                  <button className="fg-btn fg-btn-secondary" onClick={onReplayNewQuestion} style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
-                    🔄 Play Again
-                  </button>
-                )}
-              </div>
-            ) : ruleViolation ? (
-              <div className="fg-alert-panel">
-                <strong>⚠️ Rule Violation:</strong>
-                <p style={{ marginTop: 6, fontSize: '0.82rem', lineHeight: 1.4 }}>{ruleViolation.rule}</p>
-              </div>
-            ) : (
-              <div className="fg-alert-panel default-alert">
-                <strong>🎣 Status:</strong>
-                <p style={{ marginTop: 6, fontSize: '0.82rem', lineHeight: 1.4 }}>Catch fish to adjust the Caesar basket shift, then select word segments to inspect the decrypted letters.</p>
-              </div>
+        {/* 6. Floating Secured Victory Panel when level solved */}
+        {levelSolved && (
+          <div className="caesar-floating-victory-panel">
+            <h3 className="caesar-victory-title">✅ SECURED!</h3>
+            <p className="caesar-victory-desc">All segments decrypted successfully.</p>
+            <button
+              className="fg-btn fg-btn-primary"
+              onClick={handleVerifySubmit}
+              style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: 10 }}
+            >
+              🚀 Verify & Submit
+            </button>
+            {onReplayNewQuestion && (
+              <button
+                className="fg-btn fg-btn-secondary"
+                onClick={onReplayNewQuestion}
+                style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+              >
+                🔄 Play Again
+              </button>
             )}
           </div>
-        </aside>
-
-        {/* Main */}
-        <main className="fg-main">
-          <section className="fg-word-panel">
-            <div className="fg-word-segments-row">
-              {words.map((word, wIdx) => {
-                const isTargeted = targetSegIdx === wIdx;
-                const segShift = normalizeShift(activeShifts[wIdx] ?? 0);
-                const cipherWord = cipherSegs[wIdx];
-                const decWord = decryptedSegs[wIdx];
-                const prevWord = previewSegs[wIdx];
-
-                return (
-                  <div key={wIdx} className={`fg-word-segment-card ${isTargeted ? 'targeted' : ''}`}
-                    onClick={() => { if (!isCasting) setTargetSegIdx(wIdx); }}>
-                    <div className="fg-letter-cells">
-                      {cipherWord.split('').map((cipherCh, chIdx) => {
-                        const maskList = levelData.masks[wIdx];
-                        const isPrefilled = tier === 'easy' && maskList?.[chIdx];
-                        
-                        const isCorrect = decWord[chIdx] === word[chIdx];
-                        const isHovered = tier === 'easy' && hoveredFish && isTargeted;
-                        const letterToShow = (isPrefilled || isCorrect) ? word[chIdx] : (isHovered ? prevWord[chIdx] : '_');
-                        
-                        let cellClass = 'fg-letter-cell';
-                        if (isPrefilled || isCorrect) cellClass = 'fg-letter-cell correct-plain';
-                        
-                        const cellStyle = isHovered && !isPrefilled ? {
-                          borderColor: 'var(--neon-cyan)',
-                          animation: 'pulse 1s infinite alternate',
-                          color: 'var(--neon-cyan)'
-                        } : {};
-
-                        return (
-                          <div key={chIdx} className={cellClass} style={cellStyle}>
-                            <span className="fg-cell-ciphertext">{cipherCh}</span>
-                            <span className="fg-cell-plaintext">{letterToShow}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="fg-segment-basket-badge">Basket Shift: {formatShift(segShift)}</div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="fg-clue-banner">💡 Hint: <strong>"{levelData.hint}"</strong></div>
-          </section>
-
-          {/* Pond */}
-          <section className="fg-pond-wrapper">
-            <div className="fg-pond-container">
-              {/* Ocean background video */}
-              <video
-                className="fg-pond-video"
-                src="/assets/fish/ocean_bg.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
-              <div className="fg-pond-overlay" />
-              <div className="fg-wave" />
-              {bubbles.map(b => (
-                <div key={b.id} className="fg-bubble" style={{ left: `${b.x}%`, width: `${b.size}px`, height: `${b.size}px`, animationDelay: `${b.delay}s`, animationDuration: `${b.duration}s` }} />
-              ))}
-              {fishList.map(f => {
-                const badgeText = f.value > 0 ? `+${f.value}` : `${f.value}`;
-                const badgeClass = `fg-fish-badge ${f.value > 0 ? 'positive' : 'negative'}`;
-
-                return (
-                  <div key={f.id} className="fg-fish-entity"
-                    style={{ left: `${f.x}%`, top: `${f.y}px` }}
-                    onMouseEnter={() => { if (!isCasting) setHoveredFish(f); }}
-                    onMouseLeave={() => setHoveredFish(null)}
-                    onClick={() => castLineToFish(f)}>
-                    <div className="fg-fish-facing" style={{ transform: facingTransform(f.facing) }}>
-                      <img
-                        className="fg-fish-sprite-img"
-                        src={f.imgSrc}
-                        alt="fish"
-                        draggable={false}
-                      />
-                    </div>
-                    <div className={badgeClass}>
-                      {badgeText}
-                    </div>
-                  </div>
-                );
-              })}
-              {isCasting && caughtFish && castProgress < 1 && (
-                <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
-                  <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
-                    <img
-                      className="fg-fish-sprite-img"
-                      src={caughtFish.imgSrc}
-                      alt="fish"
-                      draggable={false}
-                    />
-                  </div>
-                </div>
-              )}
-              <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">
-                <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
-                {isCasting && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />}
-              </svg>
-              {splash.show && (
-                <div className="fg-splash-effect" style={{ left: `${splash.x}%`, top: `${splash.y}px` }}>💦</div>
-              )}
-            </div>
-          </section>
-        </main>
+        )}
       </div>
 
-      {/* Menu Modal */}
+      {/* Menu / Pause Modal */}
       {isMenuOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #0f172a, #020617)',
-            border: '1px solid rgba(56, 189, 248, 0.3)',
-            borderRadius: '16px',
-            padding: '32px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            minWidth: '320px',
-            boxShadow: '0 0 30px rgba(0,0,0,0.8)'
-          }}>
-            <h2 style={{ color: 'var(--neon-cyan)', margin: 0, textAlign: 'center', fontSize: '1.6rem', marginBottom: '8px', letterSpacing: '2px' }}>PAUSED</h2>
-            <button className="fg-btn fg-btn-primary" onClick={() => setIsMenuOpen(false)} style={{ padding: '14px', fontSize: '1.1rem', background: 'var(--neon-green)', color: '#000', fontWeight: 'bold' }}>
-              ▶ Resume
+        <div
+          className="caesar-pause-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="caesar-pause-title"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsMenuOpen(false); }}
+        >
+          <div className="caesar-pause-card">
+            <h2 id="caesar-pause-title" className="caesar-pause-title">PAUSED</h2>
+            <button
+              ref={resumeBtnRef}
+              className="caesar-pause-btn caesar-pause-btn-resume"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <span className="material-symbols-outlined">play_arrow</span>
+              Resume
             </button>
-            <button className="fg-btn fg-btn-secondary" onClick={() => { setIsMenuOpen(false); setPhase('ready'); }} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
-              📖 Tutorial
+            <button
+              className="caesar-pause-btn caesar-pause-btn-tutorial"
+              onClick={() => { setIsMenuOpen(false); setPhase('ready'); }}
+            >
+              <span className="material-symbols-outlined">menu_book</span>
+              Tutorial
             </button>
-            <button className="fg-btn" onClick={onBackToStages} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', marginTop: '8px' }}>
-              🚪 Exit Stage
+            <button
+              className="caesar-pause-btn caesar-pause-btn-exit"
+              onClick={onBackToStages}
+            >
+              <span className="material-symbols-outlined">logout</span>
+              Exit Stage
             </button>
           </div>
         </div>

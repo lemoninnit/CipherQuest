@@ -3375,4 +3375,1103 @@
   letter-spacing: 0.03em !important;
   text-shadow: 0 0 10px rgba(0, 229, 255, 0.2) !important;
 }
+
+/* ─── CAESAR FISHING: FULL-SCREEN OVERLAY LAYOUT ─── */
+.caesar-fishing-fullscreen {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+.caesar-fishing-fullscreen .caesar-fullscreen-stage {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.caesar-fishing-fullscreen .caesar-fullscreen-stage .fg-pond-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.caesar-fishing-fullscreen .caesar-fullscreen-stage .fg-pond-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(3, 10, 22, 0.42) 0%,
+    rgba(2, 8, 18, 0.22) 45%,
+    rgba(1, 4, 10, 0.72) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.caesar-fishing-fullscreen .caesar-fullscreen-stage .fg-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 130px;
+  background: linear-gradient(180deg, rgba(13, 110, 253, 0.03) 0%, rgba(13, 110, 253, 0.14) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.caesar-fishing-fullscreen .caesar-fullscreen-stage .fg-bubble {
+  position: absolute;
+  background: rgba(0, 229, 255, 0.18);
+  border-radius: 50%;
+  animation: floatUp 8s infinite linear;
+  bottom: -10px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Fish Swim Lane & Rod */
+.caesar-fishing-fullscreen .caesar-fish-swim-lane {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 120px;
+  bottom: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.caesar-fishing-fullscreen .caesar-fish-swim-lane .fg-fish-entity {
+  pointer-events: auto;
+  z-index: 10;
+}
+
+.caesar-fishing-fullscreen .caesar-fish-swim-lane .fg-pond-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.caesar-fishing-fullscreen .caesar-fish-swim-lane .fg-splash-effect {
+  pointer-events: none;
+  z-index: 12;
+}
+
+/* Floating Word / Segment Panel (Top Center) */
+.caesar-floating-word-panel {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.caesar-fishing-fullscreen .fg-word-segments-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.caesar-fishing-fullscreen .fg-word-segment-card {
+  border: 2px solid rgba(0, 229, 255, 0.65);
+  background: rgba(3, 14, 28, 0.85);
+  border-radius: 18px;
+  padding: 10px 16px 8px;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.28), 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.caesar-fishing-fullscreen .fg-word-segment-card:hover {
+  border-color: #00e5ff;
+  box-shadow: 0 0 32px rgba(0, 229, 255, 0.45), 0 8px 32px rgba(0, 0, 0, 0.6);
+  transform: translateY(-2px);
+}
+
+.caesar-fishing-fullscreen .fg-word-segment-card:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 3px;
+}
+
+.caesar-fishing-fullscreen .fg-word-segment-card.targeted {
+  border-color: #00f0ff;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.45), inset 0 0 14px rgba(0, 240, 255, 0.15);
+  background: rgba(5, 22, 44, 0.9);
+}
+
+.caesar-segment-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 0 2px;
+}
+
+.caesar-active-shift-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #a0c4d8;
+  letter-spacing: 0.02em;
+}
+
+.caesar-active-shift-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 1px 9px;
+  border-radius: 12px;
+}
+
+.caesar-fishing-fullscreen .fg-letter-cells {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.caesar-fishing-fullscreen .fg-letter-cell {
+  width: 40px;
+  height: 52px;
+  background: rgba(2, 10, 22, 0.88);
+  border: 1.5px solid rgba(0, 229, 255, 0.28);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.caesar-fishing-fullscreen .fg-cell-ciphertext {
+  font-size: 0.68rem;
+  color: #7ba7bc;
+  position: absolute;
+  top: 3px;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+}
+
+.caesar-fishing-fullscreen .fg-cell-plaintext {
+  font-size: 1.3rem;
+  margin-top: 8px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Letters matching plaintext: Glowing neon-green */
+.caesar-fishing-fullscreen .fg-letter-cell.correct-plain {
+  border-color: rgba(57, 255, 20, 0.4);
+}
+
+.caesar-fishing-fullscreen .fg-letter-cell.correct-plain .fg-cell-plaintext {
+  color: var(--neon-green);
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.7);
+  border-bottom: none;
+}
+
+/* Letters not matching yet: dimmer shade, no underline */
+.caesar-fishing-fullscreen .fg-letter-cell.unmatched-plain {
+  border-color: rgba(0, 229, 255, 0.2);
+}
+
+.caesar-fishing-fullscreen .fg-letter-cell.unmatched-plain .fg-cell-plaintext {
+  color: rgba(220, 235, 245, 0.65);
+  border-bottom: none !important;
+  text-decoration: none !important;
+}
+
+.caesar-fishing-fullscreen .fg-segment-basket-badge {
+  margin-top: 8px;
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(255, 215, 0, 0.1);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  color: var(--neon-yellow);
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Hint floating under the word card */
+.caesar-floating-hint {
+  margin-top: 8px;
+  color: #ffd700;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 0.92rem;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* Floating Caesar Guide (Bottom-Left) */
+.caesar-floating-guide {
+  position: absolute;
+  bottom: 24px;
+  left: 28px;
+  z-index: 20;
+  max-width: 380px;
+  background: rgba(3, 14, 28, 0.82);
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  border-radius: 16px;
+  padding: 18px 22px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  pointer-events: auto;
+}
+
+.caesar-guide-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.12rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 8px;
+  letter-spacing: 0.02em;
+}
+
+.caesar-guide-desc {
+  font-size: 0.82rem;
+  color: #c4dbe8;
+  line-height: 1.45;
+  margin: 0 0 10px;
+}
+
+.caesar-guide-tip {
+  font-size: 0.82rem;
+  color: var(--neon-green);
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0;
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.35);
+}
+
+/* Floating Chum the Waters Button (Bottom-Right, above Basket Key) */
+.caesar-floating-chum-btn {
+  position: absolute;
+  bottom: 185px;
+  right: 28px;
+  z-index: 20;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1.5px solid var(--neon-cyan);
+  border-radius: 10px;
+  color: var(--neon-cyan);
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 10px 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 229, 255, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+.caesar-floating-chum-btn:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.24);
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.45);
+  transform: translateY(-2px);
+}
+
+.caesar-floating-chum-btn:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 3px;
+}
+
+.caesar-floating-chum-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Floating Basket Shift Key Card (Bottom-Right) */
+.caesar-floating-basket-card {
+  position: absolute;
+  bottom: 24px;
+  right: 28px;
+  z-index: 20;
+  min-width: 220px;
+  background: rgba(3, 14, 28, 0.82);
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  border-radius: 16px;
+  padding: 16px 24px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.caesar-basket-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.caesar-basket-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 3px 18px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.35);
+}
+
+.caesar-basket-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Floating Rule Violation Message (Top-Left, non-disruptive) */
+.caesar-floating-rule-violation {
+  position: absolute;
+  top: 16px;
+  left: 28px;
+  z-index: 25;
+  max-width: 320px;
+  background: rgba(26, 6, 12, 0.9);
+  border: 1.5px solid rgba(255, 45, 85, 0.65);
+  border-radius: 14px;
+  padding: 12px 18px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(255, 45, 85, 0.25);
+  pointer-events: auto;
+  animation: caesarFadeIn 0.25s ease;
+}
+
+.caesar-violation-header {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: #ff3366;
+  margin-bottom: 4px;
+}
+
+.caesar-violation-body {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #ffd5dc;
+  margin: 0;
+}
+
+/* Floating Victory Panel when level is solved */
+.caesar-floating-victory-panel {
+  position: absolute;
+  top: 145px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(3, 20, 14, 0.94);
+  border: 2px solid var(--neon-green);
+  border-radius: 18px;
+  padding: 20px 32px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 0 35px rgba(57, 255, 20, 0.35), 0 10px 40px rgba(0, 0, 0, 0.7);
+  text-align: center;
+  pointer-events: auto;
+  min-width: 300px;
+  animation: caesarFadeIn 0.3s ease;
+}
+
+.caesar-victory-title {
+  color: var(--neon-green);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 6px;
+  letter-spacing: 0.04em;
+}
+
+.caesar-victory-desc {
+  color: #e2f8ec;
+  font-size: 0.88rem;
+  margin: 0 0 12px;
+}
+
+@keyframes caesarFadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive adjustments */
+@media (max-height: 820px) {
+  .caesar-floating-word-panel {
+    top: 10px;
+  }
+  .caesar-fishing-fullscreen .caesar-fish-swim-lane {
+    top: 100px;
+  }
+  .caesar-floating-guide {
+    max-width: 320px;
+    padding: 12px 16px;
+    bottom: 16px;
+    left: 20px;
+  }
+  .caesar-floating-basket-card {
+    min-width: 180px;
+    padding: 10px 16px;
+    bottom: 16px;
+    right: 20px;
+  }
+  .caesar-floating-chum-btn {
+    bottom: 140px;
+    right: 20px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Floating Cipher Cheat Sheet (Top-Left) */
+.caesar-floating-cheat-sheet {
+  position: absolute;
+  top: 14px;
+  left: 24px;
+  z-index: 20;
+  background: rgba(3, 14, 28, 0.85);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 16px;
+  padding: 10px 16px 9px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.caesar-cheat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.caesar-cheat-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.caesar-cheat-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  padding: 1.5px 9px;
+  border-radius: 10px;
+  letter-spacing: 0.02em;
+}
+
+.caesar-cheat-body {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.caesar-cheat-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.caesar-cheat-label-plain {
+  color: rgba(160, 196, 216, 0.65);
+}
+
+.caesar-cheat-label-shift {
+  color: var(--neon-cyan);
+}
+
+.caesar-cheat-columns {
+  display: flex;
+  gap: 2.5px;
+  align-items: center;
+}
+
+.caesar-cheat-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 14px;
+}
+
+.caesar-cheat-plain {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: rgba(185, 215, 235, 0.65);
+  line-height: 1;
+}
+
+.caesar-cheat-shifted {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+/* Extra spacious on wide screens */
+@media (min-width: 1600px) {
+  .caesar-floating-cheat-sheet {
+    padding: 11px 18px 10px;
+  }
+  .caesar-cheat-columns {
+    gap: 3.5px;
+  }
+  .caesar-cheat-col {
+    min-width: 16px;
+    gap: 4.5px;
+  }
+  .caesar-cheat-plain {
+    font-size: 0.92rem;
+  }
+  .caesar-cheat-shifted {
+    font-size: 0.98rem;
+  }
+  .caesar-cheat-title {
+    font-size: 0.84rem;
+  }
+  .caesar-cheat-badge {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 1390px), (max-height: 820px) {
+  .caesar-floating-cheat-sheet {
+    top: 10px;
+    left: 16px;
+    padding: 7px 12px 6px;
+  }
+  .caesar-cheat-columns {
+    gap: 2px;
+  }
+  .caesar-cheat-col {
+    min-width: 13px;
+    gap: 3px;
+  }
+  .caesar-cheat-plain {
+    font-size: 0.78rem;
+  }
+  .caesar-cheat-shifted {
+    font-size: 0.84rem;
+  }
+}
+
+/* Pause / Menu Modal for Caesar Fishing */
+.caesar-pause-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(1, 6, 15, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: caesarFadeIn 0.2s ease;
+}
+
+.caesar-pause-card {
+  background: rgba(3, 14, 28, 0.92);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 20px;
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 320px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 229, 255, 0.2), inset 0 0 20px rgba(0, 229, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.caesar-pause-title {
+  color: var(--neon-cyan);
+  margin: 0 0 6px;
+  text-align: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+}
+
+.caesar-pause-btn {
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  user-select: none;
+}
+
+.caesar-pause-btn:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 3px;
+}
+
+/* Primary cyan action: Resume */
+.caesar-pause-btn-resume {
+  background: linear-gradient(135deg, #00b4d8 0%, #00e5ff 100%);
+  color: #020c1b;
+  border: none;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 14px;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.35);
+}
+
+.caesar-pause-btn-resume:hover {
+  background: linear-gradient(135deg, #00e5ff 0%, #38bdf8 100%);
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.6);
+  transform: translateY(-2px);
+}
+
+.caesar-pause-btn-resume:active {
+  transform: translateY(0);
+}
+
+/* Secondary neutral action: Tutorial */
+.caesar-pause-btn-tutorial {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  color: #e2f1f8;
+  font-size: 0.98rem;
+  padding: 13px;
+}
+
+.caesar-pause-btn-tutorial:hover {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.5);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* De-emphasised destructive option: Exit Stage */
+.caesar-pause-btn-exit {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(220, 235, 245, 0.55);
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 12px;
+  margin-top: 4px;
+}
+
+.caesar-pause-btn-exit:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Caesar Pac-Man Full-Screen Layout & Floating Overlays
+   ========================================================================== */
+
+.pacman-layout.caesar-pacman-fullscreen {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: calc(100vh - 64px) !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background: radial-gradient(circle at 50% 30%, #081a30 0%, #020712 100%) !important;
+}
+
+.pacman-fullscreen-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.pacman-fullscreen-board-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  transition: transform 0.2s ease;
+}
+
+/* Scaling support for large screens */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .pacman-fullscreen-board-area {
+    transform: scale(1.08);
+  }
+}
+
+@media (min-width: 1900px) and (min-height: 1000px) {
+  .pacman-fullscreen-board-area {
+    transform: scale(1.15);
+  }
+}
+
+/* Floating Top-Center Word Panel */
+.caesar-pacman-floating-word-panel {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.caesar-pacman-word-card {
+  background: rgba(3, 14, 28, 0.85);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 16px;
+  padding: 10px 22px 12px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.caesar-pacman-word-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.caesar-pacman-shift-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #a0c4d8;
+  letter-spacing: 0.03em;
+}
+
+.caesar-pacman-shift-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  padding: 1.5px 10px;
+  border-radius: 12px;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.35);
+}
+
+.caesar-pacman-floating-word-panel .fg-letter-cells {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.caesar-pacman-floating-word-panel .fg-letter-cell {
+  width: 44px;
+  height: 56px;
+  background: rgba(2, 10, 22, 0.9);
+  border: 1.5px solid rgba(0, 229, 255, 0.3);
+  border-radius: 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.caesar-pacman-floating-word-panel .fg-letter-cell .fg-cell-ciphertext {
+  font-size: 0.72rem;
+  color: #7ba7bc;
+  position: absolute;
+  top: 4px;
+  font-weight: 700;
+}
+
+.caesar-pacman-floating-word-panel .fg-letter-cell .fg-cell-plaintext {
+  font-size: 1.35rem;
+  margin-top: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.caesar-pacman-floating-word-panel .fg-letter-cell.correct-plain {
+  border-color: rgba(57, 255, 20, 0.5);
+  box-shadow: 0 0 14px rgba(57, 255, 20, 0.25);
+}
+
+.caesar-pacman-floating-word-panel .fg-letter-cell.correct-plain .fg-cell-plaintext {
+  color: var(--neon-green);
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.7);
+}
+
+.caesar-pacman-floating-word-panel .fg-letter-cell.masked .fg-cell-plaintext {
+  color: rgba(220, 235, 245, 0.5);
+}
+
+.caesar-pacman-clue-banner {
+  margin-top: 6px;
+  color: #ffd700;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* Floating Bottom-Left Cheat Sheet */
+.caesar-floating-cheat-sheet.caesar-pacman-cheat-sheet {
+  top: auto !important;
+  bottom: 16px !important;
+  left: 24px !important;
+}
+
+/* Floating Bottom-Center Caesar Shift Key Clue */
+.caesar-floating-basket-card.caesar-pacman-clue-card {
+  position: absolute !important;
+  bottom: 16px !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
+  z-index: 20 !important;
+  min-width: 170px !important;
+  padding: 10px 22px !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  background: rgba(3, 14, 28, 0.85) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.45) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05) !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+}
+
+.caesar-pacman-clue-card .caesar-basket-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.caesar-pacman-clue-card .caesar-basket-badge {
+  font-size: 1.15rem;
+  padding: 2px 14px;
+  margin-bottom: 4px;
+}
+
+.caesar-pacman-clue-card .caesar-basket-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+/* Floating Bottom-Right Skill Freeze Charge */
+.skill-charge-card.caesar-pacman-skill-card {
+  position: absolute !important;
+  bottom: 16px !important;
+  right: 24px !important;
+  z-index: 20 !important;
+  min-width: 180px !important;
+  padding: 10px 18px !important;
+  background: rgba(3, 14, 28, 0.85) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.4) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05) !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+}
+
+.caesar-pacman-skill-card.charged {
+  border-color: #ffd700 !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), inset 0 0 14px rgba(255, 215, 0, 0.08) !important;
+}
+
+.caesar-pacman-skill-card.active {
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.4), inset 0 0 14px rgba(0, 229, 255, 0.1) !important;
+}
+
+/* Floating Alert Notification */
+.caesar-floating-rule-violation.caesar-pacman-floating-alert {
+  top: 14px !important;
+  left: 24px !important;
+  z-index: 25 !important;
+  max-width: 320px !important;
+  pointer-events: auto !important;
+}
+
+/* Game Over Modal Enhancements */
+.pacman-gameover-card {
+  min-width: 340px;
+  max-width: 420px;
+  text-align: center;
+}
+
+.pacman-gameover-text {
+  font-family: 'Space Grotesk', sans-serif;
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  margin: 0 0 20px;
+}
+
+/* Floating Victory Panel */
+.caesar-floating-victory-panel.caesar-pacman-victory-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+}
+
+/* Responsive constraints for zero scrolling */
+@media (max-width: 1440px), (max-height: 850px) {
+  .caesar-pacman-floating-word-panel {
+    top: 10px;
+  }
+  .caesar-pacman-word-card {
+    padding: 8px 18px 10px;
+  }
+  .caesar-pacman-floating-word-panel .fg-letter-cell {
+    width: 38px;
+    height: 48px;
+  }
+  .caesar-pacman-floating-word-panel .fg-letter-cell .fg-cell-plaintext {
+    font-size: 1.15rem;
+    margin-top: 8px;
+  }
+  .caesar-floating-cheat-sheet.caesar-pacman-cheat-sheet {
+    bottom: 12px !important;
+    left: 18px !important;
+    padding: 7px 12px 6px;
+  }
+  .caesar-floating-basket-card.caesar-pacman-clue-card {
+    bottom: 12px !important;
+    padding: 8px 18px !important;
+  }
+  .skill-charge-card.caesar-pacman-skill-card {
+    bottom: 12px !important;
+    right: 18px !important;
+    padding: 8px 14px !important;
+  }
+}
+
+@media (max-height: 760px) {
+  .caesar-pacman-floating-word-panel {
+    top: 6px;
+  }
+  .caesar-pacman-word-card {
+    padding: 6px 14px 8px;
+  }
+  .caesar-pacman-floating-word-panel .fg-letter-cell {
+    width: 34px;
+    height: 44px;
+  }
+  .caesar-pacman-clue-banner {
+    font-size: 0.78rem;
+    margin-top: 4px;
+  }
+  .caesar-floating-cheat-sheet.caesar-pacman-cheat-sheet {
+    bottom: 8px !important;
+  }
+  .caesar-floating-basket-card.caesar-pacman-clue-card {
+    bottom: 8px !important;
+  }
+  .skill-charge-card.caesar-pacman-skill-card {
+    bottom: 8px !important;
+  }
+}
+
 
