@@ -7,6 +7,18 @@ export default function StageRoadmap({ game }) {
 
   const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
 
+  // Find the first uncompleted stage index (0 to 4)
+  const firstUncompletedIndex = Array.from({ length: 5 }).findIndex(
+    (_, idx) => !completed.includes(`${category}-${difficulty}-${idx}`)
+  );
+
+  // Line fill progress percentage:
+  // Runs from center of Node 0 (0%) to center of Node 4 (100%).
+  // If all 5 completed, fill is 100%. Otherwise, it fills up to firstUncompletedIndex.
+  const lineFillPercent = firstUncompletedIndex === -1
+    ? 100
+    : (firstUncompletedIndex / 4) * 100;
+
   return (
     <div className="game-lobby cq-lobby-screen">
       {/* ── Legibility Scrim Overlay ── */}
@@ -33,60 +45,70 @@ export default function StageRoadmap({ game }) {
           <p className="cq-screen-subtitle">
             Complete all 5 operations to master this difficulty tier
           </p>
+          <div className="cq-stages-cleared-badge">
+            <span className="material-symbols-outlined cq-cleared-badge-icon">verified</span>
+            <span className="cq-cleared-badge-text">
+              {completed.length} / 5 Operations Cleared
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* ── Centered Stages Roadmap & Progress Section ── */}
+      {/* ── Centered Stages Roadmap & Connected Path Section ── */}
       <div className="cq-lobby-center-content">
-        <div className="cq-stages-container">
-          {/* 5 Stage Cards in a Centered Row */}
-          <div className="cq-stages-row">
-            {Array.from({ length: 5 }).map((_, i) => {
-              const stageId = `${category}-${difficulty}-${i}`;
-              const done = completed.includes(stageId);
-              return (
-                <div
-                  key={stageId}
-                  role="button"
-                  tabIndex={0}
-                  className={`cq-stage-card ${done ? "completed" : "available"}`}
-                  onClick={() => startStage(category, difficulty, i)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      startStage(category, difficulty, i);
-                    }
-                  }}
-                >
-                  <div className="cq-stage-card-number">Stage {i + 1}</div>
-                  <div className="cq-stage-card-icon-box">
-                    <span className="material-symbols-outlined">
-                      {done ? "check_circle" : "play_circle"}
-                    </span>
-                  </div>
-                  <div className="cq-stage-card-status">
-                    {done ? "COMPLETED" : "PLAY"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* ── Tier Progress Bar ── */}
-          <div className="cq-stages-progress-wrap">
-            <div className="cq-stages-progress-header">
-              <span className="cq-stages-progress-label">Tier Operational Progress</span>
-              <span className="cq-stages-progress-count">
-                {completed.length} / 5 Operations Cleared
-              </span>
-            </div>
-            <div className="cq-stages-progress-track">
+        <div className="cq-stages-container cq-roadmap-container">
+          <div className="cq-roadmap-path-wrapper">
+            {/* Horizontal Connecting Line Track behind nodes */}
+            <div className="cq-roadmap-track-container">
+              <div className="cq-roadmap-track-dim" />
               <div
-                className="cq-stages-progress-fill"
-                style={{
-                  width: `${(completed.length / 5) * 100}%`,
-                }}
+                className="cq-roadmap-track-fill"
+                style={{ width: `${lineFillPercent}%` }}
               />
+            </div>
+
+            {/* 5 Stage Circular Nodes in a Centered Row */}
+            <div className="cq-stages-row cq-roadmap-row">
+              {Array.from({ length: 5 }).map((_, i) => {
+                const stageId = `${category}-${difficulty}-${i}`;
+                const done = completed.includes(stageId);
+                const isCurrent = !done && i === firstUncompletedIndex;
+                const isLocked = Boolean(game.isStageLocked?.(category, difficulty, i));
+
+                return (
+                  <div
+                    key={stageId}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Stage ${i + 1}${done ? ': Completed' : isCurrent ? ': Current Playable' : isLocked ? ': Locked' : ': Playable'}`}
+                    className={`cq-stage-card cq-roadmap-node ${
+                      done
+                        ? "completed"
+                        : isCurrent
+                        ? "current"
+                        : isLocked
+                        ? "locked"
+                        : "available"
+                    }`}
+                    onClick={() => startStage(category, difficulty, i)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        startStage(category, difficulty, i);
+                      }
+                    }}
+                  >
+                    <div className="cq-node-circle-wrap">
+                      <div className="cq-node-circle">
+                        <span className="material-symbols-outlined cq-node-icon">
+                          {done ? "check" : isLocked ? "lock" : "play_arrow"}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="cq-node-number">{String(i + 1).padStart(2, '0')}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

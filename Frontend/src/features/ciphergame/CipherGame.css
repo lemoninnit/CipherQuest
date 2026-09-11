@@ -4608,6 +4608,306 @@
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   STAGE ROADMAP: Connected Path Layout (Additive Rules)
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* 1. Header Cleared Count Badge */
+.cq-stages-cleared-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 6px 16px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 20px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #00e5ff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.cq-cleared-badge-icon {
+  font-size: 17px;
+  color: #10b981;
+}
+
+.cq-cleared-badge-text {
+  color: #e2e8f0;
+}
+
+/* 2. Path Container & Track */
+.cq-roadmap-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: 960px !important;
+  margin: 0 auto !important;
+  padding: 20px 24px !important;
+}
+
+.cq-roadmap-path-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+/* Horizontal connecting line running through the centers of Node 01 (10%) to Node 05 (90%) */
+.cq-roadmap-track-container {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 62px; /* Centers with node circle (20px pad + 42px center of 84px circle-wrap) */
+  height: 2px;
+  z-index: 1;
+}
+
+.cq-roadmap-track-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 1px;
+}
+
+.cq-roadmap-track-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #10b981 0%, #00e5ff 100%);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
+  border-radius: 1px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 3. Row of 5 Nodes */
+.cq-stages-row.cq-roadmap-row {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* 4. Individual Node Element (Strip card container styling) */
+.cq-roadmap-node.cq-stage-card {
+  background: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  flex: 1 1 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  position: relative !important;
+  z-index: 2 !important;
+  cursor: pointer !important;
+  gap: 12px !important;
+  outline: none !important;
+  transform: none !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+/* Node Circle Wrap (Ensures common horizontal axis at 42px) */
+.cq-node-circle-wrap {
+  width: 100%;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Base Node Circle */
+.cq-node-circle {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-sizing: border-box;
+  transition:
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease,
+    background-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+/* Stage Number beneath Node */
+.cq-node-number {
+  font-family: 'Space Grotesk', 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #475569;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+/* ── Node State 1: Completed ── */
+.cq-roadmap-node.completed .cq-node-circle {
+  width: 58px;
+  height: 58px;
+  border: 2px solid #10b981;
+  background: #06231a;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(16, 185, 129, 0.12);
+}
+
+.cq-roadmap-node.completed .cq-node-icon {
+  color: #10b981;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.cq-roadmap-node.completed .cq-node-number {
+  color: #94a3b8;
+}
+
+.cq-roadmap-node.completed:hover .cq-node-circle {
+  transform: scale(1.08);
+  border-color: #34d399;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.45);
+}
+
+.cq-roadmap-node.completed:hover .cq-node-number {
+  color: #e2e8f0;
+}
+
+/* ── Node State 2: Current / Next Playable (Visibly larger focal point) ── */
+.cq-roadmap-node.current .cq-node-circle {
+  width: 82px;
+  height: 82px;
+  border: 3px solid #00e5ff;
+  background: #081d32;
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.6),
+    0 0 24px rgba(0, 229, 255, 0.45),
+    inset 0 0 14px rgba(0, 229, 255, 0.18);
+  animation: cq-current-node-glow 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes cq-current-node-glow {
+  0% {
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.6),
+      0 0 20px rgba(0, 229, 255, 0.4),
+      inset 0 0 12px rgba(0, 229, 255, 0.15);
+  }
+  100% {
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.6),
+      0 0 32px rgba(0, 229, 255, 0.65),
+      inset 0 0 18px rgba(0, 229, 255, 0.25);
+  }
+}
+
+.cq-roadmap-node.current .cq-node-icon {
+  color: #00e5ff;
+  font-size: 38px;
+  margin-left: 3px; /* Optical center for triangle */
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.6));
+}
+
+.cq-roadmap-node.current .cq-node-number {
+  color: #00e5ff;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
+
+.cq-roadmap-node.current:hover .cq-node-circle {
+  transform: scale(1.08);
+  border-color: #38bdf8;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.7),
+    0 0 36px rgba(0, 229, 255, 0.75),
+    inset 0 0 20px rgba(0, 229, 255, 0.3);
+}
+
+.cq-roadmap-node.current:hover .cq-node-number {
+  color: #e0f2fe;
+}
+
+/* ── Node State 3: Available / Later (Smaller circle, dim ring, dark fill) ── */
+.cq-roadmap-node.available .cq-node-circle {
+  width: 58px;
+  height: 58px;
+  border: 2px solid rgba(148, 163, 184, 0.25);
+  background: #071322;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.cq-roadmap-node.available .cq-node-icon {
+  color: rgba(148, 163, 184, 0.45);
+  font-size: 24px;
+  margin-left: 2px;
+}
+
+.cq-roadmap-node.available .cq-node-number {
+  color: #475569;
+}
+
+.cq-roadmap-node.available:hover .cq-node-circle {
+  transform: scale(1.08);
+  border-color: rgba(0, 229, 255, 0.5);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.3);
+}
+
+.cq-roadmap-node.available:hover .cq-node-icon {
+  color: #00e5ff;
+}
+
+.cq-roadmap-node.available:hover .cq-node-number {
+  color: #cbd5e1;
+}
+
+/* ── Node State 4: Locked (Dim slate ring, dark fill, lock icon, muted number) ── */
+.cq-roadmap-node.locked .cq-node-circle {
+  width: 58px;
+  height: 58px;
+  border: 2px solid rgba(100, 116, 139, 0.2);
+  background: #060e18;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+.cq-roadmap-node.locked .cq-node-icon {
+  color: rgba(100, 116, 139, 0.4);
+  font-size: 22px;
+}
+
+.cq-roadmap-node.locked .cq-node-number {
+  color: #334155;
+}
+
+/* ── Keyboard Accessibility: Focus Visible Ring (Does NOT resize the node) ── */
+.cq-roadmap-node:focus-visible {
+  outline: none !important;
+}
+
+.cq-roadmap-node:focus-visible .cq-node-circle {
+  outline: 2px solid #00e5ff !important;
+  outline-offset: 4px !important;
+}
+
+
 
 
 
