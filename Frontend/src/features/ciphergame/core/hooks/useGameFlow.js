@@ -47,6 +47,7 @@ export function useGameFlow() {
   const [category,   setCategory]   = useState(initialCategory);
   const [difficulty, setDifficulty] = useState(null);
   const [currentStage, setCurrentStage] = useState(null);
+  const [loadingTargetStage, setLoadingTargetStage] = useState(null);
 
   // Sync progress state when user or user progress map changes
   useEffect(() => {
@@ -89,6 +90,13 @@ export function useGameFlow() {
     });
   };
 
+  const finishLoadingStage = () => {
+    if (loadingTargetStage) {
+      setCurrentStage(loadingTargetStage);
+      setLoadingTargetStage(null);
+    }
+  };
+
   const completeStage = async () => {
     if (!currentStage) return;
     const { category: cat, difficulty: diff, stageIndex, id } = currentStage;
@@ -118,6 +126,7 @@ export function useGameFlow() {
       });
     }
     setCurrentStage(null);
+    setLoadingTargetStage(null);
   };
 
   const replayCurrentStage = () => {
@@ -126,17 +135,17 @@ export function useGameFlow() {
     startStage(cat, diff, stageIndex);
   };
 
-  const goToCategories   = () => { setCategory(null); setDifficulty(null); setCurrentStage(null); };
-  const selectCategory   = (cat)  => { setCategory(cat); setDifficulty(null); };
-  const selectDifficulty = (diff) => setDifficulty(diff);
-  const backToDifficulty = () => { setDifficulty(null); setCurrentStage(null); };
-  const backToStages     = () => setCurrentStage(null);
+  const goToCategories   = () => { setCategory(null); setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); };
+  const selectCategory   = (cat)  => { setCategory(cat); setDifficulty(null); setLoadingTargetStage(null); };
+  const selectDifficulty = (diff) => { setDifficulty(diff); setLoadingTargetStage(null); };
+  const backToDifficulty = () => { setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); };
+  const backToStages     = () => { setCurrentStage(null); setLoadingTargetStage(null); };
 
   return {
     progress,
-    category, difficulty, currentStage,
+    category, difficulty, currentStage, loadingTargetStage,
     isUnlocked, isStageCompleted,
-    startStage, completeStage, replayCurrentStage,
+    startStage, finishLoadingStage, completeStage, replayCurrentStage,
     goToCategories, selectCategory, selectDifficulty,
     backToDifficulty, backToStages,
   };

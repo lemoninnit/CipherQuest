@@ -8,6 +8,7 @@ import { useGameFlow } from "./core/hooks/useGameFlow";
 // import CategorySelector  from "./ui/CategorySelector";
 import DifficultySelector from "./ui/DifficultySelector";
 import StageRoadmap      from "./features/stages/StageRoadmap";
+import StageLoadingScreen from "./ui/StageLoadingScreen";
 
 // Caesar games
 import CaesarFishingGame from "./features/caesar/CaesarFishingGame";
@@ -43,37 +44,42 @@ export default function CipherGame() {
       onReplayNewQuestion: replayCurrentStage,
     };
 
+    let gameComponent = null;
     switch (gameType) {
       case 'FISHING':
         if (category === 'caesar') {
-          return <CaesarFishingGame {...sharedProps} />;
+          gameComponent = <CaesarFishingGame {...sharedProps} />;
         } else if (category === 'vigenere') {
-          return <VigenereFishingGame {...sharedProps} />;
+          gameComponent = <VigenereFishingGame {...sharedProps} />;
         } else if (category === 'playfair') {
-          return <PlayfairFishingGame {...sharedProps} />;
+          gameComponent = <PlayfairFishingGame {...sharedProps} />;
         }
         break;
       case 'PACMAN':
-        return <PacmanGame {...sharedProps} />;
+        gameComponent = <PacmanGame {...sharedProps} />;
+        break;
       case 'SPRINT':
         if (category === 'caesar') {
-          return <CipherSprint {...sharedProps} />;
+          gameComponent = <CipherSprint {...sharedProps} />;
         } else if (category === 'vigenere') {
-          return <VigenereSprint {...sharedProps} />;
+          gameComponent = <VigenereSprint {...sharedProps} />;
         } else if (category === 'playfair') {
-          return <PlayfairSprint {...sharedProps} />;
+          gameComponent = <PlayfairSprint {...sharedProps} />;
         }
         break;
       case 'PLAYFAIR_FISHING':
-        return <PlayfairFishingGame {...sharedProps} />;
+        gameComponent = <PlayfairFishingGame {...sharedProps} />;
+        break;
       default:
-        return (
+        gameComponent = (
           <div className="cipher-container">
             <p style={{ color: '#f87171' }}>Unknown game type: {gameType}</p>
             <button onClick={backToStages}>Back</button>
           </div>
         );
     }
+
+    return <div className="cq-page-fade-in">{gameComponent}</div>;
   }
 
   /* ─── Selector Screens (Difficulty & Stage Roadmap) ─── */

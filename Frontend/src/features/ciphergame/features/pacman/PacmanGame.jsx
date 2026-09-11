@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './PacmanGame.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import {
   CELL,
   MAZE_DECOR,
@@ -262,6 +263,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   }
 
   const [phase, setPhase] = useState('ready');
+  const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [explanationStep, setExplanationStep] = useState(-1);
   const [showTabula, setShowTabula] = useState(false);
@@ -839,6 +841,20 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const words = (levelData.plaintext || '').split(/\s+/).filter(Boolean);
 
   if (phase === 'ready') {
+    if (isOperationLoading) {
+      return (
+        <StageLoadingScreen
+          category={isPlayfair ? 'playfair' : isVigenere ? 'vigenere' : 'caesar'}
+          difficulty={tier}
+          stageIndex={(levelData.level || 1) - 1}
+          onLoadingComplete={() => {
+            setIsOperationLoading(false);
+            setPhase('playing');
+          }}
+        />
+      );
+    }
+
     const stageCode = `OP-${String(levelData.level || 1).padStart(2, '0')}`;
     const gameTitle = isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man");
     return (
@@ -899,7 +915,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 <strong>How it works:</strong>{' '}
                 Eat a yellow Skill Pellet, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct plaintext letter!
               </p>
-              <button className="cq-dossier-action-btn" onClick={() => setPhase('playing')}>
+              <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
                 Begin operation
               </button>
             </div>

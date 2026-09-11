@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import '../sprint/CipherSprint.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import FullscreenButton from '../../ui/FullscreenButton';
 
@@ -51,6 +52,7 @@ export default function VigenereSprint({
   const [firstTryForCurrent, setFirstTryForCurrent] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [explanationStep, setExplanationStep] = useState(-1);
   const [feedbackText, setFeedbackText] = useState('');
@@ -646,58 +648,71 @@ export default function VigenereSprint({
         extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
       />
 
+      {/* ───── Ready Screen ───── */}
       {sprintStep === 'ready' ? (
-        <div className="cq-brief-screen">
-          <img
-            className="cq-bg-img"
-            src="/assets/fish/lobbybg/lobbybg.png"
-            alt="Lobby Background"
-            aria-hidden="true"
+        isOperationLoading ? (
+          <StageLoadingScreen
+            category="vigenere"
+            difficulty={tier}
+            stageIndex={(levelData.level || 1) - 1}
+            onLoadingComplete={() => {
+              setIsOperationLoading(false);
+              handleStartSprint();
+            }}
           />
-          <div className="cq-lobby-scrim" />
-          <div className="cq-dossier-card">
-            {/* Left Column: Sprite Frame & Stage Code */}
-            <div className="cq-dossier-left-col">
-              <div className="cq-dossier-sprite-frame">
-                <div className="cq-dossier-sprite cq-dossier-sprite-sprint" aria-hidden="true" />
+        ) : (
+          <div className="cq-brief-screen">
+            <img
+              className="cq-bg-img"
+              src="/assets/fish/lobbybg/lobbybg.png"
+              alt="Lobby Background"
+              aria-hidden="true"
+            />
+            <div className="cq-lobby-scrim" />
+            <div className="cq-dossier-card">
+              {/* Left Column: Sprite Frame & Stage Code */}
+              <div className="cq-dossier-left-col">
+                <div className="cq-dossier-sprite-frame">
+                  <div className="cq-dossier-sprite cq-dossier-sprite-sprint" aria-hidden="true" />
+                </div>
+                <div className="cq-dossier-stage-code">
+                  {`OP-${String(levelData.level || 1).padStart(2, '0')}`}
+                </div>
               </div>
-              <div className="cq-dossier-stage-code">
-                {`OP-${String(levelData.level || 1).padStart(2, '0')}`}
-              </div>
-            </div>
 
-            {/* Right Column: Briefing Content */}
-            <div className="cq-dossier-right-col">
-              <div className="cq-dossier-tag">MISSION BRIEF</div>
-              <h2 className="cq-dossier-title">Vigenère Relay Run</h2>
-              <p className="cq-dossier-subtitle">
-                Sprint through Vigenère hurdles using the repeating keyword! Match each letter to clear the checkpoint.
-              </p>
-              <hr className="cq-dossier-divider" />
-              <div className="cq-dossier-data">
-                <div className="cq-dossier-row">
-                  <span className="cq-dossier-label">CIPHERTEXT</span>
-                  <span className="cq-dossier-value cyan-mono">{levelData.ciphertext}</span>
+              {/* Right Column: Briefing Content */}
+              <div className="cq-dossier-right-col">
+                <div className="cq-dossier-tag">MISSION BRIEF</div>
+                <h2 className="cq-dossier-title">Vigenère Relay Run</h2>
+                <p className="cq-dossier-subtitle">
+                  Sprint through Vigenère hurdles using the repeating keyword! Match each letter to clear the checkpoint.
+                </p>
+                <hr className="cq-dossier-divider" />
+                <div className="cq-dossier-data">
+                  <div className="cq-dossier-row">
+                    <span className="cq-dossier-label">CIPHERTEXT</span>
+                    <span className="cq-dossier-value cyan-mono">{levelData.ciphertext}</span>
+                  </div>
+                  <div className="cq-dossier-row">
+                    <span className="cq-dossier-label">KEYWORD CLUE</span>
+                    <span className="cq-dossier-value yellow-mono">{levelData.keyClue}</span>
+                  </div>
+                  <div className="cq-dossier-row">
+                    <span className="cq-dossier-label">HINT</span>
+                    <span className="cq-dossier-value hint-text">{levelData.hint}</span>
+                  </div>
                 </div>
-                <div className="cq-dossier-row">
-                  <span className="cq-dossier-label">KEYWORD CLUE</span>
-                  <span className="cq-dossier-value yellow-mono">{levelData.keyClue}</span>
-                </div>
-                <div className="cq-dossier-row">
-                  <span className="cq-dossier-label">HINT</span>
-                  <span className="cq-dossier-value hint-text">{levelData.hint}</span>
-                </div>
+                <p className="cq-dossier-how-it-works">
+                  <strong>How it works:</strong>{' '}
+                  Switch lanes to pick the correct plaintext letter for the repeating keyword slot! Press <strong>F</strong> to toggle fullscreen.
+                </p>
+                <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
+                  Begin operation
+                </button>
               </div>
-              <p className="cq-dossier-how-it-works">
-                <strong>How it works:</strong>{' '}
-                Switch lanes to pick the correct plaintext letter for the repeating keyword slot! Press <strong>F</strong> to toggle fullscreen.
-              </p>
-              <button className="cq-dossier-action-btn" onClick={handleStartSprint}>
-                Begin operation
-              </button>
             </div>
           </div>
-        </div>
+        )
       ) : (
         <div className="sprint-widescreen">
           <aside className="sprint-sidebar">

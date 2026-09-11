@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { facingTransform, makeSwimProps, tickFish, visualsForValue } from '../../core/engine/fishPhysics';
 
 /* ─── Caesar math ─── */
@@ -32,6 +33,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
   /* ── state ── */
   const [phase, setPhase]                     = useState('ready');
+  const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [activeShifts, setActiveShifts]       = useState(() => cipherSegs.map((_, idx) => getInitialShift(idx)));
   const [targetSegIdx, setTargetSegIdx]       = useState(0);
   const [attemptsLeft, setAttemptsLeft]       = useState(15);
@@ -343,6 +345,20 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
   /* ════ READY ════ */
   if (phase === 'ready') {
+    if (isOperationLoading) {
+      return (
+        <StageLoadingScreen
+          category="caesar"
+          difficulty={tier}
+          stageIndex={(levelData.level || 1) - 1}
+          onLoadingComplete={() => {
+            setIsOperationLoading(false);
+            startGame();
+          }}
+        />
+      );
+    }
+
     const stageCode = `OP-${String(levelData.level || 1).padStart(2, '0')}`;
     return (
       <div className="fg-root">
@@ -394,7 +410,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                 When the decrypted text matches the plaintext, submit! Formula:{' '}
                 <code>Plain = (Cipher + Basket Shift) mod 26</code>
               </p>
-              <button className="cq-dossier-action-btn" onClick={startGame}>
+              <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
                 Begin operation
               </button>
             </div>

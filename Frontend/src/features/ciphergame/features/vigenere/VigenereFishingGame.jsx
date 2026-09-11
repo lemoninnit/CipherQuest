@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -72,6 +73,7 @@ export default function VigenereFishingGame({
     );
 
   const [phase, setPhase] = useState('ready');
+  const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [activeShifts, setActiveShifts] = useState(getInitialShifts);
   const [activeSlot, setActiveSlot] = useState(0);
   const [attemptsLeft, setAttemptsLeft] = useState(Math.max(20, keyLen * 10));
@@ -350,68 +352,84 @@ export default function VigenereFishingGame({
     }
   }
 
-  if (phase === 'ready') return (
-    <div className="fg-root">
-      <GameHudBar
-        title="Vigenère Fishing"
-        stage={levelData.level}
-        tier={tier}
-        isReady={true}
-        onBackToStages={onBackToStages}
-      />
-      <div className="cq-brief-screen">
-        <img
-          className="cq-bg-img"
-          src="/assets/fish/lobbybg/lobbybg.png"
-          alt="Lobby Background"
-          aria-hidden="true"
+  if (phase === 'ready') {
+    if (isOperationLoading) {
+      return (
+        <StageLoadingScreen
+          category="vigenere"
+          difficulty={tier}
+          stageIndex={(levelData.level || 1) - 1}
+          onLoadingComplete={() => {
+            setIsOperationLoading(false);
+            startGame();
+          }}
         />
-        <div className="cq-lobby-scrim" />
-        <div className="cq-dossier-card">
-          {/* Left Column: Sprite Frame & Stage Code */}
-          <div className="cq-dossier-left-col">
-            <div className="cq-dossier-sprite-frame">
-              <div className="cq-dossier-sprite cq-dossier-sprite-fish" aria-hidden="true" />
-            </div>
-            <div className="cq-dossier-stage-code">
-              {`OP-${String(levelData.level || 1).padStart(2, '0')}`}
-            </div>
-          </div>
+      );
+    }
 
-          {/* Right Column: Briefing Content */}
-          <div className="cq-dossier-right-col">
-            <div className="cq-dossier-tag">MISSION BRIEF</div>
-            <h2 className="cq-dossier-title">Vigenère Fishing</h2>
-            <p className="cq-dossier-subtitle">
-              Recover the repeating keyword one letter at a time. Slot #1 affects letters 1, {keyLen + 1}, {keyLen * 2 + 1}; slot #2 affects letters 2, {keyLen + 2}, and so on.
-            </p>
-            <hr className="cq-dossier-divider" />
-            <div className="cq-dossier-data">
-              <div className="cq-dossier-row">
-                <span className="cq-dossier-label">CIPHERTEXT</span>
-                <span className="cq-dossier-value cyan-mono">{levelData.ciphertext}</span>
+    return (
+      <div className="fg-root">
+        <GameHudBar
+          title="Vigenère Fishing"
+          stage={levelData.level}
+          tier={tier}
+          isReady={true}
+          onBackToStages={onBackToStages}
+        />
+        <div className="cq-brief-screen">
+          <img
+            className="cq-bg-img"
+            src="/assets/fish/lobbybg/lobbybg.png"
+            alt="Lobby Background"
+            aria-hidden="true"
+          />
+          <div className="cq-lobby-scrim" />
+          <div className="cq-dossier-card">
+            {/* Left Column: Sprite Frame & Stage Code */}
+            <div className="cq-dossier-left-col">
+              <div className="cq-dossier-sprite-frame">
+                <div className="cq-dossier-sprite cq-dossier-sprite-fish" aria-hidden="true" />
               </div>
-              <div className="cq-dossier-row">
-                <span className="cq-dossier-label">KEYWORD CLUE</span>
-                <span className="cq-dossier-value yellow-mono">{levelData.keyClue}</span>
-              </div>
-              <div className="cq-dossier-row">
-                <span className="cq-dossier-label">HINT</span>
-                <span className="cq-dossier-value hint-text">{levelData.hint}</span>
+              <div className="cq-dossier-stage-code">
+                {`OP-${String(levelData.level || 1).padStart(2, '0')}`}
               </div>
             </div>
-            <p className="cq-dossier-how-it-works">
-              <strong>How it works:</strong>{' '}
-              Catch letter fish to fill the active keyword slot. When every slot matches the keyword, the full Vigenère plaintext resolves.
-            </p>
-            <button className="cq-dossier-action-btn" onClick={startGame}>
-              Begin operation
-            </button>
+
+            {/* Right Column: Briefing Content */}
+            <div className="cq-dossier-right-col">
+              <div className="cq-dossier-tag">MISSION BRIEF</div>
+              <h2 className="cq-dossier-title">Vigenère Fishing</h2>
+              <p className="cq-dossier-subtitle">
+                Recover the repeating keyword one letter at a time. Slot #1 affects letters 1, {keyLen + 1}, {keyLen * 2 + 1}; slot #2 affects letters 2, {keyLen + 2}, and so on.
+              </p>
+              <hr className="cq-dossier-divider" />
+              <div className="cq-dossier-data">
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">CIPHERTEXT</span>
+                  <span className="cq-dossier-value cyan-mono">{levelData.ciphertext}</span>
+                </div>
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">KEYWORD CLUE</span>
+                  <span className="cq-dossier-value yellow-mono">{levelData.keyClue}</span>
+                </div>
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">HINT</span>
+                  <span className="cq-dossier-value hint-text">{levelData.hint}</span>
+                </div>
+              </div>
+              <p className="cq-dossier-how-it-works">
+                <strong>How it works:</strong>{' '}
+                Catch letter fish to fill the active keyword slot. When every slot matches the keyword, the full Vigenère plaintext resolves.
+              </p>
+              <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
+                Begin operation
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
     <div className="fg-root">

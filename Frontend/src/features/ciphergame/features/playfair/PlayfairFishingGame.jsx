@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import './PlayfairGame.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import {
   describePlayfairRule,
   transformPlayfairPair,
@@ -88,6 +89,7 @@ export default function PlayfairFishingGame({
   }), [levelData.cipherPairs, matrix]);
 
   const [phase, setPhase] = useState('ready');
+  const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [solvedPairs, setSolvedPairs] = useState([]);
   const [misses, setMisses] = useState(0);
@@ -252,6 +254,20 @@ export default function PlayfairFishingGame({
   const hookY = caughtFish ? rodTipY + (castTarget.y - rodTipY) * castProgress : rodTipY;
 
   if (phase === 'ready') {
+    if (isOperationLoading) {
+      return (
+        <StageLoadingScreen
+          category="playfair"
+          difficulty={tier}
+          stageIndex={(levelData.level || 1) - 1}
+          onLoadingComplete={() => {
+            setIsOperationLoading(false);
+            startGame();
+          }}
+        />
+      );
+    }
+
     return (
       <div className="pf-root">
         <GameHudBar
@@ -320,7 +336,7 @@ export default function PlayfairFishingGame({
                 <strong>Fishing rule:</strong> each fish carries a two-letter plaintext candidate. Correct catches fill the message. Wrong catches explain the matrix rule you missed.
               </p>
 
-              <button className="cq-dossier-action-btn" onClick={startGame}>
+              <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
                 Begin operation
               </button>
             </div>
