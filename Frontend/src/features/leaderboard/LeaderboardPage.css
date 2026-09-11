@@ -21,6 +21,30 @@
   color: #ffffff;
 }
 
+/* ── Background Looping Fog Video Framing ── */
+.lb-bg-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Atmospheric blurred copy scaled to cover to seamlessly fill side margins on wide screens */
+.lb-bg-video-blur {
+  object-fit: cover;
+  object-position: center;
+  filter: blur(28px) brightness(0.65);
+  transform: scale(1.08); /* Prevents blur edge clipping */
+}
+
+/* Sharp main video preserving full uncropped frame (arches & floor fog) */
+.lb-bg-video-contain {
+  object-fit: contain;
+  object-position: center;
+}
+
 /* ── Screen-Reader Utility ── */
 .sr-only {
   position: absolute;
@@ -655,3 +679,10 @@
     max-height: 350px;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .lb-bg-video {
+    display: none !important;
+  }
+}
+

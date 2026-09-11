@@ -180,6 +180,33 @@ const DashboardHome = () => {
 
   return (
     <div className="dh-lobby">
+<<<<<<< Updated upstream
+=======
+      {/* Background Looping Fog Video: Atmospheric blurred background fill for wide screens */}
+      <video
+        className="dh-lobby-video dh-lobby-video-blur"
+        src="/assets/fish/lobbybg/lobby-bg.mp4"
+        poster="/assets/fish/lobbybg/lobbybg.png"
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+      />
+
+      {/* Foreground sharp video showing full uncropped frame */}
+      <video
+        className="dh-lobby-video dh-lobby-video-contain"
+        src="/assets/fish/lobbybg/lobby-bg.mp4"
+        poster="/assets/fish/lobbybg/lobbybg.png"
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+      />
+
+>>>>>>> Stashed changes
       {/* Legibility Scrim Overlay */}
       <div className="dh-lobby-scrim" />
 

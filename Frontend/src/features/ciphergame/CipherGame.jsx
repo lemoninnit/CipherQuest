@@ -76,25 +76,49 @@ export default function CipherGame() {
     }
   }
 
-  /* ─── Stage roadmap ─── */
+  /* ─── Selector screens (Stage Roadmap / Difficulty / Category) ─── */
+  let selectorContent = null;
   if (category && difficulty) {
-    return (
-      <div className="cipher-container">
-        <StageRoadmap game={game} />
-      </div>
+    selectorContent = <StageRoadmap game={game} />;
+  } else if (category) {
+    selectorContent = (
+      <DifficultySelector
+        activeCategory={category}
+        completedLevels={progress}
+        onSelectDifficulty={selectDifficulty}
+        onBack={goToCategories}
+      />
     );
   }
 
-  /* ─── Difficulty selector ─── */
-  if (category) {
+  if (selectorContent) {
     return (
       <div className="cipher-container">
-        <DifficultySelector
-          activeCategory={category}
-          completedLevels={progress}
-          onSelectDifficulty={selectDifficulty}
-          onBack={goToCategories}
+        {/* Background Looping Fog Video: Atmospheric blurred background fill for wide screens */}
+        <video
+          className="cq-bg-video cq-bg-video-blur"
+          src="/assets/fish/lobbybg/lobby-bg.mp4"
+          poster="/assets/fish/lobbybg/lobbybg.png"
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-hidden="true"
         />
+
+        {/* Foreground sharp video showing full uncropped frame */}
+        <video
+          className="cq-bg-video cq-bg-video-contain"
+          src="/assets/fish/lobbybg/lobby-bg.mp4"
+          poster="/assets/fish/lobbybg/lobbybg.png"
+          autoPlay
+          loop
+          muted
+          playsInline
+          aria-hidden="true"
+        />
+
+        {selectorContent}
       </div>
     );
   }

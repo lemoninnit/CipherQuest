@@ -20,6 +20,33 @@
   color: #ffffff;
 }
 
+<<<<<<< Updated upstream
+=======
+/* Background Looping Fog Video Framing */
+.dh-lobby-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Atmospheric blurred copy scaled to cover to seamlessly fill side margins on wide screens */
+.dh-lobby-video-blur {
+  object-fit: cover;
+  object-position: center;
+  filter: blur(28px) brightness(0.65);
+  transform: scale(1.08); /* Prevents blur edge clipping */
+}
+
+/* Sharp main video preserving full uncropped frame (arches & floor fog) */
+.dh-lobby-video-contain {
+  object-fit: contain;
+  object-position: center;
+}
+
+>>>>>>> Stashed changes
 /* Legibility Scrim Overlay */
 .dh-lobby-scrim {
   position: absolute;

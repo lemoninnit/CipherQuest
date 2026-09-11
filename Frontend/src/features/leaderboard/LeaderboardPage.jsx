@@ -116,6 +116,30 @@ export default function LeaderboardPage() {
 
   return (
     <div className="dh-lobby lb-lobby">
+      {/* Background Looping Fog Video: Atmospheric blurred background fill for wide screens */}
+      <video
+        className="lb-bg-video lb-bg-video-blur"
+        src="/assets/fish/lobbybg/lobby-bg.mp4"
+        poster="/assets/fish/lobbybg/lobbybg.png"
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+      />
+
+      {/* Foreground sharp video showing full uncropped frame */}
+      <video
+        className="lb-bg-video lb-bg-video-contain"
+        src="/assets/fish/lobbybg/lobby-bg.mp4"
+        poster="/assets/fish/lobbybg/lobbybg.png"
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+      />
+
       {/* Legibility Scrim Overlay */}
       <div className="dh-lobby-scrim" />
 
