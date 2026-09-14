@@ -311,6 +311,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const isInvulnerableRef = useRef(isInvulnerable);
   const invulnerabilityTimerRef = useRef(null);
   const retryBtnRef = useRef(null);
+  const autoRecapShownRef = useRef(false);
   /* ── Focus management for game over modal ── */
   useEffect(() => {
     if (gameOver) {
