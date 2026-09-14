@@ -3,6 +3,7 @@ import './PacmanGame.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
+import PauseMenu from '../../ui/PauseMenu';
 import {
   CELL,
   MAZE_DECOR,
@@ -309,23 +310,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const isPoweredUpRef = useRef(isPoweredUp);
   const isInvulnerableRef = useRef(isInvulnerable);
   const invulnerabilityTimerRef = useRef(null);
-  const autoRecapShownRef = useRef(false);
-  const resumeBtnRef = useRef(null);
   const retryBtnRef = useRef(null);
-  const wasMenuOpenRef = useRef(false);
-
-  /* ── Focus management for pause menu ── */
-  useEffect(() => {
-    if (isMenuOpen) {
-      wasMenuOpenRef.current = true;
-      setTimeout(() => resumeBtnRef.current?.focus(), 50);
-    } else if (wasMenuOpenRef.current) {
-      wasMenuOpenRef.current = false;
-      const menuBtn = document.querySelector('.fg-header-left .fg-btn-back-nav');
-      menuBtn?.focus();
-    }
-  }, [isMenuOpen]);
-
   /* ── Focus management for game over modal ── */
   useEffect(() => {
     if (gameOver) {
@@ -1635,42 +1620,16 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         </div>
       )}
 
-      {/* Menu / Pause Modal */}
-      {isMenuOpen && (
-        <div
-          className="caesar-pause-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="pacman-pause-title"
-          onClick={(e) => { if (e.target === e.currentTarget) setIsMenuOpen(false); }}
-        >
-          <div className="caesar-pause-card">
-            <h2 id="pacman-pause-title" className="caesar-pause-title">PAUSED</h2>
-            <button
-              ref={resumeBtnRef}
-              className="caesar-pause-btn caesar-pause-btn-resume"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <span className="material-symbols-outlined">play_arrow</span>
-              <span>Resume</span>
-            </button>
-            <button
-              className="caesar-pause-btn caesar-pause-btn-tutorial"
-              onClick={() => { setIsMenuOpen(false); setPhase('ready'); }}
-            >
-              <span className="material-symbols-outlined">menu_book</span>
-              <span>Tutorial</span>
-            </button>
-            <button
-              className="caesar-pause-btn caesar-pause-btn-exit"
-              onClick={onBackToStages}
-            >
-              <span className="material-symbols-outlined">logout</span>
-              <span>Exit Stage</span>
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Shared Pause Menu */}
+      <PauseMenu
+        open={isMenuOpen}
+        onResume={() => setIsMenuOpen(false)}
+        onTutorial={() => {
+          setIsMenuOpen(false);
+          setPhase('ready');
+        }}
+        onExit={onBackToStages}
+      />
     </div>
   );
 }

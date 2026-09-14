@@ -1,0 +1,141 @@
+/* ═══════════════════════════════════════════════
+   PAUSE MENU — Shared across all CipherQuest games
+   ═══════════════════════════════════════════════ */
+
+.cq-pause-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(1, 6, 15, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: cqPauseFadeIn 0.2s ease;
+}
+
+@keyframes cqPauseFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.cq-pause-card {
+  background: rgba(3, 14, 28, 0.94);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 20px;
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 320px;
+  max-width: 90vw;
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.8),
+    0 0 35px rgba(0, 229, 255, 0.2),
+    inset 0 0 20px rgba(0, 229, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-sizing: border-box;
+}
+
+.cq-pause-title {
+  color: var(--neon-cyan, #00e5ff);
+  margin: 0 0 6px;
+  text-align: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+  user-select: none;
+}
+
+.cq-pause-btn {
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  user-select: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cq-pause-btn:focus-visible {
+  outline: 2px solid var(--neon-cyan, #00e5ff);
+  outline-offset: 3px;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+}
+
+/* Primary cyan action: Resume */
+.cq-pause-btn-resume {
+  background: linear-gradient(135deg, #00b4d8 0%, #00e5ff 100%);
+  color: #020c1b;
+  border: none;
+  font-size: 1.05rem;
+  font-weight: 800;
+  padding: 14px 20px;
+  box-shadow: 0 4px 20px rgba(0, 229, 255, 0.35);
+}
+
+.cq-pause-btn-resume:hover {
+  background: linear-gradient(135deg, #00e5ff 0%, #38bdf8 100%);
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.6);
+  transform: translateY(-2px);
+}
+
+.cq-pause-btn-resume:active {
+  transform: translateY(0);
+}
+
+/* Secondary neutral action: Tutorial */
+.cq-pause-btn-tutorial {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  color: #e2f1f8;
+  font-size: 0.98rem;
+  padding: 13px 20px;
+}
+
+.cq-pause-btn-tutorial:hover {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.5);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.cq-pause-btn-tutorial:active {
+  transform: translateY(0);
+}
+
+/* De-emphasised neutral option: Exit Stage (NOT red) */
+.cq-pause-btn-exit {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(220, 235, 245, 0.65);
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 12px 20px;
+  margin-top: 4px;
+}
+
+.cq-pause-btn-exit:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.cq-pause-btn-exit:active {
+  transform: translateY(0);
+}

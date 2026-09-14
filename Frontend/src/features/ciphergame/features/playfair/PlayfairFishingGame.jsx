@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import './PlayfairGame.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import PauseMenu from '../../ui/PauseMenu';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import {
   describePlayfairRule,
@@ -132,6 +133,20 @@ export default function PlayfairFishingGame({
     setStreak(0);
     setIsMenuOpen(false);
   }, [levelData]);
+
+  /* ── ESC key to toggle pause menu ── */
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        if (phase === 'playing') {
+          e.preventDefault();
+          setIsMenuOpen((prev) => !prev);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase]);
 
   const showFeedback = (message, tone = 'info') => {
     clearTimeout(feedbackTimer.current);
@@ -554,41 +569,15 @@ export default function PlayfairFishingGame({
       )}
 
       {/* Menu Modal */}
-      {isMenuOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #0f172a, #020617)',
-            border: '1px solid rgba(56, 189, 248, 0.3)',
-            borderRadius: '16px',
-            padding: '32px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '16px',
-            minWidth: '320px',
-            boxShadow: '0 0 30px rgba(0,0,0,0.8)'
-          }}>
-            <h2 style={{ color: 'var(--neon-cyan)', margin: 0, textAlign: 'center', fontSize: '1.6rem', marginBottom: '8px', letterSpacing: '2px' }}>PAUSED</h2>
-            <button className="fg-btn fg-btn-primary" onClick={() => setIsMenuOpen(false)} style={{ padding: '14px', fontSize: '1.1rem', background: 'var(--neon-green)', color: '#000', fontWeight: 'bold' }}>
-              ▶ Resume
-            </button>
-            <button className="fg-btn fg-btn-secondary" onClick={() => { setIsMenuOpen(false); setPhase('ready'); }} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(255,255,255,0.08)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)' }}>
-              📖 Tutorial
-            </button>
-            <button className="fg-btn" onClick={onBackToStages} style={{ padding: '14px', fontSize: '1.1rem', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.4)', marginTop: '8px' }}>
-              🚪 Exit Stage
-            </button>
-          </div>
-        </div>
-      )}
+      <PauseMenu
+        open={isMenuOpen}
+        onResume={() => setIsMenuOpen(false)}
+        onTutorial={() => {
+          setIsMenuOpen(false);
+          setPhase('ready');
+        }}
+        onExit={onBackToStages}
+      />
     </div>
   );
 }
