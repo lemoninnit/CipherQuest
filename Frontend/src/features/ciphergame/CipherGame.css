@@ -5320,8 +5320,26 @@
   }
 }
 
+/* ==========================================================================
+   Cipher Sprint: Full-Screen Layout (Matching Caesar Fishing and Pac-Man)
+   ========================================================================== */
+.sprint-container:has(.caesar-sprint-fullscreen) {
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  overflow: hidden !important;
+}
 
-
-
-
+.caesar-sprint-fullscreen.sprint-fullscreen-stage {
+  position: relative !important;
+  width: 100% !important;
+  height: calc(100vh - 64px) !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
 
