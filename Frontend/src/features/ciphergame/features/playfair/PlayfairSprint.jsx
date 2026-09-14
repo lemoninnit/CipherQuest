@@ -848,7 +848,7 @@ export default function PlayfairSprint({
                   if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(0);
                 }}
               >
-                <div className="sprint-lane-platform" />
+                <div className="sprint-lane-platform platform-upper" />
                 <span className="sprint-lane-badge">Top Lane</span>
               </div>
               <div
@@ -857,7 +857,7 @@ export default function PlayfairSprint({
                   if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(1);
                 }}
               >
-                <div className="sprint-lane-platform" />
+                <div className="sprint-lane-platform platform-middle" />
                 <span className="sprint-lane-badge">Middle Lane</span>
               </div>
               <div
@@ -866,7 +866,7 @@ export default function PlayfairSprint({
                   if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(2);
                 }}
               >
-                <div className="sprint-lane-platform" />
+                <div className="sprint-lane-platform platform-bottom" />
                 <span className="sprint-lane-badge">Bottom Lane</span>
               </div>
 
