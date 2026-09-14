@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
@@ -141,6 +141,31 @@ export default function VigenereFishingGame({
   const currentKeyGuess = idxToChar(currentShift);
   const currentTargetShift = targetShifts[activeSlot] ?? 0;
   const currentTargetKey = targetKey[activeSlot] || '';
+
+  const alignmentItems = useMemo(() => {
+    const items = [];
+    cipherSegs.forEach((cWord, wIdx) => {
+      if (wIdx > 0) {
+        items.push({ isSpace: true, id: `space-${wIdx}` });
+      }
+      cWord.split('').forEach((cipherCh, cIdx) => {
+        const slot = slotMap[wIdx]?.[cIdx] ?? 0;
+        const keyCh = targetKey[slot] || 'A';
+        const shiftVal = targetShifts[slot] ?? 0;
+        const isSolved = activeShifts[slot] === targetShifts[slot];
+        items.push({
+          id: `${wIdx}-${cIdx}`,
+          cipherCh,
+          slot,
+          keyCh,
+          shiftVal,
+          isSolved,
+          isActive: slot === activeSlot,
+        });
+      });
+    });
+    return items;
+  }, [cipherSegs, slotMap, targetKey, targetShifts, activeShifts, activeSlot]);
 
   const spawnFish = () => {
     const correctLetter = targetKey[activeSlot] || ALPHABET[0];
@@ -337,14 +362,7 @@ export default function VigenereFishingGame({
     onVerifySubmit();
   };
 
-  const getRuleViolation = () => {
-    if (activeShifts[activeSlot] === targetShifts[activeSlot]) return null;
-    return {
-      rule: `Slot #${activeSlot + 1} is set to ${currentKeyGuess}. The keyword clue points to ${currentTargetKey}. Catch the matching key-letter fish to fix every ${keyLen}th letter.`
-    };
-  };
 
-  const ruleViolation = phase === 'playing' ? getRuleViolation() : null;
 
   const rodBaseX = 250;
   const rodBaseY = 260;
@@ -447,7 +465,7 @@ export default function VigenereFishingGame({
   }
 
   return (
-    <div className="fg-root">
+    <div className="fg-root caesar-fishing-fullscreen vigenere-fishing-fullscreen">
       <style>{`
         @keyframes pulse {
           0% { opacity: 0.6; box-shadow: 0 0 4px rgba(0, 229, 255, 0.4); }
@@ -460,59 +478,108 @@ export default function VigenereFishingGame({
           width: 100%;
         }
         .vg-key-slot-btn {
-          border: 1px solid rgba(0, 229, 255, 0.18);
-          background: rgba(255,255,255,0.04);
-          color: var(--text-primary);
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: 8px;
-          padding: 8px 6px;
+          padding: 6px;
+          color: var(--text-muted);
           cursor: pointer;
-          font-family: JetBrains Mono, monospace;
-          font-size: 0.75rem;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 2px;
+          font-family: inherit;
+          transition: all 0.2s;
+        }
+        .vg-key-slot-btn:hover {
+          background: rgba(0, 229, 255, 0.08);
+          border-color: rgba(0, 229, 255, 0.3);
         }
         .vg-key-slot-btn.active {
           border-color: var(--neon-cyan);
-          box-shadow: 0 0 14px rgba(0,229,255,0.22);
-          background: rgba(0,229,255,0.1);
+          background: rgba(0, 229, 255, 0.15);
+          color: #fff;
+          box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
         }
         .vg-key-slot-btn.solved {
           border-color: var(--neon-green);
           color: var(--neon-green);
         }
+        .vg-key-slot-btn div:first-child {
+          font-size: 0.65rem;
+          opacity: 0.7;
+        }
+        .vg-key-slot-btn strong {
+          font-size: 1.1rem;
+          color: #fff;
+        }
+        .vg-key-slot-btn.solved strong {
+          color: var(--neon-green);
+        }
+        .vg-key-slot-btn div:last-child {
+          font-size: 0.6rem;
+          opacity: 0.5;
+        }
       `}</style>
 
+      {/* Recap & Learning Overlay */}
       {showExplanation && (
-        <div className="fg-recap-overlay" style={{ overflowY: 'auto', padding: '30px 10px' }}>
-          <div className="fg-recap-card" style={{ maxWidth: '1100px', width: '95%', padding: '24px 32px' }}>
-            <h2 className="fg-recap-title">🔬 Vigenere Cipher Recap</h2>
-            <p className="fg-recap-subtitle">Why Did This Work?</p>
-            <div className="fg-recap-animation-box" style={{ minHeight: 'auto', padding: '16px', marginBottom: '16px' }}>
-              <div className="fg-recap-letter-row">
-                {levelData.ciphertext.replace(/\s+/g, '').split('').map((cipherCh, idx) => {
-                  const plainCh = levelData.plaintext.replace(/\s+/g, '')[idx];
-                  const slot = idx % keyLen;
-                  const keyLetter = targetKey[slot];
-                  const shift = targetShifts[slot];
+        <div className="fg-recap-overlay">
+          <div className="fg-recap-modal" style={{ maxWidth: 840 }}>
+            <div className="fg-recap-header">
+              <span className="material-symbols-outlined fg-recap-icon" style={{ color: 'var(--neon-cyan)' }}>
+                auto_stories
+              </span>
+              <h2 className="fg-recap-title">Keyword Decryption Recap</h2>
+              <span className="fg-recap-badge">Vigenère Cipher</span>
+            </div>
+            <p className="fg-recap-subtitle">
+              Every position was decrypted by its corresponding keyword letter shift!
+            </p>
+            <div className="fg-recap-segments-card">
+              <div className="fg-recap-segments-grid">
+                {words.map((word, wIdx) => {
+                  const cipherWord = cipherSegs[wIdx];
+                  const wordStartIdx = words.slice(0, wIdx).join('').length;
+
                   return (
-                    <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}>
-                      <span className="fg-recap-char-cipher">{cipherCh}</span>
-                      <span className="fg-recap-math">-{keyLetter} ({shift})</span>
-                      <span className="fg-recap-arrow">↓</span>
-                      <span className="fg-recap-char-plain">{plainCh}</span>
+                    <div key={wIdx} className="fg-recap-seg-box">
+                      <div className="fg-recap-seg-label">Segment #{wIdx + 1}</div>
+                      <div className="fg-recap-letters-row">
+                        {cipherWord.split('').map((cipherCh, cIdx) => {
+                          const globalIdx = wordStartIdx + cIdx;
+                          const isRevealed = globalIdx <= explanationStep;
+                          const slot = slotMap[wIdx]?.[cIdx] ?? 0;
+                          const keyChar = targetKey[slot];
+                          const plainCh = word[cIdx];
+
+                          return (
+                            <div
+                              key={cIdx}
+                              className={`fg-recap-letter-unit ${isRevealed ? 'revealed' : ''}`}
+                              style={isRevealed ? { borderColor: 'var(--neon-green)', background: 'rgba(57,255,20,0.06)' } : {}}
+                            >
+                              <span className="fg-recap-cipher">{cipherCh}</span>
+                              <span className="fg-recap-arrow">↓</span>
+                              <span className="fg-recap-plain" style={{ color: isRevealed ? 'var(--neon-green)' : 'var(--text-muted)' }}>
+                                {isRevealed ? plainCh : '?'}
+                              </span>
+                              <span className="fg-recap-shift-tag" style={{ fontSize: '0.6rem', color: 'var(--neon-cyan)' }}>
+                                {keyChar}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
             <div className="fg-recap-explanation" style={{ background: 'rgba(255,255,255,0.015)' }}>
-              💡 <strong>Vigenere Cipher Decryption:</strong> the keyword repeats across the letters. Each key letter acts like its own Caesar shift, so one basket controls every letter in that repeating slot.{' '}
-              <code>Plain[i] = Cipher[i] - Key[i mod keyLength]</code>
-              <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {targetKey.split('').map((letter, idx) => (
-                  <span key={idx} style={{ border: '1px solid rgba(0,229,255,0.24)', borderRadius: 8, padding: '6px 10px', color: 'var(--neon-cyan)', fontFamily: 'JetBrains Mono, monospace' }}>
-                    Slot {idx + 1}: {letter} = {targetShifts[idx]}
-                  </span>
-                ))}
-              </div>
+              💡 <strong>Vigenère Cipher Decryption:</strong> The keyword <code>{levelData.keyword}</code> repeats continuously.
+              Each letter of the keyword determines how far that column was shifted.{' '}
+              <code>Plain = (Cipher - Key Letter) mod 26</code> reveals the original text.
             </div>
             <div className="fg-recap-actions" style={{ marginTop: 16 }}>
               <button
@@ -537,245 +604,269 @@ export default function VigenereFishingGame({
         attempts={attemptsLeft}
       />
 
-      <div className="fg-game-layout">
-        <aside className="fg-sidebar">
-          <div className={`fg-basket-card ${levelSolved ? 'active-target' : ''} ${basketShake ? 'shake' : ''}`}>
-            <div className="fg-basket-container">🧺</div>
-            <div className="fg-basket-shift-value">{currentKeyGuess}</div>
-            <span className="fg-basket-label">Keyword Slot #{activeSlot + 1}</span>
-            {floatingXp && (
-              <div className="fg-xp-pop-indicator" style={{ left: `${floatingXp.x}%`, top: `${floatingXp.y}%` }}>
-                +{floatingXp.amount} XP
-              </div>
-            )}
-          </div>
+      <div className="caesar-fullscreen-stage">
+        {/* Fullscreen Ocean Background Video */}
+        <video
+          className="fg-pond-video"
+          src="/assets/fish/ocean_bg.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="fg-pond-overlay" />
+        <div className="fg-wave" />
+        {bubbles.map(bubble => (
+          <div key={bubble.id} className="fg-bubble" style={{ left: `${bubble.x}%`, width: `${bubble.size}px`, height: `${bubble.size}px`, animationDelay: `${bubble.delay}s`, animationDuration: `${bubble.duration}s` }} />
+        ))}
 
-          <div className="fg-cipher-ref">
-            <p className="fg-ref-title">Keyword Baskets</p>
-            <div className="vg-key-slot-grid">
-              {activeShifts.map((shift, idx) => {
-                const solved = shift === targetShifts[idx];
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    className={`vg-key-slot-btn ${idx === activeSlot ? 'active' : ''} ${solved ? 'solved' : ''}`}
-                    onClick={() => { if (!isCasting) setActiveSlot(idx); }}
-                  >
-                    <div>#{idx + 1}</div>
-                    <strong>{idxToChar(shift)}</strong>
-                    <div>Key Letter</div>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="fg-ref-hint">
-              <span>Solved Slots:</span>
-              <span className="fg-key">{solvedSlots}/{keyLen}</span>
-            </p>
-            <p className="fg-ref-formula">Formula:<br />Plain = Cipher - Keyword Letter</p>
-          </div>
-
-          <div className="fg-cipher-ref" style={{ marginTop: '4px' }}>
-            <p className="fg-ref-title">📖 Vigenere Guide</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.74rem', margin: '4px 0', lineHeight: 1.45 }}>
-              Vigenere repeats a keyword across the message. Each letter in the keyword defines a shift value for a repeating set of columns.
-            </p>
-            <p style={{ color: 'var(--neon-green)', fontSize: '0.74rem', margin: '4px 0 0', fontWeight: 'bold' }}>
-              Select a Key Slot button, then catch the fish carrying the matching key letter for that repeating pattern!
-            </p>
-          </div>
-
-          <button
-            className="fg-btn"
-            onClick={handleChumWaters}
-            disabled={chumCount <= 0 || isCasting}
-            style={{
-              width: '100%',
-              flex: '0 0 auto',
-              padding: '12px',
-              fontWeight: 'bold',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              transition: 'all 0.2s',
-              background: chumCount > 0 ? 'rgba(0, 229, 255, 0.12)' : 'rgba(255, 255, 255, 0.03)',
-              border: chumCount > 0 ? '1px solid var(--neon-cyan)' : '1px solid rgba(255, 255, 255, 0.08)',
-              color: chumCount > 0 ? 'var(--neon-cyan)' : 'var(--text-muted)',
-              cursor: chumCount > 0 ? 'pointer' : 'not-allowed'
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>waves</span>
-            Chum the Waters ({chumCount} left)
-          </button>
-
-          <div className="fg-cipher-ref">
-            <p className="fg-ref-title">Slot #{activeSlot + 1} Sample Letters</p>
-            <p className="fg-ref-hint">
-              <span>Guess:</span>
-              <span className="fg-key">{currentKeyGuess}</span>
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '8px 0', padding: '8px', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)', flex: 1, overflowY: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '4px', paddingBottom: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <span>CIPHER</span>
-                <span>PLAIN</span>
-              </div>
-              {activeSlotSamples.slice(0, 6).map((sample, idx) => (
-                <div key={`${sample.wordIdx}-${sample.charIdx}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontFamily: 'monospace' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>{sample.cipherChar}</span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>↓</span>
-                  <span style={{ color: sample.plainChar === sample.targetPlain ? 'var(--neon-green)' : 'var(--neon-yellow)', fontWeight: 'bold' }}>{sample.plainChar}</span>
+        {/* Fish Swim Lane & Rod */}
+        <div className="caesar-fish-swim-lane">
+          {fishList.map(fish => {
+            const badgeText = fish.letter;
+            const badgeClass = 'fg-fish-badge positive';
+            return (
+              <div
+                key={fish.id}
+                className="fg-fish-entity"
+                style={{ left: `${fish.x}%`, top: `${fish.y}px` }}
+                onMouseEnter={() => { if (!isCasting) setHoveredFish(fish); }}
+                onMouseLeave={() => setHoveredFish(null)}
+                onClick={() => castLineToFish(fish)}
+              >
+                <div className="fg-fish-facing" style={{ transform: facingTransform(fish.facing) }}>
+                  <img
+                    className="fg-fish-sprite-img"
+                    src={fish.imgSrc}
+                    alt="fish"
+                    draggable={false}
+                  />
                 </div>
-              ))}
+                <div className={badgeClass}>
+                  {badgeText}
+                </div>
+              </div>
+            );
+          })}
+          {isCasting && caughtFish && castProgress < 1 && (
+            <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
+              <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
+                <img
+                  className="fg-fish-sprite-img"
+                  src={caughtFish.imgSrc}
+                  alt="fish"
+                  draggable={false}
+                />
+              </div>
             </div>
-          </div>
+          )}
+          <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">
+            <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
+            {isCasting && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />}
+          </svg>
+          {splash.show && (
+            <div className="fg-splash-effect" style={{ left: `${splash.x}%`, top: `${splash.y}px` }}>💦</div>
+          )}
+        </div>
 
-          <div className="fg-sidebar-alerts">
-            {levelSolved ? (
-              <div className="fg-success-panel">
-                <h3>✅ SECURED!</h3>
-                <p>Keyword recovered and ciphertext decrypted.</p>
-                <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit} style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: 10 }}>
-                  🚀 Verify & Submit
-                </button>
-                {onReplayNewQuestion && (
-                  <button className="fg-btn fg-btn-secondary" onClick={onReplayNewQuestion} style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}>
-                    🔄 Play Again
-                  </button>
-                )}
-              </div>
-            ) : ruleViolation ? (
-              <div className="fg-alert-panel">
-                <strong>⚠️ Key Slot Check:</strong>
-                <p style={{ marginTop: 6, fontSize: '0.82rem', lineHeight: 1.4 }}>{ruleViolation.rule}</p>
-              </div>
-            ) : (
-              <div className="fg-alert-panel default-alert">
-                <strong>🎣 Status:</strong>
-                <p style={{ marginTop: 6, fontSize: '0.82rem', lineHeight: 1.4 }}>Pick a keyword slot, then catch the fish carrying the key letter for that slot.</p>
-              </div>
-            )}
-          </div>
-        </aside>
+        {/* Floating Overlays */}
+        {/* 1. Top-Center Word Segment Panel + Clue & Hint */}
+        <div className="caesar-floating-word-panel">
+          <div className="fg-word-segments-row">
+            {words.map((word, wordIdx) => {
+              const cipherWord = cipherSegs[wordIdx];
+              const decWord = decryptedSegs[wordIdx];
+              const prevWord = previewSegs[wordIdx];
 
-        <main className="fg-main">
-          <section className="fg-word-panel">
-            <div className="fg-word-segments-row">
-              {words.map((word, wordIdx) => {
-                const cipherWord = cipherSegs[wordIdx];
-                const decWord = decryptedSegs[wordIdx];
-                const prevWord = previewSegs[wordIdx];
+              return (
+                <div key={wordIdx} className="fg-word-segment-card">
+                  <div className="fg-letter-cells">
+                    {cipherWord.split('').map((cipherCh, charIdx) => {
+                      const slot = slotMap[wordIdx]?.[charIdx] ?? 0;
+                      const isActiveSlot = slot === activeSlot;
+                      const maskList = levelData.masks[wordIdx];
+                      const isPrefilled = tier === 'easy' && maskList?.[charIdx];
+                      const isCorrect = decWord[charIdx] === word[charIdx];
+                      const isHovered = tier === 'easy' && hoveredFish && isActiveSlot;
+                      const letterToShow = (isPrefilled || isCorrect)
+                        ? word[charIdx]
+                        : (isHovered ? prevWord[charIdx] : '_');
+                      const cellStyle = isActiveSlot ? {
+                        borderColor: 'var(--neon-cyan)',
+                        boxShadow: '0 0 12px rgba(0,229,255,0.18)'
+                      } : {};
+                      let cellClass = 'fg-letter-cell';
+                      if (isPrefilled || isCorrect) cellClass = 'fg-letter-cell correct-plain';
 
-                return (
-                  <div key={wordIdx} className="fg-word-segment-card">
-                    <div className="fg-letter-cells">
-                      {cipherWord.split('').map((cipherCh, charIdx) => {
-                        const slot = slotMap[wordIdx]?.[charIdx] ?? 0;
-                        const isActiveSlot = slot === activeSlot;
-                        const maskList = levelData.masks[wordIdx];
-                        const isPrefilled = tier === 'easy' && maskList?.[charIdx];
-                        const isCorrect = decWord[charIdx] === word[charIdx];
-                        const isHovered = tier === 'easy' && hoveredFish && isActiveSlot;
-                        const letterToShow = (isPrefilled || isCorrect)
-                          ? word[charIdx]
-                          : (isHovered ? prevWord[charIdx] : '_');
-                        const cellStyle = isActiveSlot ? {
-                          borderColor: 'var(--neon-cyan)',
-                          boxShadow: '0 0 12px rgba(0,229,255,0.18)'
-                        } : {};
-                        let cellClass = 'fg-letter-cell';
-                        if (isPrefilled || isCorrect) cellClass = 'fg-letter-cell correct-plain';
-
-                        return (
-                          <div
-                            key={charIdx}
-                            className={cellClass}
-                            style={cellStyle}
-                            onClick={() => { if (!isCasting) setActiveSlot(slot); }}
-                          >
-                            <span className="fg-cell-ciphertext">{cipherCh}</span>
-                            <span className="fg-cell-plaintext">{letterToShow}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="fg-segment-basket-badge">
-                      Key pattern: {slotMap[wordIdx].map(slot => idxToChar(activeShifts[slot] ?? 0)).join('')}
-                    </div>
+                      return (
+                        <div
+                          key={charIdx}
+                          className={cellClass}
+                          style={cellStyle}
+                          onClick={() => { if (!isCasting) setActiveSlot(slot); }}
+                        >
+                          <span className="fg-cell-ciphertext">{cipherCh}</span>
+                          <span className="fg-cell-plaintext">{letterToShow}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-            <div className="fg-clue-banner">💡 Keyword clue: <strong>"{levelData.keyClue}"</strong></div>
-            <div className="fg-clue-banner" style={{ marginTop: 8 }}>Hint: <strong>"{levelData.hint}"</strong></div>
-          </section>
+                  <div className="fg-segment-basket-badge">
+                    Key pattern: {slotMap[wordIdx].map(slot => idxToChar(activeShifts[slot] ?? 0)).join('')}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="caesar-floating-hint">
+            <span>💡 Keyword clue: <strong>"{levelData.keyClue}"</strong></span>
+            <span style={{ margin: '0 8px', opacity: 0.4 }}>|</span>
+            <span>Hint: <strong>"{levelData.hint}"</strong></span>
+          </div>
+        </div>
 
-          <section className="fg-pond-wrapper">
-            <div className="fg-pond-container">
-              {/* Ocean background video */}
-              <video
-                className="fg-pond-video"
-                src="/assets/fish/ocean_bg.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
-              <div className="fg-pond-overlay" />
-              <div className="fg-wave" />
-              {bubbles.map(bubble => (
-                <div key={bubble.id} className="fg-bubble" style={{ left: `${bubble.x}%`, width: `${bubble.size}px`, height: `${bubble.size}px`, animationDelay: `${bubble.delay}s`, animationDuration: `${bubble.duration}s` }} />
-              ))}
-              {fishList.map(fish => {
-                const badgeText = fish.letter;
-                const badgeClass = 'fg-fish-badge positive';
+        {/* 2. Floating Reference Panel (Bottom-Left) */}
+        <div className="vg-floating-ref-panel">
+          <div className="vg-floating-ref-header">
+            <span className="vg-floating-ref-title">📖 Vigenère Alignment</span>
+            <span className="vg-floating-ref-slot-badge">
+              Active: Slot #{activeSlot + 1} ({idxToChar(activeShifts[activeSlot] ?? 0)})
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div className="vg-alignment-labels">
+              <div>CIPHER</div>
+              <div>KEY</div>
+              <div>SHIFT</div>
+            </div>
+            <div className="vg-alignment-container">
+              {alignmentItems.map(item => {
+                if (item.isSpace) {
+                  return <div key={item.id} style={{ width: 10, flexShrink: 0 }} />;
+                }
                 return (
                   <div
-                    key={fish.id}
-                    className="fg-fish-entity"
-                    style={{ left: `${fish.x}%`, top: `${fish.y}px` }}
-                    onMouseEnter={() => { if (!isCasting) setHoveredFish(fish); }}
-                    onMouseLeave={() => setHoveredFish(null)}
-                    onClick={() => castLineToFish(fish)}
+                    key={item.id}
+                    className={`vg-alignment-col ${item.isActive ? 'active-slot' : ''}`}
+                    onClick={() => { if (!isCasting) setActiveSlot(item.slot); }}
+                    title={`Slot #${item.slot + 1} (${item.keyCh})`}
                   >
-                    <div className="fg-fish-facing" style={{ transform: facingTransform(fish.facing) }}>
-                      <img
-                        className="fg-fish-sprite-img"
-                        src={fish.imgSrc}
-                        alt="fish"
-                        draggable={false}
-                      />
-                    </div>
-                    <div className={badgeClass}>
-                      {badgeText}
-                    </div>
+                    <span className="vg-align-cipher">{item.cipherCh}</span>
+                    <span className="vg-align-key" style={{ color: item.isSolved ? 'var(--neon-green)' : 'var(--neon-cyan)' }}>
+                      {item.keyCh}
+                    </span>
+                    <span className="vg-align-shift">+{item.shiftVal}</span>
                   </div>
                 );
               })}
-              {isCasting && caughtFish && castProgress < 1 && (
-                <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
-                  <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
-                    <img
-                      className="fg-fish-sprite-img"
-                      src={caughtFish.imgSrc}
-                      alt="fish"
-                      draggable={false}
-                    />
-                  </div>
-                </div>
-              )}
-              <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">
-                <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
-                {isCasting && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />}
-              </svg>
-              {splash.show && (
-                <div className="fg-splash-effect" style={{ left: `${splash.x}%`, top: `${splash.y}px` }}>💦</div>
-              )}
             </div>
-          </section>
-        </main>
+          </div>
+
+          <div className="vg-samples-section">
+            <div className="vg-samples-title">
+              <span>Slot #{activeSlot + 1} Decryptions</span>
+              <span style={{ color: 'var(--neon-cyan)', fontFamily: 'JetBrains Mono, monospace' }}>
+                Key: {currentKeyGuess} (-{currentShift})
+              </span>
+            </div>
+            <div className="vg-samples-pills">
+              {activeSlotSamples.slice(0, 8).map((sample, idx) => {
+                const isSolved = sample.plainChar === sample.targetPlain;
+                return (
+                  <span key={`${sample.wordIdx}-${sample.charIdx}-${idx}`} className={`vg-sample-pill ${isSolved ? 'solved' : ''}`}>
+                    <span style={{ color: 'var(--text-muted)' }}>{sample.cipherChar}</span>
+                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem' }}>➔</span>
+                    <span style={{ color: isSolved ? 'var(--neon-green)' : 'var(--neon-yellow)', fontWeight: 'bold' }}>{sample.plainChar}</span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Floating Chum the Waters Button (Bottom-Right, above Key Panel) */}
+        <button
+          className="vigenere-floating-chum-btn"
+          onClick={handleChumWaters}
+          disabled={chumCount <= 0 || isCasting}
+          aria-label={`Chum the Waters, ${chumCount} left`}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>waves</span>
+          Chum the Waters ({chumCount} left)
+        </button>
+
+        {/* 4. Floating Baskets & Key Panel (Bottom-Right) */}
+        <div className={`vg-floating-key-panel ${basketShake ? 'shake' : ''}`}>
+          <div className="vg-floating-current-slot">
+            <div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Keyword Slot #{activeSlot + 1}
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#fff', fontWeight: 700 }}>
+                Current Basket
+              </div>
+            </div>
+            <div className="vg-slot-badge-lg">
+              {currentKeyGuess}
+            </div>
+          </div>
+
+          <div className="vg-key-slot-grid">
+            {activeShifts.map((shift, idx) => {
+              const solved = shift === targetShifts[idx];
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  className={`vg-key-slot-btn ${idx === activeSlot ? 'active' : ''} ${solved ? 'solved' : ''}`}
+                  onClick={() => { if (!isCasting) setActiveSlot(idx); }}
+                >
+                  <div>#{idx + 1}</div>
+                  <strong>{idxToChar(shift)}</strong>
+                  <div>Key Letter</div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <span>Solved Slots:</span>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', color: solvedSlots === keyLen ? 'var(--neon-green)' : 'var(--neon-cyan)', fontWeight: 'bold' }}>
+              {solvedSlots}/{keyLen}
+            </span>
+          </div>
+
+          {floatingXp && (
+            <div className="fg-xp-pop-indicator" style={{ left: `${floatingXp.x}%`, top: `${floatingXp.y}%` }}>
+              +{floatingXp.amount} XP
+            </div>
+          )}
+        </div>
+
+        {/* 5. Floating Secured Victory Panel when level solved */}
+        {levelSolved && (
+          <div className="caesar-floating-victory-panel">
+            <h3 className="caesar-victory-title">✅ SECURED!</h3>
+            <p className="caesar-victory-desc">Keyword recovered and ciphertext decrypted.</p>
+            <button
+              className="fg-btn fg-btn-primary"
+              onClick={handleVerifySubmit}
+              style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: 10 }}
+            >
+              🚀 Verify & Submit
+            </button>
+            {onReplayNewQuestion && (
+              <button
+                className="fg-btn fg-btn-secondary"
+                onClick={onReplayNewQuestion}
+                style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+              >
+                🔄 Play Again
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Shared Pause Menu */}

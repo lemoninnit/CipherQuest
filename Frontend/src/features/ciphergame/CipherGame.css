@@ -5342,4 +5342,374 @@
   margin: 0 !important;
   overflow: hidden !important;
 }
+
+/* ==========================================================================
+   Vigenère Fishing: Full-Screen Layout (Matching Caesar Fishing)
+   ========================================================================== */
+.vigenere-fishing-fullscreen {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* Vigenère Floating Reference Panel (Bottom-Left) */
+.vg-floating-ref-panel {
+  position: absolute;
+  bottom: 24px;
+  left: 28px;
+  z-index: 20;
+  max-width: 440px;
+  background: rgba(3, 14, 28, 0.88);
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  border-radius: 16px;
+  padding: 14px 18px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vg-floating-ref-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.vg-floating-ref-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.vg-floating-ref-slot-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+/* Alignment Grid: CIPHER, KEY, SHIFT columns */
+.vg-alignment-container {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  overflow-x: auto;
+  padding: 4px 2px;
+}
+
+.vg-alignment-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.vg-alignment-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  min-width: 20px;
+}
+
+.vg-alignment-col:hover {
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.vg-alignment-col.active-slot {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: rgba(0, 229, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+}
+
+.vg-align-cipher {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #c4dbe8;
+}
+
+.vg-align-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--neon-cyan);
+}
+
+.vg-align-shift {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #ffd700;
+}
+
+/* Sample Letters Row */
+.vg-samples-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.vg-samples-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: space-between;
+}
+
+.vg-samples-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vg-sample-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+}
+
+.vg-sample-pill.solved {
+  border-color: rgba(57, 255, 20, 0.4);
+  background: rgba(57, 255, 20, 0.06);
+}
+
+/* Floating Baskets & Key Panel (Bottom-Right) */
+.vg-floating-key-panel {
+  position: absolute;
+  bottom: 24px;
+  right: 28px;
+  z-index: 20;
+  background: rgba(3, 14, 28, 0.88);
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  border-radius: 16px;
+  padding: 16px 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 250px;
+  max-width: 320px;
+  pointer-events: auto;
+}
+
+.vg-floating-current-slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vg-slot-badge-lg {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  padding: 3px 12px;
+  border-radius: 8px;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+/* Floating Chum Button in Vigenere Fishing */
+.vigenere-floating-chum-btn {
+  position: absolute;
+  bottom: 185px;
+  right: 28px;
+  z-index: 20;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1.5px solid var(--neon-cyan);
+  border-radius: 10px;
+  color: var(--neon-cyan);
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 10px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 229, 255, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+}
+
+.vigenere-floating-chum-btn:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.24);
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.45);
+  transform: translateY(-2px);
+}
+
+.vigenere-floating-chum-btn:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 3px;
+}
+
+.vigenere-floating-chum-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+@media (max-width: 1390px), (max-height: 820px) {
+  .vg-floating-ref-panel {
+    bottom: 16px;
+    left: 16px;
+    padding: 10px 14px;
+    max-width: 380px;
+  }
+  .vg-floating-key-panel {
+    bottom: 16px;
+    right: 16px;
+    padding: 12px 16px;
+    min-width: 220px;
+  }
+  .vigenere-floating-chum-btn {
+    bottom: 170px;
+    right: 16px;
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
+}
+
+/* ==========================================================================
+   Vigenère Sprint: Full-Screen Layout & Alphabet Values (Zero Scrollbar)
+   ========================================================================== */
+.vg-sprint-ref-panel {
+  max-width: 480px;
+}
+
+.vg-sprint-alphabet-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+.vg-alphabet-row {
+  display: flex;
+  gap: 2px;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.vg-alphabet-cell {
+  flex: 1;
+  min-width: 16px;
+  max-width: 28px;
+  text-align: center;
+  padding: 2px 1px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.vg-alpha-char {
+  display: block;
+  font-weight: 700;
+  color: #fff;
+  font-size: 0.68rem;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.1;
+}
+
+.vg-alpha-val {
+  display: block;
+  color: var(--neon-yellow);
+  font-size: 0.54rem;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.1;
+}
+
+@media (max-width: 1390px), (max-height: 820px) {
+  .vg-sprint-ref-panel {
+    max-width: 420px;
+  }
+}
+
+/* ==========================================================================
+   Vigenère Pac-Man: Floating Overlays & Ref Panel
+   ========================================================================== */
+.vg-pacman-ref-panel {
+  bottom: 16px;
+  left: 24px;
+  max-width: 440px;
+  padding: 10px 16px;
+  gap: 6px;
+}
+
+.vg-tabula-btn-compact {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 3px 10px !important;
+  font-size: 0.72rem !important;
+  border-radius: 8px !important;
+  background: rgba(0, 229, 255, 0.12) !important;
+  border: 1px solid rgba(0, 229, 255, 0.4) !important;
+  color: var(--neon-cyan) !important;
+  cursor: pointer !important;
+  font-weight: 700 !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  transition: all 0.2s ease !important;
+}
+
+.vg-tabula-btn-compact:hover {
+  background: rgba(0, 229, 255, 0.25) !important;
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+@media (max-width: 1440px), (max-height: 850px) {
+  .vg-pacman-ref-panel {
+    bottom: 12px;
+    left: 16px;
+    max-width: 380px;
+    padding: 8px 12px;
+  }
+}
+
 
