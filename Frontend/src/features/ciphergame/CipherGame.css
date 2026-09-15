@@ -6865,7 +6865,476 @@
   }
 }
 
+/* ==========================================================================
+   Vigenère Pac-Man: Compact Height, Widened Panels & Top-Right Skill Freeze
+   ========================================================================== */
 
+/* 1. Lift maze board slightly in Vigenère Pac-Man for full clearance */
+.pacman-layout.vg-pacman-fullscreen .pacman-fullscreen-board-area {
+  margin-top: -16px !important;
+}
 
+/* 2. Dock Skill Freeze in top-right HUD area (zero collision with bottom panels or maze) */
+.skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
+  position: absolute !important;
+  top: 14px !important;
+  bottom: auto !important;
+  right: 22px !important;
+  min-width: 170px !important;
+  max-width: 210px !important;
+  padding: 8px 14px !important;
+  z-index: 22 !important;
+  background: rgba(3, 14, 28, 0.9) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.45) !important;
+  border-radius: 14px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 0 12px rgba(0, 229, 255, 0.05) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+}
 
-
+/* 3. Vigenère Pac-Man Alignment Panel (Bottom-Left): Generous, Readable Size */
+.pacman-layout .vg-pacman-ref-panel {
+  width: min(620px, calc(48vw - 20px)) !important;
+  min-width: 480px !important;
+  max-width: 640px !important;
+  height: auto !important;
+  padding: 12px 18px 12px !important;
+  bottom: 14px !important;
+  left: 20px !important;
+  gap: 7px !important;
+  position: absolute !important;
+  z-index: 20 !important;
+  pointer-events: auto !important;
+  background: rgba(3, 14, 28, 0.92) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.42) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), inset 0 0 16px rgba(0, 229, 255, 0.06) !important;
+}
+
+.pacman-layout .vg-pacman-ref-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.pacman-layout .vg-pacman-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.pacman-layout .vg-pacman-ref-panel .vg-floating-ref-title {
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  white-space: nowrap;
+  color: #ffffff;
+}
+
+.pacman-layout .vg-formula-compact {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.74rem;
+  color: #a0c4d8;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 6px;
+  padding: 2.5px 9px;
+  white-space: nowrap;
+}
+
+.pacman-layout .vg-formula-compact strong {
+  color: var(--neon-cyan);
+}
+
+.pacman-layout .vg-pacman-align-table-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 1px;
+}
+
+.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels {
+  font-size: 0.72rem !important;
+  gap: 4px !important;
+  margin-right: 6px !important;
+  font-weight: 800 !important;
+  color: #94a3b8;
+}
+
+.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(1),
+.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(2),
+.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(4) {
+  height: 24px !important;
+  display: flex;
+  align-items: center;
+}
+
+.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(3) {
+  height: 20px !important;
+  display: flex;
+  align-items: center;
+}
+
+.pacman-layout .vg-pacman-ref-panel .vg-alignment-container {
+  gap: 4px !important;
+  padding: 2px 0 !important;
+  overflow-x: auto;
+}
+
+.pacman-layout .vg-pacman-ref-panel .vg-alignment-col {
+  padding: 3px 5px !important;
+  min-width: 30px !important;
+  gap: 4px !important;
+  border-radius: 7px !important;
+}
+
+.pacman-layout .vg-pacman-ref-panel .vg-align-cipher {
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  color: #e2e8f0 !important;
+  height: 24px !important;
+  line-height: 1 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pacman-layout .vg-pacman-ref-panel .vg-align-key {
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  color: var(--neon-cyan) !important;
+  height: 24px !important;
+  line-height: 1 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pacman-layout .vg-pacman-ref-panel .vg-align-shift {
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+  color: #ffd700 !important;
+  height: 20px !important;
+  line-height: 1 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pacman-layout .vg-pacman-ref-panel .vg-align-plain {
+  font-size: 1.1rem !important;
+  font-weight: 800 !important;
+  height: 24px !important;
+  line-height: 1 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pacman-layout .vg-pacman-ref-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  font-size: 0.74rem;
+  color: #cbd5e1;
+  padding-top: 7px;
+  margin-top: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pacman-layout .vg-pacman-target-summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.76rem;
+}
+
+.pacman-layout .vg-target-tag {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: rgba(255, 215, 0, 0.18);
+  border: 1px solid rgba(255, 215, 0, 0.45);
+  color: #ffd700;
+  border-radius: 4px;
+  padding: 1.5px 6px;
+  letter-spacing: 0.05em;
+}
+
+.pacman-layout .vg-pacman-controls-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* 4. Vigenère Pac-Man A-Z Reference Panel (Bottom-Right): 3-Tier Clean Layout */
+.pacman-layout .vg-pacman-az-panel {
+  width: min(620px, calc(48vw - 20px)) !important;
+  min-width: 480px !important;
+  max-width: 640px !important;
+  height: auto !important;
+  padding: 12px 18px 12px !important;
+  bottom: 14px !important;
+  right: 20px !important;
+  gap: 7px !important;
+  position: absolute !important;
+  z-index: 20 !important;
+  pointer-events: auto !important;
+  background: rgba(3, 14, 28, 0.92) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.42) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), inset 0 0 16px rgba(0, 229, 255, 0.06) !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.pacman-layout .vg-pacman-az-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.pacman-layout .vg-pacman-az-title-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.pacman-layout .vg-az-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pacman-layout .vg-pacman-calc-card {
+  padding: 5px 14px !important;
+  background: rgba(2, 10, 24, 0.88) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.38) !important;
+  border-radius: 10px !important;
+  margin: 1px 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  box-shadow: inset 0 0 12px rgba(0, 229, 255, 0.05) !important;
+}
+
+.pacman-layout .vg-pacman-calc-card .vg-calc-formula-row {
+  gap: 14px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.pacman-layout .vg-pacman-calc-card .vg-calc-item {
+  padding: 3px 12px !important;
+  min-width: 58px !important;
+  border-radius: 7px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.pacman-layout .vg-pacman-calc-card .vg-calc-item .lbl {
+  font-size: 0.62rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  margin-bottom: 1px !important;
+}
+
+.pacman-layout .vg-pacman-calc-card .vg-calc-item strong {
+  font-size: 1.35rem !important;
+  line-height: 1.1 !important;
+}
+
+.pacman-layout .vg-pacman-calc-card .vg-calc-item .val {
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+}
+
+.pacman-layout .vg-pacman-calc-card .vg-calc-op {
+  font-size: 1.3rem !important;
+  font-weight: 900 !important;
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+.pacman-layout .vg-pacman-lives-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.pacman-layout .vg-pacman-az-panel .vg-sprint-alphabet-grid {
+  gap: 4px !important;
+  margin-top: 1px !important;
+  width: 100% !important;
+}
+
+.pacman-layout .vg-pacman-az-panel .vg-alphabet-row {
+  gap: 4px !important;
+  display: grid !important;
+  grid-template-columns: repeat(13, 1fr) !important;
+  width: 100% !important;
+}
+
+.pacman-layout .vg-pacman-az-panel .vg-alphabet-cell {
+  padding: 3px 0 !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.pacman-layout .vg-pacman-az-panel .vg-alpha-char {
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+}
+
+.pacman-layout .vg-pacman-az-panel .vg-alpha-val {
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+}
+
+/* 5. Responsive adjustments for 1440x900 and 1366x768 */
+@media (max-width: 1440px), (max-height: 850px) {
+  .pacman-layout .vg-pacman-ref-panel {
+    width: min(560px, calc(48vw - 16px)) !important;
+    min-width: 450px !important;
+    max-width: 580px !important;
+    bottom: 10px !important;
+    left: 14px !important;
+    padding: 10px 14px 10px !important;
+    gap: 6px !important;
+  }
+
+  .pacman-layout .vg-pacman-az-panel {
+    width: min(560px, calc(48vw - 16px)) !important;
+    min-width: 450px !important;
+    max-width: 580px !important;
+    bottom: 10px !important;
+    right: 14px !important;
+    padding: 10px 14px 10px !important;
+    gap: 6px !important;
+  }
+
+  .pacman-layout .vg-pacman-calc-card {
+    padding: 4px 10px !important;
+  }
+
+  .pacman-layout .vg-pacman-calc-card .vg-calc-item strong {
+    font-size: 1.2rem !important;
+  }
+
+  .pacman-layout .vg-pacman-az-panel .vg-alphabet-cell {
+    padding: 2.5px 0 !important;
+  }
+
+  .skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
+    top: 10px !important;
+    right: 14px !important;
+    padding: 6px 12px !important;
+  }
+}
+
+@media (max-height: 760px) {
+  .pacman-layout .vg-pacman-ref-panel {
+    width: min(520px, calc(48vw - 12px)) !important;
+    min-width: 420px !important;
+    bottom: 6px !important;
+    left: 10px !important;
+    padding: 8px 12px 7px !important;
+    gap: 4px !important;
+  }
+
+  .pacman-layout .vg-pacman-az-panel {
+    width: min(520px, calc(48vw - 12px)) !important;
+    min-width: 420px !important;
+    bottom: 6px !important;
+    right: 10px !important;
+    padding: 8px 12px 7px !important;
+    gap: 4px !important;
+  }
+
+  .pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(1),
+  .pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(2),
+  .pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(4) {
+    height: 20px !important;
+  }
+
+  .pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(3) {
+    height: 16px !important;
+  }
+
+  .pacman-layout .vg-pacman-ref-panel .vg-align-cipher,
+  .pacman-layout .vg-pacman-ref-panel .vg-align-key,
+  .pacman-layout .vg-pacman-ref-panel .vg-align-plain {
+    font-size: 0.95rem !important;
+    height: 20px !important;
+  }
+
+  .pacman-layout .vg-pacman-calc-card {
+    padding: 3px 8px !important;
+  }
+
+  .pacman-layout .vg-pacman-calc-card .vg-calc-item {
+    min-width: 48px !important;
+    padding: 2px 8px !important;
+  }
+
+  .pacman-layout .vg-pacman-calc-card .vg-calc-item strong {
+    font-size: 1.05rem !important;
+  }
+
+  .pacman-layout .vg-pacman-az-panel .vg-alphabet-cell {
+    padding: 2px 0 !important;
+  }
+
+  .pacman-layout .vg-pacman-az-panel .vg-alpha-char {
+    font-size: 0.8rem !important;
+  }
+
+  .pacman-layout .vg-pacman-az-panel .vg-alpha-val {
+    font-size: 0.65rem !important;
+  }
+
+  .skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
+    top: 8px !important;
+    right: 10px !important;
+    padding: 5px 10px !important;
+  }
+}

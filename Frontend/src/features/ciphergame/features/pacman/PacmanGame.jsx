@@ -1246,7 +1246,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         lives={lives}
       />
 
-      <div className="pacman-layout caesar-pacman-fullscreen">
+      <div className={`pacman-layout caesar-pacman-fullscreen ${isVigenere ? 'vg-pacman-fullscreen' : ''}`}>
         <div className="pacman-fullscreen-stage">
           {/* 1. Centered Maze Board Area */}
           <div className="pacman-fullscreen-board-area">
@@ -1290,14 +1290,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     </div>
                   </div>
                 </div>
-
-                {activeSolvingItem && (
-                  <div className="vg-cipher-solving-pill" title={`Active Target: Position #${activeSolvingIndex + 1}`}>
-                    <span className="vg-pill-lbl">SOLVING</span>
-                    <span className="vg-pill-pos">Pos #{activeSolvingIndex + 1}</span>
-                    <span className="vg-pill-keychar">(Key '{activeSolvingItem.keyChar}')</span>
-                  </div>
-                )}
               </div>
             ) : (
               <div className="caesar-pacman-word-card">
@@ -1413,15 +1405,20 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             </div>
           ) : isVigenere ? (
             <div className="vg-floating-ref-panel vg-pacman-ref-panel">
-              <div className="vg-floating-ref-header">
-                <span className="vg-floating-ref-title">📖 Vigenère Alignment</span>
+              <div className="vg-pacman-ref-header">
+                <div className="vg-pacman-title-group">
+                  <span className="vg-floating-ref-title">📖 Alignment</span>
+                  <div className="vg-formula-compact">
+                    Formula: <strong>Plain = (Cipher − Key + 26) mod 26</strong>
+                  </div>
+                </div>
                 <button
                   type="button"
                   className="vg-tabula-modal-btn vg-tabula-btn-compact"
                   onClick={() => setShowTabula(true)}
                   style={{
-                    padding: '3px 8px',
-                    fontSize: '0.72rem',
+                    padding: '2px 8px',
+                    fontSize: '0.7rem',
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px',
@@ -1429,19 +1426,16 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     background: 'rgba(0, 229, 255, 0.15)',
                     border: '1px solid var(--neon-cyan)',
                     color: '#fff',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
                   }}
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>grid_on</span>
-                  <span>View Tabula Recta</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>grid_on</span>
+                  <span>Tabula Recta</span>
                 </button>
               </div>
 
-              <div className="vg-formula-prominent">
-                Formula: <strong>Plain = (Cipher − Key + 26) mod 26</strong>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div className="vg-pacman-align-table-row">
                 <div className="vg-alignment-labels">
                   <div>CIPHER</div>
                   <div>KEY</div>
@@ -1486,29 +1480,22 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 </div>
               </div>
 
-              <div className="vg-samples-section" style={{ marginTop: 4, paddingTop: 4 }}>
-                <div className="vg-samples-title" style={{ marginBottom: 2 }}>
-                  <span>🎯 Objectives</span>
+              <div className="vg-pacman-ref-footer">
+                <div className="vg-pacman-target-summary">
                   {activeSolvingItem ? (
-                    <span style={{ color: 'var(--neon-yellow)' }}>
-                      Target: <strong>{activeSolvingItem.cipherChar}</strong> (Key: '{activeSolvingItem.keyChar}', Shift +{activeSolvingItem.shiftVal})
-                    </span>
+                    <>
+                      <span className="vg-target-tag">TARGET</span>
+                      <span>
+                        Cipher <strong>'{activeSolvingItem.cipherChar}'</strong> ({charToIdx(activeSolvingItem.cipherChar)}) − Key <strong>'{activeSolvingItem.keyChar}'</strong> ({activeSolvingItem.shiftVal}) = Eat Ghost <strong style={{ color: 'var(--neon-green)' }}>'{activeSolvingItem.plainChar}'</strong>
+                      </span>
+                    </>
                   ) : (
-                    <span style={{ color: 'var(--neon-green)' }}>All Targets Decrypted!</span>
+                    <span style={{ color: 'var(--neon-green)', fontWeight: 700 }}>★ All Targets Decrypted!</span>
                   )}
                 </div>
-                {activeSolvingItem ? (
-                  <div style={{ fontSize: '0.72rem', color: '#cbd5e1', lineHeight: '1.3' }}>
-                    Cipher <strong>'{activeSolvingItem.cipherChar}'</strong> ({charToIdx(activeSolvingItem.cipherChar)}) − Key <strong>'{activeSolvingItem.keyChar}'</strong> ({activeSolvingItem.shiftVal}) = Eat Ghost <strong>'{activeSolvingItem.plainChar}'</strong>
-                  </div>
-                ) : (
-                  <p style={{ margin: 0, fontSize: '0.68rem', color: '#cbd5e1', lineHeight: '1.3' }}>
-                    All positions solved!
-                  </p>
-                )}
-                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
-                  <span>Freeze: Yellow Pellet + <b style={{ color: '#fff' }}>SPACE</b></span>
-                  <span>Move: <b style={{ color: '#fff' }}>WASD / Arrow Keys</b></span>
+                <div className="vg-pacman-controls-hint">
+                  <span>Freeze: <b style={{ color: '#ffd700' }}>SPACE</b></span>
+                  <span>Move: <b style={{ color: '#fff' }}>WASD</b></span>
                 </div>
               </div>
             </div>
@@ -1562,27 +1549,25 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           {/* 4b. Bottom-Right Vigenère A-Z Reference Panel */}
           {isVigenere && (
             <div className="vg-floating-key-panel vg-fishing-az-panel vg-pacman-az-panel">
-              <div className="vg-floating-current-slot">
-                <div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    A–Z Value Reference
-                  </div>
-                  <div style={{ fontSize: '0.84rem', color: '#fff', fontWeight: 700 }}>
-                    Decryption Arithmetic
-                  </div>
+              <div className="vg-pacman-az-top-row">
+                <div className="vg-pacman-az-title-box">
+                  <span className="vg-az-title">📖 A–Z Value Reference</span>
+                  <span className="vg-slot-badge-lg" style={{ fontSize: '0.74rem', padding: '1.5px 8px' }}>
+                    {vigenereAlignmentItems.filter(item => !item.isSpace && item.isSolved).length}/{vigenereAlignmentItems.filter(item => !item.isSpace).length} Solved
+                  </span>
                 </div>
-                <div className="vg-slot-badge-lg" style={{ fontSize: '0.9rem', padding: '2px 10px' }}>
-                  {vigenereAlignmentItems.filter(item => !item.isSpace && item.isSolved).length}/{vigenereAlignmentItems.filter(item => !item.isSpace).length} Solved
+
+                <div className="vg-pacman-lives-box">
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Lives:</span>
+                  <span style={{ fontFamily: 'JetBrains Mono, monospace', color: lives <= 2 ? '#f87171' : 'var(--neon-green)', fontWeight: 'bold', fontSize: '0.76rem' }}>
+                    {'❤️'.repeat(Math.max(0, lives))} ({lives}/5)
+                  </span>
                 </div>
               </div>
 
-              {/* Active calculation card */}
+              {/* Dedicated active calculation card */}
               {activeSolvingItem ? (
-                <div className="vg-fishing-calc-card">
-                  <div className="vg-calc-top-row">
-                    <span className="vg-calc-label">Active Letter Decryption:</span>
-                    <span className="vg-calc-badge">Pos #{activeSolvingItem.index + 1}</span>
-                  </div>
+                <div className="vg-fishing-calc-card vg-pacman-calc-card">
                   <div className="vg-calc-formula-row">
                     <div className="vg-calc-item cipher">
                       <span className="lbl">Cipher</span>
@@ -1608,15 +1593,15 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   </div>
                 </div>
               ) : (
-                <div className="vg-fishing-calc-card" style={{ textAlign: 'center', padding: '8px' }}>
+                <div className="vg-fishing-calc-card vg-pacman-calc-card" style={{ padding: '6px 14px' }}>
                   <span style={{ color: 'var(--neon-green)', fontWeight: 700, fontSize: '0.85rem' }}>
-                    ✨ All Plaintext Letters Decrypted!
+                    ✨ All Targets Decrypted!
                   </span>
                 </div>
               )}
 
               {/* 2-row x 13-col Alphabet grid */}
-              <div className="vg-sprint-alphabet-grid" style={{ marginTop: '2px' }}>
+              <div className="vg-sprint-alphabet-grid" style={{ marginTop: '0px' }}>
                 <div className="vg-alphabet-row">
                   {alphabet.slice(0, 13).map((ch, i) => {
                     const isCipher = activeSolvingItem && ch === activeSolvingItem.cipherChar;
@@ -1648,13 +1633,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     );
                   })}
                 </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-muted)', paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                <span>Lives Remaining:</span>
-                <span style={{ fontFamily: 'JetBrains Mono, monospace', color: lives <= 2 ? '#f87171' : 'var(--neon-green)', fontWeight: 'bold' }}>
-                  {'❤️'.repeat(Math.max(0, lives))} ({lives}/5)
-                </span>
               </div>
             </div>
           )}
