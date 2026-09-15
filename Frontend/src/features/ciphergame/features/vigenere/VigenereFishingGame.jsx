@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
@@ -7,18 +7,7 @@ import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '..
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-const normalizeShift = (shift = 0) => ((shift % 26) + 26) % 26;
 const charToIdx = (char) => char.charCodeAt(0) - 65;
-const idxToChar = (idx) => String.fromCharCode(normalizeShift(idx) + 65);
-const formatShift = (shift) => `+${normalizeShift(shift)}`;
-
-const caesarDecryptChar = (char, shift) => {
-  const code = char.charCodeAt(0);
-  if (code >= 65 && code <= 90) {
-    return idxToChar(code - 65 - shift);
-  }
-  return char;
-};
 
 const buildSlotMap = (segments, keyLen) => {
   let alphaIndex = 0;
@@ -32,28 +21,6 @@ const buildSlotMap = (segments, keyLen) => {
   );
 };
 
-const buildActiveSlotSamples = (ciphertext, plaintext, slotMap, activeSlot, activeShifts) => {
-  const cipherSegs = ciphertext.split(' ');
-  const words = plaintext.split(' ');
-  const rows = [];
-
-  cipherSegs.forEach((segment, wordIdx) => {
-    segment.split('').forEach((cipherChar, charIdx) => {
-      const slot = slotMap[wordIdx]?.[charIdx];
-      if (slot !== activeSlot) return;
-      rows.push({
-        cipherChar,
-        plainChar: caesarDecryptChar(cipherChar, activeShifts[slot] ?? 0),
-        targetPlain: words[wordIdx]?.[charIdx] ?? '',
-        wordIdx,
-        charIdx
-      });
-    });
-  });
-
-  return rows;
-};
-
 export default function VigenereFishingGame({
   levelData,
   tier,
@@ -61,23 +28,63 @@ export default function VigenereFishingGame({
   onBackToStages,
   onReplayNewQuestion
 }) {
-  const words = levelData.plaintext.split(' ');
-  const cipherSegs = levelData.ciphertext.split(' ');
+  const words = useMemo(() => (levelData.plaintext || '').split(' '), [levelData.plaintext]);
+  const cipherSegs = useMemo(() => (levelData.ciphertext || '').split(' '), [levelData.ciphertext]);
   const targetKey = levelData.targetKey || '';
   const keyLen = Math.max(1, targetKey.length);
-  const targetShifts = targetKey.split('').map(charToIdx);
-  const slotMap = buildSlotMap(cipherSegs, keyLen);
+  const targetShifts = useMemo(() => targetKey.split('').map(charToIdx), [targetKey]);
+  const slotMap = useMemo(() => buildSlotMap(cipherSegs, keyLen), [cipherSegs, keyLen]);
 
-  const getInitialShifts = () =>
-    Array.from({ length: keyLen }, (_, idx) =>
-      normalizeShift(levelData.startShifts?.[idx] ?? 0)
+  const flatLetterPositions = useMemo(() => {
+    const list = [];
+    let globalIdx = 0;
+    words.forEach((word, wordIdx) => {
+      const cipherWord = cipherSegs[wordIdx] || '';
+      word.split('').forEach((plainChar, charIdx) => {
+        const cipherChar = cipherWord[charIdx] || '';
+        const slot = slotMap[wordIdx]?.[charIdx] ?? 0;
+        const keyChar = targetKey[slot] || 'A';
+        const keyShift = targetShifts[slot] ?? 0;
+        list.push({
+          wordIdx,
+          charIdx,
+          globalIdx,
+          plainChar,
+          cipherChar,
+          slot,
+          keyChar,
+          keyShift,
+        });
+        globalIdx++;
+      });
+    });
+    return list;
+  }, [words, cipherSegs, slotMap, targetKey, targetShifts]);
+
+  const getInitialRevealed = useCallback(() => {
+    if (levelData.masks && Array.isArray(levelData.masks)) {
+      return levelData.masks.map((row, wIdx) => {
+        if (row && Array.isArray(row)) return [...row];
+        return Array(words[wIdx]?.length || 0).fill(false);
+      });
+    }
+    let count = 0;
+    return words.map(w =>
+      w.split('').map(() => {
+        if (count < 2) {
+          count++;
+          return true;
+        }
+        return false;
+      })
     );
+  }, [levelData.masks, words]);
 
   const [phase, setPhase] = useState('ready');
   const [isOperationLoading, setIsOperationLoading] = useState(false);
-  const [activeShifts, setActiveShifts] = useState(getInitialShifts);
-  const [activeSlot, setActiveSlot] = useState(0);
-  const [attemptsLeft, setAttemptsLeft] = useState(Math.max(20, keyLen * 10));
+  const [revealedMasks, setRevealedMasks] = useState(getInitialRevealed);
+  const [activeTargetIdx, setActiveTargetIdx] = useState(0);
+  const [attemptsLeft, setAttemptsLeft] = useState(25);
   const [levelSolved, setLevelSolved] = useState(false);
   const [basketShake, setBasketShake] = useState(false);
   const [floatingXp, setFloatingXp] = useState(null);
@@ -109,38 +116,31 @@ export default function VigenereFishingGame({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [phase, showExplanation, levelSolved, attemptsLeft]);
 
-  const activePreviewShifts = hoveredFish
-    ? activeShifts.map((shift, idx) =>
-        idx === activeSlot ? hoveredFish.value : shift
-      )
-    : activeShifts;
+  const currentTarget = flatLetterPositions[activeTargetIdx] || flatLetterPositions[0] || {
+    wordIdx: 0,
+    charIdx: 0,
+    globalIdx: 0,
+    plainChar: 'A',
+    cipherChar: 'A',
+    slot: 0,
+    keyChar: 'A',
+    keyShift: 0,
+  };
+  const currentTargetPlain = currentTarget.plainChar;
+  const currentCipherChar = currentTarget.cipherChar;
+  const currentKeyChar = currentTarget.keyChar;
+  const currentKeyShift = currentTarget.keyShift;
 
-  const buildDecryptedSegments = (shifts) =>
-    cipherSegs.map((segment, wordIdx) =>
-      segment
-        .split('')
-        .map((cipherChar, charIdx) => {
-          const slot = slotMap[wordIdx]?.[charIdx] ?? 0;
-          return caesarDecryptChar(cipherChar, shifts[slot] ?? 0);
-        })
-        .join('')
-    );
-
-  const decryptedSegs = buildDecryptedSegments(activeShifts);
-  const previewSegs = buildDecryptedSegments(activePreviewShifts);
-  const activeSlotSamples = buildActiveSlotSamples(
-    levelData.ciphertext,
-    levelData.plaintext,
-    slotMap,
-    activeSlot,
-    activeShifts
+  const totalLetters = flatLetterPositions.length;
+  const totalBlanks = flatLetterPositions.filter(
+    p => !levelData.masks?.[p.wordIdx]?.[p.charIdx]
+  ).length || Math.max(1, totalLetters - 2);
+  const solvedBlanks = flatLetterPositions.filter(
+    p => !levelData.masks?.[p.wordIdx]?.[p.charIdx] && revealedMasks[p.wordIdx]?.[p.charIdx]
+  ).length;
+  const allCorrect = flatLetterPositions.length > 0 && flatLetterPositions.every(
+    p => revealedMasks[p.wordIdx]?.[p.charIdx]
   );
-  const allCorrect = decryptedSegs.every((segment, idx) => segment === words[idx]);
-  const solvedSlots = activeShifts.filter((shift, idx) => shift === targetShifts[idx]).length;
-  const currentShift = activeShifts[activeSlot] ?? 0;
-  const currentKeyGuess = idxToChar(currentShift);
-  const currentTargetShift = targetShifts[activeSlot] ?? 0;
-  const currentTargetKey = targetKey[activeSlot] || '';
 
   const alignmentItems = useMemo(() => {
     const items = [];
@@ -152,24 +152,42 @@ export default function VigenereFishingGame({
         const slot = slotMap[wIdx]?.[cIdx] ?? 0;
         const keyCh = targetKey[slot] || 'A';
         const shiftVal = targetShifts[slot] ?? 0;
-        const isSolved = activeShifts[slot] === targetShifts[slot];
+        const plainCh = words[wIdx]?.[cIdx] ?? '';
+        const globalPos = flatLetterPositions.find(
+          p => p.wordIdx === wIdx && p.charIdx === cIdx
+        );
+        const globalIdx = globalPos ? globalPos.globalIdx : 0;
+        const isSolved = revealedMasks[wIdx]?.[cIdx] === true;
+        const isActive = globalIdx === currentTarget.globalIdx;
+
         items.push({
           id: `${wIdx}-${cIdx}`,
           cipherCh,
-          slot,
           keyCh,
           shiftVal,
+          plainCh,
+          wordIdx: wIdx,
+          charIdx: cIdx,
+          globalIdx,
           isSolved,
-          isActive: slot === activeSlot,
+          isActive,
         });
       });
     });
     return items;
-  }, [cipherSegs, slotMap, targetKey, targetShifts, activeShifts, activeSlot]);
+  }, [cipherSegs, slotMap, targetKey, targetShifts, words, flatLetterPositions, revealedMasks, currentTarget.globalIdx]);
 
-  const spawnFish = () => {
-    const correctLetter = targetKey[activeSlot] || ALPHABET[0];
+  const spawnFish = useCallback(() => {
+    const correctLetter = currentTargetPlain || ALPHABET[0];
     const letters = new Set([correctLetter]);
+
+    // Add letters from other unsolved positions for realistic variety
+    flatLetterPositions.forEach(p => {
+      if (!revealedMasks[p.wordIdx]?.[p.charIdx] && letters.size < 6) {
+        letters.add(p.plainChar);
+      }
+    });
+
     while (letters.size < 9) {
       letters.add(ALPHABET[Math.floor(Math.random() * ALPHABET.length)]);
     }
@@ -196,7 +214,7 @@ export default function VigenereFishingGame({
       };
     });
     setFishList(list);
-  };
+  }, [currentTargetPlain, flatLetterPositions, revealedMasks]);
 
   const spawnBubbles = () => {
     const list = [];
@@ -212,10 +230,17 @@ export default function VigenereFishingGame({
     setBubbles(list);
   };
 
-  const resetRound = () => {
-    setActiveShifts(getInitialShifts());
-    setActiveSlot(0);
-    setAttemptsLeft(Math.max(20, keyLen * 10));
+  const resetRound = useCallback(() => {
+    const initialRevealed = getInitialRevealed();
+    setRevealedMasks(initialRevealed);
+    const firstUnsolved = flatLetterPositions.findIndex(
+      pos => !initialRevealed[pos.wordIdx]?.[pos.charIdx]
+    );
+    setActiveTargetIdx(firstUnsolved !== -1 ? firstUnsolved : 0);
+    const blanksCount = flatLetterPositions.filter(
+      p => !initialRevealed[p.wordIdx]?.[p.charIdx]
+    ).length;
+    setAttemptsLeft(Math.max(20, blanksCount * 3));
     setChumCount(3);
     setLevelSolved(false);
     setShowExplanation(false);
@@ -224,7 +249,7 @@ export default function VigenereFishingGame({
     setIsCasting(false);
     setCaughtFish(null);
     setFloatingXp(null);
-  };
+  }, [getInitialRevealed, flatLetterPositions]);
 
   const startGame = () => {
     resetRound();
@@ -237,7 +262,7 @@ export default function VigenereFishingGame({
     setPhase('ready');
     setIsMenuOpen(false);
     resetRound();
-  }, [levelData]);
+  }, [levelData, resetRound]);
 
   useEffect(() => {
     if (phase !== 'playing') return;
@@ -256,10 +281,23 @@ export default function VigenereFishingGame({
     return () => cancelAnimationFrame(animationRef.current);
   }, [phase, isMenuOpen]);
 
+  // Ensure current target plaintext letter is always swimming in the pond
   useEffect(() => {
     if (phase !== 'playing' || isCasting) return;
-    spawnFish();
-  }, [activeSlot]);
+    setFishList(prev => {
+      if (prev.length === 0) return prev;
+      const hasTarget = prev.some(f => f.letter === currentTargetPlain);
+      if (hasTarget) return prev;
+      const copy = [...prev];
+      const replaceIdx = Math.floor(Math.random() * copy.length);
+      copy[replaceIdx] = {
+        ...copy[replaceIdx],
+        letter: currentTargetPlain,
+        value: charToIdx(currentTargetPlain),
+      };
+      return copy;
+    });
+  }, [currentTargetPlain, phase, isCasting]);
 
   const handleChumWaters = () => {
     if (chumCount <= 0 || isCasting) return;
@@ -303,21 +341,44 @@ export default function VigenereFishingGame({
 
           setIsCasting(false);
           setCaughtFish(null);
-          setActiveShifts(prev => {
-            const next = [...prev];
-            next[activeSlot] = fish.value;
-            return next;
-          });
-          setBasketShake(true);
-          setTimeout(() => setBasketShake(false), 400);
-          setAttemptsLeft(prev => Math.max(0, prev - 1));
 
+          const isCorrect = fish.letter === currentTargetPlain;
+
+          if (isCorrect) {
+            const updatedRevealed = revealedMasks.map((row, wI) =>
+              row.map((val, cI) => (wI === currentTarget.wordIdx && cI === currentTarget.charIdx ? true : val))
+            );
+            setRevealedMasks(updatedRevealed);
+            setFloatingXp({ amount: 50, x: 50, y: 40 });
+            setTimeout(() => setFloatingXp(null), 1200);
+
+            // Auto-advance to next unsolved position
+            const nextIdx = flatLetterPositions.findIndex((p, idx) => {
+              if (idx <= activeTargetIdx) return false;
+              return !updatedRevealed[p.wordIdx]?.[p.charIdx];
+            });
+            if (nextIdx !== -1) {
+              setActiveTargetIdx(nextIdx);
+            } else {
+              const wrapIdx = flatLetterPositions.findIndex(
+                p => !updatedRevealed[p.wordIdx]?.[p.charIdx]
+              );
+              if (wrapIdx !== -1) {
+                setActiveTargetIdx(wrapIdx);
+              }
+            }
+          } else {
+            setBasketShake(true);
+            setTimeout(() => setBasketShake(false), 400);
+            setAttemptsLeft(prev => Math.max(0, prev - 1));
+          }
+
+          // Respawn a replacement fish
           setTimeout(() => {
             setFishList(prev => {
               const usedLetters = new Set(prev.map(item => item.letter));
-              const targetLetter = targetKey[activeSlot] || ALPHABET[0];
-              let letter = targetLetter;
-              if (usedLetters.has(targetLetter) || Math.random() > 0.45) {
+              let letter = currentTargetPlain;
+              if (usedLetters.has(letter) || Math.random() > 0.45) {
                 do {
                   letter = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
                 } while (usedLetters.has(letter));
@@ -361,8 +422,6 @@ export default function VigenereFishingGame({
     setShowExplanation(false);
     onVerifySubmit();
   };
-
-
 
   const rodBaseX = 250;
   const rodBaseY = 260;
@@ -433,13 +492,17 @@ export default function VigenereFishingGame({
               <div className="cq-dossier-tag">MISSION BRIEF</div>
               <h2 className="cq-dossier-title">Vigenère Fishing</h2>
               <p className="cq-dossier-subtitle">
-                Recover the repeating keyword one letter at a time. Slot #1 affects letters 1, {keyLen + 1}, {keyLen * 2 + 1}; slot #2 affects letters 2, {keyLen + 2}, and so on.
+                Decrypt the ciphertext into plaintext using the known keyword: <code>Plain = (Cipher − Key + 26) mod 26</code>. Catch fish carrying the matching plaintext letters!
               </p>
               <hr className="cq-dossier-divider" />
               <div className="cq-dossier-data">
                 <div className="cq-dossier-row">
                   <span className="cq-dossier-label">CIPHERTEXT</span>
                   <span className="cq-dossier-value cyan-mono">{levelData.ciphertext}</span>
+                </div>
+                <div className="cq-dossier-row">
+                  <span className="cq-dossier-label">KEYWORD</span>
+                  <span className="cq-dossier-value yellow-mono">{levelData.targetKey}</span>
                 </div>
                 <div className="cq-dossier-row">
                   <span className="cq-dossier-label">KEYWORD CLUE</span>
@@ -452,7 +515,7 @@ export default function VigenereFishingGame({
               </div>
               <p className="cq-dossier-how-it-works">
                 <strong>How it works:</strong>{' '}
-                Catch letter fish to fill the active keyword slot. When every slot matches the keyword, the full Vigenère plaintext resolves.
+                Look at the active blank position's cipher letter and matching key letter. Subtract the key letter's value from the cipher letter's value to find the plaintext letter, then catch that fish!
               </p>
               <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
                 Begin operation
@@ -466,62 +529,6 @@ export default function VigenereFishingGame({
 
   return (
     <div className="fg-root caesar-fishing-fullscreen vigenere-fishing-fullscreen">
-      <style>{`
-        @keyframes pulse {
-          0% { opacity: 0.6; box-shadow: 0 0 4px rgba(0, 229, 255, 0.4); }
-          100% { opacity: 1; box-shadow: 0 0 12px rgba(0, 229, 255, 0.8); }
-        }
-        .vg-key-slot-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
-          gap: 8px;
-          width: 100%;
-        }
-        .vg-key-slot-btn {
-          background: rgba(255, 255, 255, 0.03);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          padding: 6px;
-          color: var(--text-muted);
-          cursor: pointer;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 2px;
-          font-family: inherit;
-          transition: all 0.2s;
-        }
-        .vg-key-slot-btn:hover {
-          background: rgba(0, 229, 255, 0.08);
-          border-color: rgba(0, 229, 255, 0.3);
-        }
-        .vg-key-slot-btn.active {
-          border-color: var(--neon-cyan);
-          background: rgba(0, 229, 255, 0.15);
-          color: #fff;
-          box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
-        }
-        .vg-key-slot-btn.solved {
-          border-color: var(--neon-green);
-          color: var(--neon-green);
-        }
-        .vg-key-slot-btn div:first-child {
-          font-size: 0.65rem;
-          opacity: 0.7;
-        }
-        .vg-key-slot-btn strong {
-          font-size: 1.1rem;
-          color: #fff;
-        }
-        .vg-key-slot-btn.solved strong {
-          color: var(--neon-green);
-        }
-        .vg-key-slot-btn div:last-child {
-          font-size: 0.6rem;
-          opacity: 0.5;
-        }
-      `}</style>
-
       {/* Recap & Learning Overlay */}
       {showExplanation && (
         <div className="fg-recap-overlay">
@@ -530,11 +537,11 @@ export default function VigenereFishingGame({
               <span className="material-symbols-outlined fg-recap-icon" style={{ color: 'var(--neon-cyan)' }}>
                 auto_stories
               </span>
-              <h2 className="fg-recap-title">Keyword Decryption Recap</h2>
+              <h2 className="fg-recap-title">Vigenère Decryption Recap</h2>
               <span className="fg-recap-badge">Vigenère Cipher</span>
             </div>
             <p className="fg-recap-subtitle">
-              Every position was decrypted by its corresponding keyword letter shift!
+              Every position was decrypted by subtracting its corresponding keyword letter shift!
             </p>
             <div className="fg-recap-segments-card">
               <div className="fg-recap-segments-grid">
@@ -565,7 +572,7 @@ export default function VigenereFishingGame({
                                 {isRevealed ? plainCh : '?'}
                               </span>
                               <span className="fg-recap-shift-tag" style={{ fontSize: '0.6rem', color: 'var(--neon-cyan)' }}>
-                                {keyChar}
+                                -{keyChar}
                               </span>
                             </div>
                           );
@@ -577,9 +584,9 @@ export default function VigenereFishingGame({
               </div>
             </div>
             <div className="fg-recap-explanation" style={{ background: 'rgba(255,255,255,0.015)' }}>
-              💡 <strong>Vigenère Cipher Decryption:</strong> The keyword <code>{levelData.keyword}</code> repeats continuously.
-              Each letter of the keyword determines how far that column was shifted.{' '}
-              <code>Plain = (Cipher - Key Letter) mod 26</code> reveals the original text.
+              💡 <strong>Vigenère Cipher Decryption:</strong> The keyword <code>{levelData.targetKey}</code> repeats continuously.
+              Each letter of the keyword determines how far that position was shifted.{' '}
+              <code>Plain = (Cipher − Key Letter + 26) mod 26</code> reveals the original text.
             </div>
             <div className="fg-recap-actions" style={{ marginTop: 16 }}>
               <button
@@ -670,53 +677,70 @@ export default function VigenereFishingGame({
         </div>
 
         {/* Floating Overlays */}
-        {/* 1. Top-Center Word Segment Panel + Clue & Hint */}
+        {/* 1. Top-Center Word Segment Panel + Keyword & Hint */}
         <div className="caesar-floating-word-panel">
-          <div className="fg-word-segments-row">
-            {words.map((word, wordIdx) => {
-              const cipherWord = cipherSegs[wordIdx];
-              const decWord = decryptedSegs[wordIdx];
-              const prevWord = previewSegs[wordIdx];
+          <div className="vg-cipher-main-row">
+            {/* Keyword Badge beside cipher letters */}
+            <div className="vg-cipher-key-pill" title={`Repeating Keyword: ${targetKey}`}>
+              <span className="vg-pill-lbl">KEYWORD</span>
+              <span className="vg-pill-val">{targetKey}</span>
+            </div>
 
-              return (
-                <div key={wordIdx} className="fg-word-segment-card">
-                  <div className="fg-letter-cells">
-                    {cipherWord.split('').map((cipherCh, charIdx) => {
-                      const slot = slotMap[wordIdx]?.[charIdx] ?? 0;
-                      const isActiveSlot = slot === activeSlot;
-                      const maskList = levelData.masks[wordIdx];
-                      const isPrefilled = tier === 'easy' && maskList?.[charIdx];
-                      const isCorrect = decWord[charIdx] === word[charIdx];
-                      const isHovered = tier === 'easy' && hoveredFish && isActiveSlot;
-                      const letterToShow = (isPrefilled || isCorrect)
-                        ? word[charIdx]
-                        : (isHovered ? prevWord[charIdx] : '_');
-                      const cellStyle = isActiveSlot ? {
-                        borderColor: 'var(--neon-cyan)',
-                        boxShadow: '0 0 12px rgba(0,229,255,0.18)'
-                      } : {};
-                      let cellClass = 'fg-letter-cell';
-                      if (isPrefilled || isCorrect) cellClass = 'fg-letter-cell correct-plain';
+            <div className="fg-word-segments-row">
+              {words.map((word, wordIdx) => {
+                const cipherWord = cipherSegs[wordIdx];
 
-                      return (
-                        <div
-                          key={charIdx}
-                          className={cellClass}
-                          style={cellStyle}
-                          onClick={() => { if (!isCasting) setActiveSlot(slot); }}
-                        >
-                          <span className="fg-cell-ciphertext">{cipherCh}</span>
-                          <span className="fg-cell-plaintext">{letterToShow}</span>
-                        </div>
-                      );
-                    })}
+                return (
+                  <div key={wordIdx} className="fg-word-segment-card">
+                    <div className="fg-letter-cells">
+                      {cipherWord.split('').map((cipherCh, charIdx) => {
+                        const slot = slotMap[wordIdx]?.[charIdx] ?? 0;
+                        const keyCh = targetKey[slot] || 'A';
+                        const isRevealed = revealedMasks[wordIdx]?.[charIdx] === true;
+                        const isActive = currentTarget.wordIdx === wordIdx && currentTarget.charIdx === charIdx;
+                        const isHovered = isActive && hoveredFish;
+                        const letterToShow = isRevealed
+                          ? word[charIdx]
+                          : (isHovered ? hoveredFish.letter : '_');
+
+                        let cellClass = 'fg-letter-cell';
+                        if (isRevealed) {
+                          cellClass += ' correct-plain';
+                        } else if (isActive) {
+                          cellClass += ' active-slot';
+                        }
+
+                        return (
+                          <div
+                            key={charIdx}
+                            className={cellClass}
+                            onClick={() => {
+                              if (!isCasting) {
+                                const targetPos = flatLetterPositions.find(
+                                  p => p.wordIdx === wordIdx && p.charIdx === charIdx
+                                );
+                                if (targetPos) setActiveTargetIdx(targetPos.globalIdx);
+                              }
+                            }}
+                            title={`Cipher: ${cipherCh}, Key: ${keyCh} → ${isRevealed ? word[charIdx] : '?'}`}
+                          >
+                            <span className="fg-cell-ciphertext">{cipherCh}</span>
+                            <span className="fg-cell-plaintext">{letterToShow}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  <div className="fg-segment-basket-badge">
-                    Key pattern: {slotMap[wordIdx].map(slot => idxToChar(activeShifts[slot] ?? 0)).join('')}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+
+            {/* Solving Status Badge right beside cipher letters */}
+            <div className="vg-cipher-solving-pill" title={`Active Target: Position #${currentTarget.globalIdx + 1}`}>
+              <span className="vg-pill-lbl">SOLVING</span>
+              <span className="vg-pill-pos">Pos #{currentTarget.globalIdx + 1}</span>
+              <span className="vg-pill-keychar">(Key '{currentKeyChar}')</span>
+            </div>
           </div>
           <div className="caesar-floating-hint">
             <span>💡 Keyword clue: <strong>"{levelData.keyClue}"</strong></span>
@@ -725,13 +749,14 @@ export default function VigenereFishingGame({
           </div>
         </div>
 
-        {/* 2. Floating Reference Panel (Bottom-Left) */}
+        {/* 2. Floating Reference Panel 1: Alignment (Bottom-Left) */}
         <div className="vg-floating-ref-panel">
           <div className="vg-floating-ref-header">
             <span className="vg-floating-ref-title">📖 Vigenère Alignment</span>
-            <span className="vg-floating-ref-slot-badge">
-              Active: Slot #{activeSlot + 1} ({idxToChar(activeShifts[activeSlot] ?? 0)})
-            </span>
+          </div>
+
+          <div className="vg-formula-prominent">
+            Formula: <strong>Plain = (Cipher − Key + 26) mod 26</strong>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -739,24 +764,32 @@ export default function VigenereFishingGame({
               <div>CIPHER</div>
               <div>KEY</div>
               <div>SHIFT</div>
+              <div style={{ color: 'var(--neon-green)' }}>PLAIN</div>
             </div>
             <div className="vg-alignment-container">
               {alignmentItems.map(item => {
                 if (item.isSpace) {
                   return <div key={item.id} style={{ width: 10, flexShrink: 0 }} />;
                 }
+                const isRevealed = revealedMasks[item.wordIdx]?.[item.charIdx];
+                const isActive = item.globalIdx === currentTarget.globalIdx;
+
                 return (
                   <div
                     key={item.id}
-                    className={`vg-alignment-col ${item.isActive ? 'active-slot' : ''}`}
-                    onClick={() => { if (!isCasting) setActiveSlot(item.slot); }}
-                    title={`Slot #${item.slot + 1} (${item.keyCh})`}
+                    className={`vg-alignment-col ${isActive ? 'active-slot' : ''}`}
+                    onClick={() => { if (!isCasting) setActiveTargetIdx(item.globalIdx); }}
+                    title={`Pos #${item.globalIdx + 1}: ${item.cipherCh} (${charToIdx(item.cipherCh)}) − ${item.keyCh} (${item.shiftVal}) = ${isRevealed ? item.plainCh : '?'}`}
                   >
                     <span className="vg-align-cipher">{item.cipherCh}</span>
-                    <span className="vg-align-key" style={{ color: item.isSolved ? 'var(--neon-green)' : 'var(--neon-cyan)' }}>
-                      {item.keyCh}
+                    <span className="vg-align-key">{item.keyCh}</span>
+                    <span className="vg-align-shift">-{item.shiftVal}</span>
+                    <span
+                      className="vg-align-plain"
+                      style={{ color: isRevealed ? 'var(--neon-green)' : (isActive && hoveredFish ? 'var(--neon-cyan)' : 'var(--neon-yellow)') }}
+                    >
+                      {isRevealed ? item.plainCh : (isActive && hoveredFish ? hoveredFish.letter : '_')}
                     </span>
-                    <span className="vg-align-shift">+{item.shiftVal}</span>
                   </div>
                 );
               })}
@@ -765,27 +798,18 @@ export default function VigenereFishingGame({
 
           <div className="vg-samples-section">
             <div className="vg-samples-title">
-              <span>Slot #{activeSlot + 1} Decryptions</span>
+              <span>Target Position #{currentTarget.globalIdx + 1}</span>
               <span style={{ color: 'var(--neon-cyan)', fontFamily: 'JetBrains Mono, monospace' }}>
-                Key: {currentKeyGuess} (-{currentShift})
+                Key: '{currentKeyChar}' (-{currentKeyShift})
               </span>
             </div>
-            <div className="vg-samples-pills">
-              {activeSlotSamples.slice(0, 8).map((sample, idx) => {
-                const isSolved = sample.plainChar === sample.targetPlain;
-                return (
-                  <span key={`${sample.wordIdx}-${sample.charIdx}-${idx}`} className={`vg-sample-pill ${isSolved ? 'solved' : ''}`}>
-                    <span style={{ color: 'var(--text-muted)' }}>{sample.cipherChar}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem' }}>➔</span>
-                    <span style={{ color: isSolved ? 'var(--neon-green)' : 'var(--neon-yellow)', fontWeight: 'bold' }}>{sample.plainChar}</span>
-                  </span>
-                );
-              })}
+            <div style={{ fontSize: '0.74rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+              Cipher <strong>'{currentCipherChar}'</strong> ({charToIdx(currentCipherChar)}) − Key <strong>'{currentKeyChar}'</strong> ({currentKeyShift}) = Catch fish <strong>'{revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? currentTargetPlain : '?'}'</strong>
             </div>
           </div>
         </div>
 
-        {/* 3. Floating Chum the Waters Button (Bottom-Right, above Key Panel) */}
+        {/* 3. Floating Chum the Waters Button (Bottom-Right, above A-Z Panel) */}
         <button
           className="vigenere-floating-chum-btn"
           onClick={handleChumWaters}
@@ -796,44 +820,92 @@ export default function VigenereFishingGame({
           Chum the Waters ({chumCount} left)
         </button>
 
-        {/* 4. Floating Baskets & Key Panel (Bottom-Right) */}
-        <div className={`vg-floating-key-panel ${basketShake ? 'shake' : ''}`}>
+        {/* 4. Floating Reference Panel 2: A-Z Value Table & Decryption Helper (Bottom-Right) */}
+        <div className={`vg-floating-key-panel vg-fishing-az-panel ${basketShake ? 'shake' : ''}`}>
           <div className="vg-floating-current-slot">
             <div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Keyword Slot #{activeSlot + 1}
+              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                A–Z Value Reference
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#fff', fontWeight: 700 }}>
-                Current Basket
+              <div style={{ fontSize: '0.84rem', color: '#fff', fontWeight: 700 }}>
+                Decryption Arithmetic
               </div>
             </div>
-            <div className="vg-slot-badge-lg">
-              {currentKeyGuess}
+            <div className="vg-slot-badge-lg" style={{ fontSize: '0.9rem', padding: '2px 10px' }}>
+              {solvedBlanks}/{totalBlanks} Solved
             </div>
           </div>
 
-          <div className="vg-key-slot-grid">
-            {activeShifts.map((shift, idx) => {
-              const solved = shift === targetShifts[idx];
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  className={`vg-key-slot-btn ${idx === activeSlot ? 'active' : ''} ${solved ? 'solved' : ''}`}
-                  onClick={() => { if (!isCasting) setActiveSlot(idx); }}
-                >
-                  <div>#{idx + 1}</div>
-                  <strong>{idxToChar(shift)}</strong>
-                  <div>Key Letter</div>
-                </button>
-              );
-            })}
+          {/* Active calculation card */}
+          <div className="vg-fishing-calc-card">
+            <div className="vg-calc-top-row">
+              <span className="vg-calc-label">Active Letter Decryption:</span>
+              <span className="vg-calc-badge">Pos #{currentTarget.globalIdx + 1}</span>
+            </div>
+            <div className="vg-calc-formula-row">
+              <div className="vg-calc-item cipher">
+                <span className="lbl">Cipher</span>
+                <strong>{currentCipherChar}</strong>
+                <span className="val">{charToIdx(currentCipherChar)}</span>
+              </div>
+              <span className="vg-calc-op">−</span>
+              <div className="vg-calc-item key">
+                <span className="lbl">Key</span>
+                <strong>{currentKeyChar}</strong>
+                <span className="val">{currentKeyShift}</span>
+              </div>
+              <span className="vg-calc-op">=</span>
+              <div className="vg-calc-item plain">
+                <span className="lbl">Target</span>
+                <strong style={{ color: 'var(--neon-green)' }}>
+                  {revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? currentTargetPlain : '?'}
+                </strong>
+                <span className="val">
+                  {(charToIdx(currentCipherChar) - currentKeyShift + 26) % 26}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <span>Solved Slots:</span>
-            <span style={{ fontFamily: 'JetBrains Mono, monospace', color: solvedSlots === keyLen ? 'var(--neon-green)' : 'var(--neon-cyan)', fontWeight: 'bold' }}>
-              {solvedSlots}/{keyLen}
+          {/* 2-row x 13-col Alphabet grid showing all 26 letters */}
+          <div className="vg-sprint-alphabet-grid" style={{ marginTop: '2px' }}>
+            <div className="vg-alphabet-row">
+              {ALPHABET.slice(0, 13).map((ch, i) => {
+                const isCipher = ch === currentCipherChar;
+                const isKey = ch === currentKeyChar;
+                let cellClass = "vg-alphabet-cell";
+                if (isCipher) cellClass += " is-cipher";
+                if (isKey) cellClass += " is-key";
+                return (
+                  <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
+                    <span className="vg-alpha-char">{ch}</span>
+                    <span className="vg-alpha-val">{i}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="vg-alphabet-row">
+              {ALPHABET.slice(13, 26).map((ch, i) => {
+                const val = i + 13;
+                const isCipher = ch === currentCipherChar;
+                const isKey = ch === currentKeyChar;
+                let cellClass = "vg-alphabet-cell";
+                if (isCipher) cellClass += " is-cipher";
+                if (isKey) cellClass += " is-key";
+                return (
+                  <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
+                    <span className="vg-alpha-char">{ch}</span>
+                    <span className="vg-alpha-val">{val}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-muted)', paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <span>Attempts Remaining:</span>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', color: attemptsLeft <= 5 ? '#f87171' : 'var(--neon-green)', fontWeight: 'bold' }}>
+              {attemptsLeft}
             </span>
           </div>
 
@@ -848,7 +920,7 @@ export default function VigenereFishingGame({
         {levelSolved && (
           <div className="caesar-floating-victory-panel">
             <h3 className="caesar-victory-title">✅ SECURED!</h3>
-            <p className="caesar-victory-desc">Keyword recovered and ciphertext decrypted.</p>
+            <p className="caesar-victory-desc">All segments decrypted successfully.</p>
             <button
               className="fg-btn fg-btn-primary"
               onClick={handleVerifySubmit}

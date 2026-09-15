@@ -1255,96 +1255,131 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
           {/* 2. Top-Center Floating Word Panel */}
           <section className="caesar-pacman-floating-word-panel">
-            <div className="caesar-pacman-word-card">
-              <div className="caesar-pacman-word-top-row">
-                {isVigenere ? (
-                  <>
-                    <span className="caesar-pacman-shift-label">Keyword:</span>
-                    <span className="caesar-pacman-shift-badge" style={{ letterSpacing: '2px' }}>{levelData.targetKey}</span>
-                    {activeSolvingItem && (
-                      <span style={{ fontSize: '0.74rem', color: '#94a3b8', marginLeft: '6px' }}>
-                        Solving: <strong style={{ color: 'var(--neon-yellow)' }}>{activeSolvingItem.cipherChar}</strong> (Shift +{activeSolvingItem.shiftVal} by '{activeSolvingItem.keyChar}')
-                      </span>
-                    )}
-                  </>
-                ) : isPlayfair ? (
-                  <>
-                    <span className="caesar-pacman-shift-label">Key:</span>
-                    <span className="caesar-pacman-shift-badge" style={{ letterSpacing: '1px', color: 'var(--neon-yellow)' }}>{levelData.key}</span>
-                    {cipherPair && (
-                      <span style={{ fontSize: '0.74rem', color: '#94a3b8', marginLeft: '6px' }}>
-                        Target: <strong style={{ color: 'var(--neon-yellow)' }}>{cipherPair}</strong>
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <span className="caesar-pacman-shift-label">Active Shift:</span>
-                    <span className="caesar-pacman-shift-badge">+{targetShift}</span>
-                  </>
+            {isVigenere ? (
+              <div className="vg-cipher-main-row">
+                {/* Keyword Badge beside cipher letters */}
+                <div className="vg-cipher-key-pill" title={`Repeating Keyword: ${levelData.targetKey}`}>
+                  <span className="vg-pill-lbl">KEYWORD</span>
+                  <span className="vg-pill-val">{levelData.targetKey}</span>
+                </div>
+
+                <div className="fg-word-segments-row">
+                  <div className="fg-word-segment-card">
+                    <div className="fg-letter-cells">
+                      {(levelData.plaintext || '').split('').map((char, idx) => {
+                        const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
+                        const isGhostIndex = !mask;
+                        const isEaten = eatenGhosts.includes(idx);
+                        const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
+                        const isActive = idx === activeSolvingIndex;
+
+                        let cellClass = "fg-letter-cell";
+                        if (mask) {
+                          cellClass += " correct-plain";
+                        } else if (isGhostIndex) {
+                          cellClass += isEaten ? " correct-plain" : (isActive ? " active-slot masked" : " masked");
+                        }
+
+                        return (
+                          <div key={idx} className={cellClass}>
+                            <span className="fg-cell-ciphertext">{levelData.ciphertext ? levelData.ciphertext[idx] : ''}</span>
+                            <span className="fg-cell-plaintext">{displayChar}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {activeSolvingItem && (
+                  <div className="vg-cipher-solving-pill" title={`Active Target: Position #${activeSolvingIndex + 1}`}>
+                    <span className="vg-pill-lbl">SOLVING</span>
+                    <span className="vg-pill-pos">Pos #{activeSolvingIndex + 1}</span>
+                    <span className="vg-pill-keychar">(Key '{activeSolvingItem.keyChar}')</span>
+                  </div>
                 )}
               </div>
-
-              {isPlayfair ? (
-                <div className="pf-pair-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', margin: '4px 0' }}>
-                  {(levelData.pairs || []).map((plainPair, idx) => {
-                    const cPair = levelData.cipherPairs ? levelData.cipherPairs[idx] : '';
-                    const isSolved = eatenGhosts.includes(idx);
-                    const isActive = activeIndex === idx;
-
-                    return (
-                      <div
-                        key={idx}
-                        className={`pf-pair-card playfair-digraph-cell ${isSolved ? 'solved' : ''} ${isActive ? 'active' : ''}`}
-                        style={{
-                          minWidth: '64px',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
-                          borderRadius: '8px',
-                          background: 'rgba(255, 255, 255, 0.04)',
-                          color: 'var(--text-primary)',
-                          padding: '4px 8px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '2px',
-                          fontFamily: 'JetBrains Mono, monospace'
-                        }}
-                      >
-                        <span className="pf-cipher" style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{cPair}</span>
-                        <span className="pf-arrow" style={{ color: 'rgba(255, 255, 255, 0.26)', fontSize: '0.6rem' }}>↓</span>
-                        <strong style={{ color: isSolved ? 'var(--neon-green)' : 'var(--neon-yellow)', fontSize: '0.95rem' }}>
-                          {isSolved ? plainPair : '__'}
-                        </strong>
-                      </div>
-                    );
-                  })}
+            ) : (
+              <div className="caesar-pacman-word-card">
+                <div className="caesar-pacman-word-top-row">
+                  {isPlayfair ? (
+                    <>
+                      <span className="caesar-pacman-shift-label">Key:</span>
+                      <span className="caesar-pacman-shift-badge" style={{ letterSpacing: '1px', color: 'var(--neon-yellow)' }}>{levelData.key}</span>
+                      {cipherPair && (
+                        <span style={{ fontSize: '0.74rem', color: '#94a3b8', marginLeft: '6px' }}>
+                          Target: <strong style={{ color: 'var(--neon-yellow)' }}>{cipherPair}</strong>
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <span className="caesar-pacman-shift-label">Active Shift:</span>
+                      <span className="caesar-pacman-shift-badge">+{targetShift}</span>
+                    </>
+                  )}
                 </div>
-              ) : (
-                <div className="fg-letter-cells">
-                  {(levelData.plaintext || '').split('').map((char, idx) => {
-                    const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
-                    const isGhostIndex = !mask;
-                    const isEaten = eatenGhosts.includes(idx);
-                    const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
-                    const isActive = isVigenere && idx === activeSolvingIndex;
 
-                    let cellClass = "fg-letter-cell";
-                    if (mask) {
-                      cellClass += " correct-plain";
-                    } else if (isGhostIndex) {
-                      cellClass += isEaten ? " correct-plain" : (isActive ? " active-slot masked" : " masked");
-                    }
+                {isPlayfair ? (
+                  <div className="pf-pair-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', margin: '4px 0' }}>
+                    {(levelData.pairs || []).map((plainPair, idx) => {
+                      const cPair = levelData.cipherPairs ? levelData.cipherPairs[idx] : '';
+                      const isSolved = eatenGhosts.includes(idx);
+                      const isActive = activeIndex === idx;
 
-                    return (
-                      <div key={idx} className={cellClass}>
-                        <span className="fg-cell-ciphertext">{levelData.ciphertext ? levelData.ciphertext[idx] : ''}</span>
-                        <span className="fg-cell-plaintext">{displayChar}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                      return (
+                        <div
+                          key={idx}
+                          className={`pf-pair-card playfair-digraph-cell ${isSolved ? 'solved' : ''} ${isActive ? 'active' : ''}`}
+                          style={{
+                            minWidth: '64px',
+                            border: '1px solid rgba(255, 255, 255, 0.12)',
+                            borderRadius: '8px',
+                            background: 'rgba(255, 255, 255, 0.04)',
+                            color: 'var(--text-primary)',
+                            padding: '4px 8px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '2px',
+                            fontFamily: 'JetBrains Mono, monospace'
+                          }}
+                        >
+                          <span className="pf-cipher" style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{cPair}</span>
+                          <span className="pf-arrow" style={{ color: 'rgba(255, 255, 255, 0.26)', fontSize: '0.6rem' }}>↓</span>
+                          <strong style={{ color: isSolved ? 'var(--neon-green)' : 'var(--neon-yellow)', fontSize: '0.95rem' }}>
+                            {isSolved ? plainPair : '__'}
+                          </strong>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="fg-letter-cells">
+                    {(levelData.plaintext || '').split('').map((char, idx) => {
+                      const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
+                      const isGhostIndex = !mask;
+                      const isEaten = eatenGhosts.includes(idx);
+                      const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
+
+                      let cellClass = "fg-letter-cell";
+                      if (mask) {
+                        cellClass += " correct-plain";
+                      } else if (isGhostIndex) {
+                        cellClass += isEaten ? " correct-plain" : " masked";
+                      }
+
+                      return (
+                        <div key={idx} className={cellClass}>
+                          <span className="fg-cell-ciphertext">{levelData.ciphertext ? levelData.ciphertext[idx] : ''}</span>
+                          <span className="fg-cell-plaintext">{displayChar}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="caesar-pacman-clue-banner">
               💡 {isVigenere && levelData.keyClue ? (
                 <>Keyword Clue: <strong>"{levelData.keyClue}"</strong></>
@@ -1402,11 +1437,16 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 </button>
               </div>
 
+              <div className="vg-formula-prominent">
+                Formula: <strong>Plain = (Cipher − Key + 26) mod 26</strong>
+              </div>
+
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <div className="vg-alignment-labels">
                   <div>CIPHER</div>
                   <div>KEY</div>
                   <div>SHIFT</div>
+                  <div>PLAIN</div>
                 </div>
                 <div className="vg-alignment-container">
                   {vigenereAlignmentItems.map((item) => {
@@ -1427,6 +1467,19 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                           {item.keyChar}
                         </span>
                         <span className="vg-align-shift">+{item.shiftVal}</span>
+                        <span
+                          className="vg-align-plain"
+                          style={{
+                            color: item.isSolved
+                              ? 'var(--neon-green)'
+                              : item.isActive
+                              ? 'var(--neon-yellow)'
+                              : '#64748b',
+                            fontWeight: 'bold',
+                          }}
+                        >
+                          {item.isSolved ? item.plainChar : (item.isActive ? '?' : '_')}
+                        </span>
                       </div>
                     );
                   })}
@@ -1444,9 +1497,19 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     <span style={{ color: 'var(--neon-green)' }}>All Targets Decrypted!</span>
                   )}
                 </div>
-                <p style={{ margin: 0, fontSize: '0.68rem', color: '#cbd5e1', lineHeight: '1.3' }}>
-                  Eat yellow pellet & press <b style={{ color: '#fff' }}>SPACE</b> to freeze ghosts. Eat the ghost matching the plaintext letter!
-                </p>
+                {activeSolvingItem ? (
+                  <div style={{ fontSize: '0.72rem', color: '#cbd5e1', lineHeight: '1.3' }}>
+                    Cipher <strong>'{activeSolvingItem.cipherChar}'</strong> ({charToIdx(activeSolvingItem.cipherChar)}) − Key <strong>'{activeSolvingItem.keyChar}'</strong> ({activeSolvingItem.shiftVal}) = Eat Ghost <strong>'{activeSolvingItem.plainChar}'</strong>
+                  </div>
+                ) : (
+                  <p style={{ margin: 0, fontSize: '0.68rem', color: '#cbd5e1', lineHeight: '1.3' }}>
+                    All positions solved!
+                  </p>
+                )}
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Freeze: Yellow Pellet + <b style={{ color: '#fff' }}>SPACE</b></span>
+                  <span>Move: <b style={{ color: '#fff' }}>WASD / Arrow Keys</b></span>
+                </div>
               </div>
             </div>
           ) : (
@@ -1476,33 +1539,128 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             </div>
           )}
 
-          {/* 4. Bottom-Center Floating Key Clue */}
-          <div className="caesar-floating-basket-card caesar-pacman-clue-card">
-            <div className="caesar-basket-icon">🔑</div>
-            {isVigenere ? (
-              <>
-                <div className="caesar-basket-badge" style={{ fontSize: '1.2rem', letterSpacing: '1px' }}>
-                  {levelData.targetKey}
+          {/* 4. Bottom-Center Floating Key Clue (Caesar & Playfair only) */}
+          {!isVigenere && (
+            <div className="caesar-floating-basket-card caesar-pacman-clue-card">
+              <div className="caesar-basket-icon">🔑</div>
+              {isPlayfair ? (
+                <>
+                  <div className="caesar-basket-badge" style={{ fontSize: '1.1rem', letterSpacing: '1px', color: 'var(--neon-yellow)' }}>
+                    {levelData.key}
+                  </div>
+                  <span className="caesar-basket-label">Playfair Key Clue</span>
+                </>
+              ) : (
+                <>
+                  <div className="caesar-basket-badge">+{targetShift}</div>
+                  <span className="caesar-basket-label">Caesar Shift Key Clue</span>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* 4b. Bottom-Right Vigenère A-Z Reference Panel */}
+          {isVigenere && (
+            <div className="vg-floating-key-panel vg-fishing-az-panel vg-pacman-az-panel">
+              <div className="vg-floating-current-slot">
+                <div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    A–Z Value Reference
+                  </div>
+                  <div style={{ fontSize: '0.84rem', color: '#fff', fontWeight: 700 }}>
+                    Decryption Arithmetic
+                  </div>
                 </div>
-                <span className="caesar-basket-label">{levelData.keyClue || "Vigenère Key Clue"}</span>
-              </>
-            ) : isPlayfair ? (
-              <>
-                <div className="caesar-basket-badge" style={{ fontSize: '1.1rem', letterSpacing: '1px', color: 'var(--neon-yellow)' }}>
-                  {levelData.key}
+                <div className="vg-slot-badge-lg" style={{ fontSize: '0.9rem', padding: '2px 10px' }}>
+                  {vigenereAlignmentItems.filter(item => !item.isSpace && item.isSolved).length}/{vigenereAlignmentItems.filter(item => !item.isSpace).length} Solved
                 </div>
-                <span className="caesar-basket-label">Playfair Key Clue</span>
-              </>
-            ) : (
-              <>
-                <div className="caesar-basket-badge">+{targetShift}</div>
-                <span className="caesar-basket-label">Caesar Shift Key Clue</span>
-              </>
-            )}
-          </div>
+              </div>
+
+              {/* Active calculation card */}
+              {activeSolvingItem ? (
+                <div className="vg-fishing-calc-card">
+                  <div className="vg-calc-top-row">
+                    <span className="vg-calc-label">Active Letter Decryption:</span>
+                    <span className="vg-calc-badge">Pos #{activeSolvingItem.index + 1}</span>
+                  </div>
+                  <div className="vg-calc-formula-row">
+                    <div className="vg-calc-item cipher">
+                      <span className="lbl">Cipher</span>
+                      <strong>{activeSolvingItem.cipherChar}</strong>
+                      <span className="val">{charToIdx(activeSolvingItem.cipherChar)}</span>
+                    </div>
+                    <span className="vg-calc-op">−</span>
+                    <div className="vg-calc-item key">
+                      <span className="lbl">Key</span>
+                      <strong>{activeSolvingItem.keyChar}</strong>
+                      <span className="val">{activeSolvingItem.shiftVal}</span>
+                    </div>
+                    <span className="vg-calc-op">=</span>
+                    <div className="vg-calc-item plain">
+                      <span className="lbl">Ghost</span>
+                      <strong style={{ color: 'var(--neon-green)' }}>
+                        {activeSolvingItem.plainChar}
+                      </strong>
+                      <span className="val">
+                        {(charToIdx(activeSolvingItem.cipherChar) - activeSolvingItem.shiftVal + 26) % 26}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="vg-fishing-calc-card" style={{ textAlign: 'center', padding: '8px' }}>
+                  <span style={{ color: 'var(--neon-green)', fontWeight: 700, fontSize: '0.85rem' }}>
+                    ✨ All Plaintext Letters Decrypted!
+                  </span>
+                </div>
+              )}
+
+              {/* 2-row x 13-col Alphabet grid */}
+              <div className="vg-sprint-alphabet-grid" style={{ marginTop: '2px' }}>
+                <div className="vg-alphabet-row">
+                  {alphabet.slice(0, 13).map((ch, i) => {
+                    const isCipher = activeSolvingItem && ch === activeSolvingItem.cipherChar;
+                    const isKey = activeSolvingItem && ch === activeSolvingItem.keyChar;
+                    let cellClass = "vg-alphabet-cell";
+                    if (isCipher) cellClass += " is-cipher";
+                    if (isKey) cellClass += " is-key";
+                    return (
+                      <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
+                        <span className="vg-alpha-char">{ch}</span>
+                        <span className="vg-alpha-val">{i}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="vg-alphabet-row">
+                  {alphabet.slice(13, 26).map((ch, i) => {
+                    const val = i + 13;
+                    const isCipher = activeSolvingItem && ch === activeSolvingItem.cipherChar;
+                    const isKey = activeSolvingItem && ch === activeSolvingItem.keyChar;
+                    let cellClass = "vg-alphabet-cell";
+                    if (isCipher) cellClass += " is-cipher";
+                    if (isKey) cellClass += " is-key";
+                    return (
+                      <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
+                        <span className="vg-alpha-char">{ch}</span>
+                        <span className="vg-alpha-val">{val}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-muted)', paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <span>Lives Remaining:</span>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', color: lives <= 2 ? '#f87171' : 'var(--neon-green)', fontWeight: 'bold' }}>
+                  {'❤️'.repeat(Math.max(0, lives))} ({lives}/5)
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* 5. Bottom-Right Floating Skill Freeze Charge */}
-          <div className={`skill-charge-card caesar-pacman-skill-card ${hasSkillCharge ? 'charged' : ''} ${skillActive ? 'active' : ''}`}>
+          <div className={`skill-charge-card caesar-pacman-skill-card ${isVigenere ? 'vg-pacman-skill-card' : ''} ${hasSkillCharge ? 'charged' : ''} ${skillActive ? 'active' : ''}`}>
             <div className="skill-charge-title">Skill Freeze Charge</div>
             <div className="skill-pellet-icon-wrapper">
               <span className="material-symbols-outlined skill-bolt">flash_on</span>
@@ -1577,7 +1735,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                         </tr>
                       </thead>
                       <tbody>
-                        {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((kChar, rIdx) => {
+                        {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((kChar) => {
                           const isCorrectKey = levelData.targetKey ? levelData.targetKey.includes(kChar) : false;
                           const rowLetters = tabulaRow(kChar);
                           return (
