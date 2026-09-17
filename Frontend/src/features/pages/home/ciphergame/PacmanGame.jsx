@@ -10,6 +10,7 @@ import {
   pathVariant,
   facingFromDir
 } from './pacmanWorld';
+import { pacmanSound } from './pacmanSound';
 
 const MAZE_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -257,6 +258,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const [explanationStep, setExplanationStep] = useState(-1);
   const [showTabula, setShowTabula] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   const [pacman, setPacman] = useState(initialPacman);
   const [pacmanDir, setPacmanDir] = useState('NONE');
@@ -316,6 +318,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         clearTimeout(knightAttackTimerRef.current);
         knightAttackTimerRef.current = null;
       }
+      pacmanSound.stopBgm();
     };
   }, []);
 
@@ -348,7 +351,22 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setExplanationStep(-1);
     setIsMenuOpen(false);
     autoRecapShownRef.current = false;
+    pacmanSound.pauseBgm();
   }, [levelData]);
+
+  // Handle BGM lifecycle
+  useEffect(() => {
+    if (phase === 'playing' && !isMenuOpen && !gameOver && !levelSolved && !showExplanation) {
+      pacmanSound.playBgm();
+    } else {
+      pacmanSound.pauseBgm();
+    }
+  }, [phase, isMenuOpen, gameOver, levelSolved, showExplanation]);
+
+  const toggleSound = () => {
+    const muted = pacmanSound.toggleMute();
+    setIsMuted(muted);
+  };
 
   const gameLoopRef = useRef(null);
 
@@ -357,6 +375,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
   const handleLoseHeart = (message) => {
     if (isInvulnerableRef.current) return;
+    pacmanSound.playSfx('hit');
 
     setIsInvulnerable(true);
     isInvulnerableRef.current = true;
@@ -372,6 +391,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       const nextLives = prev - 1;
       if (nextLives <= 0) {
         setGameOver(true);
+        pacmanSound.stopBgm();
+        pacmanSound.playSfx('lose');
       }
       return nextLives;
     });
@@ -379,6 +400,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
   // Steering control to set buffer direction only
   const triggerSteer = (dirName) => {
+    pacmanSound.unlockAudio();
     if (gameOver || levelSolved) return;
     setBufferedDir(dirName);
   };
@@ -386,6 +408,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   // Key hooks
   useEffect(() => {
     const handleKeyDown = (e) => {
+      pacmanSound.unlockAudio();
       if (['ArrowUp', 'KeyW'].includes(e.code)) {
         e.preventDefault();
         triggerSteer('UP');
@@ -412,6 +435,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setSkillActive(true);
     setHasSkillCharge(false);
     setSkillTimeLeft(6);
+    pacmanSound.playSfx('powerup');
   };
 
   useEffect(() => {
@@ -481,8 +505,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           if (!pellet.eaten && pellet.row === pRow && pellet.col === pCol) {
             if (pellet.isSkill) {
               setHasSkillCharge(true);
+              pacmanSound.playSfx('powerup');
             } else {
               setRuleViolation(null);
+              pacmanSound.playSfx('gold');
             }
             return { ...pellet, eaten: true };
           }
@@ -596,9 +622,13 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
                   if (nextEaten.length === totalTargets) {
                     setLevelSolved(true);
+                    pacmanSound.stopBgm();
+                    pacmanSound.playSfx('win');
                     if (!isVigenere && !isPlayfair && !autoRecapShownRef.current) {
                       beginExplanation();
                     }
+                  } else {
+                    pacmanSound.playSfx('powerup');
                   }
                   return nextEaten;
                 });
@@ -742,6 +772,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   }, [gameOver, levelSolved, isMenuOpen, phase]);
 
   const handleResetGame = () => {
+    pacmanSound.stopBgm();
     setPacman(initialPacman);
     setPacmanDir('NONE');
     setBufferedDir('NONE');
@@ -765,6 +796,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     if (knightAttackTimerRef.current) {
       clearTimeout(knightAttackTimerRef.current);
       knightAttackTimerRef.current = null;
+    }
+    if (phase === 'playing') {
+      pacmanSound.playBgm();
     }
   };
 
@@ -796,6 +830,30 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
   const words = (levelData.plaintext || '').split(/\s+/).filter(Boolean);
 
+  const soundToggleButton = (
+    <button
+      className="fg-btn-icon"
+      onClick={toggleSound}
+      title={isMuted ? "Unmute Sound" : "Mute Sound"}
+      style={{
+        background: 'rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.2)',
+        borderRadius: '8px',
+        color: isMuted ? '#f87171' : 'var(--neon-cyan)',
+        cursor: 'pointer',
+        padding: '6px 10px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px',
+        fontSize: '0.85rem'
+      }}
+    >
+      <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>
+        {isMuted ? 'volume_off' : 'volume_up'}
+      </span>
+    </button>
+  );
+
   if (phase === 'ready') return (
     <div className="pacman-container fg-root">
       <GameHudBar
@@ -804,6 +862,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         tier={tier}
         isReady={true}
         onBackToStages={onBackToStages}
+        customRightContent={soundToggleButton}
       />
       <div className="cq-brief-screen">
         <div className="cq-brief-card">
@@ -838,7 +897,16 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             <strong>How it works:</strong>{' '}
             Eat a yellow Skill Pellet, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct plaintext letter!
           </p>
-          <button className="cq-brief-start-btn" onClick={() => setPhase('playing')}>Start Pac-Man</button>
+          <button
+            className="cq-brief-start-btn"
+            onClick={() => {
+              pacmanSound.unlockAudio();
+              pacmanSound.playBgm();
+              setPhase('playing');
+            }}
+          >
+            Start Pac-Man
+          </button>
         </div>
       </div>
     </div>
@@ -1052,6 +1120,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         isReady={false}
         onOpenMenu={() => setIsMenuOpen(true)}
         lives={lives}
+        customRightContent={soundToggleButton}
       />
 
       <div className="pacman-layout">

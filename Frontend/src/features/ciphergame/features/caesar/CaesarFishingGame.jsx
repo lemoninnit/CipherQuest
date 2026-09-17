@@ -4,6 +4,7 @@ import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import PauseMenu from '../../ui/PauseMenu';
 import { facingTransform, makeSwimProps, tickFish, visualsForValue } from '../../core/engine/fishPhysics';
+import { fishingSound } from '../../core/engine/fishingSound';
 
 /* ─── Caesar math ─── */
 const caesarShiftChar = (char, shift) => {
@@ -52,7 +53,56 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const [explanationStep, setExplanationStep] = useState(-1);
   const [chumCount, setChumCount]             = useState(3);
   const [isMenuOpen, setIsMenuOpen]           = useState(false);
+  const [rodFacingRight, setRodFacingRight]   = useState(false);
+  const [isMuted, setIsMuted]                 = useState(false);
   const animationRef = useRef(null);
+  const resumeBtnRef = useRef(null);
+  const wasMenuOpenRef = useRef(false);
+  const swimLaneRef = useRef(null);        // the swim-lane container div
+  const containerHeightRef = useRef(500); // last measured swim-lane height (px)
+  const rodSpriteRef = useRef(null);      // the rod sprite div
+  // Computed SVG-unit position of the rod tip (recalculated before every cast)
+  const rodTipRef = useRef({ x: 110, y: 55 });
+
+  useEffect(() => {
+    return () => {
+      fishingSound.stopBgm();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'playing' && !isMenuOpen && !showExplanation) {
+      fishingSound.playBgm();
+    } else {
+      fishingSound.pauseBgm();
+    }
+  }, [phase, isMenuOpen, showExplanation]);
+
+  const toggleSound = () => {
+    const muted = fishingSound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const soundToggleButton = (
+    <button
+      className="fg-btn-icon"
+      onClick={toggleSound}
+      title={isMuted ? "Unmute Sound" : "Mute Sound"}
+      style={{
+        background: 'rgba(255, 255, 255, 0.08)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: '8px',
+        color: '#fff',
+        padding: '4px 8px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        fontSize: '1rem'
+      }}
+    >
+      {isMuted ? '🔇' : '🔊'}
+    </button>
+  );
 
   /* ── ESC key to toggle pause menu ── */
   useEffect(() => {
@@ -76,6 +126,8 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
   /* ── start game ── */
   const startGame = () => {
+    fishingSound.unlockAudio();
+    fishingSound.playBgm();
     setActiveShifts(cipherSegs.map((_, idx) => getInitialShift(idx)));
     setTargetSegIdx(0);
     setAttemptsLeft(15);
@@ -96,7 +148,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   /* ── detect solve ── */
   useEffect(() => {
     if (phase !== 'playing') return;
-    if (allCorrect && !levelSolved) setLevelSolved(true);
+    if (allCorrect && !levelSolved) {
+      setLevelSolved(true);
+      fishingSound.stopBgm();
+      fishingSound.playSfx('win');
+    }
     if (!allCorrect && levelSolved) setLevelSolved(false);
   }, [activeShifts, allCorrect]);
 
@@ -197,6 +253,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
   const handleChumWaters = () => {
     if (chumCount <= 0 || isCasting) return;
+    fishingSound.playSfx('chum');
     setChumCount(prev => prev - 1);
     spawnFish();
     setSplash({ show: true, x: 50, y: 120 });
@@ -205,11 +262,43 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
   const castLineToFish = (fish) => {
     if (isCasting || levelSolved) return;
+    fishingSound.unlockAudio();
+    fishingSound.playSfx('cast');
     setIsCasting(true);
     setCaughtFish(fish);
+    // Remove from the swim list immediately so the fish doesn't appear in two places
+    setFishList(prev => prev.filter(f => f.id !== fish.id));
+    // x: fish.x is a % → map to SVG viewBox width (500)
     const tx = (fish.x / 100) * 500;
-    const ty = fish.y;
+    // y: fish.y is DOM px → must convert to SVG viewBox height (260)
+    const containerHeight = swimLaneRef.current?.offsetHeight || 500;
+    containerHeightRef.current = containerHeight;
+    const ty = (fish.y / containerHeight) * 260;
     setCastTarget({ x: tx, y: ty });
+    // --- Determine facing direction & compute SVG tip coords ---
+    const facingRight = tx > 250;
+    setRodFacingRight(facingRight);
+    /*
+     * Sprite dimensions (must match CSS):
+     *   SPRITE = 500px, handle at 88% → 440px from left,  tip at 12% → 60px.
+     * For left-facing:  element left = 50% - 440, visual tip x = 50% - 440 + 60 = 50% - 380
+     * For right-facing: element left = 50% - 60,  visual tip x = 50% - 60  + 440 = 50% + 380
+     * Either way:  tipDomX = laneW/2 ± 380
+     * tipDomY = laneH - 440  (sprite height 500, tip at 12% from top = 60px → bottom-60px)
+     */
+    {
+      const SPRITE = 500;
+      const HANDLE = SPRITE * 0.88; // 440
+      const TIP    = SPRITE * 0.12; // 60
+      const laneW  = swimLaneRef.current?.offsetWidth || 1024;
+      const laneH  = containerHeight;
+      const tipDomX = laneW / 2 + (facingRight ? (HANDLE - TIP) : -(HANDLE - TIP));
+      const tipDomY = laneH - HANDLE; // sprite bottom = laneH, tip 12% from top = laneH - HANDLE
+      rodTipRef.current = {
+        x: (tipDomX / laneW) * 500,
+        y: (tipDomY / laneH) * 260,
+      };
+    }
 
     let startTime = null;
     const castOut = (ts) => {
@@ -220,7 +309,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
       setSplash({ show: true, x: fish.x, y: fish.y });
       setTimeout(() => setSplash({ show: false, x: 0, y: 0 }), 500);
-      setFishList(prev => prev.filter(f => f.id !== fish.id));
+      // Fish is already removed from fishList — no second filter needed
 
       setTimeout(() => {
         let rs = null;
@@ -232,13 +321,20 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
           setIsCasting(false);
           setCaughtFish(null);
+          fishingSound.playSfx('catch');
           setActiveShifts(prev => {
             const nextShift = applyShiftDelta(prev[0] ?? getInitialShift(0), fish.value);
             return cipherSegs.map(() => nextShift);
           });
           setBasketShake(true);
           setTimeout(() => setBasketShake(false), 400);
-          setAttemptsLeft(prev => Math.max(0, prev - 1));
+          setAttemptsLeft(prev => {
+            const next = Math.max(0, prev - 1);
+            if (next <= 0 && !allCorrect) {
+              fishingSound.playSfx('lose');
+            }
+            return next;
+          });
           
           setTimeout(() => {
             setFishList(prev => {
@@ -294,18 +390,15 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     onVerifySubmit();
   };
 
-  /* ── rod SVG coords ── */
-  const rodBaseX = 250, rodBaseY = 260;
-  let rodTipX = 220, rodTipY = 190;
+  /* ── rod SVG coords ──
+   * rodTipX/Y is computed once per cast from the actual sprite DOM position
+   * so the SVG line origin is always pixel-aligned with the sprite tip. */
+  const rodTipX = rodTipRef.current.x;
+  const rodTipY = rodTipRef.current.y;
   let hookX = rodTipX, hookY = rodTipY;
-  if (isCasting && castTarget) {
-    const dx = castTarget.x - rodBaseX, dy = castTarget.y - rodBaseY;
-    const len = Math.sqrt(dx * dx + dy * dy);
-    if (len > 0) { rodTipX = rodBaseX + (dx / len) * 50; rodTipY = rodBaseY + (dy / len) * 50; }
-    if (castProgress <= 1 && caughtFish) {
-      hookX = rodTipX + (castTarget.x - rodTipX) * castProgress;
-      hookY = rodTipY + (castTarget.y - rodTipY) * castProgress;
-    }
+  if (isCasting && caughtFish && castTarget) {
+    hookX = rodTipX + (castTarget.x - rodTipX) * castProgress;
+    hookY = rodTipY + (castTarget.y - rodTipY) * castProgress;
   }
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -353,6 +446,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           tier={tier}
           isReady={true}
           onBackToStages={onBackToStages}
+          customRightContent={soundToggleButton}
         />
         <div className="cq-brief-screen">
           <img
@@ -395,7 +489,14 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                 When the decrypted text matches the plaintext, submit! Formula:{' '}
                 <code>Plain = (Cipher + Basket Shift) mod 26</code>
               </p>
-              <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
+              <button
+                className="cq-dossier-action-btn"
+                onClick={() => {
+                  fishingSound.unlockAudio();
+                  fishingSound.playBgm();
+                  setIsOperationLoading(true);
+                }}
+              >
                 Begin operation
               </button>
             </div>
@@ -513,6 +614,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         isReady={false}
         onOpenMenu={() => setIsMenuOpen(true)}
         attempts={attemptsLeft}
+        customRightContent={soundToggleButton}
       />
 
       <div className="caesar-fullscreen-stage">
@@ -532,7 +634,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         ))}
 
         {/* Fish Swim Lane & Rod */}
-        <div className="caesar-fish-swim-lane">
+        <div className="caesar-fish-swim-lane" ref={swimLaneRef}>
           {fishList.map(f => {
             const badgeText = f.value > 0 ? `+${f.value}` : `${f.value}`;
             const badgeClass = `fg-fish-badge ${f.value > 0 ? 'positive' : 'negative'}`;
@@ -558,8 +660,14 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               </div>
             );
           })}
-          {isCasting && caughtFish && castProgress < 1 && (
-            <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
+          {isCasting && caughtFish && (
+            <div className="fg-fish-entity" style={{
+              left: `${(hookX / 500) * 100}%`,
+              // Convert SVG y back to DOM px so the fish tracks the line endpoint
+              top: `${(hookY / 260) * containerHeightRef.current - 20}px`,
+              transform: 'scale(1.2)',
+              pointerEvents: 'none',
+            }}>
               <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
                 <img
                   className="fg-fish-sprite-img"
@@ -570,8 +678,12 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               </div>
             </div>
           )}
+          {/* Fishing rod sprite — flips toward the clicked fish */}
+          <div
+            className={`caesar-fishing-rod-sprite${rodFacingRight ? ' facing-right' : ''}`}
+            aria-hidden="true"
+          />
           <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">
-            <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
             {isCasting && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />}
           </svg>
           {splash.show && (

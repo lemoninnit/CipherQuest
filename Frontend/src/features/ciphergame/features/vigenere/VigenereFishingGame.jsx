@@ -4,6 +4,7 @@ import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import PauseMenu from '../../ui/PauseMenu';
 import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
+import { fishingSound } from '../../core/engine/fishingSound';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -100,7 +101,54 @@ export default function VigenereFishingGame({
   const [chumCount, setChumCount] = useState(3);
   const [hoveredFish, setHoveredFish] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMuted, setIsMuted]       = useState(false);
   const animationRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      fishingSound.stopBgm();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'playing' && !isMenuOpen && !showExplanation) {
+      fishingSound.playBgm();
+    } else {
+      fishingSound.pauseBgm();
+    }
+  }, [phase, isMenuOpen, showExplanation]);
+
+  const toggleSound = () => {
+    const muted = fishingSound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const soundToggleButton = (
+    <button
+      className="fg-btn-icon"
+      onClick={toggleSound}
+      title={isMuted ? "Unmute Sound" : "Mute Sound"}
+      style={{
+        background: 'rgba(255, 255, 255, 0.08)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: '8px',
+        color: '#fff',
+        padding: '4px 8px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        fontSize: '1rem'
+      }}
+    >
+      {isMuted ? '🔇' : '🔊'}
+    </button>
+  );
+
+  const activePreviewShifts = hoveredFish
+    ? activeShifts.map((shift, idx) =>
+        idx === activeSlot ? hoveredFish.value : shift
+      )
+    : activeShifts;
 
   /* ── ESC key to toggle pause menu ── */
   useEffect(() => {
@@ -252,6 +300,8 @@ export default function VigenereFishingGame({
   }, [getInitialRevealed, flatLetterPositions]);
 
   const startGame = () => {
+    fishingSound.unlockAudio();
+    fishingSound.playBgm();
     resetRound();
     setPhase('playing');
     spawnFish();
@@ -266,7 +316,11 @@ export default function VigenereFishingGame({
 
   useEffect(() => {
     if (phase !== 'playing') return;
-    if (allCorrect && !levelSolved) setLevelSolved(true);
+    if (allCorrect && !levelSolved) {
+      setLevelSolved(true);
+      fishingSound.stopBgm();
+      fishingSound.playSfx('win');
+    }
     if (!allCorrect && levelSolved) setLevelSolved(false);
   }, [phase, allCorrect, levelSolved]);
 
@@ -301,6 +355,7 @@ export default function VigenereFishingGame({
 
   const handleChumWaters = () => {
     if (chumCount <= 0 || isCasting) return;
+    fishingSound.playSfx('chum');
     setChumCount(prev => prev - 1);
     spawnFish();
     setSplash({ show: true, x: 50, y: 120 });
@@ -309,6 +364,8 @@ export default function VigenereFishingGame({
 
   const castLineToFish = (fish) => {
     if (isCasting || levelSolved) return;
+    fishingSound.unlockAudio();
+    fishingSound.playSfx('cast');
     setIsCasting(true);
     setCaughtFish(fish);
     setHoveredFish(null);
@@ -341,6 +398,7 @@ export default function VigenereFishingGame({
 
           setIsCasting(false);
           setCaughtFish(null);
+          fishingSound.playSfx('catch');
 
           const isCorrect = fish.letter === currentTargetPlain;
 
@@ -467,6 +525,7 @@ export default function VigenereFishingGame({
           tier={tier}
           isReady={true}
           onBackToStages={onBackToStages}
+          customRightContent={soundToggleButton}
         />
         <div className="cq-brief-screen">
           <img
@@ -517,7 +576,14 @@ export default function VigenereFishingGame({
                 <strong>How it works:</strong>{' '}
                 Look at the active blank position's cipher letter and matching key letter. Subtract the key letter's value from the cipher letter's value to find the plaintext letter, then catch that fish!
               </p>
-              <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
+              <button
+                className="cq-dossier-action-btn"
+                onClick={() => {
+                  fishingSound.unlockAudio();
+                  fishingSound.playBgm();
+                  setIsOperationLoading(true);
+                }}
+              >
                 Begin operation
               </button>
             </div>
@@ -609,6 +675,7 @@ export default function VigenereFishingGame({
         isReady={false}
         onOpenMenu={() => setIsMenuOpen(true)}
         attempts={attemptsLeft}
+        customRightContent={soundToggleButton}
       />
 
       <div className="caesar-fullscreen-stage">

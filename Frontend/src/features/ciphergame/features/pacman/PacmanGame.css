@@ -604,12 +604,12 @@
 }
 
 .knight-sheet {
-  width: 76px;
-  height: 76px;
-  margin-left: -38px;
-  margin-top: -48px;
+  width: 92px;
+  height: 92px;
+  margin-left: -46px;
+  margin-top: -58px;
   background-image: url('/assets/pacman/Knight/Warrior_Blue.png');
-  background-size: 456px 608px;
+  background-size: 552px 736px;
   filter: drop-shadow(0 3px 0 rgba(20, 16, 8, 0.45));
 }
 
@@ -631,48 +631,48 @@
 
 @keyframes knight-idle {
   from { background-position: 0 0; }
-  to { background-position: -456px 0; }
+  to { background-position: -552px 0; }
 }
 @keyframes knight-run {
-  from { background-position: 0 -76px; }
-  to { background-position: -456px -76px; }
+  from { background-position: 0 -92px; }
+  to { background-position: -552px -92px; }
 }
 @keyframes knight-attack {
-  from { background-position: 0 -152px; }
-  to { background-position: -456px -152px; }
+  from { background-position: 0 -184px; }
+  to { background-position: -552px -184px; }
 }
 @keyframes knight-idle-down {
-  from { background-position: 0 -228px; }
-  to { background-position: -456px -228px; }
+  from { background-position: 0 -276px; }
+  to { background-position: -552px -276px; }
 }
 @keyframes knight-run-down {
-  from { background-position: 0 -304px; }
-  to { background-position: -456px -304px; }
+  from { background-position: 0 -368px; }
+  to { background-position: -552px -368px; }
 }
 @keyframes knight-attack-down {
-  from { background-position: 0 -228px; }
-  to { background-position: -456px -228px; }
+  from { background-position: 0 -276px; }
+  to { background-position: -552px -276px; }
 }
 @keyframes knight-idle-up {
-  from { background-position: 0 -456px; }
-  to { background-position: -456px -456px; }
+  from { background-position: 0 -552px; }
+  to { background-position: -552px -552px; }
 }
 @keyframes knight-run-up {
-  from { background-position: 0 -532px; }
-  to { background-position: -456px -532px; }
+  from { background-position: 0 -644px; }
+  to { background-position: -552px -644px; }
 }
 @keyframes knight-attack-up {
-  from { background-position: 0 -304px; }
-  to { background-position: -456px -304px; }
+  from { background-position: 0 -368px; }
+  to { background-position: -552px -368px; }
 }
 
 .goblin-sheet {
-  width: 70px;
-  height: 70px;
-  margin-left: -35px;
-  margin-top: -44px;
+  width: 84px;
+  height: 84px;
+  margin-left: -42px;
+  margin-top: -52px;
   background-image: url('/assets/pacman/Enemy Goblins/Torch_Red.png');
-  background-size: 490px 350px;
+  background-size: 588px 420px;
   filter: drop-shadow(0 3px 0 rgba(20, 8, 8, 0.4));
 }
 
@@ -689,23 +689,23 @@
 
 @keyframes goblin-idle {
   from { background-position: 0 0; }
-  to { background-position: -490px 0; }
+  to { background-position: -588px 0; }
 }
 @keyframes goblin-run {
-  from { background-position: 0 -70px; }
-  to { background-position: -420px -70px; }
+  from { background-position: 0 -84px; }
+  to { background-position: -504px -84px; }
 }
 @keyframes goblin-attack {
-  from { background-position: 0 -140px; }
-  to { background-position: -420px -140px; }
+  from { background-position: 0 -168px; }
+  to { background-position: -504px -168px; }
 }
 @keyframes goblin-front {
-  from { background-position: 0 -210px; }
-  to { background-position: -420px -210px; }
+  from { background-position: 0 -252px; }
+  to { background-position: -504px -252px; }
 }
 @keyframes goblin-back {
-  from { background-position: 0 -280px; }
-  to { background-position: -420px -280px; }
+  from { background-position: 0 -336px; }
+  to { background-position: -504px -336px; }
 }
 
 .goblin-actor.vulnerable .goblin-sheet,
@@ -722,7 +722,7 @@
   border: 2px solid rgba(255, 236, 179, 0.95);
   color: #fff7d6;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1rem;
+  font-size: 1.15rem;
   font-weight: 800;
   padding: 2px 6px;
   min-width: 22px;
@@ -1106,5 +1106,34 @@
   background: rgba(0, 229, 255, 0.03) !important;
 }
 
+/* Floating Bottom-Left Tool Panels for Vigenère & Playfair in Fullscreen Stage */
+.vigenere-pacman-floating-card,
+.playfair-pacman-floating-card {
+  position: absolute;
+  bottom: 16px;
+  left: 24px;
+  z-index: 20;
+  background: rgba(3, 14, 28, 0.88);
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  border-radius: 16px;
+  padding: 10px 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  pointer-events: auto;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 250px;
+}
 
-
+@media (max-width: 1440px), (max-height: 850px) {
+  .vigenere-pacman-floating-card,
+  .playfair-pacman-floating-card {
+    bottom: 12px;
+    left: 18px;
+    padding: 8px 10px;
+    max-width: 220px;
+  }
+}
