@@ -1,10 +1,15 @@
 :root {
   --transition-fast: 150ms cubic-bezier(0.34, 1.56, 0.64, 1);
   --transition-smooth: 220ms cubic-bezier(0.4, 0, 0.2, 1);
-  /* Lane center positions — center of each 33.33% strip */
-  --lane-0-top: 16.67%;
-  --lane-1-top: 50%;
-  --lane-2-top: 83.33%;
+  
+  --sprint-top-clearance: 145px;
+  --sprint-bottom-clearance: 0px;
+  --sprint-lane-height: calc((100% - var(--sprint-top-clearance)) / 3);
+
+  /* Grounding positions — aligned with the paved stone walkway top surface of each platform */
+  --lane-0-top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 0.12);
+  --lane-1-top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 1.12);
+  --lane-2-top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 2.12);
   /* Lane boundary colors for visual separation */
   --lane-edge: rgba(56, 189, 248, 0.35);
   --lane-edge-glow: rgba(56, 189, 248, 0.18);
@@ -258,59 +263,37 @@
 }
 
 .sprint-bg-sky {
-  /* Use layer 5 (sky gradient) as base */
-  background-image: url('/assets/sprint/background/GandalfHardcore%20Background%20layers_layer%205.png');
-  background-size: cover;
-  background-position: center;
-  z-index: 1;
-}
-
-.sprint-bg-hills-far {
-  z-index: 2;
-  /* Layer 4 — distant blue mountains */
-  background-image: url('/assets/sprint/background/GandalfHardcore%20Background%20layers_layer%204.png');
-  background-size: 1024px auto;
-  background-position: 0 80%;
-  opacity: 0.7;
-  animation: parallaxHillsFar 60s linear infinite;
-}
-
-.sprint-bg-hills-near {
-  z-index: 3;
-  /* Layer 3 — dense treeline far */
-  background-image: url('/assets/sprint/background/GandalfHardcore%20Background%20layers_layer%203.png');
-  background-size: 1024px auto;
-  background-position: 0 85%;
-  opacity: 0.75;
-  animation: parallaxHillsNear 35s linear infinite;
-}
-
-.sprint-bg-ruins {
-  z-index: 4;
-  /* Layer 2 — closer tree silhouettes */
-  background-image: url('/assets/sprint/background/GandalfHardcore%20Background%20layers_layer%202.png');
-  background-size: 1024px auto;
-  background-position: 0 90%;
-  opacity: 0.6;
-  animation: parallaxRuins 20s linear infinite;
-}
-
-/* Layer 1 — closest tree foreground layer */
-.sprint-bg-trees-front {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  pointer-events: none;
+  height: var(--sprint-top-clearance);
+  bottom: auto;
+  background-image: url('/assets/sprint/background/sprint_bg.png');
+  background-size: auto 100%;
+  background-position: 0 0;
   background-repeat: repeat-x;
+  z-index: 2;
+  opacity: 1;
+  animation: parallaxSky 45s linear infinite;
   will-change: background-position;
-  z-index: 5;
-  background-image: url('/assets/sprint/background/GandalfHardcore%20Background%20layers_layer%201.png');
-  background-size: 1024px auto;
-  background-position: 0 95%;
-  opacity: 0.5;
-  animation: parallaxFront 12s linear infinite;
+}
+
+.sprint-bg-hills-far {
+  display: none;
+}
+
+.sprint-bg-hills-near {
+  display: none;
+}
+
+.sprint-bg-ruins {
+  display: none;
+}
+
+/* Layer 1 — closest tree foreground layer */
+.sprint-bg-trees-front {
+  display: none;
 }
 
 /* Dark top & bottom vignette to give depth and frame the lanes */
@@ -321,24 +304,21 @@
   z-index: 9;
   background:
     linear-gradient(180deg,
-      rgba(3,7,18,0.7) 0%,
-      rgba(3,7,18,0.1) 20%,
+      rgba(3,7,18,0.0) 0%,
       rgba(3,7,18,0.0) 45%,
       rgba(3,7,18,0.0) 55%,
       rgba(3,7,18,0.2) 80%,
-      rgba(3,7,18,0.6) 100%
+      rgba(3,7,18,0.5) 100%
     );
 }
 
 /* Boost mode — speed up parallax */
-.sprint-track-container.is-boosting .sprint-bg-hills-far { animation-duration: 15s; }
-.sprint-track-container.is-boosting .sprint-bg-hills-near { animation-duration: 9s; }
-.sprint-track-container.is-boosting .sprint-bg-ruins { animation-duration: 5s; }
-.sprint-track-container.is-boosting .sprint-bg-trees-front { animation-duration: 3s; }
+.sprint-track-container.is-boosting .sprint-bg-sky { animation-duration: 12s; }
 .sprint-track-container.is-boosting .sprint-lane-platform { animation-duration: 0.9s; }
 
 /* Paused mode — pause ALL animations inside track */
 .sprint-track-container.is-paused .sprint-parallax-layer,
+.sprint-track-container.is-paused .sprint-bg-sky,
 .sprint-track-container.is-paused .sprint-bg-trees-front,
 .sprint-track-container.is-paused .sprint-lane-platform,
 .sprint-track-container.is-paused .sprint-speed-line,
@@ -347,6 +327,11 @@
 .sprint-track-container.is-paused .sprint-slime-obstacle-sprite,
 .sprint-track-container.is-paused .gate-rune-glyph {
   animation-play-state: paused !important;
+}
+
+@keyframes parallaxSky {
+  from { background-position-x: 0px; }
+  to   { background-position-x: -480px; }
 }
 
 @keyframes parallaxHillsFar {
@@ -377,7 +362,7 @@
   position: absolute;
   left: 0;
   right: 0;
-  height: 33.33%;
+  height: var(--sprint-lane-height);
   display: flex;
   align-items: center;
   padding-left: 18px;
@@ -386,25 +371,18 @@
   transition: background-color 0.2s ease;
   overflow: hidden;
   contain: layout paint;
-  border-bottom: 1px solid rgba(56, 189, 248, 0.18);
-  box-shadow:
-    inset 0 1px 0 var(--lane-edge-glow),
-    inset 0 -1px 0 var(--lane-edge-glow);
+  border: none;
 }
-/* Lane background tinting for clarity */
+/* Lane position placement with top clearance */
 .sprint-lane.lane-0 {
-  top: 0;
-  background: linear-gradient(180deg, rgba(0, 229, 255, 0.06) 0%, rgba(0, 229, 255, 0.02) 100%);
-  border-top: 1px solid rgba(56, 189, 248, 0.22);
+  top: var(--sprint-top-clearance);
 }
 .sprint-lane.lane-1 {
-  top: 33.33%;
-  background: linear-gradient(180deg, rgba(139, 92, 246, 0.03) 0%, rgba(0, 0, 0, 0) 50%, rgba(139, 92, 246, 0.03) 100%);
+  top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height));
 }
 .sprint-lane.lane-2 {
-  top: 66.66%;
-  background: linear-gradient(180deg, rgba(0, 50, 30, 0.02) 0%, rgba(34, 197, 94, 0.05) 100%);
-  border-bottom: 1px solid rgba(34, 197, 94, 0.22);
+  top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 2);
+  bottom: 0;
 }
 
 .sprint-lane::before {
@@ -418,11 +396,9 @@
   border-left: 3px solid transparent;
   border-right: 3px solid transparent;
   transition: border-color 0.2s ease;
+  z-index: 5;
 }
 
-.sprint-lane.highlighted {
-  background: rgba(0, 229, 255, 0.09) !important;
-}
 .sprint-lane.highlighted::before {
   border-left-color: var(--lane-edge);
   border-right-color: var(--lane-edge);
@@ -433,41 +409,46 @@
 
 .sprint-lane-platform {
   position: absolute;
+  top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 34px;
-  /* Use actual ground.jpg tileset */
-  background-image: url('/assets/sprint/tileset/ground.jpg');
-  background-size: 256px auto;
+  height: 100%;
+  width: 100%;
+  background-size: 3102px 100%;
   background-repeat: repeat-x;
-  background-position: 0 center;
+  background-position: 0 0;
   border-radius: 0;
-  opacity: 0.92;
-  box-shadow:
-    0 -6px 20px rgba(0, 0, 0, 0.7),
-    0 0 12px rgba(0, 229, 255, 0.2),
-    inset 0 2px 0 rgba(255, 255, 255, 0.08);
-  border-top: 2px solid rgba(0, 229, 255, 0.35);
-  transition: all 0.2s ease;
-  animation: trackScroll 2.5s linear infinite;
+  opacity: 1;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+  animation: trackScroll 4.5s linear infinite;
   will-change: background-position;
+  z-index: 1;
+}
+
+.sprint-lane-platform.platform-upper {
+  background-image: url('/assets/sprint/tileset/platform_upper.png');
+}
+
+.sprint-lane-platform.platform-middle {
+  background-image: url('/assets/sprint/tileset/platform_middle.png');
+}
+
+.sprint-lane-platform.platform-bottom {
+  background-image: url('/assets/sprint/tileset/platform_bottom.png');
 }
 
 @keyframes trackScroll {
   from { background-position-x: 0px; }
-  to   { background-position-x: -2048px; }
+  to   { background-position-x: -3102px; }
 }
 
 .sprint-lane:hover .sprint-lane-platform {
-  opacity: 0.95;
-  filter: brightness(1.15);
+  filter: brightness(1.12);
 }
 
 .sprint-lane.highlighted .sprint-lane-platform {
-  opacity: 1;
-  box-shadow: 0 0 24px rgba(0, 229, 255, 0.45), inset 0 2px 8px rgba(0, 229, 255, 0.5);
-  border-top: 1px solid rgba(0, 229, 255, 0.5);
+  filter: brightness(1.2) drop-shadow(0 0 10px rgba(0, 229, 255, 0.4));
 }
 
 .sprint-lane-badge {
@@ -503,9 +484,9 @@
 .sprint-runner-sprite {
   position: absolute;
   left: 14%;
-  width: 96px;
-  height: 88px;
-  max-height: 30%;
+  width: 175px;
+  height: 155px;
+  max-height: 60%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -513,11 +494,11 @@
   pointer-events: none;
   /* Default: center of lane 1 */
   top: var(--lane-1-top);
-  transform: translateY(-50%);
+  transform: translateY(-84%);
   transition: top var(--transition-fast);
   will-change: top;
   /* Visual lane-constraint glow to show lane bounds */
-  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.15));
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.2));
 }
 
 /* Lane positions — simply move top to each lane's center */
@@ -535,7 +516,7 @@
   height: 84px;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  transform: scale(1.15);
+  transform: scale(2.35);
   transform-origin: center center;
   position: relative;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8));
@@ -635,8 +616,8 @@
 
 .target-gem-aura {
   position: absolute;
-  width: 54px;
-  height: 54px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(0, 229, 255, 0.55) 0%, rgba(0, 255, 136, 0) 72%);
   filter: blur(4px);
@@ -644,35 +625,35 @@
 }
 .target-gem-diamond {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   background: linear-gradient(135deg, #00e5ff 0%, #0088ff 50%, #00ff88 100%);
   transform: rotate(45deg);
-  border-radius: 6px;
+  border-radius: 8px;
   border: 2px solid #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.8), inset 0 0 8px rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.95), inset 0 0 10px rgba(255, 255, 255, 0.7);
 }
 .target-gem-char {
   transform: rotate(-45deg);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.05rem;
+  font-size: 1.35rem;
   font-weight: 900;
   color: #030712;
   text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
 }
 .target-gem-label {
   position: absolute;
-  bottom: -20px;
-  font-size: 0.6rem;
+  bottom: -22px;
+  font-size: 0.7rem;
   font-weight: 800;
   font-family: 'JetBrains Mono', monospace;
   color: #00ff88;
   background: rgba(3, 7, 18, 0.9);
   border: 1px solid rgba(0, 255, 136, 0.5);
-  padding: 1px 6px;
+  padding: 1px 7px;
   border-radius: 4px;
   letter-spacing: 0.5px;
   white-space: nowrap;
@@ -680,9 +661,9 @@
 }
 
 @keyframes runeFloat {
-  /* Use translateY to float without disrupting the translate(-50%,-50%) centering */
-  0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
-  50%       { transform: translate(-50%, -50%) translateY(-8px); }
+  /* Use translateY to float above the paved path */
+  0%, 100% { transform: translate(-50%, -80%) translateY(0px); }
+  50%       { transform: translate(-50%, -80%) translateY(-8px); }
 }
 @keyframes gemPulse {
   0%   { transform: scale(0.9); opacity: 0.6; }
@@ -694,10 +675,10 @@
    ─────────────────────────────────────────────── */
 .sprint-slime-obstacle-sprite {
   position: absolute;
-  width: 84px;
-  height: 90px;
-  max-height: 32%;
-  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 125px;
+  max-height: 48%;
+  transform: translate(-50%, -80%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -716,13 +697,14 @@
 .sprint-slime-obstacle-sprite.lane-2 { top: var(--lane-2-top); }
 
 .sprint-slime-img {
-  width: 76px;
+  width: 110px;
   max-width: 100%;
   height: auto;
-  max-height: 76%;
+  max-height: 95%;
   object-fit: contain;
   image-rendering: pixelated;
-  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.75));
+  transform: scale(1.35);
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.85));
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
@@ -797,8 +779,9 @@
 .sprint-checkpoint-gate {
   position: absolute;
   width: 60px;
-  top: 0;
+  top: var(--sprint-top-clearance);
   bottom: 0;
+  height: calc(100% - var(--sprint-top-clearance));
   z-index: 18;
   display: flex;
   align-items: stretch;
@@ -963,12 +946,12 @@
   content: '';
   position: absolute;
   left: 0; right: 0; bottom: 0;
-  height: 16px;
-  background-image: url('/assets/sprint/tileset/ground.jpg');
-  background-size: 256px auto;
-  background-position: 0 center;
+  height: 24px;
+  background-image: url('/assets/sprint/tileset/platform_middle.png');
+  background-size: 1500px 100%;
+  background-position: 0 top;
   background-repeat: repeat-x;
-  opacity: 0.85;
+  opacity: 0.9;
 }
 .sprint-preview-stage img {
   user-select: none;
@@ -1355,3 +1338,379 @@
     order: 1;
   }
 }
+
+/* ───────────────────────────────────────────────
+   FULL-SCREEN SPRINT LAYOUT (matching Fishing & Pac-Man)
+   ─────────────────────────────────────────────── */
+.caesar-sprint-fullscreen.sprint-fullscreen-stage {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sprint-track-container.sprint-track-fullscreen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  overflow: hidden;
+  /* Safe clearance: guarantees all 3 lanes, runner, gems, and gates are completely unobstructed by floating overlays */
+  --sprint-top-clearance: 145px;
+  --sprint-bottom-clearance: 0px;
+  --sprint-lanes-height: calc(100% - var(--sprint-top-clearance));
+  --lane-height: calc(var(--sprint-lanes-height) / 3);
+  --lane-0-top: calc(var(--sprint-top-clearance) + var(--lane-height) * 0.14);
+  --lane-1-top: calc(var(--sprint-top-clearance) + var(--lane-height) * 1.14);
+  --lane-2-top: calc(var(--sprint-top-clearance) + var(--lane-height) * 2.14);
+}
+
+.sprint-track-fullscreen .sprint-lane {
+  height: var(--lane-height);
+}
+
+.sprint-track-fullscreen .sprint-lane.lane-0 {
+  top: var(--sprint-top-clearance);
+}
+
+.sprint-track-fullscreen .sprint-lane.lane-1 {
+  top: calc(var(--sprint-top-clearance) + var(--lane-height));
+}
+
+.sprint-track-fullscreen .sprint-lane.lane-2 {
+  top: calc(var(--sprint-top-clearance) + var(--lane-height) * 2);
+}
+
+.sprint-track-fullscreen .sprint-checkpoint-gate {
+  top: var(--sprint-top-clearance);
+  height: var(--sprint-lanes-height);
+  bottom: auto;
+}
+
+/* Floating Approaching Gate HUD (Top-Center) */
+.sprint-floating-gate-panel {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.sprint-floating-gate-panel .sprint-baton-hud {
+  margin-bottom: 0;
+  padding: 8px 20px;
+  background: rgba(3, 14, 28, 0.85);
+  border: 1.5px solid rgba(0, 229, 255, 0.55);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.25), 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Floating Reference & Guide Panel (Bottom-Left) */
+.caesar-floating-guide.sprint-floating-guide {
+  position: absolute;
+  bottom: 18px;
+  left: 24px;
+  z-index: 20;
+  max-width: 350px;
+  background: rgba(3, 14, 28, 0.85);
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  border-radius: 16px;
+  padding: 14px 18px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  pointer-events: auto;
+}
+
+.sprint-guide-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.sprint-clue-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--neon-cyan);
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  border-radius: 8px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+}
+
+/* Floating Current Letter Decryption Key (Bottom-Right) */
+.caesar-floating-basket-card.sprint-floating-shift-card {
+  position: absolute;
+  bottom: 18px;
+  right: 24px;
+  z-index: 20;
+  min-width: 220px;
+  background: rgba(3, 14, 28, 0.85);
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  border-radius: 16px;
+  padding: 12px 18px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.sprint-decryption-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.sprint-flow-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px 10px;
+  border-radius: 8px;
+  min-width: 44px;
+}
+
+.sprint-flow-box.plain-box {
+  background: rgba(0, 229, 255, 0.08);
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.15) inset;
+}
+
+.sprint-flow-char {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+}
+
+.sprint-flow-char.plain {
+  color: var(--neon-green);
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.4);
+}
+
+.sprint-flow-label {
+  font-size: 0.52rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.sprint-flow-label.plain {
+  color: var(--neon-cyan);
+}
+
+.sprint-flow-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--neon-cyan);
+}
+
+.sprint-shift-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #ffd700;
+  white-space: nowrap;
+}
+
+/* Floating Word Decryption Progress (Bottom-Center) */
+.sprint-floating-word-progress {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.sprint-floating-word-progress .sprint-word-progress-card {
+  margin: 0;
+  padding: 10px 18px;
+  background: rgba(3, 14, 28, 0.85);
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sprint-floating-word-progress .sprint-word-progress-card h3 {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  margin: 0 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sprint-floating-word-progress .sprint-letters-row {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.sprint-floating-word-progress .sprint-letter-box {
+  width: 32px;
+  height: 42px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.sprint-floating-word-progress .sprint-letter-box.solved {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+}
+
+.sprint-floating-word-progress .sprint-letter-box.active {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+}
+
+/* Floating Action Modals (Finished, Game Over, Crash) */
+.sprint-floating-victory-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  min-width: 320px;
+}
+
+.sprint-floating-action-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  min-width: 320px;
+  max-width: 440px;
+  background: rgba(26, 6, 12, 0.94);
+  border: 2px solid rgba(255, 45, 85, 0.7);
+  border-radius: 18px;
+  padding: 24px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 0 35px rgba(255, 45, 85, 0.35), 0 10px 40px rgba(0, 0, 0, 0.8);
+  pointer-events: auto;
+}
+
+/* Responsive adjustments for 1440x900 and 1366x768 screens */
+@media (max-height: 850px) {
+  .sprint-track-container.sprint-track-fullscreen {
+    --sprint-top-clearance: 66px;
+    --sprint-bottom-clearance: 104px;
+  }
+  .sprint-floating-gate-panel {
+    top: 10px;
+  }
+  .sprint-floating-gate-panel .sprint-baton-hud {
+    padding: 6px 14px;
+  }
+  .caesar-floating-guide.sprint-floating-guide {
+    bottom: 12px;
+    left: 16px;
+    padding: 10px 14px;
+    max-width: 300px;
+  }
+  .caesar-floating-basket-card.sprint-floating-shift-card {
+    bottom: 12px;
+    right: 16px;
+    padding: 8px 14px;
+    min-width: 190px;
+  }
+  .sprint-floating-word-progress {
+    bottom: 12px;
+  }
+  .sprint-floating-word-progress .sprint-word-progress-card {
+    padding: 8px 14px;
+  }
+}
+
+@media (max-height: 768px) {
+  .sprint-track-container.sprint-track-fullscreen {
+    --sprint-top-clearance: 58px;
+    --sprint-bottom-clearance: 92px;
+  }
+  .sprint-floating-gate-panel {
+    top: 8px;
+  }
+  .sprint-floating-gate-panel .sprint-baton-hud {
+    padding: 4px 12px;
+  }
+  .baton-letter {
+    width: 36px;
+    height: 36px;
+    font-size: 1.4rem;
+  }
+  .caesar-floating-guide.sprint-floating-guide {
+    bottom: 10px;
+    left: 12px;
+    padding: 8px 12px;
+    max-width: 270px;
+  }
+  .caesar-guide-title {
+    font-size: 0.95rem;
+  }
+  .caesar-guide-desc {
+    font-size: 0.74rem;
+    margin-bottom: 4px;
+  }
+  .caesar-guide-tip {
+    font-size: 0.72rem;
+  }
+  .caesar-floating-basket-card.sprint-floating-shift-card {
+    bottom: 10px;
+    right: 12px;
+    padding: 6px 12px;
+    min-width: 170px;
+  }
+  .sprint-flow-char {
+    font-size: 1.1rem;
+  }
+  .sprint-floating-word-progress {
+    bottom: 10px;
+  }
+  .sprint-floating-word-progress .sprint-letter-box {
+    width: 28px;
+    height: 36px;
+  }
+}
+

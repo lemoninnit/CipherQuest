@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import '../sprint/CipherSprint.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import PauseMenu from '../../ui/PauseMenu';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import FullscreenButton from '../../ui/FullscreenButton';
@@ -22,6 +23,8 @@ const getRandomDecoys = (correctChar, count) => {
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
 };
+
+const charToIdx = (ch) => (ch && ALPHABET.indexOf(ch.toUpperCase()) !== -1 ? ALPHABET.indexOf(ch.toUpperCase()) : 0);
 
 export default function VigenereSprint({
   levelData,
@@ -48,7 +51,7 @@ export default function VigenereSprint({
   const [lives, setLives] = useState(5);
   const [laneChangeEffect, setLaneChangeEffect] = useState(null);
   const [speedLines, setSpeedLines] = useState([]);
-  const [attempts, setAttempts] = useState([]);
+  const [, setAttempts] = useState([]);
   const [firstTryForCurrent, setFirstTryForCurrent] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -93,6 +96,7 @@ export default function VigenereSprint({
   useEffect(() => { collectedKeyRef.current = collectedKey; }, [collectedKey]);
   useEffect(() => { currentMaskIndexRef.current = currentMaskIndex; }, [currentMaskIndex]);
 
+  const targetKey = levelData.targetKey || levelData.keyword || 'KEY';
   const currentIdx = maskedIndices[currentMaskIndex] ?? 0;
   const currentBatonLetter = levelData.ciphertext[currentIdx] ?? '';
   const currentTargetChar = levelData.plaintext[currentIdx] ?? '';
@@ -102,6 +106,39 @@ export default function VigenereSprint({
     if (levelData.plaintext[i] !== ' ') charIdxInText++;
   }
   const currentShiftKey = levelData.targetShifts[charIdxInText % levelData.targetShifts.length];
+  const currentKeyChar = targetKey[charIdxInText % targetKey.length] || 'A';
+
+  const sprintAlignmentItems = useMemo(() => {
+    const items = [];
+    let letterCounter = 0;
+    for (let i = 0; i < levelData.plaintext.length; i++) {
+      const pChar = levelData.plaintext[i];
+      const cChar = levelData.ciphertext[i] || '';
+      if (pChar === ' ') {
+        items.push({ isSpace: true, id: `space-${i}` });
+      } else {
+        const slot = letterCounter % levelData.targetShifts.length;
+        const keyChar = targetKey ? (targetKey[slot % targetKey.length] || '') : '';
+        const shiftVal = levelData.targetShifts[slot] ?? 0;
+        const isActive = i === currentIdx;
+        const isSolved = !hintIndices.has(i)
+          ? (maskedIndices.indexOf(i) < currentMaskIndex || sprintStep === 'finished')
+          : true;
+        items.push({
+          id: `item-${i}`,
+          index: i,
+          cipherChar: cChar,
+          plainChar: pChar,
+          keyChar,
+          shiftVal,
+          isActive,
+          isSolved,
+        });
+        letterCounter++;
+      }
+    }
+    return items;
+  }, [levelData.plaintext, levelData.ciphertext, targetKey, levelData.targetShifts, currentIdx, maskedIndices, currentMaskIndex, sprintStep, hintIndices]);
 
   const orangeSlimeSrc = `/assets/sprint/obstacle/obstacle1/SlimeOrange_${PAD5(slimeFrame)}.png`;
   const basicSlimeSrc = `/assets/sprint/obstacle/obstacle2/SlimeBasic_${PAD5(slimeFrame)}.png`;
@@ -223,9 +260,15 @@ export default function VigenereSprint({
   }, []);
 
   useEffect(() => {
-    if (sprintStep !== 'running' || isCrashing || isMenuOpen) return undefined;
+    if (sprintStep !== 'running' || isCrashing) return undefined;
 
     const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault();
+        setIsMenuOpen((prev) => !prev);
+        return;
+      }
+      if (isMenuOpen) return;
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         setIsPaused((p) => !p);
@@ -646,6 +689,8 @@ export default function VigenereSprint({
         isReady={sprintStep === 'ready'}
         onBackToStages={onBackToStages}
         onOpenMenu={() => setIsMenuOpen(true)}
+        lives={sprintStep === 'ready' ? null : lives}
+        customRightContent={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
         extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
       />
 
@@ -715,314 +760,395 @@ export default function VigenereSprint({
           </div>
         )
       ) : (
-        <div className="sprint-widescreen">
-          <aside className="sprint-sidebar">
-            <div className="sidebar-stats-card">
-              <div className="stats-header">OPERATIVE HUD</div>
-              <div className="stats-content">
-                <div className="stat-row">
-                  <span className="stat-label">LIVES:</span>
-                  <span className="stat-value hearts-glow">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span
-                        key={i}
-                        className="material-symbols-outlined"
-                        style={{
-                          color: i < lives ? '#ff007f' : 'rgba(255,255,255,0.15)',
-                          fontVariationSettings: "'FILL' 1",
-                          fontSize: '1.1rem',
-                          marginRight: '2px',
-                        }}
-                      >
-                        favorite
-                      </span>
-                    ))}
-                  </span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">VIGENÈRE CLUE:</span>
-                  <span
-                    className="stat-value clue-glow"
-                    style={{ fontSize: '0.9rem', color: 'var(--neon-cyan)', fontWeight: 'bold' }}
-                  >
-                    Plain = Cipher - {currentShiftKey}
-                  </span>
-                </div>
-              </div>
-            </div>
+        <div className="caesar-sprint-fullscreen sprint-fullscreen-stage">
+          {/* Edge-to-edge 3-lane Track */}
+          <div
+            className={[
+              'sprint-track-container',
+              'sprint-track-fullscreen',
+              trackShake ? 'shake-track' : '',
+              isBoosting ? 'is-boosting' : '',
+              isPaused ? 'is-paused' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            <div className="sprint-parallax-layer sprint-bg-sky" />
+            <div className="sprint-parallax-layer sprint-bg-hills-far" />
+            <div className="sprint-parallax-layer sprint-bg-hills-near" />
+            <div className="sprint-parallax-layer sprint-bg-ruins" />
+            <div className="sprint-hanging-canopy" />
 
-            <div className="sidebar-stats-card" style={{ padding: '12px' }}>
-              <div className="stats-header" style={{ fontSize: '0.8rem', marginBottom: '8px' }}>
-                📊 ALPHABET VALUES
-              </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table
-                  style={{
-                    borderCollapse: 'collapse',
-                    textAlign: 'center',
-                    fontFamily: 'JetBrains Mono, monospace',
-                    fontSize: '0.65rem',
-                    width: '100%',
-                  }}
-                >
-                  <tbody>
-                    <tr>
-                      {ALPHABET.map((ch, i) => (
-                        <td
-                          key={ch}
-                          style={{
-                            padding: '4px 2px',
-                            background: 'rgba(255,255,255,0.02)',
-                            borderRight: '1px solid rgba(255,255,255,0.05)',
-                          }}
-                        >
-                          <div style={{ fontWeight: 'bold', color: '#fff' }}>{ch}</div>
-                          <div style={{ color: 'var(--neon-yellow)' }}>{i}</div>
-                        </td>
-                      ))}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div
-              className="sidebar-stats-card"
-              style={{ padding: '12px', display: 'flex', justifyContent: 'center' }}
-            >
-              <PauseResumeButton isPaused={isPaused} toggle={() => setIsPaused((p) => !p)} />
-            </div>
-
-            <div className="sidebar-action-hud">
-              {sprintStep === 'finished' && (
-                <FinishedPanel
-                  onVerifySubmit={handleVerifySubmit}
-                  onReplayNewQuestion={onReplayNewQuestion}
-                />
-              )}
-              {sprintStep === 'gameover' && (
-                <GameOverPanel onRetry={handleRetryFromCheckpoint} />
-              )}
-              {sprintStep === 'explanation' && (
-                <CrashPanel message={crashMessage} onContinue={handleContinueAfterCrash} />
-              )}
-              {sprintStep === 'running' && (
-                <ObjectivesGuidePanel
-                  batonLetter={currentBatonLetter}
-                  shiftKey={currentShiftKey}
-                />
-              )}
-            </div>
-          </aside>
-
-          <main className="sprint-main">
-            <div
-              className="sprint-baton-hud"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
-            >
-              <div className="baton-tag">APPROACHING GATE:</div>
+            {speedLines.map((line) => (
               <div
-                className="baton-letter"
-                style={{
-                  background: 'var(--neon-cyan)',
-                  color: '#030914',
-                  boxShadow: '0 0 15px rgba(0, 229, 255, 0.4)',
-                }}
-              >
-                {sprintStep === 'finished' ? '🏁' : currentBatonLetter}
-              </div>
-              <div className="baton-desc">
-                {sprintStep === 'finished'
-                  ? 'Relay run completed! Verify decryption in the sidebar.'
-                  : `Decrypt '${currentBatonLetter}' using Shift -${currentShiftKey}!`}
-              </div>
+                key={line.id}
+                className="sprint-speed-line"
+                style={{ left: `${line.x}%`, top: `${line.y}%`, width: `${line.width}px` }}
+              />
+            ))}
+
+            <div
+              className={`sprint-lane lane-0 ${runnerLane === 0 ? 'highlighted' : ''}`}
+              onClick={() => {
+                if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(0);
+              }}
+            >
+              <div className="sprint-lane-platform platform-upper" />
+              <span className="sprint-lane-badge">Top Lane</span>
+            </div>
+            <div
+              className={`sprint-lane lane-1 ${runnerLane === 1 ? 'highlighted' : ''}`}
+              onClick={() => {
+                if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(1);
+              }}
+            >
+              <div className="sprint-lane-platform platform-middle" />
+              <span className="sprint-lane-badge">Middle Lane</span>
+            </div>
+            <div
+              className={`sprint-lane lane-2 ${runnerLane === 2 ? 'highlighted' : ''}`}
+              onClick={() => {
+                if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(2);
+              }}
+            >
+              <div className="sprint-lane-platform platform-bottom" />
+              <span className="sprint-lane-badge">Bottom Lane</span>
+            </div>
+
+            <div className="sprint-track-plants">
+              <img src={blueFlowerSrc} alt="Flower" className="sprint-plant flower-1" />
+              <img src={blueFlowerSrc} alt="Flower" className="sprint-plant flower-2" />
             </div>
 
             <div
               className={[
-                'sprint-track-container',
-                trackShake ? 'shake-track' : '',
-                isBoosting ? 'is-boosting' : '',
-                isPaused ? 'is-paused' : '',
+                'sprint-runner-sprite',
+                `lane-${runnerLane}`,
+                isCrashing ? 'crash' : '',
+                isSpinning ? 'spin-effect' : '',
+                isBoosting ? 'boost-trail' : '',
+                laneChangeEffect || '',
               ]
                 .filter(Boolean)
                 .join(' ')}
             >
-              <div className="sprint-parallax-layer sprint-bg-sky" />
-              <div className="sprint-parallax-layer sprint-bg-hills-far" />
-              <div className="sprint-parallax-layer sprint-bg-hills-near" />
-              <div className="sprint-parallax-layer sprint-bg-ruins" />
-              <div className="sprint-hanging-canopy" />
-
-              {speedLines.map((line) => (
-                <div
-                  key={line.id}
-                  className="sprint-speed-line"
-                  style={{ left: `${line.x}%`, top: `${line.y}%`, width: `${line.width}px` }}
-                />
-              ))}
-
-              <div
-                className={`sprint-lane lane-0 ${runnerLane === 0 ? 'highlighted' : ''}`}
-                onClick={() => {
-                  if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(0);
-                }}
-              >
-                <div className="sprint-lane-platform" />
-                <span className="sprint-lane-badge">Top Lane</span>
+              <div className={`sprint-runner-char-sprite ${runnerAnim}`} />
+              <div className="runner-baton-glow">
+                {sprintStep === 'finished' ? '✓' : currentBatonLetter}
               </div>
-              <div
-                className={`sprint-lane lane-1 ${runnerLane === 1 ? 'highlighted' : ''}`}
-                onClick={() => {
-                  if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(1);
-                }}
-              >
-                <div className="sprint-lane-platform" />
-                <span className="sprint-lane-badge">Middle Lane</span>
+            </div>
+
+            {sprintStep === 'running' &&
+              coins.map((coin) => {
+                if (coin.eaten) return null;
+                const isTarget = coin.char === currentTargetChar;
+                return isTarget ? (
+                  <div
+                    key={coin.id}
+                    className={`sprint-target-gem-sprite lane-${coin.lane}`}
+                    style={{ left: `${coin.x}%` }}
+                  >
+                    <div className="target-gem-aura" />
+                    <div className="target-gem-diamond">
+                      <span className="target-gem-char">{coin.char}</span>
+                    </div>
+                    <div className="target-gem-label">TARGET</div>
+                  </div>
+                ) : (
+                  <div
+                    key={coin.id}
+                    className={`sprint-slime-obstacle-sprite lane-${coin.lane}`}
+                    style={{ left: `${coin.x}%` }}
+                  >
+                    <img
+                      src={coin.id % 2 === 0 ? orangeSlimeSrc : basicSlimeSrc}
+                      alt="Slime Decoy"
+                      className="sprint-slime-img"
+                    />
+                    <div className="slime-decoy-plate">
+                      <span className="slime-decoy-char">{coin.char}</span>
+                    </div>
+                  </div>
+                );
+              })}
+
+            <div
+              className={`sprint-checkpoint-gate ${
+                isBoosting || sprintStep === 'finished' ? 'gate-cleared' : ''
+              }`}
+              style={{ left: `${sprintStep === 'finished' ? 15 : gateX}%` }}
+            >
+              <div className="gate-mossy-arch">
+                <div className="gate-pillar top" />
+                <div className="gate-energy-barrier">
+                  <div className="gate-rune-glyph">
+                    {isBoosting || sprintStep === 'finished' ? '✓' : 'ᛟ'}
+                  </div>
+                </div>
+                <div className="gate-pillar bottom" />
               </div>
+              <div className="gate-badge">
+                {isBoosting || sprintStep === 'finished' ? 'CLEARED' : 'GATE'}
+              </div>
+            </div>
+
+            {feedbackText && (
               <div
-                className={`sprint-lane lane-2 ${runnerLane === 2 ? 'highlighted' : ''}`}
-                onClick={() => {
-                  if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(2);
-                }}
+                className="sprint-floating-feedback"
+                style={{ top: `${feedbackY}%`, color: feedbackColor }}
               >
-                <div className="sprint-lane-platform" />
-                <span className="sprint-lane-badge">Bottom Lane</span>
+                {feedbackText}
+              </div>
+            )}
+          </div>
+
+          {/* ───── Floating Overlays ───── */}
+
+          {/* 1. Top-Center Word Segment Panel + Keyword & Hint */}
+          <div className="caesar-floating-word-panel vg-sprint-top-panel">
+            <div className="vg-cipher-main-row">
+              {/* Keyword Badge beside cipher letters */}
+              <div className="vg-cipher-key-pill" title={`Repeating Keyword: ${targetKey}`}>
+                <span className="vg-pill-lbl">KEYWORD</span>
+                <span className="vg-pill-val">{targetKey}</span>
               </div>
 
+              {/* Word Letter Cells */}
+              <div className="fg-word-segments-row sprint-letters-row">
+                <div className="fg-word-segment-card">
+                  <div className="fg-letter-cells">
+                    {levelData.plaintext.split('').map((char, idx) => {
+                      if (char === ' ') {
+                        return <div key={`space-${idx}`} style={{ width: 12, flexShrink: 0 }} />;
+                      }
+                      const isMasked = !hintIndices.has(idx);
+                      const isSolved = !isMasked || (maskedIndices.indexOf(idx) < currentMaskIndex || sprintStep === 'finished');
+                      const isActive = isMasked && idx === currentIdx && sprintStep === 'running';
+                      const displayChar = isSolved ? char : (isActive ? '?' : '_');
+                      const cipherChar = levelData.ciphertext[idx] || '';
 
-              <div
-                className={[
-                  'sprint-runner-sprite',
-                  `lane-${runnerLane}`,
-                  isCrashing ? 'crash' : '',
-                  isSpinning ? 'spin-effect' : '',
-                  isBoosting ? 'boost-trail' : '',
-                  laneChangeEffect || '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <div className={`sprint-runner-char-sprite ${runnerAnim}`} />
-                <div className="runner-baton-glow">
-                  {sprintStep === 'finished' ? '✓' : currentBatonLetter}
+                      let cellClass = 'fg-letter-cell';
+                      if (isSolved) {
+                        cellClass += ' correct-plain';
+                      } else if (isActive) {
+                        cellClass += ' active-slot';
+                      }
+
+                      return (
+                        <div
+                          key={idx}
+                          className={cellClass}
+                          title={`Cipher: ${cipherChar}, Key: ${targetKey[charIdxInText % targetKey.length] || ''} → ${isSolved ? char : '?'}`}
+                        >
+                          <span className="fg-cell-ciphertext">{cipherChar}</span>
+                          <span className="fg-cell-plaintext">{displayChar}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {sprintStep === 'running' &&
-                coins.map((coin) => {
-                  if (coin.eaten) return null;
-                  const isTarget = coin.char === currentTargetChar;
-                  return isTarget ? (
+              {/* Solving Status Badge right beside cipher letters */}
+              <div className="vg-cipher-solving-pill" title={`Active Target: Position #${currentIdx + 1}`}>
+                <span className="vg-pill-lbl">SOLVING</span>
+                <span className="vg-pill-pos">Pos #{currentIdx + 1}</span>
+                <span className="vg-pill-keychar">(Key '{currentKeyChar}')</span>
+              </div>
+            </div>
+
+            <div className="caesar-floating-hint">
+              <span>💡 Keyword clue: <strong>"{levelData.keyClue || 'Keyword'}"</strong></span>
+              <span style={{ margin: '0 8px', opacity: 0.4 }}>|</span>
+              <span>Hint: <strong>"{levelData.hint}"</strong></span>
+            </div>
+          </div>
+
+          {/* 2. Bottom-Left Floating Reference & Alignment Panel */}
+          <div className="vg-floating-ref-panel vg-sprint-ref-panel">
+            <div className="vg-floating-ref-header">
+              <span className="vg-floating-ref-title">📖 Vigenère Alignment</span>
+            </div>
+
+            <div className="vg-formula-prominent">
+              Formula: <strong>Plain = (Cipher − Key + 26) mod 26</strong>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div className="vg-alignment-labels">
+                <div>CIPHER</div>
+                <div>KEY</div>
+                <div>SHIFT</div>
+                <div>PLAIN</div>
+              </div>
+              <div className="vg-alignment-container">
+                {sprintAlignmentItems.map((item) => {
+                  if (item.isSpace) {
+                    return <div key={item.id} style={{ width: 8, flexShrink: 0 }} />;
+                  }
+                  return (
                     <div
-                      key={coin.id}
-                      className={`sprint-target-gem-sprite lane-${coin.lane}`}
-                      style={{ left: `${coin.x}%` }}
+                      key={item.id}
+                      className={`vg-alignment-col ${item.isActive ? 'active-slot' : ''}`}
+                      title={`Pos ${item.index + 1}: ${item.cipherChar} (${charToIdx(item.cipherChar)}) − ${item.keyChar} (${item.shiftVal}) = ${item.isSolved ? item.plainChar : '?'}`}
                     >
-                      <div className="target-gem-aura" />
-                      <div className="target-gem-diamond">
-                        <span className="target-gem-char">{coin.char}</span>
-                      </div>
-                      <div className="target-gem-label">TARGET</div>
-                    </div>
-                  ) : (
-                    <div
-                      key={coin.id}
-                      className={`sprint-slime-obstacle-sprite lane-${coin.lane}`}
-                      style={{ left: `${coin.x}%` }}
-                    >
-                      <img
-                        src={coin.id % 2 === 0 ? orangeSlimeSrc : basicSlimeSrc}
-                        alt="Slime Decoy"
-                        className="sprint-slime-img"
-                      />
-                      <div className="slime-decoy-plate">
-                        <span className="slime-decoy-char">{coin.char}</span>
-                      </div>
+                      <span className="vg-align-cipher">{item.cipherChar}</span>
+                      <span className="vg-align-key">{item.keyChar}</span>
+                      <span className="vg-align-shift">-{item.shiftVal}</span>
+                      <span
+                        className="vg-align-plain"
+                        style={{ color: item.isSolved ? 'var(--neon-green)' : (item.isActive ? 'var(--neon-cyan)' : 'var(--neon-yellow)') }}
+                      >
+                        {item.isSolved ? item.plainChar : (item.isActive ? '?' : '_')}
+                      </span>
                     </div>
                   );
                 })}
-
-              <div
-                className={`sprint-checkpoint-gate ${
-                  isBoosting || sprintStep === 'finished' ? 'gate-cleared' : ''
-                }`}
-                style={{ left: `${sprintStep === 'finished' ? 15 : gateX}%` }}
-              >
-                <div className="gate-mossy-arch">
-                  <div className="gate-pillar top" />
-                  <div className="gate-energy-barrier">
-                    <div className="gate-rune-glyph">
-                      {isBoosting || sprintStep === 'finished' ? '✓' : 'ᛟ'}
-                    </div>
-                  </div>
-                  <div className="gate-pillar bottom" />
-                </div>
-                <div className="gate-badge">
-                  {isBoosting || sprintStep === 'finished' ? 'CLEARED' : 'GATE'}
-                </div>
               </div>
-
-              {feedbackText && (
-                <div
-                  className="sprint-floating-feedback"
-                  style={{ top: `${feedbackY}%`, color: feedbackColor }}
-                >
-                  {feedbackText}
-                </div>
-              )}
             </div>
 
-            <WordProgress
-              levelData={levelData}
-              hintIndices={hintIndices}
-              maskedIndices={maskedIndices}
-              currentMaskIndex={currentMaskIndex}
-              sprintStep={sprintStep}
-            />
-          </main>
+            <div className="vg-samples-section">
+              <div className="vg-samples-title">
+                <span>Target Position #{currentIdx + 1}</span>
+                <span style={{ color: 'var(--neon-cyan)', fontFamily: 'JetBrains Mono, monospace' }}>
+                  Key: '{currentKeyChar}' (-{currentShiftKey})
+                </span>
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#cbd5e1', lineHeight: '1.4' }}>
+                Cipher <strong>'{currentBatonLetter}'</strong> ({charToIdx(currentBatonLetter)}) − Key <strong>'{currentKeyChar}'</strong> ({currentShiftKey}) = Steer into lane <strong>'{currentTargetChar}'</strong>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between', marginTop: 2, paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <span>🎮 Controls: <strong>W/S</strong> or <strong>↑/↓</strong> switch lanes</span>
+              <span><strong>Space</strong> pause</span>
+            </div>
+          </div>
+
+          {/* 3. Bottom-Right Floating Reference: A-Z Value Reference & Decryption Helper */}
+          <div className={`vg-floating-key-panel vg-fishing-az-panel vg-sprint-az-panel ${isCrashing ? 'shake' : ''}`}>
+            <div className="vg-floating-current-slot">
+              <div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  A–Z Value Reference
+                </div>
+                <div style={{ fontSize: '0.84rem', color: '#fff', fontWeight: 700 }}>
+                  Decryption Arithmetic
+                </div>
+              </div>
+              <div className="vg-slot-badge-lg" style={{ fontSize: '0.9rem', padding: '2px 10px' }}>
+                {currentMaskIndex}/{maskedIndices.length} Cleared
+              </div>
+            </div>
+
+            {/* Active calculation card */}
+            <div className="vg-fishing-calc-card">
+              <div className="vg-calc-top-row">
+                <span className="vg-calc-label">Active Letter Decryption:</span>
+                <span className="vg-calc-badge">Pos #{currentIdx + 1}</span>
+              </div>
+              <div className="vg-calc-formula-row">
+                <div className="vg-calc-item cipher">
+                  <span className="lbl">Cipher</span>
+                  <strong>{currentBatonLetter}</strong>
+                  <span className="val">{charToIdx(currentBatonLetter)}</span>
+                </div>
+                <span className="vg-calc-op">−</span>
+                <div className="vg-calc-item key">
+                  <span className="lbl">Key</span>
+                  <strong>{currentKeyChar}</strong>
+                  <span className="val">{currentShiftKey}</span>
+                </div>
+                <span className="vg-calc-op">=</span>
+                <div className="vg-calc-item plain">
+                  <span className="lbl">Target</span>
+                  <strong style={{ color: 'var(--neon-green)' }}>
+                    {currentTargetChar}
+                  </strong>
+                  <span className="val">
+                    {(charToIdx(currentBatonLetter) - currentShiftKey + 26) % 26}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2-row x 13-col Alphabet grid */}
+            <div className="vg-sprint-alphabet-grid" style={{ marginTop: '2px' }}>
+              <div className="vg-alphabet-row">
+                {ALPHABET.slice(0, 13).map((ch, i) => {
+                  const isCipher = ch === currentBatonLetter;
+                  const isKey = ch === currentKeyChar;
+                  let cellClass = "vg-alphabet-cell";
+                  if (isCipher) cellClass += " is-cipher";
+                  if (isKey) cellClass += " is-key";
+                  return (
+                    <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
+                      <span className="vg-alpha-char">{ch}</span>
+                      <span className="vg-alpha-val">{i}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="vg-alphabet-row">
+                {ALPHABET.slice(13, 26).map((ch, i) => {
+                  const val = i + 13;
+                  const isCipher = ch === currentBatonLetter;
+                  const isKey = ch === currentKeyChar;
+                  let cellClass = "vg-alphabet-cell";
+                  if (isCipher) cellClass += " is-cipher";
+                  if (isKey) cellClass += " is-key";
+                  return (
+                    <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
+                      <span className="vg-alpha-char">{ch}</span>
+                      <span className="vg-alpha-val">{val}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-muted)', paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <span>Lives Remaining:</span>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', color: lives <= 2 ? '#f87171' : 'var(--neon-green)', fontWeight: 'bold' }}>
+                {'❤️'.repeat(Math.max(0, lives))} ({lives}/5)
+              </span>
+            </div>
+          </div>
+
+          {/* 5. Floating Action / Outcome Panels */}
+          {sprintStep === 'finished' && (
+            <div className="caesar-floating-victory-panel sprint-floating-victory-panel">
+              <FinishedPanel
+                onVerifySubmit={handleVerifySubmit}
+                onReplayNewQuestion={onReplayNewQuestion}
+              />
+            </div>
+          )}
+
+          {sprintStep === 'gameover' && (
+            <div className="caesar-floating-rule-violation sprint-floating-action-modal">
+              <GameOverPanel onRetry={handleRetryFromCheckpoint} />
+            </div>
+          )}
+
+          {sprintStep === 'explanation' && (
+            <div className="caesar-floating-rule-violation sprint-floating-action-modal">
+              <CrashPanel message={crashMessage} onContinue={handleContinueAfterCrash} />
+            </div>
+          )}
         </div>
       )}
 
-      {isMenuOpen && (
-        <PausedMenu
-          onResume={() => setIsMenuOpen(false)}
-          onTutorial={() => {
-            setIsMenuOpen(false);
-            setSprintStep('ready');
-          }}
-          onExit={onBackToStages}
-        />
-      )}
+      <PauseMenu
+        open={isMenuOpen}
+        onResume={() => setIsMenuOpen(false)}
+        onTutorial={() => {
+          setIsMenuOpen(false);
+          setSprintStep('ready');
+        }}
+        onExit={onBackToStages}
+      />
     </div>
-  );
-}
-
-function PauseResumeButton({ isPaused, toggle }) {
-  return (
-    <button
-      onClick={toggle}
-      style={{
-        background: isPaused ? 'var(--neon-green)' : 'rgba(255,255,255,0.08)',
-        color: isPaused ? '#000' : '#fff',
-        border: isPaused ? 'none' : '1px solid rgba(255,255,255,0.15)',
-        padding: '10px 16px',
-        borderRadius: '24px',
-        fontSize: '0.8rem',
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px',
-        transition: 'all 0.2s ease',
-        width: '100%',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-      }}
-    >
-      {isPaused ? '▶ Resume (Space)' : '⏸ Pause (Space)'}
-    </button>
   );
 }
 
@@ -1133,263 +1259,8 @@ function CrashPanel({ message, onContinue }) {
   );
 }
 
-function ObjectivesGuidePanel({ batonLetter, shiftKey }) {
-  return (
-    <div
-      className="sidebar-stats-card"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '15px',
-        flex: 1,
-        overflowY: 'auto',
-        textAlign: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <div className="stats-header" style={{ color: 'var(--neon-cyan)', fontSize: '0.9rem' }}>
-        📝 OBJECTIVES & GUIDE
-      </div>
-      <div style={{ fontSize: '0.85rem', lineHeight: '1.6', color: '#cbd5e1' }}>
-        • Solve the cipher letter to find the matching lane.
-        <br />• Key rotates per letter — check shift value above!
-      </div>
-      <div
-        style={{
-          background: 'rgba(0,0,0,0.3)',
-          border: '1px solid rgba(0, 229, 255, 0.2)',
-          borderRadius: '8px',
-          padding: '16px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '12px',
-        }}
-      >
-        <div
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: '0.7rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            textAlign: 'center',
-          }}
-        >
-          Current Letter Decryption
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            width: '100%',
-            justifyContent: 'center',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              background: 'rgba(255,255,255,0.05)',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              minWidth: '55px',
-            }}
-          >
-            <span style={{ fontSize: '1.4rem', color: '#fff', fontFamily: 'monospace' }}>
-              {batonLetter}
-            </span>
-            <span style={{ fontSize: '0.55rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              CIPHER
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'var(--neon-cyan)' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
-              Shift -{shiftKey}
-            </span>
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: '1.4rem', margin: '4px 0' }}
-            >
-              arrow_forward
-            </span>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              background: 'rgba(0,229,255,0.05)',
-              border: '1px solid rgba(0,229,255,0.3)',
-              padding: '8px 14px',
-              borderRadius: '8px',
-              boxShadow: '0 0 10px rgba(0,229,255,0.1) inset',
-              minWidth: '55px',
-            }}
-          >
-            <span
-              style={{
-                fontSize: '1.4rem',
-                color: 'var(--neon-green)',
-                fontFamily: 'monospace',
-                fontWeight: 'bold',
-              }}
-            >
-              ?
-            </span>
-            <span style={{ fontSize: '0.55rem', color: 'var(--neon-cyan)', marginTop: '4px' }}>
-              PLAIN
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function WordProgress({ levelData, hintIndices, maskedIndices, currentMaskIndex, sprintStep }) {
-  return (
-    <div
-      className="sprint-word-progress-card"
-      style={{
-        marginTop: '20px',
-        background: 'var(--card-bg)',
-        border: '1px solid var(--card-border)',
-        borderRadius: '12px',
-        padding: '16px 20px',
-      }}
-    >
-      <h3
-        style={{
-          fontSize: '0.9rem',
-          fontWeight: '700',
-          color: '#94a3b8',
-          marginBottom: '12px',
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px',
-        }}
-      >
-        Word Decryption Progress:
-      </h3>
-      <div className="sprint-letters-row">
-        {levelData.plaintext.split('').map((char, idx) => {
-          const isMasked = char !== ' ' && !hintIndices.has(idx);
-          const isSolved =
-            isMasked && (maskedIndices.indexOf(idx) < currentMaskIndex || sprintStep === 'finished');
-          const displayChar = !isMasked ? char : isSolved ? char : '_';
-          const cipherChar = levelData.ciphertext[idx] !== ' ' ? levelData.ciphertext[idx] : ' ';
-          const isCurrentActive =
-            isMasked && idx === (maskedIndices[currentMaskIndex] ?? -1) && sprintStep === 'running';
 
-          return (
-            <div
-              key={idx}
-              className={[
-                'sprint-letter-box',
-                isSolved ? 'solved' : '',
-                isCurrentActive ? 'active' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              style={char === ' ' ? { visibility: 'hidden', width: '20px', border: 'none', background: 'transparent' } : {}}
-            >
-              <span className="sprint-box-cipher">{cipherChar}</span>
-              <span className="sprint-box-plain">{displayChar}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function PausedMenu({ onResume, onTutorial, onExit }) {
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-      }}
-    >
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #0f172a, #020617)',
-          border: '1px solid rgba(56, 189, 248, 0.3)',
-          borderRadius: '16px',
-          padding: '32px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
-          minWidth: '320px',
-          boxShadow: '0 0 30px rgba(0,0,0,0.8)',
-        }}
-      >
-        <h2
-          style={{
-            color: 'var(--neon-cyan)',
-            margin: 0,
-            textAlign: 'center',
-            fontSize: '1.6rem',
-            marginBottom: '8px',
-            letterSpacing: '2px',
-          }}
-        >
-          PAUSED
-        </h2>
-        <button
-          className="fg-btn fg-btn-primary"
-          onClick={onResume}
-          style={{
-            padding: '14px',
-            fontSize: '1.1rem',
-            background: 'var(--neon-green)',
-            color: '#000',
-            fontWeight: 'bold',
-          }}
-        >
-          ▶ Resume
-        </button>
-        <button
-          className="fg-btn fg-btn-secondary"
-          onClick={onTutorial}
-          style={{
-            padding: '14px',
-            fontSize: '1.1rem',
-            background: 'rgba(255,255,255,0.08)',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.2)',
-          }}
-        >
-          📖 Tutorial
-        </button>
-        <button
-          className="fg-btn"
-          onClick={onExit}
-          style={{
-            padding: '14px',
-            fontSize: '1.1rem',
-            background: 'rgba(239, 68, 68, 0.15)',
-            color: '#ef4444',
-            border: '1px solid rgba(239,68,68,0.4)',
-            marginTop: '8px',
-          }}
-        >
-          🚪 Exit Stage
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function useMemoLevelMeta(levelData, tier) {
   return React.useMemo(() => {

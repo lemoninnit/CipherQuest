@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
+import PauseMenu from '../../ui/PauseMenu';
 import { facingTransform, makeSwimProps, tickFish, visualsForValue } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 
@@ -115,21 +116,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [phase, showExplanation]);
-
-  /* ── Focus management for pause menu ── */
-  useEffect(() => {
-    if (isMenuOpen) {
-      wasMenuOpenRef.current = true;
-      setTimeout(() => resumeBtnRef.current?.focus(), 50);
-    } else if (wasMenuOpenRef.current) {
-      wasMenuOpenRef.current = false;
-      const menuBtn = document.querySelector('.fg-header-left .fg-btn-back-nav');
-      menuBtn?.focus();
-    }
-  }, [isMenuOpen]);
-
-  /* ── derived ── */
+  }, [phase, showExplanation]);  /* ── derived ── */
   const basketShift = normalizeShift(activeShifts[0] ?? getInitialShift(0));
   const decryptedSegs = cipherSegs.map((seg, i) =>
     caesarShiftWord(seg, activeShifts[i] ?? 0)
@@ -836,42 +823,16 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         )}
       </div>
 
-      {/* Menu / Pause Modal */}
-      {isMenuOpen && (
-        <div
-          className="caesar-pause-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="caesar-pause-title"
-          onClick={(e) => { if (e.target === e.currentTarget) setIsMenuOpen(false); }}
-        >
-          <div className="caesar-pause-card">
-            <h2 id="caesar-pause-title" className="caesar-pause-title">PAUSED</h2>
-            <button
-              ref={resumeBtnRef}
-              className="caesar-pause-btn caesar-pause-btn-resume"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              <span className="material-symbols-outlined">play_arrow</span>
-              Resume
-            </button>
-            <button
-              className="caesar-pause-btn caesar-pause-btn-tutorial"
-              onClick={() => { setIsMenuOpen(false); setPhase('ready'); }}
-            >
-              <span className="material-symbols-outlined">menu_book</span>
-              Tutorial
-            </button>
-            <button
-              className="caesar-pause-btn caesar-pause-btn-exit"
-              onClick={onBackToStages}
-            >
-              <span className="material-symbols-outlined">logout</span>
-              Exit Stage
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Shared Pause Menu */}
+      <PauseMenu
+        open={isMenuOpen}
+        onResume={() => setIsMenuOpen(false)}
+        onTutorial={() => {
+          setIsMenuOpen(false);
+          setPhase('ready');
+        }}
+        onExit={onBackToStages}
+      />
     </div>
   );
 }

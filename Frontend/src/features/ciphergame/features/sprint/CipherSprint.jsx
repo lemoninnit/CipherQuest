@@ -5,6 +5,7 @@ import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import FullscreenButton from '../../ui/FullscreenButton';
+import PauseMenu from '../../ui/PauseMenu';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const BASE_SPEED = 0.14;
@@ -278,9 +279,15 @@ export default function CipherSprint({
      Keyboard steering
      ─────────────────────────────────────────────── */
   useEffect(() => {
-    if (sprintStep !== 'running' || isCrashing || isMenuOpen) return undefined;
+    if (sprintStep !== 'running' || isCrashing) return undefined;
 
     const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault();
+        setIsMenuOpen((prev) => !prev);
+        return;
+      }
+      if (isMenuOpen) return;
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         setIsPaused((p) => !p);
@@ -716,6 +723,8 @@ export default function CipherSprint({
         isReady={sprintStep === 'ready'}
         onBackToStages={onBackToStages}
         onOpenMenu={() => setIsMenuOpen(true)}
+        lives={sprintStep === 'ready' ? null : lives}
+        customRightContent={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
         extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
       />
 
@@ -782,77 +791,163 @@ export default function CipherSprint({
         )
       ) : (
         /* ───── Running / Gameplay Layout ───── */
-        <div className="sprint-widescreen">
-          <aside className="sprint-sidebar">
-            <div className="sidebar-stats-card">
-              <div className="stats-header">OPERATIVE HUD</div>
-              <div className="stats-content">
-                <div className="stat-row">
-                  <span className="stat-label">LIVES:</span>
-                  <span className="stat-value hearts-glow">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <span
-                        key={i}
-                        className="material-symbols-outlined"
-                        style={{
-                          color: i < lives ? '#ff007f' : 'rgba(255,255,255,0.15)',
-                          fontVariationSettings: "'FILL' 1",
-                          fontSize: '1.1rem',
-                          marginRight: '2px',
-                        }}
-                      >
-                        favorite
-                      </span>
-                    ))}
-                  </span>
-                </div>
-                <div className="stat-row">
-                  <span className="stat-label">CAESAR CLUE:</span>
-                  <span
-                    className="stat-value clue-glow"
-                    style={{ fontSize: '0.9rem', color: 'var(--neon-cyan)', fontWeight: 'bold' }}
-                  >
-                    Plain = Cipher - {currentShiftKey}
-                  </span>
-                </div>
+        <div className="caesar-sprint-fullscreen sprint-fullscreen-stage">
+          {/* Edge-to-edge 3-lane Track */}
+          <div
+            className={[
+              'sprint-track-container',
+              'sprint-track-fullscreen',
+              trackShake ? 'shake-track' : '',
+              isBoosting ? 'is-boosting' : '',
+              isPaused ? 'is-paused' : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            {/* Parallax layers — all using real GandalfHardcore assets */}
+            <div className="sprint-parallax-layer sprint-bg-sky" />
+            <div className="sprint-parallax-layer sprint-bg-hills-far" />
+            <div className="sprint-parallax-layer sprint-bg-hills-near" />
+            <div className="sprint-parallax-layer sprint-bg-ruins" />
+            <div className="sprint-bg-trees-front" />
+            {/* Depth vignette */}
+            <div className="sprint-track-vignette" />
+
+            {/* Speed lines */}
+            {speedLines.map((line) => (
+              <div
+                key={line.id}
+                className="sprint-speed-line"
+                style={{ left: `${line.x}%`, top: `${line.y}%`, width: `${line.width}px` }}
+              />
+            ))}
+
+            {/* Lanes */}
+            <div
+              className={`sprint-lane lane-0 ${runnerLane === 0 ? 'highlighted' : ''}`}
+              onClick={() => {
+                if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(0);
+              }}
+            >
+              <div className="sprint-lane-platform platform-upper" />
+              <span className="sprint-lane-badge">Top Lane</span>
+            </div>
+            <div
+              className={`sprint-lane lane-1 ${runnerLane === 1 ? 'highlighted' : ''}`}
+              onClick={() => {
+                if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(1);
+              }}
+            >
+              <div className="sprint-lane-platform platform-middle" />
+              <span className="sprint-lane-badge">Middle Lane</span>
+            </div>
+            <div
+              className={`sprint-lane lane-2 ${runnerLane === 2 ? 'highlighted' : ''}`}
+              onClick={() => {
+                if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(2);
+              }}
+            >
+              <div className="sprint-lane-platform platform-bottom" />
+              <span className="sprint-lane-badge">Bottom Lane</span>
+            </div>
+
+            {/* Decorative plant accents (CSS-only, no broken image) */}
+            <div className="sprint-track-plants">
+              <div className="sprint-plant-orb plant-orb-1" />
+              <div className="sprint-plant-orb plant-orb-2" />
+            </div>
+
+            {/* Runner */}
+            <div
+              className={[
+                'sprint-runner-sprite',
+                `lane-${runnerLane}`,
+                isCrashing ? 'crash' : '',
+                isSpinning ? 'spin-effect' : '',
+                isBoosting ? 'boost-trail' : '',
+                laneChangeEffect || '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <div className={`sprint-runner-char-sprite ${runnerAnim}`} />
+              <div className="runner-baton-glow">
+                {sprintStep === 'finished' ? '✓' : currentBatonLetter}
               </div>
             </div>
 
+            {/* Coins */}
+            {sprintStep === 'running' &&
+              coins.map((coin) => {
+                if (coin.eaten) return null;
+                const isTarget = coin.char === currentTargetChar;
+                return isTarget ? (
+                  <div
+                    key={coin.id}
+                    className={`sprint-target-gem-sprite lane-${coin.lane}`}
+                    style={{ left: `${coin.x}%` }}
+                  >
+                    <div className="target-gem-aura" />
+                    <div className="target-gem-diamond">
+                      <span className="target-gem-char">{coin.char}</span>
+                    </div>
+                    <div className="target-gem-label">TARGET</div>
+                  </div>
+                ) : (
+                  <div
+                    key={coin.id}
+                    className={`sprint-slime-obstacle-sprite lane-${coin.lane}`}
+                    style={{ left: `${coin.x}%` }}
+                  >
+                    <img
+                      src={coin.id % 2 === 0 ? orangeSlimeSrc : basicSlimeSrc}
+                      alt="Slime Decoy"
+                      className="sprint-slime-img"
+                    />
+                    <div className="slime-decoy-plate">
+                      <span className="slime-decoy-char">{coin.char}</span>
+                    </div>
+                  </div>
+                );
+              })}
+
+            {/* Gate */}
             <div
-              className="sidebar-stats-card"
-              style={{ padding: '12px', display: 'flex', justifyContent: 'center' }}
+              className={`sprint-checkpoint-gate ${
+                isBoosting || sprintStep === 'finished' ? 'gate-cleared' : ''
+              }`}
+              style={{ left: `${sprintStep === 'finished' ? 15 : gateX}%` }}
             >
-              <PauseResumeButton isPaused={isPaused} toggle={() => setIsPaused((p) => !p)} />
+              <div className="gate-mossy-arch">
+                <div className="gate-pillar top" />
+                <div className="gate-energy-barrier">
+                  <div className="gate-rune-glyph">
+                    {isBoosting || sprintStep === 'finished' ? '✓' : 'ᛟ'}
+                  </div>
+                </div>
+                <div className="gate-pillar bottom" />
+              </div>
+              <div className="gate-badge">
+                {isBoosting || sprintStep === 'finished' ? 'CLEARED' : 'GATE'}
+              </div>
             </div>
 
-            <div className="sidebar-action-hud">
-              {sprintStep === 'finished' && (
-                <FinishedPanel
-                  onVerifySubmit={handleVerifySubmit}
-                  onReplayNewQuestion={onReplayNewQuestion}
-                />
-              )}
-              {sprintStep === 'gameover' && (
-                <GameOverPanel onRetry={handleRetryFromCheckpoint} />
-              )}
-              {sprintStep === 'explanation' && (
-                <CrashPanel message={crashMessage} onContinue={handleContinueAfterCrash} />
-              )}
-              {sprintStep === 'running' && (
-                <ObjectivesGuidePanel
-                  batonLetter={currentBatonLetter}
-                  shiftKey={currentShiftKey}
-                />
-              )}
-            </div>
-          </aside>
+            {/* Floating feedback */}
+            {feedbackText && (
+              <div
+                className="sprint-floating-feedback"
+                style={{ top: `${feedbackY}%`, color: feedbackColor }}
+              >
+                {feedbackText}
+              </div>
+            )}
+          </div>
 
-          <main className="sprint-main">
-            {/* Baton HUD */}
-            <div
-              className="sprint-baton-hud"
-              style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
-            >
+          {/* ───── Floating Overlays ───── */}
+
+          {/* 1. Top-Center Floating Approaching Gate HUD */}
+          <div className="caesar-floating-word-panel sprint-floating-gate-panel">
+            <div className="sprint-baton-hud">
               <div className="baton-tag">APPROACHING GATE:</div>
               <div
                 className="baton-letter"
@@ -866,162 +961,31 @@ export default function CipherSprint({
               </div>
               <div className="baton-desc">
                 {sprintStep === 'finished'
-                  ? 'Relay run completed! Verify decryption in the sidebar.'
+                  ? 'Relay run completed! Verify decryption.'
                   : `Decrypt '${currentBatonLetter}' using Shift -${currentShiftKey}!`}
               </div>
             </div>
+          </div>
 
-            {/* Track */}
-            <div
-              className={[
-                'sprint-track-container',
-                trackShake ? 'shake-track' : '',
-                isBoosting ? 'is-boosting' : '',
-                isPaused ? 'is-paused' : '',
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            >
-              {/* Parallax layers — all using real GandalfHardcore assets */}
-              <div className="sprint-parallax-layer sprint-bg-sky" />
-              <div className="sprint-parallax-layer sprint-bg-hills-far" />
-              <div className="sprint-parallax-layer sprint-bg-hills-near" />
-              <div className="sprint-parallax-layer sprint-bg-ruins" />
-              <div className="sprint-bg-trees-front" />
-              {/* Depth vignette */}
-              <div className="sprint-track-vignette" />
-
-              {/* Speed lines */}
-              {speedLines.map((line) => (
-                <div
-                  key={line.id}
-                  className="sprint-speed-line"
-                  style={{ left: `${line.x}%`, top: `${line.y}%`, width: `${line.width}px` }}
-                />
-              ))}
-
-              {/* Lanes */}
-              <div
-                className={`sprint-lane lane-0 ${runnerLane === 0 ? 'highlighted' : ''}`}
-                onClick={() => {
-                  if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(0);
-                }}
-              >
-                <div className="sprint-lane-platform" />
-                <span className="sprint-lane-badge">Top Lane</span>
-              </div>
-              <div
-                className={`sprint-lane lane-1 ${runnerLane === 1 ? 'highlighted' : ''}`}
-                onClick={() => {
-                  if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(1);
-                }}
-              >
-                <div className="sprint-lane-platform" />
-                <span className="sprint-lane-badge">Middle Lane</span>
-              </div>
-              <div
-                className={`sprint-lane lane-2 ${runnerLane === 2 ? 'highlighted' : ''}`}
-                onClick={() => {
-                  if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(2);
-                }}
-              >
-                <div className="sprint-lane-platform" />
-                <span className="sprint-lane-badge">Bottom Lane</span>
-              </div>
-
-              {/* Decorative plant accents (CSS-only, no broken image) */}
-              <div className="sprint-track-plants">
-                <div className="sprint-plant-orb plant-orb-1" />
-                <div className="sprint-plant-orb plant-orb-2" />
-              </div>
-
-              {/* Runner */}
-              <div
-                className={[
-                  'sprint-runner-sprite',
-                  `lane-${runnerLane}`,
-                  isCrashing ? 'crash' : '',
-                  isSpinning ? 'spin-effect' : '',
-                  isBoosting ? 'boost-trail' : '',
-                  laneChangeEffect || '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              >
-                <div className={`sprint-runner-char-sprite ${runnerAnim}`} />
-                <div className="runner-baton-glow">
-                  {sprintStep === 'finished' ? '✓' : currentBatonLetter}
-                </div>
-              </div>
-
-              {/* Coins */}
-              {sprintStep === 'running' &&
-                coins.map((coin) => {
-                  if (coin.eaten) return null;
-                  const isTarget = coin.char === currentTargetChar;
-                  return isTarget ? (
-                    <div
-                      key={coin.id}
-                      className={`sprint-target-gem-sprite lane-${coin.lane}`}
-                      style={{ left: `${coin.x}%` }}
-                    >
-                      <div className="target-gem-aura" />
-                      <div className="target-gem-diamond">
-                        <span className="target-gem-char">{coin.char}</span>
-                      </div>
-                      <div className="target-gem-label">TARGET</div>
-                    </div>
-                  ) : (
-                    <div
-                      key={coin.id}
-                      className={`sprint-slime-obstacle-sprite lane-${coin.lane}`}
-                      style={{ left: `${coin.x}%` }}
-                    >
-                      <img
-                        src={coin.id % 2 === 0 ? orangeSlimeSrc : basicSlimeSrc}
-                        alt="Slime Decoy"
-                        className="sprint-slime-img"
-                      />
-                      <div className="slime-decoy-plate">
-                        <span className="slime-decoy-char">{coin.char}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-
-              {/* Gate */}
-              <div
-                className={`sprint-checkpoint-gate ${
-                  isBoosting || sprintStep === 'finished' ? 'gate-cleared' : ''
-                }`}
-                style={{ left: `${sprintStep === 'finished' ? 15 : gateX}%` }}
-              >
-                <div className="gate-mossy-arch">
-                  <div className="gate-pillar top" />
-                  <div className="gate-energy-barrier">
-                    <div className="gate-rune-glyph">
-                      {isBoosting || sprintStep === 'finished' ? '✓' : 'ᛟ'}
-                    </div>
-                  </div>
-                  <div className="gate-pillar bottom" />
-                </div>
-                <div className="gate-badge">
-                  {isBoosting || sprintStep === 'finished' ? 'CLEARED' : 'GATE'}
-                </div>
-              </div>
-
-              {/* Floating feedback */}
-              {feedbackText && (
-                <div
-                  className="sprint-floating-feedback"
-                  style={{ top: `${feedbackY}%`, color: feedbackColor }}
-                >
-                  {feedbackText}
-                </div>
-              )}
+          {/* 2. Bottom-Left Floating Reference & Guide Panel */}
+          <div className="caesar-floating-guide sprint-floating-guide">
+            <div className="sprint-guide-top-row">
+              <span className="caesar-guide-title">Objectives &amp; Guide</span>
+              <span className="sprint-clue-pill clue-glow">
+                Plain = Cipher - {currentShiftKey}
+              </span>
             </div>
+            <div className="caesar-guide-desc">
+              • Steer runner into lane carrying the correct plaintext letter.
+              <br />• Avoid decoy slime obstacles to prevent crashing!
+            </div>
+            <div className="caesar-guide-tip">
+              Controls: <strong>Arrow Up/Down</strong> or <strong>W/S</strong> to switch lanes. <strong>Space</strong> to pause.
+            </div>
+          </div>
 
-            {/* Progress */}
+          {/* 3. Bottom-Center Floating Word Decryption Progress */}
+          <div className="sprint-floating-word-progress">
             <WordProgress
               levelData={levelData}
               hintIndices={hintIndices}
@@ -1029,21 +993,66 @@ export default function CipherSprint({
               currentMaskIndex={currentMaskIndex}
               sprintStep={sprintStep}
             />
-          </main>
+          </div>
+
+          {/* 4. Bottom-Right Floating Current Letter Decryption Key */}
+          {sprintStep === 'running' && (
+            <div className="caesar-floating-basket-card sprint-floating-shift-card">
+              <div className="caesar-basket-icon">🔑</div>
+              <div className="sprint-decryption-flow">
+                <div className="sprint-flow-box cipher-box">
+                  <span className="sprint-flow-char">{currentBatonLetter}</span>
+                  <span className="sprint-flow-label">CIPHER</span>
+                </div>
+                <div className="sprint-flow-arrow">
+                  <span className="sprint-shift-badge">Shift -{currentShiftKey}</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>
+                    arrow_forward
+                  </span>
+                </div>
+                <div className="sprint-flow-box plain-box">
+                  <span className="sprint-flow-char plain">?</span>
+                  <span className="sprint-flow-label plain">PLAIN</span>
+                </div>
+              </div>
+              <span className="caesar-basket-label">Current Letter Decryption</span>
+            </div>
+          )}
+
+          {/* 5. Floating Action / Outcome Panels */}
+          {sprintStep === 'finished' && (
+            <div className="caesar-floating-victory-panel sprint-floating-victory-panel">
+              <FinishedPanel
+                onVerifySubmit={handleVerifySubmit}
+                onReplayNewQuestion={onReplayNewQuestion}
+              />
+            </div>
+          )}
+
+          {sprintStep === 'gameover' && (
+            <div className="caesar-floating-rule-violation sprint-floating-action-modal">
+              <GameOverPanel onRetry={handleRetryFromCheckpoint} />
+            </div>
+          )}
+
+          {sprintStep === 'explanation' && (
+            <div className="caesar-floating-rule-violation sprint-floating-action-modal">
+              <CrashPanel message={crashMessage} onContinue={handleContinueAfterCrash} />
+            </div>
+          )}
         </div>
       )}
 
-      {/* ───── Menu Modal ───── */}
-      {isMenuOpen && (
-        <PausedMenu
-          onResume={() => setIsMenuOpen(false)}
-          onTutorial={() => {
-            setIsMenuOpen(false);
-            setSprintStep('ready');
-          }}
-          onExit={onBackToStages}
-        />
-      )}
+      {/* ───── Shared Pause Menu ───── */}
+      <PauseMenu
+        open={isMenuOpen}
+        onResume={() => setIsMenuOpen(false)}
+        onTutorial={() => {
+          setIsMenuOpen(false);
+          setSprintStep('ready');
+        }}
+        onExit={onBackToStages}
+      />
     </div>
   );
 }
@@ -1304,16 +1313,7 @@ function ObjectivesGuidePanel({ batonLetter, shiftKey }) {
 
 function WordProgress({ levelData, hintIndices, maskedIndices, currentMaskIndex, sprintStep }) {
   return (
-    <div
-      className="sprint-word-progress-card"
-      style={{
-        marginTop: '20px',
-        background: 'var(--card-bg)',
-        border: '1px solid var(--card-border)',
-        borderRadius: '12px',
-        padding: '16px 20px',
-      }}
-    >
+    <div className="sprint-word-progress-card">
       <h3
         style={{
           fontSize: '0.9rem',
@@ -1358,92 +1358,6 @@ function WordProgress({ levelData, hintIndices, maskedIndices, currentMaskIndex,
   );
 }
 
-function PausedMenu({ onResume, onTutorial, onExit }) {
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-      }}
-    >
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #0f172a, #020617)',
-          border: '1px solid rgba(56, 189, 248, 0.3)',
-          borderRadius: '16px',
-          padding: '32px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
-          minWidth: '320px',
-          boxShadow: '0 0 30px rgba(0,0,0,0.8)',
-        }}
-      >
-        <h2
-          style={{
-            color: 'var(--neon-cyan)',
-            margin: 0,
-            textAlign: 'center',
-            fontSize: '1.6rem',
-            marginBottom: '8px',
-            letterSpacing: '2px',
-          }}
-        >
-          PAUSED
-        </h2>
-        <button
-          className="fg-btn fg-btn-primary"
-          onClick={onResume}
-          style={{
-            padding: '14px',
-            fontSize: '1.1rem',
-            background: 'var(--neon-green)',
-            color: '#000',
-            fontWeight: 'bold',
-          }}
-        >
-          ▶ Resume
-        </button>
-        <button
-          className="fg-btn fg-btn-secondary"
-          onClick={onTutorial}
-          style={{
-            padding: '14px',
-            fontSize: '1.1rem',
-            background: 'rgba(255,255,255,0.08)',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.2)',
-          }}
-        >
-          📖 Tutorial
-        </button>
-        <button
-          className="fg-btn"
-          onClick={onExit}
-          style={{
-            padding: '14px',
-            fontSize: '1.1rem',
-            background: 'rgba(239, 68, 68, 0.15)',
-            color: '#ef4444',
-            border: '1px solid rgba(239,68,68,0.4)',
-            marginTop: '8px',
-          }}
-        >
-          🚪 Exit Stage
-        </button>
-      </div>
-    </div>
-  );
-}
 
 /* ───────────────────────────────────────────────
    Level metadata hook (memoised)

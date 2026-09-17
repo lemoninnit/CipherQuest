@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import '../sprint/CipherSprint.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
+import PauseMenu from '../../ui/PauseMenu';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import FullscreenButton from '../../ui/FullscreenButton';
@@ -258,9 +259,15 @@ export default function PlayfairSprint({
   }, [toggleFullscreen]);
 
   useEffect(() => {
-    if (sprintStep !== 'running' || isCrashing || isMenuOpen) return undefined;
+    if (sprintStep !== 'running' || isCrashing) return undefined;
 
     const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.code === 'Escape') {
+        e.preventDefault();
+        setIsMenuOpen((prev) => !prev);
+        return;
+      }
+      if (isMenuOpen) return;
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         setIsPaused((p) => !p);
@@ -841,7 +848,7 @@ export default function PlayfairSprint({
                   if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(0);
                 }}
               >
-                <div className="sprint-lane-platform" />
+                <div className="sprint-lane-platform platform-upper" />
                 <span className="sprint-lane-badge">Top Lane</span>
               </div>
               <div
@@ -850,7 +857,7 @@ export default function PlayfairSprint({
                   if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(1);
                 }}
               >
-                <div className="sprint-lane-platform" />
+                <div className="sprint-lane-platform platform-middle" />
                 <span className="sprint-lane-badge">Middle Lane</span>
               </div>
               <div
@@ -859,7 +866,7 @@ export default function PlayfairSprint({
                   if (sprintStep === 'running' && !isPausedRef.current) setRunnerLane(2);
                 }}
               >
-                <div className="sprint-lane-platform" />
+                <div className="sprint-lane-platform platform-bottom" />
                 <span className="sprint-lane-badge">Bottom Lane</span>
               </div>
 
@@ -961,16 +968,15 @@ export default function PlayfairSprint({
         </div>
       )}
 
-      {isMenuOpen && (
-        <PausedMenu
-          onResume={() => setIsMenuOpen(false)}
-          onTutorial={() => {
-            setIsMenuOpen(false);
-            setSprintStep('ready');
-          }}
-          onExit={onBackToStages}
-        />
-      )}
+      <PauseMenu
+        open={isMenuOpen}
+        onResume={() => setIsMenuOpen(false)}
+        onTutorial={() => {
+          setIsMenuOpen(false);
+          setSprintStep('ready');
+        }}
+        onExit={onBackToStages}
+      />
     </div>
   );
 }
@@ -1276,92 +1282,7 @@ function PairProgress({ pairData, hintIndices, maskedIndices, currentMaskIndex, 
   );
 }
 
-function PausedMenu({ onResume, onTutorial, onExit }) {
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-      }}
-    >
-      <div
-        style={{
-          background: 'linear-gradient(135deg, #0f172a, #020617)',
-          border: '1px solid rgba(56, 189, 248, 0.3)',
-          borderRadius: '16px',
-          padding: '32px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
-          minWidth: '320px',
-          boxShadow: '0 0 30px rgba(0,0,0,0.8)',
-        }}
-      >
-        <h2
-          style={{
-            color: 'var(--neon-cyan)',
-            margin: 0,
-            textAlign: 'center',
-            fontSize: '1.6rem',
-            marginBottom: '8px',
-            letterSpacing: '2px',
-          }}
-        >
-          PAUSED
-        </h2>
-        <button
-          className="fg-btn fg-btn-primary"
-          onClick={onResume}
-          style={{
-            padding: '14px',
-            fontSize: '1.1rem',
-            background: 'var(--neon-green)',
-            color: '#000',
-            fontWeight: 'bold',
-          }}
-        >
-          ▶ Resume
-        </button>
-        <button
-          className="fg-btn fg-btn-secondary"
-          onClick={onTutorial}
-          style={{
-            padding: '14px',
-            fontSize: '1.1rem',
-            background: 'rgba(255,255,255,0.08)',
-            color: '#fff',
-            border: '1px solid rgba(255,255,255,0.2)',
-          }}
-        >
-          📖 Tutorial
-        </button>
-        <button
-          className="fg-btn"
-          onClick={onExit}
-          style={{
-            padding: '14px',
-            fontSize: '1.1rem',
-            background: 'rgba(239, 68, 68, 0.15)',
-            color: '#ef4444',
-            border: '1px solid rgba(239,68,68,0.4)',
-            marginTop: '8px',
-          }}
-        >
-          🚪 Exit Stage
-        </button>
-      </div>
-    </div>
-  );
-}
+
 
 function useMemoLevelMeta(pairData, tier) {
   return React.useMemo(() => {
