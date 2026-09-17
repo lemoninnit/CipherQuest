@@ -195,6 +195,23 @@ const describePlayfairRule = (rule, mode = 'decrypt') => {
   return 'Rectangle: keep each row, swap to the other letter column.';
 };
 
+const getMask = (levelData, idx) => {
+  if (!levelData) return true;
+  if (levelData.fullMask && levelData.fullMask[idx] !== undefined) {
+    return levelData.fullMask[idx];
+  }
+  let wordStart = 0;
+  const words = (levelData.plaintext || '').split(' ');
+  for (let w = 0; w < words.length; w++) {
+    const word = words[w];
+    if (idx >= wordStart && idx < wordStart + word.length) {
+      return levelData.masks?.[w]?.[idx - wordStart] ?? true;
+    }
+    wordStart += word.length + 1;
+  }
+  return true;
+};
+
 // Dynamically configure ghosts: capped active target letters + queue system + decoys.
 const generateInitialGhosts = (levelData, tier) => {
   const normTier = String(tier || levelData?.tier || 'easy').toLowerCase();
@@ -253,12 +270,15 @@ const generateInitialGhosts = (levelData, tier) => {
   }
 
   const maskedIndices = [];
-  if (levelData && levelData.masks && levelData.masks[0]) {
-    levelData.masks[0].forEach((m, idx) => {
-      if (!m) {
-        maskedIndices.push(idx);
+  if (levelData && levelData.plaintext) {
+    for (let i = 0; i < levelData.plaintext.length; i++) {
+      const ch = levelData.plaintext[i];
+      if (ch >= 'A' && ch <= 'Z') {
+        if (!getMask(levelData, i)) {
+          maskedIndices.push(i);
+        }
       }
-    });
+    }
   }
 
   const allTargets = maskedIndices.map((idx, i) => ({
@@ -284,12 +304,17 @@ const generateInitialGhosts = (levelData, tier) => {
   // Add decoy ghosts for distraction/challenge
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const targetLetters = levelData.plaintext ? maskedIndices.map(idx => levelData.plaintext[idx]) : [];
+  const ciphertextLetters = levelData.ciphertext ? levelData.ciphertext.split('') : [];
+  const plaintextLetters = levelData.plaintext ? levelData.plaintext.split('') : [];
+  const avoidLetters = new Set([...targetLetters, ...ciphertextLetters, ...plaintextLetters]);
   
   for (let i = 0; i < decoyCount; i++) {
     let decoyChar = '';
+    let attempts = 0;
     do {
       decoyChar = alphabet[Math.floor(Math.random() * 26)];
-    } while (targetLetters.includes(decoyChar));
+      attempts++;
+    } while ((avoidLetters.has(decoyChar) || targetLetters.includes(decoyChar)) && attempts < 100);
 
     const posIdx = activeTargets.length + i;
     const pos = startPositions[posIdx % startPositions.length];
@@ -334,12 +359,19 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const targetQueueRef = useRef(initialGhostsData.queue);
   const initialGhosts = initialGhostsData.ghosts;
 
-  const maskedIndices = [];
-  if (levelData.masks && levelData.masks[0]) {
-    levelData.masks[0].forEach((m, idx) => {
-      if (!m) maskedIndices.push(idx);
-    });
-  }
+  const maskedIndices = React.useMemo(() => {
+    const indices = [];
+    if (!levelData || !levelData.plaintext) return indices;
+    for (let i = 0; i < levelData.plaintext.length; i++) {
+      const ch = levelData.plaintext[i];
+      if (ch >= 'A' && ch <= 'Z') {
+        if (!getMask(levelData, i)) {
+          indices.push(i);
+        }
+      }
+    }
+    return indices;
+  }, [levelData]);
 
   const [phase, setPhase] = useState('ready');
   const [isOperationLoading, setIsOperationLoading] = useState(false);
@@ -408,14 +440,15 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   useEffect(() => { isInvulnerableRef.current = isInvulnerable; }, [isInvulnerable]);
 
   const activeSolvingIndex = React.useMemo(() => {
-    if (!levelData.masks || !levelData.masks[0]) return -1;
-    for (let i = 0; i < levelData.masks[0].length; i++) {
-      if (!levelData.masks[0][i] && !eatenGhosts.includes(i)) {
+    if (!levelData || !levelData.plaintext) return -1;
+    for (let i = 0; i < levelData.plaintext.length; i++) {
+      const ch = levelData.plaintext[i];
+      if (ch >= 'A' && ch <= 'Z' && !getMask(levelData, i) && !eatenGhosts.includes(i)) {
         return i;
       }
     }
     return -1;
-  }, [levelData.masks, eatenGhosts]);
+  }, [levelData, eatenGhosts]);
 
   const vigenereAlignmentItems = React.useMemo(() => {
     if (!isVigenere || !levelData.plaintext) return [];
@@ -431,7 +464,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         const slot = letterCounter % targetKey.length;
         const keyChar = targetKey[slot] || 'A';
         const shiftVal = charToIdx(keyChar);
-        const isSolved = eatenGhosts.includes(i) || (levelData.masks?.[0]?.[i] === true);
+        const isSolved = eatenGhosts.includes(i) || getMask(levelData, i);
         const isActive = i === activeSolvingIndex;
         items.push({
           id: `item-${i}`,
@@ -447,7 +480,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       }
     }
     return items;
-  }, [isVigenere, levelData.plaintext, levelData.ciphertext, levelData.targetKey, levelData.masks, eatenGhosts, activeSolvingIndex]);
+  }, [isVigenere, levelData.plaintext, levelData.ciphertext, levelData.targetKey, eatenGhosts, activeSolvingIndex, levelData]);
 
   const activeSolvingItem = React.useMemo(() => {
     return vigenereAlignmentItems.find((item) => item.isActive) || null;
@@ -1454,7 +1487,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   <div className="fg-word-segment-card">
                     <div className="fg-letter-cells">
                       {(levelData.plaintext || '').split('').map((char, idx) => {
-                        const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
+                        const mask = getMask(levelData, idx);
                         const isGhostIndex = !mask;
                         const isEaten = eatenGhosts.includes(idx);
                         const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
@@ -1536,7 +1569,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 ) : (
                   <div className="fg-letter-cells">
                     {(levelData.plaintext || '').split('').map((char, idx) => {
-                      const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
+                      const mask = getMask(levelData, idx);
                       const isGhostIndex = !mask;
                       const isEaten = eatenGhosts.includes(idx);
                       const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
