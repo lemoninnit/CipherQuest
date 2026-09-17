@@ -8,6 +8,7 @@ import {
   transformPlayfairPair,
 } from './PlayfairHelpers';
 import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
+import { fishingSound } from '../../core/engine/fishingSound';
 
 const FISH_VALUES = ['fin', 'tide', 'reef', 'wake', 'foam', 'gill', 'sail', 'dock'];
 
@@ -104,9 +105,60 @@ export default function PlayfairFishingGame({
   const [feedback, setFeedback] = useState(null);
   const [recapStep, setRecapStep] = useState(-1);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      fishingSound.stopBgm();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'playing' && !isMenuOpen) {
+      fishingSound.playBgm();
+    } else {
+      fishingSound.pauseBgm();
+    }
+  }, [phase, isMenuOpen]);
+
+  const toggleSound = () => {
+    const muted = fishingSound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const soundToggleButton = (
+    <button
+      className="fg-btn-icon"
+      onClick={toggleSound}
+      title={isMuted ? "Unmute Sound" : "Mute Sound"}
+      style={{
+        background: 'rgba(255, 255, 255, 0.08)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: '8px',
+        color: '#fff',
+        padding: '4px 8px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        fontSize: '1rem'
+      }}
+    >
+      {isMuted ? '🔇' : '🔊'}
+    </button>
+  );
 
   const animationRef = useRef(null);
   const feedbackTimer = useRef(null);
+  const rodFrameRef = useRef(null);
+  // Ref to the pond container — needed to convert DOM-px fish.y → SVG viewBox units
+  const pondRef = useRef(null);
+  const pondHeightRef = useRef(270);
+
+  // Fishing rod sprite sheet: 8 frames in one horizontal row
+  // 0-1 = idle, 2-4 = casting out, 5-7 = reeling in
+  const ROD_TOTAL_FRAMES = 8;
+  const [rodFrame, setRodFrame] = useState(0);
+  const [rodFacingRight, setRodFacingRight] = useState(false);
 
   const activePair = pairData[activeIndex];
   const solvedCount = solvedPairs.filter(Boolean).length;
@@ -115,6 +167,8 @@ export default function PlayfairFishingGame({
   const revealRule = tier === 'easy' || misses >= 2;
 
   const startGame = () => {
+    fishingSound.unlockAudio();
+    fishingSound.playBgm();
     setPhase('playing');
     setActiveIndex(0);
     setSolvedPairs(Array(pairData.length).fill(null));
@@ -165,6 +219,7 @@ export default function PlayfairFishingGame({
   const handleCatch = (fish) => {
     const candidate = normalizePair(fish.pair);
     if (candidate === activePair.plainPair) {
+      fishingSound.playSfx('catch');
       const nextSolved = [...solvedPairs];
       nextSolved[activeIndex] = activePair.plainPair;
       setSolvedPairs(nextSolved);
@@ -173,6 +228,8 @@ export default function PlayfairFishingGame({
       showFeedback(`${candidate} is correct. ${currentRuleHint}`, 'success');
 
       if (activeIndex >= pairData.length - 1) {
+        fishingSound.stopBgm();
+        fishingSound.playSfx('win');
         setTimeout(finishStage, 650);
       } else {
         const nextIndex = activeIndex + 1;
@@ -184,6 +241,7 @@ export default function PlayfairFishingGame({
       return;
     }
 
+    fishingSound.playSfx('lose');
     const nextMisses = misses + 1;
     setMisses(nextMisses);
     setStreak(0);
@@ -203,11 +261,33 @@ export default function PlayfairFishingGame({
 
   const castAt = (fish) => {
     if (isCasting || phase !== 'playing') return;
+    fishingSound.unlockAudio();
+    fishingSound.playSfx('cast');
     setIsCasting(true);
     setCaughtFish(fish);
-    const pond = document.querySelector('.pf-pond');
-    const pondWidth = pond?.offsetWidth || 700;
-    setCastTarget({ x: (fish.x / 100) * pondWidth, y: fish.y });
+    // Remove immediately so the fish doesn't appear in both fishList and the hooked position
+    setFishList((prev) => prev.filter((item) => item.id !== fish.id));
+    // x: fish.x is a % → map to SVG viewBox width (700). Do NOT use DOM pond width.
+    const tx = (fish.x / 100) * 700;
+    // y: fish.y is DOM px → convert to SVG viewBox height (240)
+    const pondHeight = pondRef.current?.offsetHeight || 270;
+    pondHeightRef.current = pondHeight;
+    const ty = (fish.y / pondHeight) * 240;
+    setCastTarget({ x: tx, y: ty });
+    // Flip sprite toward the fish (centre of 700-wide viewBox is 350)
+    setRodFacingRight(tx > 350);
+
+    // Animate rod frames during cast-out (frames 2-4)
+    let castFrameIndex = 2;
+    const castFrameInterval = setInterval(() => {
+      setRodFrame((prev) => {
+        if (prev < 4) return prev + 1;
+        return 4;
+      });
+      castFrameIndex++;
+      if (castFrameIndex > 4) clearInterval(castFrameInterval);
+    }, 90);
+    rodFrameRef.current = castFrameInterval;
 
     let start = null;
     const castOut = (timestamp) => {
@@ -221,9 +301,17 @@ export default function PlayfairFishingGame({
 
       setSplash({ x: fish.x, y: fish.y });
       setTimeout(() => setSplash(null), 450);
-      setFishList((prev) => prev.filter((item) => item.id !== fish.id));
+      // Fish already removed from list at cast start
 
+      // Hold at cast frame 4 briefly, then animate reel-in frames (5-7)
       setTimeout(() => {
+        let reelFrameIndex = 5;
+        const reelFrameInterval = setInterval(() => {
+          setRodFrame(reelFrameIndex);
+          reelFrameIndex++;
+          if (reelFrameIndex > 7) clearInterval(reelFrameInterval);
+        }, 90);
+
         let reelStart = null;
         const reelIn = (reelTimestamp) => {
           if (!reelStart) reelStart = reelTimestamp;
@@ -233,6 +321,8 @@ export default function PlayfairFishingGame({
             requestAnimationFrame(reelIn);
             return;
           }
+          // Return to idle frame
+          setRodFrame(0);
           setIsCasting(false);
           setCaughtFish(null);
           handleCatch(fish);
@@ -245,11 +335,11 @@ export default function PlayfairFishingGame({
   };
 
   const cipherHighlight = new Set(activePair?.cipherPositions.map(positionKey) || []);
-  const pondWidth = 700;
-  const rodBaseX = pondWidth * 0.42;
-  const rodBaseY = 225;
-  const rodTipX = rodBaseX - 32;
-  const rodTipY = 174;
+  const pondWidth = 700; // SVG viewBox width
+  // rodTipX/Y: fixed anchor on the sprite where the fishing line starts.
+  // Flips to the opposite side when the sprite is mirrored (facing right).
+  const rodTipX = rodFacingRight ? 555 : 145;
+  const rodTipY = 80;
   const hookX = caughtFish ? rodTipX + (castTarget.x - rodTipX) * castProgress : rodTipX;
   const hookY = caughtFish ? rodTipY + (castTarget.y - rodTipY) * castProgress : rodTipY;
 
@@ -276,6 +366,7 @@ export default function PlayfairFishingGame({
           tier={tier}
           isReady={true}
           onBackToStages={onBackToStages}
+          customRightContent={soundToggleButton}
         />
 
         <main className="cq-brief-screen">
@@ -336,7 +427,14 @@ export default function PlayfairFishingGame({
                 <strong>Fishing rule:</strong> each fish carries a two-letter plaintext candidate. Correct catches fill the message. Wrong catches explain the matrix rule you missed.
               </p>
 
-              <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
+              <button
+                className="cq-dossier-action-btn"
+                onClick={() => {
+                  fishingSound.unlockAudio();
+                  fishingSound.playBgm();
+                  setIsOperationLoading(true);
+                }}
+              >
                 Begin operation
               </button>
             </div>
@@ -394,6 +492,7 @@ export default function PlayfairFishingGame({
         tier={tier}
         isReady={false}
         onOpenMenu={() => setIsMenuOpen(true)}
+        customRightContent={soundToggleButton}
       />
 
       <main className="pf-game">
@@ -481,7 +580,7 @@ export default function PlayfairFishingGame({
             </div>
           </div>
 
-          <section className="pf-pond">
+          <section className="pf-pond" ref={pondRef}>
               {/* Ocean background video */}
               <video
                 className="fg-pond-video"
@@ -526,7 +625,11 @@ export default function PlayfairFishingGame({
               </button>
             ))}
             {caughtFish && (
-              <div className="pf-reel-fish" style={{ left: `${(hookX / pondWidth) * 100}%`, top: hookY - 10 }}>
+              <div className="pf-reel-fish" style={{
+                left: `${(hookX / 700) * 100}%`,
+                // Convert SVG y back to DOM px so the fish tracks the line endpoint
+                top: `${(hookY / 240) * pondHeightRef.current - 10}px`,
+              }}>
                 <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
                   <img
                     className="fg-fish-sprite-img pf-fish-img"
@@ -539,8 +642,16 @@ export default function PlayfairFishingGame({
               </div>
             )}
             {splash && <div className="pf-splash" style={{ left: `${splash.x}%`, top: splash.y }} />}
+            {/* Fishing rod sprite — flips toward the clicked fish */}
+            <div
+              className={`pf-fishing-rod${rodFacingRight ? ' facing-right' : ''}`}
+              style={{
+                '--rod-frame': rodFrame,
+                '--rod-total': ROD_TOTAL_FRAMES,
+              }}
+              aria-hidden="true"
+            />
             <svg className="vg-pond-svg" viewBox={`0 0 ${pondWidth} 240`} preserveAspectRatio="none">
-              <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="vg-rod-line" />
               {caughtFish && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="vg-fish-line" />}
             </svg>
           </section>
