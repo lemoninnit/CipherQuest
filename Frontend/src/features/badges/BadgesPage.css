@@ -258,73 +258,168 @@
 }
 
 .bd-status-pill.unlocked {
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(16, 185, 129, 0.22);
   color: #34d399;
-  border: 1px solid #10b981;
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  border: 1.5px solid #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+  text-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
 }
 
 .bd-status-pill.locked {
-  background: rgba(100, 116, 139, 0.2);
+  background: rgba(30, 41, 59, 0.85);
   color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  font-weight: 800;
+  letter-spacing: 0.06em;
 }
 
-/* Border Metallic Styles & Vibrant Ambient Glows */
-.bd-badge-card.border-bronze {
+/* 🔒 LOCKED BADGE CARD STYLING */
+.bd-badge-card.locked {
+  background: linear-gradient(180deg, rgba(10, 22, 40, 0.88) 0%, rgba(5, 14, 26, 0.95) 100%) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6) !important;
+  opacity: 1 !important; /* Full opacity so text & progress numbers stay crisp & clear */
+}
+
+.bd-badge-card.locked:hover {
+  border-color: rgba(0, 229, 255, 0.4) !important;
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.85), 0 0 15px rgba(0, 229, 255, 0.2) !important;
+}
+
+/* Emblem Image - Only the picture is grayscale/dimmed */
+.bd-badge-card.locked .bd-badge-img {
+  filter: grayscale(100%) brightness(0.4) contrast(0.9) !important;
+  opacity: 0.5;
+}
+
+/* Crisp, High-Legibility Typography on Locked Cards */
+.bd-badge-card.locked .bd-badge-title {
+  color: #ffffff !important;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.bd-badge-card.locked .bd-badge-desc {
+  color: #cbd5e1 !important;
+  font-size: 0.74rem;
+}
+
+.bd-badge-card.locked .bd-progress-label {
+  color: #94a3b8 !important;
+  font-weight: 700;
+}
+
+.bd-badge-card.locked .bd-progress-val {
+  color: #00e5ff !important;
+  font-weight: 800;
+  text-shadow: 0 0 6px rgba(0, 229, 255, 0.4);
+}
+
+.bd-badge-card.locked .bd-card-progress-track {
+  background: rgba(255, 255, 255, 0.12) !important;
+  height: 6px;
+}
+
+/* Tier tags remain full opacity and color */
+.bd-badge-card.locked .bd-tier-tag {
+  opacity: 1 !important;
+  filter: none !important;
+}
+
+/* Central Lock Badge Shield for Locked Badges */
+.bd-lock-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  background: rgba(6, 14, 26, 0.94);
+  border: 2px solid rgba(0, 229, 255, 0.4);
+  color: #00e5ff;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.9), inset 0 0 8px rgba(0, 0, 0, 0.6);
+  transition: all 0.3s ease;
+}
+
+.bd-badge-card.locked:hover .bd-lock-badge {
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.7);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* 🔓 UNLOCKED BADGE CARD STYLING */
+.bd-badge-card.unlocked {
+  background: linear-gradient(180deg, rgba(14, 30, 54, 0.9) 0%, rgba(6, 18, 34, 0.95) 100%);
+  opacity: 1;
+}
+
+.bd-badge-card.unlocked .bd-badge-img {
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.8)) brightness(1.1) contrast(1.05);
+  opacity: 1;
+}
+
+/* Vibrant Metallic Borders & Glowing Ambient Effects (UNLOCKED ONLY) */
+.bd-badge-card.unlocked.border-bronze {
   border: 2px solid #cd7f32;
-  box-shadow: 0 0 18px rgba(205, 127, 50, 0.35);
+  box-shadow: 0 0 25px rgba(205, 127, 50, 0.45), inset 0 0 15px rgba(205, 127, 50, 0.15);
 }
-.bd-badge-card.border-bronze:hover {
-  box-shadow: 0 0 30px rgba(205, 127, 50, 0.65), inset 0 0 20px rgba(205, 127, 50, 0.2);
-}
-
-.bd-badge-card.border-silver {
-  border: 2px solid #cbd5e1;
-  box-shadow: 0 0 18px rgba(203, 213, 225, 0.35);
-}
-.bd-badge-card.border-silver:hover {
-  box-shadow: 0 0 30px rgba(203, 213, 225, 0.65), inset 0 0 20px rgba(203, 213, 225, 0.2);
+.bd-badge-card.unlocked.border-bronze:hover {
+  box-shadow: 0 0 38px rgba(205, 127, 50, 0.75), inset 0 0 22px rgba(205, 127, 50, 0.3);
 }
 
-.bd-badge-card.border-gold {
+.bd-badge-card.unlocked.border-silver {
+  border: 2px solid #e2e8f0;
+  box-shadow: 0 0 25px rgba(226, 232, 240, 0.45), inset 0 0 15px rgba(226, 232, 240, 0.15);
+}
+.bd-badge-card.unlocked.border-silver:hover {
+  box-shadow: 0 0 38px rgba(226, 232, 240, 0.75), inset 0 0 22px rgba(226, 232, 240, 0.3);
+}
+
+.bd-badge-card.unlocked.border-gold {
   border: 2px solid #ffd700;
-  box-shadow: 0 0 24px rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 32px rgba(255, 215, 0, 0.55), inset 0 0 20px rgba(255, 215, 0, 0.25);
 }
-.bd-badge-card.border-gold:hover {
-  box-shadow: 0 0 36px rgba(255, 215, 0, 0.8), inset 0 0 22px rgba(255, 215, 0, 0.3);
+.bd-badge-card.unlocked.border-gold:hover {
+  box-shadow: 0 0 45px rgba(255, 215, 0, 0.85), inset 0 0 25px rgba(255, 215, 0, 0.4);
 }
 
-.bd-badge-card.border-flame {
+.bd-badge-card.unlocked.border-flame {
   border: 2px solid #f97316;
-  box-shadow: 0 0 22px rgba(249, 115, 22, 0.45);
+  box-shadow: 0 0 28px rgba(249, 115, 22, 0.55);
 }
-.bd-badge-card.border-flame:hover {
-  box-shadow: 0 0 34px rgba(249, 115, 22, 0.8), inset 0 0 20px rgba(249, 115, 22, 0.3);
+.bd-badge-card.unlocked.border-flame:hover {
+  box-shadow: 0 0 40px rgba(249, 115, 22, 0.85);
 }
 
-.bd-badge-card.border-flame-purple {
+.bd-badge-card.unlocked.border-flame-purple {
   border: 2px solid #a855f7;
-  box-shadow: 0 0 22px rgba(168, 85, 247, 0.45);
+  box-shadow: 0 0 28px rgba(168, 85, 247, 0.55);
 }
-.bd-badge-card.border-flame-purple:hover {
-  box-shadow: 0 0 34px rgba(168, 85, 247, 0.8), inset 0 0 20px rgba(168, 85, 247, 0.3);
+.bd-badge-card.unlocked.border-flame-purple:hover {
+  box-shadow: 0 0 40px rgba(168, 85, 247, 0.85);
 }
 
-.bd-badge-card.border-cyan {
+.bd-badge-card.unlocked.border-cyan {
   border: 2px solid #00e5ff;
-  box-shadow: 0 0 22px rgba(0, 229, 255, 0.45);
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.55);
 }
-.bd-badge-card.border-cyan:hover {
-  box-shadow: 0 0 34px rgba(0, 229, 255, 0.8), inset 0 0 20px rgba(0, 229, 255, 0.3);
+.bd-badge-card.unlocked.border-cyan:hover {
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.85);
 }
 
-.bd-badge-card.border-purple {
+.bd-badge-card.unlocked.border-purple {
   border: 2px solid #c084fc;
-  box-shadow: 0 0 22px rgba(192, 132, 252, 0.45);
+  box-shadow: 0 0 28px rgba(192, 132, 252, 0.55);
 }
-.bd-badge-card.border-purple:hover {
-  box-shadow: 0 0 34px rgba(192, 132, 252, 0.8), inset 0 0 20px rgba(192, 132, 252, 0.3);
+.bd-badge-card.unlocked.border-purple:hover {
+  box-shadow: 0 0 40px rgba(192, 132, 252, 0.85);
 }
 
 /* Emblem Artwork Container & Ambient Backlight Glow */
@@ -375,37 +470,7 @@
 }
 
 .bd-badge-card:hover .bd-badge-img {
-  transform: scale(1.1);
-}
-
-/* Locked Overlay & Lock Badge */
-.bd-badge-card.locked {
-  opacity: 0.75;
-}
-
-.bd-badge-card.locked .bd-badge-img {
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8)) brightness(0.7);
-}
-
-.bd-lock-badge {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  z-index: 5;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1.5px solid #00e5ff;
-  color: #00e5ff;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
-}
-
-.bd-lock-badge span {
-  font-size: 15px;
+  transform: scale(1.08);
 }
 
 /* Typography & Info */
