@@ -377,19 +377,31 @@ export default function BadgesPage() {
 
         {/* Top-Right HUD Badge */}
         <div className="dh-hud-badge">
-          <div className="dh-hud-item">
+          {user?.onCooldown ? (
+            <div className="dh-hud-item cooldown" title="4-Hour Attempt Cooldown Active">
+              <span className="dh-hud-icon">⏳</span>
+              <span>COOLDOWN</span>
+            </div>
+          ) : (
+            <div className="dh-hud-item" title="Remaining Session Hearts">
+              <span className="dh-hud-icon">❤️</span>
+              <span>{user?.attempts ?? 3} / 3</span>
+            </div>
+          )}
+          <div className="dh-hud-divider" />
+          <div className="dh-hud-item" title="Active Session Streak">
             <span className="dh-hud-icon">🔥</span>
-            <span>{user?.streak ?? 1}</span>
+            <span>{user?.streak ?? 0}</span>
           </div>
           <div className="dh-hud-divider" />
-          <div className="dh-hud-item">
+          <div className="dh-hud-item" title="Operative Level">
             <span className="dh-hud-icon">🏅</span>
             <span>Lv.{user?.level ?? 1}</span>
           </div>
           <div className="dh-hud-divider" />
-          <div className="dh-hud-item">
+          <div className="dh-hud-item" title="Accumulated XP">
             <span className="dh-hud-icon">⭐</span>
-            <span>{user?.xp ?? 700} XP</span>
+            <span>{user?.xp ?? 0} XP</span>
           </div>
         </div>
       </header>

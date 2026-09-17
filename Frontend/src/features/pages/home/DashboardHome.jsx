@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { DashboardChromeContext } from '../../layout/DashboardLayout';
@@ -10,7 +10,16 @@ const DashboardHome = () => {
   const { openSettings } = useContext(DashboardChromeContext);
   const [showTutorial, setShowTutorial] = useState(false);
   const [activeCardId, setActiveCardId] = useState(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState('');
 
+  // Handle Quit
+  const handleStartQuestNav = () => {
+    if (window.location.pathname !== '/dashboard') {
+      navigate('/dashboard');
+    } else if (activeCardId) {
+      navigate('/dashboard/ciphergame', { state: { category: activeCardId } });
+    }
+  };
 
   const handleQuit = () => {
     if (window.confirm("Are you sure you want to quit and sign out?")) {
@@ -19,13 +28,104 @@ const DashboardHome = () => {
     }
   };
 
+  // Real-time Cooldown Timer Countdown
+  useEffect(() => {
+    if (!user?.onCooldown || !user?.cooldownEndTime) {
+      setCooldownRemaining('');
+      return;
+    }
+
+    const updateTimer = () => {
+      const now = new Date().getTime();
+      const end = new Date(user.cooldownEndTime).getTime();
+      const diff = end - now;
+
+      if (diff <= 0) {
+        setCooldownRemaining('00:00:00');
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      const pad = (n) => String(n).padStart(2, '0');
+      setCooldownRemaining(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [user?.onCooldown, user?.cooldownEndTime]);
+
+  // Calculate Progress per Cipher
+  const getCipherProgress = (cipherId) => {
+    const cKey = cipherId.toUpperCase();
+    let progressMap = user?.progress;
+    if (!progressMap) {
+      try {
+        const stored = localStorage.getItem('cq_user_progress');
+        if (stored) progressMap = JSON.parse(stored);
+      } catch (e) {
+        // ignore fallback errors
+      }
+    }
+
+    const cipherData = progressMap?.[cKey] || {};
+    const easyCount = (cipherData.EASY || []).length;
+    const mediumCount = (cipherData.MEDIUM || []).length;
+    const hardCount = (cipherData.HARD || []).length;
+    const totalCompleted = Math.min(15, easyCount + mediumCount + hardCount);
+    const percentage = Math.round((totalCompleted / 15) * 100);
+
+    let tierLabel = 'EASY';
+    let currentLevel = easyCount + 1;
+    if (easyCount >= 5 && mediumCount < 5) {
+      tierLabel = 'MEDIUM';
+      currentLevel = mediumCount + 1;
+    } else if (mediumCount >= 5 && hardCount < 5) {
+      tierLabel = 'HARD';
+      currentLevel = hardCount + 1;
+    } else if (hardCount >= 5) {
+      tierLabel = 'MASTERED';
+      currentLevel = 5;
+    }
+
+    return {
+      totalCompleted,
+      percentage,
+      tierLabel,
+      currentLevel,
+      easyCount,
+      mediumCount,
+      hardCount
+    };
+  };
+
+  const caesarProg = getCipherProgress('caesar');
+  const vigenereProg = getCipherProgress('vigenere');
+  const playfairProg = getCipherProgress('playfair');
+
+  const totalLevelsCompleted = caesarProg.totalCompleted + vigenereProg.totalCompleted + playfairProg.totalCompleted;
+  const overallMasteryPct = Math.round((totalLevelsCompleted / 45) * 100);
+
+  // XP & Level Calculation
+  const currentXp = user?.xp ?? 0;
+  const currentLevel = user?.level ?? 1;
+  const xpInCurrentLevel = currentXp % 1000;
+  const xpPct = Math.min(100, Math.round((xpInCurrentLevel / 1000) * 100));
+
+  // Hearts calculation
+  const attemptsLeft = user?.attempts ?? 3;
+  const earnedBadgesCount = user?.earnedBadges?.length ?? 0;
+
   const cardsData = [
     {
       id: 'caesar',
       title: 'Caesar Shift',
-      desc: 'Decrypt alphabet letters using mathematical modular arithmetic key offsets.',
-      xp: '+100 XP / Level',
-      art: 'caesar',
+      desc: 'Monoalphabetic substitution using a uniform letter shift (1–25).',
+      xpInfo: '+100 XP (Easy) • +250 (Med) • +500 (Hard)',
+      prog: caesarProg,
       svg: (
         <svg viewBox="0 0 100 100" className="dh-card-svg" aria-hidden="true">
           <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0, 229, 255, 0.25)" strokeWidth="1.5" strokeDasharray="3 3" />
@@ -41,13 +141,12 @@ const DashboardHome = () => {
     {
       id: 'vigenere',
       title: 'Vigenère Matrix',
-      desc: 'Polyalphabetic substitution using a keyword cycle matrix.',
-      xp: '+1,200 XP',
-      art: 'vigenere',
+      desc: 'Polyalphabetic substitution using repeating position keywords.',
+      xpInfo: '+100 XP (Easy) • +250 (Med) • +500 (Hard)',
+      prog: vigenereProg,
       svg: (
         <svg viewBox="0 0 100 100" className="dh-card-svg">
           <rect x="2" y="2" width="96" height="96" rx="6" fill="rgba(3, 12, 26, 0.8)" stroke="rgba(0, 229, 255, 0.3)" strokeWidth="1" />
-          
           <rect x="6" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
           <text x="14" y="18" textAnchor="middle" fill="#7a9bb8" fontSize="9" fontWeight="bold">A</text>
           <rect x="24" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.2)" />
@@ -108,13 +207,12 @@ const DashboardHome = () => {
     {
       id: 'playfair',
       title: 'Playfair Matrix',
-      desc: 'Digraph substitution technique using a coordinate 5×5 grid.',
-      xp: '+2,500 XP',
-      art: 'playfair',
+      desc: 'Digraph pair substitution using a 5×5 grid swap rules.',
+      xpInfo: '+100 XP (Easy) • +250 (Med) • +500 (Hard)',
+      prog: playfairProg,
       svg: (
         <svg viewBox="0 0 100 100" className="dh-card-svg">
           <rect x="2" y="2" width="96" height="96" rx="6" fill="rgba(3, 12, 26, 0.8)" stroke="rgba(0, 229, 255, 0.3)" strokeWidth="1" />
-          
           <rect x="6" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
           <text x="14" y="18" textAnchor="middle" fill="#3a5a78" fontSize="9" fontWeight="bold">T</text>
           <rect x="24" y="6" width="16" height="16" rx="3" fill="rgba(12, 32, 54, 0.9)" stroke="rgba(0,229,255,0.15)" />
@@ -202,34 +300,46 @@ const DashboardHome = () => {
             </svg>
           </div>
           <div className="dh-wordmark-subtitle">
-            OPERATIVE: {user?.username ?? 'OPERATIVE'} &nbsp;•&nbsp; LEVEL {user?.level ?? 1} OPERATIVE
+            OPERATIVE: {user?.username ?? 'OPERATIVE'} &nbsp;•&nbsp; LEVEL {currentLevel} OPERATIVE
           </div>
         </div>
 
         {/* Top-Right HUD Badge */}
         <div className="dh-hud-badge">
-          <div className="dh-hud-item">
+          {user?.onCooldown ? (
+            <div className="dh-hud-item cooldown" title="4-Hour Attempt Cooldown Active">
+              <span className="dh-hud-icon">⏳</span>
+              <span>{cooldownRemaining || 'COOLDOWN'}</span>
+            </div>
+          ) : (
+            <div className="dh-hud-item" title="Remaining Session Hearts">
+              <span className="dh-hud-icon">❤️</span>
+              <span>{attemptsLeft} / 3</span>
+            </div>
+          )}
+          <div className="dh-hud-divider" />
+          <div className="dh-hud-item" title="Active Session Streak">
             <span className="dh-hud-icon">🔥</span>
             <span>{user?.streak ?? 0}</span>
           </div>
           <div className="dh-hud-divider" />
-          <div className="dh-hud-item">
+          <div className="dh-hud-item" title="Operative Level">
             <span className="dh-hud-icon">🏅</span>
-            <span>Lv.{user?.level ?? 1}</span>
+            <span>Lv.{currentLevel}</span>
           </div>
           <div className="dh-hud-divider" />
-          <div className="dh-hud-item">
+          <div className="dh-hud-item" title="Accumulated XP">
             <span className="dh-hud-icon">⭐</span>
-            <span>{user?.xp ?? 0} XP</span>
+            <span>{currentXp} XP</span>
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
       <div className="dh-lobby-content">
-        {/* Vertical Left Menu */}
+        {/* Vertical Left Menu (Original clean text format, untouched) */}
         <nav className="dh-side-menu">
-          <button className="dh-menu-item primary" onClick={() => navigate('/dashboard/ciphergame', { state: { category: activeCardId || 'caesar' } })}>
+          <button className="dh-menu-item primary" onClick={handleStartQuestNav}>
             Start Quest
           </button>
           <button className="dh-menu-item" onClick={() => navigate('/dashboard/leaderboard')}>
@@ -263,6 +373,8 @@ const DashboardHome = () => {
           >
             {cardsData.map((card) => {
               const isExpanded = card.id === activeCardId;
+              const { totalCompleted, percentage } = card.prog;
+
               return (
                 <div
                   key={card.id}
@@ -287,19 +399,34 @@ const DashboardHome = () => {
                     {card.svg}
                   </div>
                   <div className="dh-card-body">
-                    <h3 className="dh-card-title">{card.title}</h3>
-                    <div className="dh-card-expanded-wrapper">
-                      <p className="dh-card-desc">{card.desc}</p>
-                      <button
-                        className="dh-card-show-tutorial-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowTutorial(true);
-                        }}
-                      >
-                        Show Tutorial
-                      </button>
+                    <div className="dh-card-title-row">
+                      <h3 className="dh-card-title">{card.title}</h3>
+                      <span className="dh-card-progress-pill">{totalCompleted}/15</span>
                     </div>
+
+                    {/* Sleek Mini Progress Bar */}
+                    <div className="dh-card-mini-progress">
+                      <div className="dh-card-mini-progress-outer">
+                        <div
+                          className="dh-card-mini-progress-inner"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      <span className="dh-card-mini-progress-text">{percentage}% Complete</span>
+                    </div>
+
+                    <p className="dh-card-desc">{card.desc}</p>
+
+                    <button
+                      className="dh-card-show-tutorial-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowTutorial(true);
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>help_outline</span>
+                      <span>Show Tutorial</span>
+                    </button>
                   </div>
                 </div>
               );
@@ -307,7 +434,6 @@ const DashboardHome = () => {
           </div>
         </div>
       </div>
-
 
       {/* Tutorial Modal */}
       {showTutorial && (
@@ -371,4 +497,4 @@ const DashboardHome = () => {
   );
 };
 
-export default DashboardHome;
+export default DashboardHome;

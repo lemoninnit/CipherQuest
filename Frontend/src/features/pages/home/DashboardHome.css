@@ -110,24 +110,35 @@
 .dh-hud-badge {
   display: flex;
   align-items: center;
-  gap: 20px;
-  background: rgba(5, 18, 38, 0.75);
+  gap: 16px;
+  background: rgba(5, 18, 38, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(0, 229, 255, 0.35);
   border-radius: 30px;
-  padding: 8px 22px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 229, 255, 0.15);
+  padding: 8px 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(0, 229, 255, 0.15);
 }
 
 .dh-hud-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(13px, 1vw, 15px);
+  font-size: clamp(12.5px, 0.95vw, 14.5px);
   font-weight: 700;
   color: #e8f4f8;
+}
+
+.dh-hud-item.cooldown {
+  color: #ffaa00;
+  text-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+}
+
+.dh-cooldown-timer {
+  font-family: 'Space Grotesk', monospace;
+  letter-spacing: 0.05em;
+  font-weight: 800;
 }
 
 .dh-hud-icon {
@@ -138,6 +149,38 @@
   width: 1px;
   height: 16px;
   background: rgba(0, 229, 255, 0.35);
+}
+
+/* XP Meta inside HUD */
+.dh-xp-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 85px;
+}
+
+.dh-level-tag {
+  font-size: 11px;
+  color: #00e5ff;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.dh-xp-bar-outer {
+  width: 100%;
+  height: 5px;
+  background: rgba(0, 229, 255, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+.dh-xp-bar-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #00e5ff, #39ff14);
+  border-radius: 3px;
+  box-shadow: 0 0 8px #00e5ff;
+  transition: width 0.4s ease;
 }
 
 /* Main Content Area - 3 Column Grid for Dead-Center Focal Cards */
@@ -159,7 +202,7 @@
   pointer-events: none;
 }
 
-/* Vertical Left Menu */
+/* Vertical Left Menu (Original Clean Text-Only Design) */
 .dh-side-menu {
   display: flex;
   flex-direction: column;
@@ -230,7 +273,7 @@
   transform: translateX(6px);
 }
 
-/* Center Section: Cards & Bottom Action Area */
+/* Center Section: Cards */
 .dh-center-section {
   display: flex;
   flex-direction: column;
@@ -241,26 +284,148 @@
   margin: 0 auto;
 }
 
-/* Cards Row - Vertically Centered Alignment with Increased Breathing Room */
-.dh-cards-row {
+.dh-card-title-row {
   display: flex;
-  align-items: center; /* Centered so active card expands symmetrically */
-  justify-content: center;
-  gap: clamp(24px, 2.6vw, 36px);
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.dh-card-progress-pill {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* Card Progress Indicator (Simple & Clean) */
+.dh-card-mini-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0 6px 0;
+}
+
+.dh-card-mini-progress-outer {
   width: 100%;
-  padding: 0 clamp(20px, 2.8vw, 40px);
+  height: 5px;
+  background: rgba(0, 229, 255, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+}
+
+.dh-card-mini-progress-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #00e5ff 0%, #39ff14 100%);
+  border-radius: 3px;
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.6);
+  transition: width 0.3s ease;
+}
+
+.dh-card-mini-progress-text {
+  font-size: 11px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  color: rgba(0, 229, 255, 0.95);
+  letter-spacing: 0.02em;
+}
+
+/* Mission Control Overall Mastery Bar */
+.dh-mission-bar {
+  width: 100%;
+  max-width: 960px;
+  background: rgba(5, 18, 38, 0.75);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 14px;
+  padding: 12px 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   box-sizing: border-box;
 }
 
-/* Constant Base Card Dimensions with Refined Depth and Shadow */
+.dh-mission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.dh-mission-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #00e5ff;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+.dh-mission-icon {
+  font-size: 18px;
+  color: #00e5ff;
+}
+
+.dh-mission-stats {
+  font-size: 12.5px;
+  color: #b0d4e8;
+  font-weight: 600;
+}
+
+.dh-mission-stats strong {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.dh-overall-progress-outer {
+  width: 100%;
+  height: 8px;
+  background: rgba(2, 10, 22, 0.8);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dh-overall-progress-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #00e5ff 0%, #39ff14 100%);
+  border-radius: 4px;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
+  transition: width 0.5s ease-out;
+}
+
+/* Cards Row */
+.dh-cards-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: clamp(20px, 2.2vw, 32px);
+  width: 100%;
+  padding: 0 clamp(10px, 1.5vw, 20px);
+  box-sizing: border-box;
+}
+
+/* Constant Base Card Dimensions */
 .dh-quest-card {
   --card-art: none;
-  background: linear-gradient(165deg, rgba(8, 26, 48, 0.88) 0%, rgba(4, 14, 28, 0.94) 100%);
-  border: 1px solid rgba(0, 229, 255, 0.35);
-  border-radius: 20px;
+  background: linear-gradient(165deg, rgba(8, 26, 48, 0.92) 0%, rgba(4, 14, 28, 0.96) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 18px;
   box-shadow:
-    0 14px 34px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
     inset 0 0 20px rgba(0, 229, 255, 0.04);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -268,12 +433,12 @@
     transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.28s ease,
     box-shadow 0.28s ease;
-  min-width: 240px;
-  max-width: 310px;
+  min-width: 250px;
+  max-width: 320px;
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
-  padding: 14px;
+  padding: 16px;
   cursor: pointer;
   box-sizing: border-box;
   outline: none;
@@ -282,129 +447,181 @@
   transform: scale(1);
 }
 
-/* Active & Hovered Card: Symmetrical Scaling via Transform */
 .dh-quest-card:hover,
 .dh-quest-card.active,
 .dh-quest-card:focus-visible {
-  transform: scale(1.05); /* Scales evenly around its center with NO layout shift */
+  transform: translateY(-4px) scale(1.03);
   border: 2px solid #00e5ff;
   box-shadow:
-    0 18px 36px rgba(0, 0, 0, 0.65),
+    0 18px 36px rgba(0, 0, 0, 0.7),
     0 0 32px rgba(0, 229, 255, 0.45),
     inset 0 0 15px rgba(0, 229, 255, 0.18);
   z-index: 5;
 }
 
-.dh-quest-card:focus-visible {
-  outline: 2px solid #00e5ff;
-  outline-offset: 4px;
-}
-
-.dh-card-art-panel {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  background: rgba(3, 10, 22, 0.75);
-  border: 1px solid rgba(0, 229, 255, 0.25);
-  border-radius: 14px;
+.dh-card-header-bar {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  padding: 10px;
-  box-sizing: border-box;
-  box-shadow: inset 0 0 20px rgba(0, 229, 255, 0.15);
   margin-bottom: 10px;
-  flex-shrink: 0;
-}
-
-.dh-card-svg,
-.dh-card-img-symbol {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.5));
-}
-
-.dh-card-body {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  gap: 8px;
 }
 
 .dh-card-title {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(17px, 1.2vw, 20px);
+  font-size: clamp(16px, 1.1vw, 19px);
   font-weight: 800;
   color: #ffffff;
   margin: 0;
   letter-spacing: -0.01em;
   text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* Reserved Space for Expanded Content to Eliminate Layout Shift */
-.dh-card-expanded-wrapper {
+.dh-tier-badge {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dh-tier-badge.easy {
+  background: rgba(0, 229, 255, 0.15);
+  color: #00e5ff;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+}
+
+.dh-tier-badge.medium {
+  background: rgba(255, 170, 0, 0.15);
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.4);
+}
+
+.dh-tier-badge.hard {
+  background: rgba(255, 82, 119, 0.15);
+  color: #ff5277;
+  border: 1px solid rgba(255, 82, 119, 0.4);
+}
+
+.dh-tier-badge.mastered {
+  background: rgba(57, 255, 20, 0.18);
+  color: #39ff14;
+  border: 1px solid rgba(57, 255, 20, 0.5);
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.3);
+}
+
+.dh-card-art-panel {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  background: rgba(3, 10, 22, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  box-sizing: border-box;
+  box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.12);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.dh-card-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.4));
+}
+
+/* Card Progress Box */
+.dh-card-progress-box {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(6px);
-  margin-top: 6px;
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease,
-    visibility 0.25s;
+  gap: 5px;
+  margin-bottom: 12px;
 }
 
-/* Reveal description and Show Tutorial button on hover, active, or keyboard focus */
-.dh-quest-card:hover .dh-card-expanded-wrapper,
-.dh-quest-card.active .dh-card-expanded-wrapper,
-.dh-quest-card:focus-visible .dh-card-expanded-wrapper {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateY(0);
+.dh-card-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+}
+
+.dh-prog-text {
+  color: rgba(0, 229, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dh-prog-val {
+  color: #ffffff;
+}
+
+.dh-card-progress-outer {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 229, 255, 0.12);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+}
+
+.dh-card-progress-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #00e5ff 0%, #39ff14 100%);
+  border-radius: 3px;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.7);
+  transition: width 0.4s ease;
+}
+
+.dh-card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  flex: 1;
+  gap: 10px;
 }
 
 .dh-card-desc {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 500;
-  color: rgba(220, 240, 255, 0.85);
+  color: #a0c4de;
   line-height: 1.45;
-  margin: 0;
-  min-height: 54px; /* Uniform reserved height across all cards */
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  margin: 4px 0 8px 0;
 }
 
 .dh-card-show-tutorial-btn {
-  background: rgba(0, 229, 255, 0.12);
-  border: 1px solid rgba(0, 229, 255, 0.4);
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.35);
   color: #00e5ff;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
-  padding: 7px 12px;
-  border-radius: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
   cursor: pointer;
   width: 100%;
-  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.22s ease;
   box-sizing: border-box;
+  margin-top: 6px;
 }
 
 .dh-card-show-tutorial-btn:hover {
-  background: rgba(0, 229, 255, 0.25);
+  background: rgba(0, 229, 255, 0.22);
   border-color: #00e5ff;
   color: #ffffff;
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.45);
+  transform: translateY(-1px);
 }
-
-
 
 /* Responsive Styles for smaller screens */
 @media (max-width: 1024px) {
@@ -412,7 +629,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
     overflow-y: auto;
   }
   .dh-lobby-content::after {
@@ -450,9 +667,8 @@
     display: none;
   }
   .dh-quest-card,
-  .dh-menu-item,
-  .dh-card-expanded-wrapper {
+  .dh-menu-item {
     animation: none !important;
     transition: none !important;
   }
-}
+}
