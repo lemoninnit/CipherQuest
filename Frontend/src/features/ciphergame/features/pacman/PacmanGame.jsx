@@ -3,6 +3,7 @@ import './PacmanGame.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
+import { pacmanSound } from './pacmanSound';
 import PauseMenu from '../../ui/PauseMenu';
 import {
   CELL,
@@ -13,7 +14,7 @@ import {
   facingFromDir
 } from './pacmanWorld';
 
-const MAZE_GRID = [
+const EASY_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
   [1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
@@ -70,13 +71,94 @@ const caesarShiftChar = (char, shift) => {
   return char;
 };
 
-// Pure utility to dynamically spawn pellets randomly on paths (MAZE_GRID[r][c] === 0)
+// Medium Grid: 11 rows x 23 columns (Authentic Courtyard Labyrinth with T-Junctions, Ghost Box, and Staggered Pillars)
+const MEDIUM_GRID = [
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+  [1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+  [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+  [1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1],
+  [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+  [1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 1],
+  [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+  [1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+  [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+];
+
+// Hard Grid: 13 rows x 25 columns (High-Complexity Fortress Labyrinth with Winding Alleys & Guarded Central Chamber)
+const HARD_GRID = [
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+  [1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+  [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+  [1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1],
+  [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+  [1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1],
+  [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+  [1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1],
+  [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1],
+  [1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+  [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+];
+
+const getMazeGrid = (tier) => {
+  const t = String(tier || 'easy').toLowerCase();
+  if (t === 'hard') return HARD_GRID;
+  if (t === 'medium') return MEDIUM_GRID;
+  return EASY_GRID;
+};
+
+const getGhostStartPositions = (tier) => {
+  const t = String(tier || 'easy').toLowerCase();
+  if (t === 'hard') {
+    return [
+      { row: 11, col: 1, dir: { r: 0, c: 1 } },
+      { row: 11, col: 23, dir: { r: 0, c: -1 } },
+      { row: 1, col: 12, dir: { r: 1, c: 0 } },
+      { row: 5, col: 11, dir: { r: 0, c: 1 } },
+      { row: 1, col: 23, dir: { r: 0, c: -1 } },
+      { row: 7, col: 12, dir: { r: 0, c: 1 } },
+      { row: 5, col: 19, dir: { r: 0, c: -1 } },
+      { row: 3, col: 5, dir: { r: 1, c: 0 } }
+    ];
+  }
+  if (t === 'medium') {
+    return [
+      { row: 9, col: 1, dir: { r: 0, c: 1 } },
+      { row: 9, col: 21, dir: { r: 0, c: -1 } },
+      { row: 1, col: 11, dir: { r: 1, c: 0 } },
+      { row: 5, col: 11, dir: { r: 0, c: 1 } },
+      { row: 1, col: 21, dir: { r: 0, c: -1 } },
+      { row: 7, col: 11, dir: { r: 0, c: 1 } },
+      { row: 5, col: 17, dir: { r: 0, c: -1 } },
+      { row: 3, col: 5, dir: { r: 1, c: 0 } }
+    ];
+  }
+  return [
+    { row: 7, col: 1, dir: { r: 0, c: 1 } },
+    { row: 7, col: 19, dir: { r: 0, c: -1 } },
+    { row: 1, col: 9, dir: { r: 1, c: 0 } },
+    { row: 5, col: 4, dir: { r: 0, c: 1 } },
+    { row: 1, col: 19, dir: { r: 0, c: -1 } },
+    { row: 3, col: 9, dir: { r: 0, c: 1 } },
+    { row: 5, col: 16, dir: { r: 0, c: -1 } },
+    { row: 1, col: 5, dir: { r: 1, c: 0 } }
+  ];
+};
+
+const MAX_ACTIVE_TARGET_GHOSTS = { easy: 8, medium: 5, hard: 6 };
+// Decoy ghost count also scales gently with tier for a bit more challenge.
+const DECOY_GHOST_COUNT = { easy: 2, medium: 2, hard: 2 };
+
+// Pure utility to dynamically spawn pellets randomly on paths (mazeGrid[r][c] === 0)
 // and never on walls or initial sprite positions, ensuring variety on resets.
-const generateRandomPellets = (ghostList, pacmanPos) => {
+const generateRandomPellets = (mazeGrid, ghostList, pacmanPos) => {
   const openSpaces = [];
-  for (let r = 1; r < MAZE_GRID.length - 1; r++) {
-    for (let c = 1; c < MAZE_GRID[r].length - 1; c++) {
-      if (MAZE_GRID[r][c] === 0) {
+  for (let r = 1; r < mazeGrid.length - 1; r++) {
+    for (let c = 1; c < mazeGrid[r].length - 1; c++) {
+      if (mazeGrid[r][c] === 0) {
         const isPacman = pacmanPos.row === r && pacmanPos.col === c;
         const isGhost = ghostList.some(g => g.row === r && g.col === c);
         if (!isPacman && !isGhost) {
@@ -113,41 +195,39 @@ const describePlayfairRule = (rule, mode = 'decrypt') => {
   return 'Rectangle: keep each row, swap to the other letter column.';
 };
 
-// Dynamically configure ghosts: correct letters at ALL masked indices, plus distractors.
-const generateInitialGhosts = (levelData) => {
+// Dynamically configure ghosts: capped active target letters + queue system + decoys.
+const generateInitialGhosts = (levelData, tier) => {
+  const normTier = String(tier || levelData?.tier || 'easy').toLowerCase();
+  const maxActive = MAX_ACTIVE_TARGET_GHOSTS[normTier] || 8;
+  const decoyCount = DECOY_GHOST_COUNT[normTier] || 2;
+  const startPositions = getGhostStartPositions(normTier);
+
   const isPlayfair = !!levelData.matrix;
   if (isPlayfair) {
-    const ghosts = [];
-    const startPositions = [
-      { row: 7, col: 1, dir: { r: 0, c: 1 } },
-      { row: 7, col: 19, dir: { r: 0, c: -1 } },
-      { row: 1, col: 9, dir: { r: 1, c: 0 } },
-      { row: 5, col: 4, dir: { r: 0, c: 1 } },
-      { row: 1, col: 19, dir: { r: 0, c: -1 } },
-      { row: 3, col: 9, dir: { r: 0, c: 1 } },
-      { row: 5, col: 16, dir: { r: 0, c: -1 } },
-      { row: 1, col: 5, dir: { r: 1, c: 0 } }
-    ];
-
     const pairs = levelData.pairs || [];
-    // 1. Assign correct target ghosts for ALL digraph pairs
-    for (let i = 0; i < pairs.length; i++) {
-      const plainPair = pairs[i];
+    const allTargets = pairs.map((plainPair, i) => ({
+      id: `ghost-${i + 1}`,
+      char: plainPair,
+      index: i
+    }));
+
+    const activeTargets = allTargets.slice(0, maxActive);
+    const queue = allTargets.slice(maxActive);
+
+    const ghosts = activeTargets.map((item, i) => {
       const pos = startPositions[i % startPositions.length];
-      ghosts.push({
-        id: `ghost-${i + 1}`,
-        char: plainPair,
-        index: i,
+      return {
+        ...item,
         row: pos.row,
         col: pos.col,
         eaten: false,
         dir: pos.dir
-      });
-    }
+      };
+    });
 
-    // 2. Add exactly 2 decoy ghosts for distraction/challenge
+    // Add decoy ghosts for distraction/challenge
     const alphabet = 'ABCDEFGHIKLMNOPQRSTUVWXYZ';
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < decoyCount; i++) {
       let decoyPair = '';
       do {
         const c1 = alphabet[Math.floor(Math.random() * 25)];
@@ -155,7 +235,7 @@ const generateInitialGhosts = (levelData) => {
         decoyPair = c1 + c2;
       } while (pairs.includes(decoyPair));
 
-      const posIdx = pairs.length + i;
+      const posIdx = activeTargets.length + i;
       const pos = startPositions[posIdx % startPositions.length];
 
       ghosts.push({
@@ -169,7 +249,7 @@ const generateInitialGhosts = (levelData) => {
       });
     }
 
-    return ghosts;
+    return { ghosts, queue };
   }
 
   const maskedIndices = [];
@@ -181,45 +261,37 @@ const generateInitialGhosts = (levelData) => {
     });
   }
 
-  const ghosts = [];
-  const startPositions = [
-    { row: 7, col: 1, dir: { r: 0, c: 1 } },
-    { row: 7, col: 19, dir: { r: 0, c: -1 } },
-    { row: 1, col: 9, dir: { r: 1, c: 0 } },
-    { row: 5, col: 4, dir: { r: 0, c: 1 } },
-    { row: 1, col: 19, dir: { r: 0, c: -1 } },
-    { row: 3, col: 9, dir: { r: 0, c: 1 } },
-    { row: 5, col: 16, dir: { r: 0, c: -1 } },
-    { row: 1, col: 5, dir: { r: 1, c: 0 } }
-  ];
+  const allTargets = maskedIndices.map((idx, i) => ({
+    id: `ghost-${i + 1}`,
+    char: levelData.plaintext ? levelData.plaintext[idx] : '',
+    index: idx
+  }));
 
-  // 1. Assign correct target ghosts for ALL masked indices (guarantees completion)
-  for (let i = 0; i < maskedIndices.length; i++) {
-    const idx = maskedIndices[i];
-    const plainChar = levelData.plaintext ? levelData.plaintext[idx] : '';
+  const activeTargets = allTargets.slice(0, maxActive);
+  const queue = allTargets.slice(maxActive);
+
+  const ghosts = activeTargets.map((item, i) => {
     const pos = startPositions[i % startPositions.length];
-    ghosts.push({
-      id: `ghost-${i + 1}`,
-      char: plainChar,
-      index: idx,
+    return {
+      ...item,
       row: pos.row,
       col: pos.col,
       eaten: false,
       dir: pos.dir
-    });
-  }
+    };
+  });
 
-  // 2. Add exactly 2 decoy ghosts for distraction/challenge
+  // Add decoy ghosts for distraction/challenge
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const targetLetters = levelData.plaintext ? maskedIndices.map(idx => levelData.plaintext[idx]) : [];
   
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < decoyCount; i++) {
     let decoyChar = '';
     do {
       decoyChar = alphabet[Math.floor(Math.random() * 26)];
     } while (targetLetters.includes(decoyChar));
 
-    const posIdx = maskedIndices.length + i;
+    const posIdx = activeTargets.length + i;
     const pos = startPositions[posIdx % startPositions.length];
 
     ghosts.push({
@@ -233,7 +305,7 @@ const generateInitialGhosts = (levelData) => {
     });
   }
 
-  return ghosts;
+  return { ghosts, queue };
 };
 
 export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
@@ -250,11 +322,17 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const isPlayfair = !!levelData.matrix;
   const isCaesar = !isVigenere && !isPlayfair;
   const targetShift = isVigenere ? 0 : (levelData.targetShifts?.[0] ?? levelData.shift ?? levelData.targetShift ?? 0);
+  const currentTier = String(tier || levelData?.tier || 'easy').toLowerCase();
+  const activeMazeGrid = getMazeGrid(currentTier);
+  const activeMazeGridRef = useRef(activeMazeGrid);
+  activeMazeGridRef.current = activeMazeGrid;
 
   // Initial Coordinates
   const initialPacman = { row: 1, col: 1 };
   
-  const initialGhosts = generateInitialGhosts(levelData);
+  const initialGhostsData = generateInitialGhosts(levelData, currentTier);
+  const targetQueueRef = useRef(initialGhostsData.queue);
+  const initialGhosts = initialGhostsData.ghosts;
 
   const maskedIndices = [];
   if (levelData.masks && levelData.masks[0]) {
@@ -296,7 +374,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const [ghosts, setGhosts] = useState(initialGhosts);
 
   // Dynamic non-wall non-stacking pellet arrays on load
-  const [pellets, setPellets] = useState(() => generateRandomPellets(initialGhosts, initialPacman));
+  const [pellets, setPellets] = useState(() => generateRandomPellets(activeMazeGrid, initialGhosts, initialPacman));
 
   const isPoweredUp = true;
 
@@ -376,7 +454,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   }, [vigenereAlignmentItems]);
 
   useEffect(() => {
-    const initialGhosts = generateInitialGhosts(levelData);
+    const normTier = String(tier || levelData?.tier || 'easy').toLowerCase();
+    const grid = getMazeGrid(normTier);
+    activeMazeGridRef.current = grid;
+    const { ghosts: initG, queue: initQ } = generateInitialGhosts(levelData, normTier);
+    targetQueueRef.current = initQ;
     setPacman(initialPacman);
     setPacmanDir('NONE');
     setBufferedDir('NONE');
@@ -393,8 +475,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setHasSkillCharge(false);
     setSkillActive(false);
     setSkillTimeLeft(0);
-    setGhosts(initialGhosts);
-    setPellets(generateRandomPellets(initialGhosts, initialPacman));
+    setGhosts(initG);
+    setPellets(generateRandomPellets(grid, initG, initialPacman));
     setPhase('ready');
     setShowExplanation(false);
     setExplanationStep(-1);
@@ -406,7 +488,50 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     }
     setIsInvulnerable(false);
     isInvulnerableRef.current = false;
-  }, [levelData]);
+    pacmanSound.pauseBgm();
+  }, [levelData, tier]);
+
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      pacmanSound.stopBgm();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (phase === 'playing' && !isMenuOpen && !gameOver && !levelSolved && !showExplanation) {
+      pacmanSound.playBgm();
+    } else {
+      pacmanSound.pauseBgm();
+    }
+  }, [phase, isMenuOpen, gameOver, levelSolved, showExplanation]);
+
+  const toggleSound = () => {
+    const muted = pacmanSound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const soundToggleButton = (
+    <button
+      className="fg-btn-icon"
+      onClick={toggleSound}
+      title={isMuted ? "Unmute Sound" : "Mute Sound"}
+      style={{
+        background: 'rgba(255, 255, 255, 0.08)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: '8px',
+        color: '#fff',
+        padding: '4px 8px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        fontSize: '1rem'
+      }}
+    >
+      {isMuted ? '🔇' : '🔊'}
+    </button>
+  );
 
   const gameLoopRef = useRef(null);
 
@@ -429,6 +554,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const handleLoseHeart = (message) => {
     if (isInvulnerableRef.current) return;
 
+    pacmanSound.playSfx('hit');
     triggerInvulnerability(1200); // 1.2s invulnerability window
 
     setFlashError(true);
@@ -438,6 +564,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       const nextLives = prev - 1;
       if (nextLives <= 0) {
         setGameOver(true);
+        pacmanSound.stopBgm();
+        pacmanSound.playSfx('lose');
       }
       return nextLives;
     });
@@ -445,6 +573,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
   // Steering control to set buffer direction only
   const triggerSteer = (dirName) => {
+    pacmanSound.unlockAudio();
     if (gameOver || levelSolved) return;
     setBufferedDir(dirName);
   };
@@ -452,6 +581,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   // Key hooks
   useEffect(() => {
     const handleKeyDown = (e) => {
+      pacmanSound.unlockAudio();
       // ESC key toggle for pause menu (active playing state only)
       if (e.key === 'Escape' || e.code === 'Escape') {
         if (phase === 'playing' && !gameOver && !levelSolved) {
@@ -490,6 +620,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setSkillActive(true);
     setHasSkillCharge(false);
     setSkillTimeLeft(6);
+    pacmanSound.playSfx('powerup');
   };
 
   useEffect(() => {
@@ -523,12 +654,13 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       const currentIsInvulnerable = isInvulnerableRef.current;
 
       // 1. Process Buffered Input
+      const currentGrid = activeMazeGridRef.current;
       let activeDir = currentPacmanDir;
       if (currentBufferedDir !== 'NONE') {
         const testVec = DIR_VECTORS[currentBufferedDir];
         const testRow = currentPacman.row + testVec.r;
         const testCol = currentPacman.col + testVec.c;
-        if (MAZE_GRID[testRow] && MAZE_GRID[testRow][testCol] === 0) {
+        if (currentGrid[testRow] && currentGrid[testRow][testCol] === 0) {
           activeDir = currentBufferedDir;
           setPacmanDir(currentBufferedDir);
           setBufferedDir('NONE');
@@ -543,7 +675,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         const nextRow = currentPacman.row + vec.r;
         const nextCol = currentPacman.col + vec.c;
 
-        if (MAZE_GRID[nextRow] && MAZE_GRID[nextRow][nextCol] === 0) {
+        if (currentGrid[nextRow] && currentGrid[nextRow][nextCol] === 0) {
           pRow = nextRow;
           pCol = nextCol;
           setPacman({ row: nextRow, col: nextCol });
@@ -561,8 +693,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           if (!pellet.eaten && pellet.row === pRow && pellet.col === pCol) {
             if (pellet.isSkill) {
               setHasSkillCharge(true);
+              pacmanSound.playSfx('powerup');
             } else {
               setRuleViolation(null);
+              pacmanSound.playSfx('waka');
             }
             return { ...pellet, eaten: true };
           }
@@ -602,11 +736,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             const nextRow = gRow + gDir.r;
             const nextCol = gCol + gDir.c;
 
-            const isNextTileOpen = MAZE_GRID[nextRow] && MAZE_GRID[nextRow][nextCol] === 0;
+            const isNextTileOpen = currentGrid[nextRow] && currentGrid[nextRow][nextCol] === 0;
             const isNextOccupied = isTileOccupiedByOtherGhost(nextRow, nextCol);
 
-                if (isNextTileOpen && !isNextOccupied) {
-                  updated.push({ ...ghost, row: nextRow, col: nextCol, moving: true });
+            if (isNextTileOpen && !isNextOccupied) {
+              updated.push({ ...ghost, row: nextRow, col: nextCol, moving: true });
             } else {
               // Wall collision OR other ghost in the way! Choose new direction
               const directions = [
@@ -616,7 +750,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               const validMoves = directions.filter((d) => {
                 const nr = gRow + d.r;
                 const nc = gCol + d.c;
-                const isOpen = MAZE_GRID[nr] && MAZE_GRID[nr][nc] === 0;
+                const isOpen = currentGrid[nr] && currentGrid[nr][nc] === 0;
                 const isOccupied = isTileOccupiedByOtherGhost(nr, nc);
                 const isOpposite = (d.r === -gDir.r && d.r !== 0) || (d.c === -gDir.c && d.c !== 0);
                 return isOpen && !isOccupied && !isOpposite;
@@ -625,7 +759,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               const fallbackMoves = validMoves.length > 0 ? validMoves : directions.filter((d) => {
                 const nr = gRow + d.r;
                 const nc = gCol + d.c;
-                const isOpen = MAZE_GRID[nr] && MAZE_GRID[nr][nc] === 0;
+                const isOpen = currentGrid[nr] && currentGrid[nr][nc] === 0;
                 const isOccupied = isTileOccupiedByOtherGhost(nr, nc);
                 return isOpen && !isOccupied;
               });
@@ -672,6 +806,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               if (ghost.index !== -1) {
                 // Correct ghost letter: trigger death animation then remove
                 correctGhostEatenThisTick = true;
+                pacmanSound.playSfx('gold');
                 setEatenGhosts((prevEaten) => {
                   const nextEaten = prevEaten.includes(ghost.index)
                     ? prevEaten
@@ -679,6 +814,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
                   if (nextEaten.length === totalTargets) {
                     setLevelSolved(true);
+                    pacmanSound.stopBgm();
+                    pacmanSound.playSfx('win');
                     if (!isVigenere && !isPlayfair && !autoRecapShownRef.current) {
                       beginExplanation();
                     }
@@ -689,9 +826,26 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 // start dying animation for this ghost
                 setStrikingGhosts((prev) => ({ ...prev, [ghost.id]: true }));
                 setKnightAttacking(true);
-                // Remove ghost after animation (480ms matches CSS animation)
+                // Remove ghost after animation (480ms matches CSS animation) & replenish from queue
                 setTimeout(() => {
-                  setGhosts((prev) => prev.map((g) => g.id === ghost.id ? { ...g, eaten: true } : g));
+                  setGhosts((prev) => {
+                    const nextG = prev.map((g) => g.id === ghost.id ? { ...g, eaten: true } : g);
+                    if (targetQueueRef.current && targetQueueRef.current.length > 0) {
+                      const nextTarget = targetQueueRef.current.shift();
+                      const spawnPositions = getGhostStartPositions(currentTier);
+                      const pos = spawnPositions[Math.floor(Math.random() * spawnPositions.length)];
+                      nextG.push({
+                        id: `ghost-queued-${Date.now()}-${Math.random()}`,
+                        char: nextTarget.char,
+                        index: nextTarget.index,
+                        row: pos.row,
+                        col: pos.col,
+                        eaten: false,
+                        dir: pos.dir
+                      });
+                    }
+                    return nextG;
+                  });
                   setStrikingGhosts((prev) => { const np = { ...prev }; delete np[ghost.id]; return np; });
                   setKnightAttacking(false);
                 }, 520);
@@ -713,7 +867,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 const oppositeDir = { r: -gDir.r, c: -gDir.c };
                 const rbRow = ghost.row + oppositeDir.r;
                 const rbCol = ghost.col + oppositeDir.c;
-                const canRebound = MAZE_GRID[rbRow] && MAZE_GRID[rbRow][rbCol] === 0;
+                const canRebound = currentGrid[rbRow] && currentGrid[rbRow][rbCol] === 0;
                 return {
                   ...ghost,
                   dir: oppositeDir,
@@ -737,7 +891,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               const oppositeDir = { r: -gDir.r, c: -gDir.c };
               const rbRow = ghost.row + oppositeDir.r;
               const rbCol = ghost.col + oppositeDir.c;
-              const canRebound = MAZE_GRID[rbRow] && MAZE_GRID[rbRow][rbCol] === 0;
+              const canRebound = currentGrid[rbRow] && currentGrid[rbRow][rbCol] === 0;
               return {
                 ...ghost,
                 dir: oppositeDir,
@@ -781,9 +935,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       if (needsSkill) {
         // Collect candidate spawn tiles
         const openSpaces = [];
-        for (let r = 1; r < MAZE_GRID.length - 1; r++) {
-          for (let c = 1; c < MAZE_GRID[r].length - 1; c++) {
-            if (MAZE_GRID[r][c] === 0) {
+        const grid = activeMazeGridRef.current;
+        for (let r = 1; r < grid.length - 1; r++) {
+          for (let c = 1; c < grid[r].length - 1; c++) {
+            if (grid[r][c] === 0) {
               const hasPacman = currentPacman.row === r && currentPacman.col === c;
               const hasGhost = currentGhosts.some(g => !g.eaten && g.row === r && g.col === c);
               const hasActivePellet = currentPellets.some(p => !p.eaten && p.row === r && p.col === c);
@@ -822,6 +977,14 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   }, [gameOver, levelSolved, isMenuOpen, phase]);
 
   const handleResetGame = () => {
+    pacmanSound.stopBgm();
+    pacmanSound.unlockAudio();
+    pacmanSound.playBgm();
+    const normTier = String(tier || levelData?.tier || 'easy').toLowerCase();
+    const grid = getMazeGrid(normTier);
+    activeMazeGridRef.current = grid;
+    const { ghosts: resetG, queue: resetQ } = generateInitialGhosts(levelData, normTier);
+    targetQueueRef.current = resetQ;
     setPacman(initialPacman);
     setPacmanDir('NONE');
     setBufferedDir('NONE');
@@ -835,13 +998,14 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setLevelSolved(false);
     setHasSkillCharge(false);
     setSkillActive(false);
+    setSkillTimeLeft(0);
     setRuleViolation(null);
-    setGhosts(initialGhosts);
+    setGhosts(resetG);
     setIsScreenShaking(false);
     setIsInvulnerable(false);
     isInvulnerableRef.current = false;
     autoRecapShownRef.current = false;
-    setPellets(generateRandomPellets(initialGhosts, initialPacman));
+    setPellets(generateRandomPellets(grid, resetG, initialPacman));
   };
 
   const beginExplanation = () => {
@@ -897,6 +1061,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           tier={tier}
           isReady={true}
           onBackToStages={onBackToStages}
+          customRightContent={soundToggleButton}
         />
         <div className="cq-brief-screen">
           <img
@@ -947,7 +1112,14 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 <strong>How it works:</strong>{' '}
                 Eat a yellow Skill Pellet, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct plaintext letter!
               </p>
-              <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
+              <button
+                className="cq-dossier-action-btn"
+                onClick={() => {
+                  pacmanSound.unlockAudio();
+                  pacmanSound.playBgm();
+                  setIsOperationLoading(true);
+                }}
+              >
                 Begin operation
               </button>
             </div>
@@ -982,17 +1154,30 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     if (lookup[b]) cipherHighlight.add(`${lookup[b].row}-${lookup[b].col}`);
   }
 
-  const renderMazeBoard = () => (
-    <div className={`maze-grid size-larger ${flashError ? 'flash-error' : ''} ${isScreenShaking ? 'screen-shake' : ''}`}>
-      {/* Static grid board paths and walls */}
-      {MAZE_GRID.map((rowArr, rIdx) =>
-        rowArr.map((cellVal, cIdx) => {
-          let cellClass = "maze-cell";
-          if (cellVal === 1) cellClass += " wall";
-          else cellClass += " path";
-          return <div key={`bg-${rIdx}-${cIdx}`} className={cellClass}></div>;
-        })
-      )}
+  const renderMazeBoard = () => {
+    const mazeGrid = activeMazeGrid;
+    const numRows = mazeGrid.length;
+    const numCols = mazeGrid[0].length;
+
+    return (
+      <div 
+        className={`maze-grid size-larger ${flashError ? 'flash-error' : ''} ${isScreenShaking ? 'screen-shake' : ''}`}
+        style={{
+          gridTemplateColumns: `repeat(${numCols}, 46px)`,
+          gridTemplateRows: `repeat(${numRows}, 46px)`,
+          width: `${numCols * 46}px`,
+          height: `${numRows * 46}px`
+        }}
+      >
+        {/* Static grid board paths and walls */}
+        {mazeGrid.map((rowArr, rIdx) =>
+          rowArr.map((cellVal, cIdx) => {
+            let cellClass = "maze-cell";
+            if (cellVal === 1) cellClass += " wall";
+            else cellClass += " path";
+            return <div key={`bg-${rIdx}-${cIdx}`} className={cellClass}></div>;
+          })
+        )}
 
       {/* Absolute 30fps gliding Pac-Man sprite (No delay) */}
       <div 
@@ -1060,6 +1245,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       })}
     </div>
   );
+};
 
   return (
     <div className="pacman-container fg-root">
@@ -1244,6 +1430,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         isReady={false}
         onOpenMenu={() => setIsMenuOpen(true)}
         lives={lives}
+        customRightContent={soundToggleButton}
       />
 
       <div className={`pacman-layout caesar-pacman-fullscreen ${isVigenere ? 'vg-pacman-fullscreen' : ''}`}>

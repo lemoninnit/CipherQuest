@@ -482,6 +482,48 @@
   z-index: 3;
 }
 
+/* ── Fishing rod sprite ────────────────────────────────────────── */
+/*
+ * Sprite sheet: Fishing Rod.png — 8 frames in a single horizontal row.
+ * --rod-frame (0–7) selects the current frame via background-position.
+ *
+ * Handle is at ~85% of each frame width (280px × 85% = 238px from left edge).
+ * Positioned so the handle always sits at 50% of the pond width.
+ */
+.pf-fishing-rod {
+  --rod-frame: 0;
+  --rod-total: 8;
+
+  position: absolute;
+  bottom: 0;
+  left: calc(50% - 238px); /* handle (85% = 238px) lands at pond centre */
+  width: 280px;
+  height: 280px;
+
+  background-image: url('/assets/fish/fishing rod/Fishing Rod.png');
+  background-size: calc(var(--rod-total) * 100%) 100%;
+  background-position-x: calc(
+    var(--rod-frame) * (100% / (var(--rod-total) - 1))
+  );
+  background-position-y: 0;
+  background-repeat: no-repeat;
+
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 11;
+}
+
+/* Mirror toward fish when it is to the RIGHT of the rod */
+.pf-fishing-rod.facing-right {
+  /*
+   * scaleX(-1) flips around the element centre.
+   * Handle moves from 85% to 15% = 42px from left edge.
+   * Adjust left so handle stays at 50%: left = 50% - 42px.
+   */
+  left: calc(50% - 42px);
+  transform: scaleX(-1);
+}
+
 /* SVG rod/line overlay */
 .vg-pond-svg {
   position: absolute;
