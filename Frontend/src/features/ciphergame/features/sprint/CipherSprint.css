@@ -6,10 +6,21 @@
   --sprint-bottom-clearance: 0px;
   --sprint-lane-height: calc((100% - var(--sprint-top-clearance)) / 3);
 
-  /* Grounding positions — aligned with the paved stone walkway top surface of each platform */
-  --lane-0-top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 0.12);
-  --lane-1-top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 1.12);
-  --lane-2-top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 2.12);
+  /* Shared pixel art sink nudge */
+  --sprite-sink: 0px;
+
+  /* Grounding positions — measured top surface of the paved stone walkway in each platform tileset:
+     Lane 0: platform_upper.png  (56px / 326px = 0.172)
+     Lane 1: platform_middle.png (50px / 326px = 0.154)
+     Lane 2: platform_bottom.png (48px / 220px = 0.218) */
+  --lane-0-ground: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 0.172 + var(--sprite-sink));
+  --lane-1-ground: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 1.154 + var(--sprite-sink));
+  --lane-2-ground: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 2.218 + var(--sprite-sink));
+
+  /* Legacy aliases for any older rules */
+  --lane-0-top: var(--lane-0-ground);
+  --lane-1-top: var(--lane-1-ground);
+  --lane-2-top: var(--lane-2-ground);
   /* Lane boundary colors for visual separation */
   --lane-edge: rgba(56, 189, 248, 0.35);
   --lane-edge-glow: rgba(56, 189, 248, 0.18);
@@ -488,23 +499,23 @@
   height: 155px;
   max-height: 60%;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 22;
   pointer-events: none;
-  /* Default: center of lane 1 */
-  top: var(--lane-1-top);
-  transform: translateY(-84%);
+  /* Default: ground of lane 1 */
+  top: var(--lane-1-ground);
+  transform: translate(-50%, -100%);
   transition: top var(--transition-fast);
   will-change: top;
   /* Visual lane-constraint glow to show lane bounds */
   filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.2));
 }
 
-/* Lane positions — simply move top to each lane's center */
-.sprint-runner-sprite.lane-0 { top: var(--lane-0-top); }
-.sprint-runner-sprite.lane-1 { top: var(--lane-1-top); }
-.sprint-runner-sprite.lane-2 { top: var(--lane-2-top); }
+/* Lane positions — anchor to each lane's ground line */
+.sprint-runner-sprite.lane-0 { top: var(--lane-0-ground); }
+.sprint-runner-sprite.lane-1 { top: var(--lane-1-ground); }
+.sprint-runner-sprite.lane-2 { top: var(--lane-2-ground); }
 
 /* Lane-change brightness flash — no transform conflict */
 .sprint-runner-sprite.moving-up   { filter: brightness(1.2) drop-shadow(0 -2px 8px rgba(0,229,255,0.6)); }
@@ -517,7 +528,8 @@
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   transform: scale(2.35);
-  transform-origin: center center;
+  transform-origin: center 61px;
+  margin-bottom: -23px;
   position: relative;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8));
   will-change: background-position;
@@ -598,21 +610,21 @@
   width: 56px;
   height: 72px;
   max-height: 28%;
-  transform: translate(-50%, -50%);
+  top: var(--lane-1-ground);
+  transform: translate(-50%, -100%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   z-index: 15;
   animation: runeFloat 1.8s ease-in-out infinite;
   will-change: left;
-  /* Lane-sticking: hard clip to stay within bounds */
-  clip-path: inset(-5% 0 -5% 0);
+  clip-path: none;
   contain: layout paint style;
 }
-.sprint-target-gem-sprite.lane-0 { top: var(--lane-0-top); }
-.sprint-target-gem-sprite.lane-1 { top: var(--lane-1-top); }
-.sprint-target-gem-sprite.lane-2 { top: var(--lane-2-top); }
+.sprint-target-gem-sprite.lane-0 { top: var(--lane-0-ground); }
+.sprint-target-gem-sprite.lane-1 { top: var(--lane-1-ground); }
+.sprint-target-gem-sprite.lane-2 { top: var(--lane-2-ground); }
 
 .target-gem-aura {
   position: absolute;
@@ -661,9 +673,9 @@
 }
 
 @keyframes runeFloat {
-  /* Use translateY to float above the paved path */
-  0%, 100% { transform: translate(-50%, -80%) translateY(0px); }
-  50%       { transform: translate(-50%, -80%) translateY(-8px); }
+  /* Bottom-anchored float: repeat translate(-50%, -100%) to preserve ground anchor */
+  0%, 100% { transform: translate(-50%, -100%) translateY(0px); }
+  50%       { transform: translate(-50%, -100%) translateY(-10px); }
 }
 @keyframes gemPulse {
   0%   { transform: scale(0.9); opacity: 0.6; }
@@ -678,23 +690,23 @@
   width: 120px;
   height: 125px;
   max-height: 48%;
-  transform: translate(-50%, -80%);
+  top: var(--lane-1-ground);
+  transform: translate(-50%, -100%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   z-index: 14;
   animation: slimeHop 2s ease-in-out infinite;
   will-change: left;
-  /* Lane-sticking: hard clip to prevent bleed across lanes */
-  clip-path: inset(-4% 0 -2% 0);
+  clip-path: none;
   contain: layout paint style;
   /* Subtle lane boundary frame when obstacle enters view */
   border-radius: 6px;
 }
-.sprint-slime-obstacle-sprite.lane-0 { top: var(--lane-0-top); }
-.sprint-slime-obstacle-sprite.lane-1 { top: var(--lane-1-top); }
-.sprint-slime-obstacle-sprite.lane-2 { top: var(--lane-2-top); }
+.sprint-slime-obstacle-sprite.lane-0 { top: var(--lane-0-ground); }
+.sprint-slime-obstacle-sprite.lane-1 { top: var(--lane-1-ground); }
+.sprint-slime-obstacle-sprite.lane-2 { top: var(--lane-2-ground); }
 
 .sprint-slime-img {
   width: 110px;
@@ -727,8 +739,8 @@
 }
 
 @keyframes slimeHop {
-  0%, 100% { filter: none; }
-  40%      { filter: brightness(1.05) saturate(1.1); }
+  0%, 100% { transform: translate(-50%, -100%) translateY(0px); filter: none; }
+  40%      { transform: translate(-50%, -100%) translateY(-8px); filter: brightness(1.05) saturate(1.1); }
 }
 
 /* ───────────────────────────────────────────────
@@ -1368,9 +1380,22 @@
   --sprint-bottom-clearance: 0px;
   --sprint-lanes-height: calc(100% - var(--sprint-top-clearance));
   --lane-height: calc(var(--sprint-lanes-height) / 3);
-  --lane-0-top: calc(var(--sprint-top-clearance) + var(--lane-height) * 0.14);
-  --lane-1-top: calc(var(--sprint-top-clearance) + var(--lane-height) * 1.14);
-  --lane-2-top: calc(var(--sprint-top-clearance) + var(--lane-height) * 2.14);
+
+  /* Shared pixel art sink nudge */
+  --sprite-sink: 0px;
+
+  /* Grounding positions — measured top surface of the paved stone walkway in each platform tileset:
+     Lane 0: platform_upper.png  (56px / 326px = 0.172)
+     Lane 1: platform_middle.png (50px / 326px = 0.154)
+     Lane 2: platform_bottom.png (48px / 220px = 0.218) */
+  --lane-0-ground: calc(var(--sprint-top-clearance) + var(--lane-height) * 0.172 + var(--sprite-sink));
+  --lane-1-ground: calc(var(--sprint-top-clearance) + var(--lane-height) * 1.154 + var(--sprite-sink));
+  --lane-2-ground: calc(var(--sprint-top-clearance) + var(--lane-height) * 2.218 + var(--sprite-sink));
+
+  /* Legacy aliases for any older rules */
+  --lane-0-top: var(--lane-0-ground);
+  --lane-1-top: var(--lane-1-ground);
+  --lane-2-top: var(--lane-2-ground);
 }
 
 .sprint-track-fullscreen .sprint-lane {
@@ -1870,21 +1895,22 @@
 /* 3 Answer Diamonds (Phase 2 & 3) */
 .sprint-r2-diamond-sprite {
   position: absolute;
-  top: 0;
+  top: var(--lane-1-ground);
   width: 58px;
-  height: 58px;
-  transform: translate(-50%, -50%);
+  height: 62px;
+  transform: translate(-50%, -100%);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 10;
   pointer-events: none;
   transition: opacity 0.2s ease, filter 0.2s ease;
+  animation: runeFloat 1.8s ease-in-out infinite;
 }
 
-.sprint-r2-diamond-sprite.lane-0 { top: var(--lane-0-top); }
-.sprint-r2-diamond-sprite.lane-1 { top: var(--lane-1-top); }
-.sprint-r2-diamond-sprite.lane-2 { top: var(--lane-2-top); }
+.sprint-r2-diamond-sprite.lane-0 { top: var(--lane-0-ground); }
+.sprint-r2-diamond-sprite.lane-1 { top: var(--lane-1-ground); }
+.sprint-r2-diamond-sprite.lane-2 { top: var(--lane-2-ground); }
 
 .sprint-r2-diamond-inner {
   width: 44px;
@@ -1938,19 +1964,24 @@
 /* Bottom-Left A–Z / 1–26 Reference Strip */
 .sprint-r2-az-strip {
   position: absolute;
-  bottom: 14px;
-  left: 20px;
+  bottom: 18px;
+  left: 24px;
+  width: 40%;
+  min-width: 440px;
+  max-width: 720px;
+  height: 150px;
+  box-sizing: border-box;
   z-index: 20;
   background: rgba(3, 14, 28, 0.88);
   border: 1.5px solid rgba(0, 229, 255, 0.4);
-  border-radius: 12px;
-  padding: 6px 14px;
+  border-radius: 16px;
+  padding: 12px 18px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: space-between;
   pointer-events: auto;
 }
 
@@ -1959,15 +1990,15 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 12px;
-  padding: 2px 2px;
-  border-radius: 4px;
+  flex: 1;
+  padding: 6px 2px;
+  border-radius: 6px;
   transition: all 0.2s ease;
 }
 
 .sprint-r2-az-char {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.74rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: #cbd5e1;
   line-height: 1;
@@ -1975,47 +2006,55 @@
 
 .sprint-r2-az-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.58rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #64748b;
   line-height: 1.2;
+  margin-top: 6px;
 }
 
 .sprint-r2-az-col.highlighted {
   background: rgba(0, 229, 255, 0.25);
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+  border: 1.5px solid rgba(0, 229, 255, 0.65);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+  transform: scale(1.08);
 }
 
 .sprint-r2-az-col.highlighted .sprint-r2-az-char {
   color: var(--neon-cyan, #00e5ff);
   font-weight: 900;
-  text-shadow: 0 0 6px rgba(0, 229, 255, 0.8);
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.9);
 }
 
 .sprint-r2-az-col.highlighted .sprint-r2-az-num {
   color: #ffd700;
   font-weight: 800;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.5);
 }
 
 /* Bottom-Right Shift Key Card */
 .sprint-r2-shift-card {
   position: absolute;
-  bottom: 14px;
-  right: 20px;
+  bottom: 18px;
+  right: 24px;
   z-index: 20;
+  width: 19%;
+  min-width: 220px;
+  max-width: 320px;
+  height: 150px;
+  box-sizing: border-box;
   background: rgba(3, 14, 28, 0.88);
   border: 1.5px solid rgba(0, 229, 255, 0.4);
-  border-radius: 12px;
-  padding: 8px 16px;
+  border-radius: 16px;
+  padding: 14px 20px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+  justify-content: space-between;
+  align-items: stretch;
   pointer-events: auto;
-  min-width: 120px;
 }
 
 .sprint-r2-shift-header {
@@ -2027,18 +2066,19 @@
 }
 
 .sprint-r2-shift-title {
-  font-size: 0.68rem;
+  font-size: 0.85rem;
   font-weight: 800;
   color: #94a3b8;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
 .sprint-r2-shift-step {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.68rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--neon-cyan, #00e5ff);
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
 }
 
 .sprint-r2-shift-body {
@@ -2046,45 +2086,46 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 8px;
-  margin-top: 2px;
+  gap: 12px;
 }
 
 .sprint-r2-shift-icon {
-  font-size: 1.1rem;
+  font-size: 2rem;
 }
 
 .sprint-r2-shift-val {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.5rem;
+  font-size: 2.4rem;
   font-weight: 900;
   color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+  text-shadow: 0 0 14px rgba(255, 215, 0, 0.5);
   line-height: 1;
 }
 
 /* Pure Obstacle Slimes (no letters) */
 .sprint-r2-obstacle-slime {
   position: absolute;
-  top: 0;
-  width: 54px;
-  height: 54px;
-  transform: translate(-50%, -50%);
+  top: var(--lane-1-ground);
+  width: 56px;
+  height: 56px;
+  transform: translate(-50%, -100%);
   z-index: 10;
   pointer-events: none;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
+  animation: slimeHop 2s ease-in-out infinite;
 }
 
-.sprint-r2-obstacle-slime.lane-0 { top: var(--lane-0-top); }
-.sprint-r2-obstacle-slime.lane-1 { top: var(--lane-1-top); }
-.sprint-r2-obstacle-slime.lane-2 { top: var(--lane-2-top); }
+.sprint-r2-obstacle-slime.lane-0 { top: var(--lane-0-ground); }
+.sprint-r2-obstacle-slime.lane-1 { top: var(--lane-1-ground); }
+.sprint-r2-obstacle-slime.lane-2 { top: var(--lane-2-ground); }
 
 .sprint-r2-obstacle-slime img {
-  width: 48px;
-  height: 48px;
+  width: 50px;
+  height: 50px;
   object-fit: contain;
+  margin-bottom: -5px;
   filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5));
 }
 
@@ -2099,14 +2140,35 @@
     height: 44px;
   }
   .sprint-r2-az-strip {
-    bottom: 8px;
-    left: 14px;
-    padding: 4px 10px;
+    bottom: 12px;
+    left: 18px;
+    height: 110px;
+    padding: 8px 12px;
+  }
+  .sprint-r2-az-char {
+    font-size: 1.15rem;
+  }
+  .sprint-r2-az-num {
+    font-size: 0.72rem;
+    margin-top: 4px;
   }
   .sprint-r2-shift-card {
-    bottom: 8px;
-    right: 14px;
-    padding: 6px 12px;
+    bottom: 12px;
+    right: 18px;
+    height: 110px;
+    padding: 10px 14px;
+  }
+  .sprint-r2-shift-title {
+    font-size: 0.75rem;
+  }
+  .sprint-r2-shift-step {
+    font-size: 0.82rem;
+  }
+  .sprint-r2-shift-icon {
+    font-size: 1.6rem;
+  }
+  .sprint-r2-shift-val {
+    font-size: 1.95rem;
   }
   .sprint-r2-banner-title {
     font-size: 1.35rem;
@@ -2123,20 +2185,35 @@
     height: 40px;
   }
   .sprint-r2-az-strip {
-    bottom: 6px;
-    left: 10px;
-    padding: 3px 8px;
+    bottom: 8px;
+    left: 14px;
+    height: 85px;
+    padding: 6px 10px;
   }
   .sprint-r2-az-char {
-    font-size: 0.68rem;
+    font-size: 0.95rem;
   }
   .sprint-r2-az-num {
-    font-size: 0.52rem;
+    font-size: 0.6rem;
+    margin-top: 2px;
   }
   .sprint-r2-shift-card {
-    bottom: 6px;
-    right: 10px;
-    padding: 4px 10px;
+    bottom: 8px;
+    right: 14px;
+    height: 85px;
+    padding: 8px 12px;
+  }
+  .sprint-r2-shift-title {
+    font-size: 0.68rem;
+  }
+  .sprint-r2-shift-step {
+    font-size: 0.74rem;
+  }
+  .sprint-r2-shift-icon {
+    font-size: 1.3rem;
+  }
+  .sprint-r2-shift-val {
+    font-size: 1.6rem;
   }
   .sprint-r2-banner-title {
     font-size: 1.2rem;
