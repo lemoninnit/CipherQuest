@@ -712,8 +712,8 @@
    ─────────────────────────────────────────────── */
 .sprint-slime-obstacle-sprite {
   position: absolute;
-  width: 120px;
-  height: 125px;
+  width: 96px;
+  height: 90px;
   max-height: 48%;
   top: var(--lane-1-ground);
   transform: translate(-50%, -100%);
@@ -725,23 +725,22 @@
   animation: slimeHop 2s ease-in-out infinite;
   will-change: left;
   clip-path: none;
-  contain: layout paint style;
-  /* Subtle lane boundary frame when obstacle enters view */
-  border-radius: 6px;
+  overflow: visible;
+  border-radius: 0;
 }
 .sprint-slime-obstacle-sprite.lane-0 { top: var(--lane-0-ground); }
 .sprint-slime-obstacle-sprite.lane-1 { top: var(--lane-1-ground); }
 .sprint-slime-obstacle-sprite.lane-2 { top: var(--lane-2-ground); }
 
 .sprint-slime-img {
-  width: 110px;
+  width: 90px;
   max-width: 100%;
   height: auto;
-  max-height: 95%;
+  max-height: 85px;
   object-fit: contain;
   image-rendering: pixelated;
-  transform: scale(1.35);
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.85));
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 10px rgba(239, 68, 68, 0.45));
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
@@ -1771,17 +1770,17 @@
 /* Corner Brackets Accents (Arcade Dungeon frame) */
 .sprint-r2-corner {
   position: absolute;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border: 2px solid var(--neon-cyan, #00e5ff);
   pointer-events: none;
   transition: border-color 0.25s ease;
   z-index: 2;
 }
-.sprint-r2-corner.top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 4px; }
-.sprint-r2-corner.top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; border-top-right-radius: 4px; }
-.sprint-r2-corner.bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; border-bottom-left-radius: 4px; }
-.sprint-r2-corner.bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 4px; }
+.sprint-r2-corner.top-left { top: -1.5px; left: -1.5px; border-right: none; border-bottom: none; border-top-left-radius: 12px; }
+.sprint-r2-corner.top-right { top: -1.5px; right: -1.5px; border-left: none; border-bottom: none; border-top-right-radius: 12px; }
+.sprint-r2-corner.bottom-left { bottom: -1.5px; left: -1.5px; border-right: none; border-top: none; border-bottom-left-radius: 12px; }
+.sprint-r2-corner.bottom-right { bottom: -1.5px; right: -1.5px; border-left: none; border-top: none; border-bottom-right-radius: 12px; }
 
 /* Panel Tags (e.g. A–Z REFERENCE, SHIFT KEY, DECRYPTION BRIEF) */
 .sprint-r2-panel-tag {
@@ -2182,20 +2181,18 @@
   position: absolute;
   bottom: 18px;
   left: 24px;
-  width: 40%;
-  min-width: 440px;
-  max-width: 720px;
-  height: 150px;
+  width: 556px;
+  max-width: calc(100vw - 360px);
+  height: 116px;
   box-sizing: border-box;
   z-index: 20;
-  background: linear-gradient(rgba(3, 14, 28, 0.9), rgba(3, 14, 28, 0.9)),
-              repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 229, 255, 0.03) 3px, rgba(0, 229, 255, 0.03) 4px);
+  background: rgba(3, 14, 28, 0.9);
   border: 1.5px solid rgba(0, 229, 255, 0.45);
-  border-radius: 16px;
-  padding: 10px 18px 12px;
+  border-radius: 12px;
+  padding: 14px 18px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(0, 229, 255, 0.08);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 16px rgba(0, 229, 255, 0.15);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -2205,7 +2202,7 @@
 .sprint-r2-panel-header {
   display: flex;
   align-items: center;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   width: 100%;
 }
 
@@ -2222,16 +2219,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
-  padding: 4px 1px;
-  border-radius: 6px;
+  width: 20px;
+  flex: 0 0 20px;
+  padding: 2px 0;
+  border-radius: 5px;
   transition: all 0.2s ease;
   opacity: 0.55;
 }
 
 .sprint-r2-az-char {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.45rem;
+  font-size: 1.35rem;
   font-weight: 800;
   color: #cbd5e1;
   line-height: 1;
@@ -2239,18 +2237,18 @@
 
 .sprint-r2-az-num {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #64748b;
-  line-height: 1.2;
-  margin-top: 5px;
+  line-height: 1;
+  margin-top: 4px;
 }
 
 .sprint-r2-az-col.highlighted {
   opacity: 1;
   background: rgba(0, 229, 255, 0.22);
   border: 1.5px solid #00e5ff;
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.75), inset 0 0 10px rgba(0, 229, 255, 0.4);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.75), inset 0 0 8px rgba(0, 229, 255, 0.35);
   transform: scale(1.1);
   animation: azCellPulse 1.8s ease-in-out infinite;
 }
@@ -2261,8 +2259,8 @@
     transform: scale(1.08);
   }
   50% {
-    box-shadow: 0 0 22px rgba(0, 229, 255, 0.95), inset 0 0 14px rgba(0, 229, 255, 0.55);
-    transform: scale(1.14);
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.95), inset 0 0 12px rgba(0, 229, 255, 0.5);
+    transform: scale(1.12);
   }
 }
 
@@ -2284,19 +2282,16 @@
   bottom: 18px;
   right: 24px;
   z-index: 20;
-  width: 19%;
-  min-width: 220px;
-  max-width: 320px;
-  height: 150px;
+  width: 252px;
+  height: 116px;
   box-sizing: border-box;
-  background: linear-gradient(rgba(3, 14, 28, 0.9), rgba(3, 14, 28, 0.9)),
-              repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 229, 255, 0.03) 3px, rgba(0, 229, 255, 0.03) 4px);
+  background: rgba(3, 14, 28, 0.9);
   border: 1.5px solid rgba(0, 229, 255, 0.45);
-  border-radius: 16px;
-  padding: 12px 18px;
+  border-radius: 12px;
+  padding: 14px 18px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(0, 229, 255, 0.08);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 16px rgba(0, 229, 255, 0.15);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -2320,14 +2315,15 @@
 
 .sprint-r2-flow-chip {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 800;
-  padding: 2px 7px;
+  padding: 2px 6px;
   border-radius: 5px;
   background: rgba(0, 229, 255, 0.12);
   border: 1px solid rgba(0, 229, 255, 0.35);
   color: var(--neon-cyan, #00e5ff);
   text-shadow: 0 0 6px rgba(0, 229, 255, 0.5);
+  line-height: 1.2;
 }
 
 .sprint-r2-flow-chip.shift {
@@ -2339,7 +2335,7 @@
 
 .sprint-r2-flow-arrow {
   color: #64748b;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
@@ -2348,11 +2344,11 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  gap: 12px;
+  padding: 0 2px;
 }
 
 .sprint-r2-shift-icon {
-  font-size: 2.1rem;
+  font-size: 2rem;
   display: inline-block;
   animation: keyIdleShimmer 2.4s ease-in-out infinite;
 }
@@ -2370,7 +2366,7 @@
 
 .sprint-r2-shift-val {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 2.5rem;
+  font-size: 2.35rem;
   font-weight: 900;
   color: #f59e0b;
   text-shadow: 0 0 16px rgba(245, 158, 11, 0.7), 0 0 30px rgba(245, 158, 11, 0.35);
@@ -2393,15 +2389,17 @@
 .sprint-r2-obstacle-slime {
   position: absolute;
   top: var(--lane-1-ground);
-  width: 56px;
-  height: 56px;
+  width: 96px;
+  height: 90px;
   transform: translate(-50%, -100%);
-  z-index: 10;
+  z-index: 14;
   pointer-events: none;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   animation: slimeHop 2s ease-in-out infinite;
+  clip-path: none;
+  overflow: visible;
 }
 
 .sprint-r2-obstacle-slime.lane-0 { top: var(--lane-0-ground); }
@@ -2409,11 +2407,15 @@
 .sprint-r2-obstacle-slime.lane-2 { top: var(--lane-2-ground); }
 
 .sprint-r2-obstacle-slime img {
-  width: 50px;
-  height: 50px;
+  width: 90px;
+  max-width: 100%;
+  height: auto;
+  max-height: 85px;
   object-fit: contain;
-  margin-bottom: -5px;
-  filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.5));
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  margin-bottom: 0px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 10px rgba(239, 68, 68, 0.45));
 }
 
 /* Responsive adjustments */
@@ -2430,27 +2432,43 @@
   .sprint-r2-az-strip {
     bottom: 12px;
     left: 18px;
-    height: 110px;
-    padding: 6px 12px 8px;
+    width: 504px;
+    height: 98px;
+    padding: 10px 14px;
+  }
+  .sprint-r2-az-col {
+    width: 18px;
+    flex: 0 0 18px;
   }
   .sprint-r2-az-char {
     font-size: 1.15rem;
   }
   .sprint-r2-az-num {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     margin-top: 3px;
   }
   .sprint-r2-shift-card {
     bottom: 12px;
     right: 18px;
-    height: 110px;
-    padding: 8px 14px;
+    width: 232px;
+    height: 98px;
+    padding: 10px 14px;
   }
   .sprint-r2-shift-icon {
     font-size: 1.6rem;
   }
   .sprint-r2-shift-val {
     font-size: 1.95rem;
+  }
+  .sprint-r2-obstacle-slime,
+  .sprint-slime-obstacle-sprite {
+    width: 80px;
+    height: 76px;
+  }
+  .sprint-r2-obstacle-slime img,
+  .sprint-slime-img {
+    width: 76px;
+    max-height: 72px;
   }
   .sprint-r2-banner-title {
     font-size: 1.25rem;
@@ -2485,20 +2503,26 @@
   .sprint-r2-az-strip {
     bottom: 8px;
     left: 14px;
-    height: 85px;
-    padding: 4px 10px 6px;
+    width: 440px;
+    height: 84px;
+    padding: 6px 12px;
+  }
+  .sprint-r2-az-col {
+    width: 16px;
+    flex: 0 0 16px;
   }
   .sprint-r2-az-char {
     font-size: 0.95rem;
   }
   .sprint-r2-az-num {
-    font-size: 0.6rem;
+    font-size: 0.58rem;
     margin-top: 2px;
   }
   .sprint-r2-shift-card {
     bottom: 8px;
     right: 14px;
-    height: 85px;
+    width: 210px;
+    height: 84px;
     padding: 6px 12px;
   }
   .sprint-r2-shift-icon {
@@ -2506,6 +2530,16 @@
   }
   .sprint-r2-shift-val {
     font-size: 1.6rem;
+  }
+  .sprint-r2-obstacle-slime,
+  .sprint-slime-obstacle-sprite {
+    width: 68px;
+    height: 64px;
+  }
+  .sprint-r2-obstacle-slime img,
+  .sprint-slime-img {
+    width: 64px;
+    max-height: 60px;
   }
   .sprint-r2-banner-title {
     font-size: 1.1rem;

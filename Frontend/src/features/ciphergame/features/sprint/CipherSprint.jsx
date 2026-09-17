@@ -1209,10 +1209,11 @@ export default function CipherSprint({
                 return (
                   <div
                     key={slime.id}
-                    className={`sprint-r2-obstacle-slime lane-${slime.lane}`}
+                    className={`sprint-r2-obstacle-slime sprint-slime-obstacle-sprite lane-${slime.lane}`}
                     style={{ left: `${slime.x}%` }}
                   >
                     <img
+                      className="sprint-slime-img"
                       src={slime.lane % 2 === 0 ? orangeSlimeSrc : basicSlimeSrc}
                       alt="Obstacle Slime"
                     />
