@@ -40,14 +40,22 @@ export function useGameFlow() {
   const { user, refreshProfile } = useAuth();
   const location = useLocation();
   const routeCategory = location.state?.category;
+  const routeDifficulty = location.state?.difficulty;
+
+  const VALID_DIFFICULTIES = ['easy', 'medium', 'hard'];
+
   const initialCategory = VALID_CATEGORIES.includes(routeCategory) ? routeCategory : null;
+  const initialDifficulty = (initialCategory && VALID_DIFFICULTIES.includes(routeDifficulty)) ? routeDifficulty : null;
 
   const [progress, setProgress] = useState(defaultProgress());
 
   const [category,   setCategory]   = useState(initialCategory);
-  const [difficulty, setDifficulty] = useState(null);
+  const [difficulty, setDifficulty] = useState(initialDifficulty);
   const [currentStage, setCurrentStage] = useState(null);
   const [loadingTargetStage, setLoadingTargetStage] = useState(null);
+
+  // Completion modal state for tier / grandmaster completion
+  const [completionModalData, setCompletionModalData] = useState(null);
 
   // Sync progress state when user or user progress map changes
   useEffect(() => {
@@ -125,8 +133,64 @@ export function useGameFlow() {
         return next;
       });
     }
+
+    // Check if 5th level (index 4) of a tier was completed to trigger completion modal
+    if (stageIndex === 4) {
+      const cipherNames = { caesar: 'Caesar', vigenere: 'Vigenère', playfair: 'Playfair' };
+      const cipherName = cipherNames[cat] || 'Cipher';
+
+      let type = 'tier';
+      let badgeTitle = '';
+      let badgeImage = '';
+      let nextDiff = null;
+
+      if (diff === 'easy') {
+        type = 'tier';
+        badgeTitle = `${cipherName} Initiate`;
+        badgeImage = `/assets/badges/${cat}_initiate.png`;
+        nextDiff = 'medium';
+      } else if (diff === 'medium') {
+        type = 'tier';
+        badgeTitle = `${cipherName} Expert`;
+        badgeImage = `/assets/badges/${cat}_expert.png`;
+        nextDiff = 'hard';
+      } else if (diff === 'hard') {
+        type = 'grandmaster';
+        badgeTitle = `${cipherName} Grandmaster`;
+        badgeImage = `/assets/badges/${cat}_grandmaster.png`;
+        nextDiff = null;
+      }
+
+      setCompletionModalData({
+        type,
+        badgeTitle,
+        badgeImage,
+        tierName: diff.charAt(0).toUpperCase() + diff.slice(1),
+        cipherName,
+        category: cat,
+        difficulty: diff,
+        nextDifficulty: nextDiff,
+        xpAwarded: diff === 'hard' ? 500 : 250,
+      });
+    }
+
     setCurrentStage(null);
     setLoadingTargetStage(null);
+  };
+
+  const handleContinueNextDifficulty = () => {
+    if (!completionModalData) return;
+    const { category: cat, nextDifficulty } = completionModalData;
+    setCompletionModalData(null);
+    if (nextDifficulty) {
+      setDifficulty(nextDifficulty);
+      startStage(cat, nextDifficulty, 0);
+    }
+  };
+
+  const handleCloseCompletionModal = () => {
+    setCompletionModalData(null);
+    goToCategories();
   };
 
   const replayCurrentStage = () => {
@@ -135,17 +199,19 @@ export function useGameFlow() {
     startStage(cat, diff, stageIndex);
   };
 
-  const goToCategories   = () => { setCategory(null); setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); };
-  const selectCategory   = (cat)  => { setCategory(cat); setDifficulty(null); setLoadingTargetStage(null); };
-  const selectDifficulty = (diff) => { setDifficulty(diff); setLoadingTargetStage(null); };
-  const backToDifficulty = () => { setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); };
-  const backToStages     = () => { setCurrentStage(null); setLoadingTargetStage(null); };
+  const goToCategories   = () => { setCategory(null); setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); setCompletionModalData(null); };
+  const selectCategory   = (cat)  => { setCategory(cat); setDifficulty(null); setLoadingTargetStage(null); setCompletionModalData(null); };
+  const selectDifficulty = (diff) => { setDifficulty(diff); setLoadingTargetStage(null); setCompletionModalData(null); };
+  const backToDifficulty = () => { setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); setCompletionModalData(null); };
+  const backToStages     = () => { setCurrentStage(null); setLoadingTargetStage(null); setCompletionModalData(null); };
 
   return {
     progress,
     category, difficulty, currentStage, loadingTargetStage,
+    completionModalData,
     isUnlocked, isStageCompleted,
     startStage, finishLoadingStage, completeStage, replayCurrentStage,
+    handleContinueNextDifficulty, handleCloseCompletionModal,
     goToCategories, selectCategory, selectDifficulty,
     backToDifficulty, backToStages,
   };

@@ -1,0 +1,252 @@
+/* ===================================================
+   CIPHERQUEST COMPLETION MODAL - AAA REWARD STYLING
+   =================================================== */
+
+.cq-completion-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(3, 9, 20, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: cqFadeIn 0.3s ease-out;
+}
+
+@keyframes cqFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cq-completion-card {
+  position: relative;
+  max-width: 520px;
+  width: 100%;
+  background: linear-gradient(180deg, rgba(12, 26, 46, 0.95) 0%, rgba(5, 14, 28, 0.98) 100%);
+  border-radius: 24px;
+  padding: 2.25rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  align-items: center;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75);
+  font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+  color: #ffffff;
+  animation: cqPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cqPopIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.cq-completion-card.tier-glow {
+  border: 2px solid #00e5ff;
+  box-shadow: 0 0 35px rgba(0, 229, 255, 0.35), 0 16px 48px rgba(0, 0, 0, 0.75);
+}
+
+.cq-completion-card.grandmaster-glow {
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 45px rgba(255, 215, 0, 0.45), 0 16px 48px rgba(0, 0, 0, 0.75);
+}
+
+/* Header Banner */
+.cq-completion-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.cq-header-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.85rem;
+  border-radius: 20px;
+  background: rgba(0, 229, 255, 0.15);
+  color: #00e5ff;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+}
+
+.grandmaster-glow .cq-header-pill {
+  background: rgba(255, 215, 0, 0.18);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.5);
+}
+
+.star-icon {
+  font-size: 16px !important;
+}
+
+.cq-completion-title {
+  font-size: clamp(20px, 1.8vw, 26px);
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  margin: 0;
+  text-shadow: 0 0 16px rgba(0, 229, 255, 0.5);
+}
+
+.grandmaster-glow .cq-completion-title {
+  text-shadow: 0 0 18px rgba(255, 215, 0, 0.6);
+}
+
+/* Badge Award Section */
+.cq-badge-award-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+  text-align: center;
+}
+
+.cq-badge-halo {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cq-ambient-light {
+  position: absolute;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: #00e5ff;
+  filter: blur(25px);
+  opacity: 0.75;
+  z-index: 1;
+}
+
+.grandmaster-glow .cq-ambient-light {
+  background: #ffd700;
+  opacity: 0.85;
+}
+
+.cq-badge-award-img {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.8));
+  animation: cqFloat 3s ease-in-out infinite;
+}
+
+@keyframes cqFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+.cq-badge-text-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 440px;
+}
+
+.cq-badge-unlocked-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #34d399;
+  text-transform: uppercase;
+}
+
+.cq-badge-award-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+}
+
+.cq-badge-award-desc {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.cq-xp-reward {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.12);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  padding: 0.3rem 0.85rem;
+  border-radius: 20px;
+  margin-top: 4px;
+}
+
+/* Action Buttons */
+.cq-completion-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.cq-btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.8rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(15, 25, 42, 0.7);
+  color: #e2e8f0;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cq-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.cq-btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.85rem 1.5rem;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #00e5ff 0%, #0077b6 100%);
+  color: #041525;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+.cq-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.7);
+  background: linear-gradient(135deg, #38ef7d 0%, #11998e 100%);
+  color: #ffffff;
+}

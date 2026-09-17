@@ -12,6 +12,7 @@ const OFFICIAL_BADGES = [
     title: 'Caesar Initiate',
     cipherCategory: 'Caesar Cipher',
     cipherKey: 'caesar',
+    difficultyKey: 'easy',
     tier: 'Bronze Tier',
     image: '/assets/badges/caesar_initiate.png',
     borderColor: 'bronze',
@@ -24,6 +25,7 @@ const OFFICIAL_BADGES = [
     title: 'Caesar Expert',
     cipherCategory: 'Caesar Cipher',
     cipherKey: 'caesar',
+    difficultyKey: 'medium',
     tier: 'Silver Tier',
     image: '/assets/badges/caesar_expert.png',
     borderColor: 'silver',
@@ -36,6 +38,7 @@ const OFFICIAL_BADGES = [
     title: 'Caesar Grandmaster',
     cipherCategory: 'Caesar Cipher',
     cipherKey: 'caesar',
+    difficultyKey: 'hard',
     tier: 'Gold Tier',
     image: '/assets/badges/caesar_grandmaster.png',
     borderColor: 'gold',
@@ -50,6 +53,7 @@ const OFFICIAL_BADGES = [
     title: 'Vigenère Initiate',
     cipherCategory: 'Vigenère Cipher',
     cipherKey: 'vigenere',
+    difficultyKey: 'easy',
     tier: 'Bronze Tier',
     image: '/assets/badges/vigenere_initiate.png',
     borderColor: 'bronze',
@@ -62,6 +66,7 @@ const OFFICIAL_BADGES = [
     title: 'Vigenère Expert',
     cipherCategory: 'Vigenère Cipher',
     cipherKey: 'vigenere',
+    difficultyKey: 'medium',
     tier: 'Silver Tier',
     image: '/assets/badges/vigenere_expert.png',
     borderColor: 'silver',
@@ -74,6 +79,7 @@ const OFFICIAL_BADGES = [
     title: 'Vigenère Grandmaster',
     cipherCategory: 'Vigenère Cipher',
     cipherKey: 'vigenere',
+    difficultyKey: 'hard',
     tier: 'Gold Tier',
     image: '/assets/badges/vigenere_grandmaster.png',
     borderColor: 'gold',
@@ -88,6 +94,7 @@ const OFFICIAL_BADGES = [
     title: 'Playfair Initiate',
     cipherCategory: 'Playfair Cipher',
     cipherKey: 'playfair',
+    difficultyKey: 'easy',
     tier: 'Bronze Tier',
     image: '/assets/badges/playfair_initiate.png',
     borderColor: 'bronze',
@@ -100,6 +107,7 @@ const OFFICIAL_BADGES = [
     title: 'Playfair Expert',
     cipherCategory: 'Playfair Cipher',
     cipherKey: 'playfair',
+    difficultyKey: 'medium',
     tier: 'Silver Tier',
     image: '/assets/badges/playfair_expert.png',
     borderColor: 'silver',
@@ -112,6 +120,7 @@ const OFFICIAL_BADGES = [
     title: 'Playfair Grandmaster',
     cipherCategory: 'Playfair Cipher',
     cipherKey: 'playfair',
+    difficultyKey: 'hard',
     tier: 'Gold Tier',
     image: '/assets/badges/playfair_grandmaster.png',
     borderColor: 'gold',
@@ -171,6 +180,39 @@ const OFFICIAL_BADGES = [
   },
 ];
 
+const getProgressCounts = (user) => {
+  const result = {
+    caesar:   { easy: 0, medium: 0, hard: 0, total: 0 },
+    vigenere: { easy: 0, medium: 0, hard: 0, total: 0 },
+    playfair: { easy: 0, medium: 0, hard: 0, total: 0 },
+  };
+
+  let rawMap = user?.progressMap || user?.progress;
+  if (!rawMap) {
+    try {
+      const stored = localStorage.getItem("cipher_progress_v2");
+      if (stored) rawMap = JSON.parse(stored);
+    } catch {}
+  }
+
+  if (!rawMap) return result;
+
+  for (const [cipherKey, diffData] of Object.entries(rawMap)) {
+    const cKey = cipherKey.toLowerCase();
+    if (!result[cKey]) continue;
+
+    for (const [diffKey, levelList] of Object.entries(diffData || {})) {
+      const dKey = diffKey.toLowerCase();
+      if (result[cKey][dKey] !== undefined && Array.isArray(levelList)) {
+        result[cKey][dKey] = levelList.length;
+      }
+    }
+    result[cKey].total = result[cKey].easy + result[cKey].medium + result[cKey].hard;
+  }
+
+  return result;
+};
+
 export default function BadgesPage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -179,6 +221,8 @@ export default function BadgesPage() {
   const [unlockedBadgeIds, setUnlockedBadgeIds] = useState(null); // null = initial loading state
   const [loading, setLoading] = useState(true);
   const [showTutorial, setShowTutorial] = useState(false);
+
+  const counts = React.useMemo(() => getProgressCounts(user), [user]);
 
   useEffect(() => {
     let isMounted = true;
@@ -206,34 +250,67 @@ export default function BadgesPage() {
   }, []);
 
   const isUnlocked = (badgeId) => {
-    if (!Array.isArray(unlockedBadgeIds)) {
-      return false; // Prevent initial unlock flash while loading
+    const normId = String(badgeId).toLowerCase().replace(/[\s_]+/g, '');
+    
+    // Check if backend has marked it unlocked
+    if (Array.isArray(unlockedBadgeIds)) {
+      const foundInBackend = unlockedBadgeIds.some(
+        (id) => String(id).toLowerCase().replace(/[\s_]+/g, '') === normId
+      );
+      if (foundInBackend) return true;
     }
-    return unlockedBadgeIds.some(
-      (id) =>
-        String(id).toLowerCase().replace(/[\s_]+/g, '') ===
-        String(badgeId).toLowerCase().replace(/[\s_]+/g, '')
-    );
+
+    // Dynamic progress evaluation fallback:
+    if (normId === 'caesarinitiate') return counts.caesar.easy >= 5;
+    if (normId === 'caesarexpert') return counts.caesar.medium >= 5;
+    if (normId === 'caesargrandmaster') return counts.caesar.total >= 15;
+
+    if (normId === 'vigenereinitiate') return counts.vigenere.easy >= 5;
+    if (normId === 'vigenereexpert') return counts.vigenere.medium >= 5;
+    if (normId === 'vigeneregrandmaster') return counts.vigenere.total >= 15;
+
+    if (normId === 'playfairinitiate') return counts.playfair.easy >= 5;
+    if (normId === 'playfairexpert') return counts.playfair.medium >= 5;
+    if (normId === 'playfairgrandmaster') return counts.playfair.total >= 15;
+
+    if (normId === 'streak7days') return (user?.streak ?? 1) >= 7;
+    if (normId === 'streak30days') return (user?.streak ?? 1) >= 30;
+
+    return false;
   };
 
   const getBadgeProgress = (badge) => {
+    const normId = String(badge.id).toLowerCase().replace(/[\s_]+/g, '');
     const unlocked = isUnlocked(badge.id);
+
     if (unlocked) {
       return { current: badge.maxProgress, percent: 100 };
     }
 
-    if (badge.id === 'streak_7_days' || badge.id === 'streak_30_days') {
-      const currentStreak = user?.streak ?? 1;
-      const current = Math.min(badge.maxProgress, currentStreak);
-      return { current, percent: Math.round((current / badge.maxProgress) * 100) };
-    }
+    let current = 0;
+    if (normId === 'caesarinitiate') current = Math.min(badge.maxProgress, counts.caesar.easy);
+    else if (normId === 'caesarexpert') current = Math.min(badge.maxProgress, counts.caesar.medium);
+    else if (normId === 'caesargrandmaster') current = Math.min(badge.maxProgress, counts.caesar.total);
+    else if (normId === 'vigenereinitiate') current = Math.min(badge.maxProgress, counts.vigenere.easy);
+    else if (normId === 'vigenereexpert') current = Math.min(badge.maxProgress, counts.vigenere.medium);
+    else if (normId === 'vigeneregrandmaster') current = Math.min(badge.maxProgress, counts.vigenere.total);
+    else if (normId === 'playfairinitiate') current = Math.min(badge.maxProgress, counts.playfair.easy);
+    else if (normId === 'playfairexpert') current = Math.min(badge.maxProgress, counts.playfair.medium);
+    else if (normId === 'playfairgrandmaster') current = Math.min(badge.maxProgress, counts.playfair.total);
+    else if (normId === 'streak7days' || normId === 'streak30days') current = Math.min(badge.maxProgress, user?.streak ?? 1);
 
-    return { current: 0, percent: 0 };
+    const percent = Math.min(100, Math.round((current / badge.maxProgress) * 100));
+    return { current, percent };
   };
 
   const handleBadgeClick = (badge) => {
     if (badge.cipherKey) {
-      navigate('/dashboard/ciphergame', { state: { category: badge.cipherKey } });
+      navigate('/dashboard/ciphergame', {
+        state: {
+          category: badge.cipherKey,
+          difficulty: badge.difficultyKey || 'easy'
+        }
+      });
     } else {
       navigate('/dashboard/ciphergame');
     }
@@ -386,14 +463,14 @@ export default function BadgesPage() {
                             {badge.tier}
                           </span>
                           <span className={`bd-status-pill ${unlocked ? 'unlocked' : 'locked'}`}>
-                            {unlocked ? 'UNLOCKED' : 'LOCKED'}
+                            {unlocked ? '✓ UNLOCKED' : '🔒 LOCKED'}
                           </span>
                         </div>
 
                         {/* Emblem Artwork Container */}
                         <div className="bd-badge-inner">
                           <div className="bd-badge-img-wrapper">
-                            <div className={`bd-ambient-glow glow-${badge.borderColor}`} />
+                            {unlocked && <div className={`bd-ambient-glow glow-${badge.borderColor}`} />}
                             <img
                               src={badge.image}
                               alt={badge.title}

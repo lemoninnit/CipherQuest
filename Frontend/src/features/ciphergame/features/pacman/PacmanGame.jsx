@@ -148,7 +148,7 @@ const getGhostStartPositions = (tier) => {
   ];
 };
 
-const MAX_ACTIVE_TARGET_GHOSTS = { easy: 8, medium: 5, hard: 6 };
+const MAX_ACTIVE_TARGET_GHOSTS = { easy: 8, medium: 8, hard: 8 };
 // Decoy ghost count also scales gently with tier for a bit more challenge.
 const DECOY_GHOST_COUNT = { easy: 2, medium: 2, hard: 2 };
 
@@ -212,61 +212,17 @@ const getMask = (levelData, idx) => {
   return true;
 };
 
-// Dynamically configure ghosts: capped active target letters + queue system + decoys.
-const generateInitialGhosts = (levelData, tier) => {
-  const normTier = String(tier || levelData?.tier || 'easy').toLowerCase();
-  const maxActive = MAX_ACTIVE_TARGET_GHOSTS[normTier] || 8;
-  const decoyCount = DECOY_GHOST_COUNT[normTier] || 2;
-  const startPositions = getGhostStartPositions(normTier);
-
+// Helper to extract all required target items for levelData
+const getRequiredTargetItems = (levelData) => {
+  if (!levelData) return [];
   const isPlayfair = !!levelData.matrix;
   if (isPlayfair) {
     const pairs = levelData.pairs || [];
-    const allTargets = pairs.map((plainPair, i) => ({
-      id: `ghost-${i + 1}`,
+    return pairs.map((plainPair, i) => ({
+      index: i,
       char: plainPair,
-      index: i
+      id: `ghost-target-${i}`
     }));
-
-    const activeTargets = allTargets.slice(0, maxActive);
-    const queue = allTargets.slice(maxActive);
-
-    const ghosts = activeTargets.map((item, i) => {
-      const pos = startPositions[i % startPositions.length];
-      return {
-        ...item,
-        row: pos.row,
-        col: pos.col,
-        eaten: false,
-        dir: pos.dir
-      };
-    });
-
-    // Add decoy ghosts for distraction/challenge
-    const alphabet = 'ABCDEFGHIKLMNOPQRSTUVWXYZ';
-    for (let i = 0; i < decoyCount; i++) {
-      let decoyPair = '';
-      do {
-        const c1 = alphabet[Math.floor(Math.random() * 25)];
-        const c2 = alphabet[Math.floor(Math.random() * 25)];
-        decoyPair = c1 + c2;
-      } while (pairs.includes(decoyPair));
-
-      const posIdx = activeTargets.length + i;
-      const pos = startPositions[posIdx % startPositions.length];
-
-      ghosts.push({
-        id: `ghost-decoy-${i + 1}`,
-        char: decoyPair,
-        index: -1, // Decoy indicator
-        row: pos.row,
-        col: pos.col,
-        eaten: false,
-        dir: pos.dir
-      });
-    }
-
-    return { ghosts, queue };
   }
 
   const maskedIndices = [];
@@ -281,14 +237,24 @@ const generateInitialGhosts = (levelData, tier) => {
     }
   }
 
-  const allTargets = maskedIndices.map((idx, i) => ({
-    id: `ghost-${i + 1}`,
+  return maskedIndices.map((idx) => ({
+    index: idx,
     char: levelData.plaintext ? levelData.plaintext[idx] : '',
-    index: idx
+    id: `ghost-target-${idx}`
   }));
+};
 
-  const activeTargets = allTargets.slice(0, maxActive);
-  const queue = allTargets.slice(maxActive);
+// Dynamically configure ghosts: capped active target letters + queue system + decoys.
+const generateInitialGhosts = (levelData, tier) => {
+  const normTier = String(tier || levelData?.tier || 'easy').toLowerCase();
+  const maxActive = MAX_ACTIVE_TARGET_GHOSTS[normTier] || 8;
+  const decoyCount = DECOY_GHOST_COUNT[normTier] || 2;
+  const startPositions = getGhostStartPositions(normTier);
+
+  const isPlayfair = !!levelData.matrix;
+  const requiredTargets = getRequiredTargetItems(levelData);
+  const activeTargets = requiredTargets.slice(0, maxActive);
+  const queue = requiredTargets.slice(maxActive);
 
   const ghosts = activeTargets.map((item, i) => {
     const pos = startPositions[i % startPositions.length];
@@ -297,24 +263,36 @@ const generateInitialGhosts = (levelData, tier) => {
       row: pos.row,
       col: pos.col,
       eaten: false,
+      dying: false,
       dir: pos.dir
     };
   });
 
   // Add decoy ghosts for distraction/challenge
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const targetLetters = levelData.plaintext ? maskedIndices.map(idx => levelData.plaintext[idx]) : [];
-  const ciphertextLetters = levelData.ciphertext ? levelData.ciphertext.split('') : [];
-  const plaintextLetters = levelData.plaintext ? levelData.plaintext.split('') : [];
+  const alphabet = isPlayfair ? 'ABCDEFGHIKLMNOPQRSTUVWXYZ' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const targetLetters = requiredTargets.map(t => t.char);
+  const ciphertextLetters = levelData?.ciphertext ? levelData.ciphertext.split('') : [];
+  const plaintextLetters = levelData?.plaintext ? levelData.plaintext.split('') : [];
   const avoidLetters = new Set([...targetLetters, ...ciphertextLetters, ...plaintextLetters]);
   
   for (let i = 0; i < decoyCount; i++) {
     let decoyChar = '';
-    let attempts = 0;
-    do {
-      decoyChar = alphabet[Math.floor(Math.random() * 26)];
-      attempts++;
-    } while ((avoidLetters.has(decoyChar) || targetLetters.includes(decoyChar)) && attempts < 100);
+    if (isPlayfair) {
+      const pairs = levelData?.pairs || [];
+      let attempts = 0;
+      do {
+        const c1 = alphabet[Math.floor(Math.random() * 25)];
+        const c2 = alphabet[Math.floor(Math.random() * 25)];
+        decoyChar = c1 + c2;
+        attempts++;
+      } while (pairs.includes(decoyChar) && attempts < 100);
+    } else {
+      let attempts = 0;
+      do {
+        decoyChar = alphabet[Math.floor(Math.random() * 26)];
+        attempts++;
+      } while ((avoidLetters.has(decoyChar) || targetLetters.includes(decoyChar)) && attempts < 100);
+    }
 
     const posIdx = activeTargets.length + i;
     const pos = startPositions[posIdx % startPositions.length];
@@ -326,6 +304,7 @@ const generateInitialGhosts = (levelData, tier) => {
       row: pos.row,
       col: pos.col,
       eaten: false,
+      dying: false,
       dir: pos.dir
     });
   }
@@ -523,6 +502,78 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     isInvulnerableRef.current = false;
     pacmanSound.pauseBgm();
   }, [levelData, tier]);
+
+  // Target Ghost Enforcement & Self-Healing loop:
+  // Guarantees that every unsolved target index ALWAYS has an active ghost on the maze board.
+  useEffect(() => {
+    if (phase === 'ready' || gameOver || levelSolved) return;
+    if (!levelData) return;
+
+    const requiredTargets = getRequiredTargetItems(levelData);
+    const unsolvedTargets = requiredTargets.filter(item => !eatenGhosts.includes(item.index));
+
+    if (unsolvedTargets.length === 0) return;
+
+    setGhosts((prevGhosts) => {
+      const activeGhostIndices = new Set(
+        prevGhosts
+          .filter(g => !g.eaten && !g.dying && g.index !== -1)
+          .map(g => g.index)
+      );
+
+      const missingTargets = unsolvedTargets.filter(t => !activeGhostIndices.has(t.index));
+      if (missingTargets.length === 0) return prevGhosts;
+
+      const currentGrid = activeMazeGridRef.current;
+      const spawnPositions = getGhostStartPositions(currentTier);
+      let updatedGhosts = [...prevGhosts];
+
+      missingTargets.forEach((targetItem, mIdx) => {
+        let spawnPos = null;
+        for (const pos of spawnPositions) {
+          const hasPacman = pacmanRef.current.row === pos.row && pacmanRef.current.col === pos.col;
+          const hasGhost = updatedGhosts.some(g => !g.eaten && !g.dying && g.row === pos.row && g.col === pos.col);
+          if (!hasPacman && !hasGhost && currentGrid[pos.row] && currentGrid[pos.row][pos.col] === 0) {
+            spawnPos = pos;
+            break;
+          }
+        }
+
+        if (!spawnPos) {
+          const openSpaces = [];
+          for (let r = 1; r < currentGrid.length - 1; r++) {
+            for (let c = 1; c < currentGrid[r].length - 1; c++) {
+              if (currentGrid[r][c] === 0) {
+                const hasPacman = pacmanRef.current.row === r && pacmanRef.current.col === c;
+                const hasGhost = updatedGhosts.some(g => !g.eaten && !g.dying && g.row === r && g.col === c);
+                if (!hasPacman && !hasGhost) {
+                  openSpaces.push({ row: r, col: c, dir: { r: 0, c: 1 } });
+                }
+              }
+            }
+          }
+          if (openSpaces.length > 0) {
+            spawnPos = openSpaces[Math.floor(Math.random() * openSpaces.length)];
+          } else {
+            spawnPos = spawnPositions[mIdx % spawnPositions.length];
+          }
+        }
+
+        updatedGhosts.push({
+          id: `ghost-target-${targetItem.index}-${Date.now()}-${Math.random()}`,
+          char: targetItem.char,
+          index: targetItem.index,
+          row: spawnPos.row,
+          col: spawnPos.col,
+          eaten: false,
+          dying: false,
+          dir: spawnPos.dir || { r: 0, c: 1 }
+        });
+      });
+
+      return updatedGhosts;
+    });
+  }, [eatenGhosts, phase, gameOver, levelSolved, levelData, currentTier]);
 
   const [isMuted, setIsMuted] = useState(false);
 
