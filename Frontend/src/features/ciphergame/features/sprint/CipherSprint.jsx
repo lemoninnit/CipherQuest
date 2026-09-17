@@ -15,7 +15,7 @@ const COLLISION_ZONE_START = 7;
 const COLLISION_ZONE_END = 28;
 const GATE_TRIGGER_X = 18;
 const GATE_RESET_X = 200;
-const COIN_START_X = 85;
+const COIN_START_X = 100;
 
 const ROUND_PHASES = ['briefing', 'choosing', 'locking', 'resolved'];
 void ROUND_PHASES;
@@ -95,6 +95,7 @@ export default function CipherSprint({
   const [trackShake, setTrackShake] = useState(false);
   const [isBoosting, setIsBoosting] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [isBadgePopping, setIsBadgePopping] = useState(false);
   const [slimeFrame, setSlimeFrame] = useState(0);
 
   /* ───────────────────────────────────────────────
@@ -125,6 +126,7 @@ export default function CipherSprint({
   const laneTiltTimeoutRef = useRef(0);
   const explanationIntervalRef = useRef(0);
   const slimeIntervalRef = useRef(0);
+  const badgePopTimeoutRef = useRef(0);
 
   /* Pausable phase timer refs */
   const phaseTimeoutRef = useRef(null);
@@ -265,8 +267,10 @@ export default function CipherSprint({
     if (shakeTimeoutRef.current)    window.clearTimeout(shakeTimeoutRef.current);
     if (laneTiltTimeoutRef.current) window.clearTimeout(laneTiltTimeoutRef.current);
     if (phaseTimeoutRef.current)    window.clearTimeout(phaseTimeoutRef.current);
+    if (badgePopTimeoutRef.current) window.clearTimeout(badgePopTimeoutRef.current);
     feedbackTimeoutRef.current = spinTimeoutRef.current = boostTimeoutRef.current = 0;
-    shakeTimeoutRef.current = laneTiltTimeoutRef.current = 0;
+    shakeTimeoutRef.current = laneTiltTimeoutRef.current = badgePopTimeoutRef.current = 0;
+    setIsBadgePopping(false);
     phaseTimeoutRef.current = null;
     phaseCallbackRef.current = null;
     phaseRemainingMsRef.current = 0;
@@ -626,45 +630,67 @@ export default function CipherSprint({
         })
       );
 
-      /* Diamonds movement + collision in 'choosing' phase */
-      if (phase === 'choosing') {
-        setCoins((prevCoins) => {
-          let changed = false;
-          let pickedInFrame = null;
-          let allPassed = true;
+      /* Diamonds continuous movement + collision in choosing phase */
+      setCoins((prevCoins) => {
+        if (prevCoins.length === 0) return prevCoins;
 
-          const updated = prevCoins.map((coin) => {
-            const nextX = coin.x - speed;
-            if (nextX >= COLLISION_ZONE_START) {
-              allPassed = false;
-            }
+        let changed = false;
+        let pickedInFrame = null;
+        let allExited = true;
 
-            if (
-              !pickedInFrame &&
-              nextX <= COLLISION_ZONE_END &&
-              nextX >= COLLISION_ZONE_START &&
-              coin.lane === lane
-            ) {
-              pickedInFrame = coin;
-            }
+        const updated = [];
+        for (let i = 0; i < prevCoins.length; i++) {
+          const coin = prevCoins[i];
+          const nextX = coin.x - speed;
 
-            if (nextX !== coin.x) changed = true;
-            return { ...coin, x: nextX };
-          });
-
-          if (pickedInFrame) {
-            startLockingPhase(pickedInFrame.char, pickedInFrame.lane);
-            return updated;
+          // Despawn diamonds that scroll off-screen left (below x < -15)
+          if (nextX < -15) {
+            changed = true;
+            continue;
           }
 
-          if (allPassed && prevCoins.length > 0) {
-            startLockingPhase(null, null);
-            return updated;
+          if (nextX >= -10) {
+            allExited = false;
           }
 
-          return changed ? updated : prevCoins;
-        });
-      }
+          // Check collision ONLY in 'choosing' phase and if coin is not already eaten
+          if (
+            phase === 'choosing' &&
+            !pickedInFrame &&
+            !coin.eaten &&
+            nextX <= COLLISION_ZONE_END &&
+            nextX >= COLLISION_ZONE_START &&
+            coin.lane === lane
+          ) {
+            pickedInFrame = coin;
+            changed = true;
+            // Picked diamond disappears immediately on contact (eaten: true)
+            updated.push({ ...coin, x: nextX, eaten: true, picked: true });
+            continue;
+          }
+
+          if (nextX !== coin.x) changed = true;
+          updated.push({ ...coin, x: nextX });
+        }
+
+        if (pickedInFrame) {
+          // Trigger badge pickup pop FX
+          if (badgePopTimeoutRef.current) window.clearTimeout(badgePopTimeoutRef.current);
+          setIsBadgePopping(true);
+          badgePopTimeoutRef.current = window.setTimeout(() => setIsBadgePopping(false), 350);
+
+          startLockingPhase(pickedInFrame.char, pickedInFrame.lane);
+          return updated;
+        }
+
+        // If all three exited off-screen left with nothing picked in choosing phase -> miss
+        if (allExited && prevCoins.length > 0 && phase === 'choosing' && !pickedCharRef.current) {
+          startLockingPhase(null, null);
+          return updated;
+        }
+
+        return changed ? updated : prevCoins;
+      });
 
       /* Obstacle Slimes movement & collision in 'resolved' phase */
       if (phase === 'resolved' && slimesRef.current.length > 0) {
@@ -1133,8 +1159,21 @@ export default function CipherSprint({
                 .join(' ')}
             >
               <div className={`sprint-runner-char-sprite ${runnerAnim}`} />
-              <div className="runner-baton-glow">
-                {sprintStep === 'finished' ? '✓' : currentBatonLetter}
+              <div
+                className={[
+                  'runner-baton-glow',
+                  isBadgePopping ? 'badge-pickup' : '',
+                  roundPhase === 'resolved' && resolvedStatus === 'correct' ? 'badge-correct' : '',
+                  roundPhase === 'resolved' && (resolvedStatus === 'wrong' || resolvedStatus === 'missed') ? 'badge-wrong' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                {sprintStep === 'finished'
+                  ? '✓'
+                  : pickedChar
+                  ? pickedChar
+                  : currentBatonLetter}
               </div>
             </div>
 
@@ -1143,16 +1182,11 @@ export default function CipherSprint({
               coins.map((coin) => {
                 if (coin.eaten) return null;
                 let stateClass = '';
-                if (roundPhase === 'locking') {
-                  stateClass = 'dimmed';
-                } else if (roundPhase === 'resolved') {
-                  if (coin.isCorrect) {
-                    stateClass = 'correct';
-                  } else if (coin.lane === pickedLane || coin.char === pickedChar) {
-                    stateClass = 'wrong';
-                  } else {
-                    stateClass = 'dimmed';
-                  }
+                // Strict rules: Only the picked lane's diamond could ever change colour.
+                // The two unpicked diamonds stay the default blue/cyan for their whole life, including after the result.
+                // Never reveal the correct letter in green on an unpicked lane.
+                if (roundPhase === 'resolved' && coin.lane === pickedLane && coin.char === pickedChar) {
+                  stateClass = coin.isCorrect ? 'correct' : 'wrong';
                 }
 
                 return (
@@ -1208,45 +1242,118 @@ export default function CipherSprint({
             </div>
 
             {/* Centre-track Phase Banner & Filling Progress Bar */}
-            {sprintStep === 'running' && (roundPhase === 'briefing' || roundPhase === 'locking' || roundPhase === 'resolved') && (
-              <div className="sprint-r2-center-banner">
-                {roundPhase === 'briefing' && (
-                  <div className="sprint-r2-banner-title">
-                    Decrypt Letter '<strong>{currentBatonLetter}</strong>'<br />
-                    using Shift <strong>+{currentShiftKey}</strong>
+            {sprintStep === 'running' &&
+              (roundPhase === 'briefing' ||
+                roundPhase === 'locking' ||
+                (roundPhase === 'resolved' && slimes.length === 0)) && (
+                <div
+                  key={`banner-${roundPhase}-${currentMaskIndex}-${firstTryForCurrent}`}
+                  className={[
+                    'sprint-r2-center-banner',
+                    roundPhase === 'resolved'
+                      ? resolvedStatus === 'correct'
+                        ? 'state-correct'
+                        : 'state-wrong'
+                      : roundPhase === 'locking'
+                      ? 'state-locking'
+                      : 'state-briefing',
+                  ].join(' ')}
+                >
+                  <span className="sprint-r2-corner top-left" />
+                  <span className="sprint-r2-corner top-right" />
+                  <span className="sprint-r2-corner bottom-left" />
+                  <span className="sprint-r2-corner bottom-right" />
+
+                  {roundPhase === 'briefing' && (
+                    <>
+                      <span className="sprint-r2-panel-tag">DECRYPTION BRIEF</span>
+                      <div className="sprint-r2-banner-title">
+                        Decode Letter '<strong>{currentBatonLetter}</strong>'
+                      </div>
+                      <div className="sprint-r2-math-equation">
+                        <span className="sprint-r2-math-chip cipher">{currentBatonLetter}</span>
+                        <span className="sprint-r2-math-op">+</span>
+                        <span className="sprint-r2-math-chip shift">{currentShiftKey}</span>
+                        <span className="sprint-r2-math-op">→</span>
+                        <span className="sprint-r2-math-chip target mystery">?</span>
+                      </div>
+                    </>
+                  )}
+
+                  {roundPhase === 'locking' && (
+                    <>
+                      <span className="sprint-r2-panel-tag">SELECTION LOCKED</span>
+                      <div className="sprint-r2-banner-title">
+                        Analyzing Cipher Math
+                      </div>
+                      <div className="sprint-r2-math-equation">
+                        <span className="sprint-r2-math-chip cipher">{currentBatonLetter}</span>
+                        <span className="sprint-r2-math-op">+</span>
+                        <span className="sprint-r2-math-chip shift">{currentShiftKey}</span>
+                        <span className="sprint-r2-math-op">=</span>
+                        <span className="sprint-r2-math-chip target locked">{pickedChar || '?'}</span>
+                      </div>
+                    </>
+                  )}
+
+                  {roundPhase === 'resolved' && (
+                    <>
+                      <span
+                        className={`sprint-r2-panel-tag ${
+                          resolvedStatus === 'correct' ? 'correct' : 'wrong'
+                        }`}
+                      >
+                        {resolvedStatus === 'correct'
+                          ? 'CIPHER SOLVED'
+                          : resolvedStatus === 'missed'
+                          ? 'TARGET MISSED'
+                          : 'DECRYPTION ERROR'}
+                      </span>
+                      <div className="sprint-r2-math-equation">
+                        <span className="sprint-r2-math-chip cipher">{currentBatonLetter}</span>
+                        <span className="sprint-r2-math-op">+</span>
+                        <span className="sprint-r2-math-chip shift">{currentShiftKey}</span>
+                        <span className="sprint-r2-math-op">=</span>
+                        <span
+                          className={`sprint-r2-math-chip target ${
+                            resolvedStatus === 'correct' ? 'correct' : 'answer'
+                          }`}
+                        >
+                          {currentTargetChar}
+                        </span>
+                      </div>
+                      <div
+                        className={`sprint-r2-banner-msg ${
+                          resolvedStatus === 'correct' ? 'correct' : 'wrong'
+                        }`}
+                      >
+                        {resolvedBannerText ||
+                          (resolvedStatus === 'correct'
+                            ? 'Direct Hit! Checkpoint Cleared!'
+                            : pickedChar
+                            ? `Picked '${pickedChar}' — Correct answer is '${currentTargetChar}'`
+                            : `Missed Diamond — Correct answer is '${currentTargetChar}'`)}
+                      </div>
+                    </>
+                  )}
+
+                  <div className="sprint-r2-progress-bar-container">
+                    <div
+                      key={`fill-${roundPhase}-${currentMaskIndex}-${firstTryForCurrent}`}
+                      className="sprint-r2-progress-fill"
+                      style={{
+                        animation: `sprintR2Progress ${
+                          roundPhase === 'briefing'
+                            ? BRIEFING_MS
+                            : roundPhase === 'locking'
+                            ? LOCKING_MS
+                            : RESOLVED_MS
+                        }ms linear forwards`,
+                      }}
+                    />
                   </div>
-                )}
-                {roundPhase === 'locking' && (
-                  <div className="sprint-r2-banner-title">
-                    Goodluck and Proceed Decoding
-                  </div>
-                )}
-                {roundPhase === 'resolved' && (
-                  <div className="sprint-r2-banner-title">
-                    {resolvedStatus === 'correct' ? (
-                      resolvedBannerText
-                    ) : (
-                      <span style={{ color: '#ef4444' }}>{resolvedBannerText}</span>
-                    )}
-                  </div>
-                )}
-                <div className="sprint-r2-progress-bar-container">
-                  <div
-                    key={`${roundPhase}-${currentMaskIndex}-${firstTryForCurrent}`}
-                    className="sprint-r2-progress-fill"
-                    style={{
-                      animation: `sprintR2Progress ${
-                        roundPhase === 'briefing'
-                          ? BRIEFING_MS
-                          : roundPhase === 'locking'
-                          ? LOCKING_MS
-                          : RESOLVED_MS
-                      }ms linear forwards`,
-                    }}
-                  />
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Floating feedback */}
             {feedbackText && (
@@ -1294,30 +1401,47 @@ export default function CipherSprint({
 
           {/* 2. Bottom-Left Floating A–Z / 1–26 Reference Strip */}
           <div className="sprint-r2-az-strip">
-            {ALPHABET.map((ch, i) => {
-              const isHighlighted = ch === currentBatonLetter;
-              return (
-                <div
-                  key={ch}
-                  className={`sprint-r2-az-col ${isHighlighted ? 'highlighted' : ''}`}
-                >
-                  <span className="sprint-r2-az-char">{ch}</span>
-                  <span className="sprint-r2-az-num">{i + 1}</span>
-                </div>
-              );
-            })}
+            <span className="sprint-r2-corner top-left" />
+            <span className="sprint-r2-corner top-right" />
+            <span className="sprint-r2-corner bottom-left" />
+            <span className="sprint-r2-corner bottom-right" />
+            <div className="sprint-r2-panel-header">
+              <span className="sprint-r2-panel-tag">A–Z REFERENCE</span>
+            </div>
+            <div className="sprint-r2-az-grid">
+              {ALPHABET.map((ch, i) => {
+                const isHighlighted = ch === currentBatonLetter;
+                return (
+                  <div
+                    key={ch}
+                    className={`sprint-r2-az-col ${isHighlighted ? 'highlighted' : ''}`}
+                  >
+                    <span className="sprint-r2-az-char">{ch}</span>
+                    <span className="sprint-r2-az-num">{i + 1}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* 3. Bottom-Right Floating Shift Key Card */}
           <div className="sprint-r2-shift-card">
+            <span className="sprint-r2-corner top-left" />
+            <span className="sprint-r2-corner top-right" />
+            <span className="sprint-r2-corner bottom-left" />
+            <span className="sprint-r2-corner bottom-right" />
             <div className="sprint-r2-shift-header">
-              <span className="sprint-r2-shift-title">Shift Key</span>
-              <span className="sprint-r2-shift-step">
-                {currentBatonLetter} → +{currentShiftKey} → ?
-              </span>
+              <span className="sprint-r2-panel-tag">SHIFT KEY</span>
+              <div className="sprint-r2-shift-flow">
+                <span className="sprint-r2-flow-chip cipher">{currentBatonLetter}</span>
+                <span className="sprint-r2-flow-arrow">→</span>
+                <span className="sprint-r2-flow-chip shift">+{currentShiftKey}</span>
+                <span className="sprint-r2-flow-arrow">→</span>
+                <span className="sprint-r2-flow-chip target">?</span>
+              </div>
             </div>
             <div className="sprint-r2-shift-body">
-              <span className="sprint-r2-shift-icon">🔑</span>
+              <span className="sprint-r2-shift-icon" role="img" aria-label="Key">🔑</span>
               <span className="sprint-r2-shift-val">+{currentShiftKey}</span>
             </div>
           </div>
