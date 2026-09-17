@@ -11,11 +11,10 @@ import PauseMenu from '../../ui/PauseMenu';
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const BASE_SPEED = 0.22;
 const BOOST_MULT = 1.6;
-const COLLISION_ZONE_START = 7;
-const COLLISION_ZONE_END = 28;
-const GATE_TRIGGER_X = 18;
-const GATE_RESET_X = 200;
-const COIN_START_X = 100;
+const RUNNER_X = 14;
+const DIAMOND_HITBOX_HALF = 2.2;
+const SLIME_HITBOX_HALF = 4.2;
+const COIN_START_X = 112;
 
 const ROUND_PHASES = ['briefing', 'choosing', 'locking', 'resolved'];
 void ROUND_PHASES;
@@ -24,6 +23,14 @@ const LOCKING_MS = 1200;
 const RESOLVED_MS = 1600;
 
 const PAD5 = (n) => String(n).padStart(5, '0');
+
+const caesarShiftChar = (char, shift) => {
+  const code = char.charCodeAt(0);
+  if (code >= 65 && code <= 90) {
+    return String.fromCharCode(((code - 65 + shift) % 26 + 26) % 26 + 65);
+  }
+  return char;
+};
 
 const getRandomDecoys = (correctChar, count) => {
   const pool = ALPHABET.filter((c) => c !== correctChar);
@@ -58,7 +65,6 @@ export default function CipherSprint({
   const [runnerLane, setRunnerLane] = useState(1);
   const [coins, setCoins] = useState([]);
   const [slimes, setSlimes] = useState([]);
-  const [gateX, setGateX] = useState(GATE_RESET_X);
   const [pickedChar, setPickedChar] = useState(null);
   const [pickedLane, setPickedLane] = useState(null);
   const [correctLane, setCorrectLane] = useState(1);
@@ -102,7 +108,6 @@ export default function CipherSprint({
      Refs — game truth inside RAF loop, timeout tracking
      ─────────────────────────────────────────────── */
   const rafRef = useRef(0);
-  const collisionHandledRef = useRef(false);
   const prevLaneRef = useRef(1);
   const isBoostingRef = useRef(false);
   const runnerLaneRef = useRef(1);
@@ -117,6 +122,8 @@ export default function CipherSprint({
   const correctLaneRef = useRef(1);
   const slimesRef = useRef([]);
   const attemptsRef = useRef([]);
+  const hasPickedRef = useRef(false);
+  const prevLevelIdRef = useRef(null);
 
   /* Timer tracking refs */
   const feedbackTimeoutRef = useRef(0);
@@ -135,11 +142,12 @@ export default function CipherSprint({
   const phaseDurationRef = useRef(BRIEFING_MS);
   const phaseCallbackRef = useRef(null);
 
-  /* Forward refs for phase transition functions */
+  /* Forward refs for phase transition functions & physics callbacks */
   const startBriefingPhaseRef = useRef(null);
   const startChoosingPhaseRef = useRef(null);
-  const startLockingPhaseRef = useRef(null);
   const resolveChoiceRef = useRef(null);
+  const triggerShakeRef = useRef(null);
+  const showFeedbackRef = useRef(null);
 
   /* Sync refs whenever state changes — RAF loop reads refs only */
   useEffect(() => { isBoostingRef.current = isBoosting; }, [isBoosting]);
@@ -313,17 +321,14 @@ export default function CipherSprint({
     clearPhaseTimer();
     setRoundPhase('briefing');
     roundPhaseRef.current = 'briefing';
+    hasPickedRef.current = false;
     setPickedChar(null);
     pickedCharRef.current = null;
     setPickedLane(null);
     pickedLaneRef.current = null;
     setResolvedStatus(null);
     setResolvedBannerText('');
-    setCoins([]);
-    setSlimes([]);
-    slimesRef.current = [];
-    collisionHandledRef.current = false;
-    setGateX(GATE_RESET_X);
+    // Existing coins and slimes keep scrolling uninterrupted and exit off-screen left naturally
 
     startPhaseTimer(() => {
       if (startChoosingPhaseRef.current) startChoosingPhaseRef.current();
@@ -337,6 +342,7 @@ export default function CipherSprint({
     clearPhaseTimer();
     setRoundPhase('choosing');
     roundPhaseRef.current = 'choosing';
+    hasPickedRef.current = false;
 
     // Randomize correct lane per round
     const randLane = Math.floor(Math.random() * 3);
@@ -349,42 +355,43 @@ export default function CipherSprint({
     const otherLanes = [0, 1, 2].filter((l) => l !== randLane);
 
     const startX = COIN_START_X;
-    setCoins([
-      { id: 1, lane: randLane, char: targetChar, x: startX, isCorrect: true, eaten: false },
-      { id: 2, lane: otherLanes[0], char: decoy1, x: startX, isCorrect: false, eaten: false },
-      { id: 3, lane: otherLanes[1], char: decoy2, x: startX, isCorrect: false, eaten: false },
-    ]);
+    const newCoins = [
+      { id: `c1-${Date.now()}`, lane: randLane, char: targetChar, x: startX, isCorrect: true, picked: false },
+      { id: `c2-${Date.now()}`, lane: otherLanes[0], char: decoy1, x: startX, isCorrect: false, picked: false },
+      { id: `c3-${Date.now()}`, lane: otherLanes[1], char: decoy2, x: startX, isCorrect: false, picked: false },
+    ];
+    setCoins((prev) => [...prev.filter((c) => c.x > -15), ...newCoins]);
+
+    // Spawn obstacle slimes off-screen right, staggered
+    const slimeBaseX = 118;
+    const newSlimes = [
+      { id: `slime-1-${Date.now()}`, lane: otherLanes[0], x: slimeBaseX + 28, hit: false },
+      { id: `slime-2-${Date.now()}`, lane: otherLanes[1], x: slimeBaseX + 58, hit: false },
+    ];
+    setSlimes((prev) => {
+      const combined = [...prev.filter((s) => s.x > -12), ...newSlimes];
+      slimesRef.current = combined;
+      return combined;
+    });
   }, [clearPhaseTimer, currentTargetChar, maskedIndices, levelData.plaintext]);
 
   /* ───────────────────────────────────────────────
-     Phase 3: Locking
+     Phase 3: Resolved (immediate on diamond pick or miss)
      ─────────────────────────────────────────────── */
-  const startLockingPhase = useCallback((picked, lane) => {
-    clearPhaseTimer();
-    setRoundPhase('locking');
-    roundPhaseRef.current = 'locking';
-    pickedCharRef.current = picked;
-    setPickedChar(picked);
-    pickedLaneRef.current = lane;
-    setPickedLane(lane);
-
-    startPhaseTimer(() => {
-      if (resolveChoiceRef.current) resolveChoiceRef.current(picked);
-    }, LOCKING_MS);
-  }, [clearPhaseTimer, startPhaseTimer]);
-
-  /* ───────────────────────────────────────────────
-     Phase 4: Resolved
-     ─────────────────────────────────────────────── */
-  const resolveChoice = useCallback((picked) => {
+  const resolveChoice = useCallback((picked, lane, isCoinCorrect) => {
     clearPhaseTimer();
     setRoundPhase('resolved');
     roundPhaseRef.current = 'resolved';
+    hasPickedRef.current = true;
+    setPickedChar(picked);
+    pickedCharRef.current = picked;
+    setPickedLane(lane);
+    pickedLaneRef.current = lane;
 
     const tempIdx = maskedIndices[currentMaskIndexRef.current] ?? 0;
     const cipherCh = levelData.ciphertext[tempIdx] ?? '';
     const targetChar = currentTargetChar || (levelData.plaintext[tempIdx] ?? '');
-    const isCorrect = picked === targetChar;
+    const isCorrect = (picked && picked === targetChar) || isCoinCorrect === true;
 
     setAttempts((prev) => [
       ...prev,
@@ -400,6 +407,8 @@ export default function CipherSprint({
     if (isCorrect) {
       setResolvedStatus('correct');
       triggerSpin();
+      triggerBoost(1200);
+      showFeedback('⚡ Correct Letter! BOOST!', '#22c55e', 10, 1100);
       // Fill into top word panel visibly in green
       setSolvedLetters((prev) => ({ ...prev, [tempIdx]: targetChar }));
 
@@ -412,40 +421,39 @@ export default function CipherSprint({
       setResolvedBannerText(bannerMsg);
 
       startPhaseTimer(() => {
-        // After RESOLVED_MS: spawn obstacle slimes across lanes and gate
-        setCoins([]);
-        const curLane = runnerLaneRef.current;
-        const obstacleSlimes = [
-          { id: 'slime-1', lane: (curLane + 1) % 3, x: 75, hit: false },
-          { id: 'slime-2', lane: (curLane + 2) % 3, x: 110, hit: false },
-          { id: 'slime-3', lane: Math.floor(Math.random() * 3), x: 145, hit: false },
-        ];
-        setSlimes(obstacleSlimes);
-        slimesRef.current = obstacleSlimes;
-        setGateX(180);
+        const nextIndex = currentMaskIndexRef.current + 1;
+        if (nextIndex < maskedIndices.length) {
+          setCurrentMaskIndex(nextIndex);
+          currentMaskIndexRef.current = nextIndex;
+          setFirstTryForCurrent(true);
+          if (startBriefingPhaseRef.current) startBriefingPhaseRef.current();
+        } else {
+          setSprintStep('finished');
+        }
       }, RESOLVED_MS);
     } else {
       setResolvedStatus(picked ? 'wrong' : 'missed');
       triggerShake();
       setFirstTryForCurrent(false);
 
-      const nextLives = lives - 1;
-      setLives(nextLives);
-
       // Worked answer banner: C + 5 = H
       const workedAnswer = `${cipherCh} + ${currentShiftKey} = ${targetChar}`;
       setResolvedBannerText(workedAnswer);
 
-      if (nextLives <= 0) {
-        startPhaseTimer(() => {
-          setSprintStep('gameover');
-        }, RESOLVED_MS);
-      } else {
-        startPhaseTimer(() => {
-          // Re-ask the same letter from briefing
-          if (startBriefingPhaseRef.current) startBriefingPhaseRef.current();
-        }, RESOLVED_MS);
-      }
+      setLives((prevLives) => {
+        const nextLives = prevLives - 1;
+        if (nextLives <= 0) {
+          startPhaseTimer(() => {
+            setSprintStep('gameover');
+          }, RESOLVED_MS);
+        } else {
+          startPhaseTimer(() => {
+            // Re-ask the same letter from briefing
+            if (startBriefingPhaseRef.current) startBriefingPhaseRef.current();
+          }, RESOLVED_MS);
+        }
+        return nextLives;
+      });
     }
   }, [
     clearPhaseTimer,
@@ -454,9 +462,10 @@ export default function CipherSprint({
     firstTryForCurrent,
     levelData.ciphertext,
     levelData.plaintext,
-    lives,
     maskedIndices,
     startPhaseTimer,
+    triggerBoost,
+    showFeedback,
     triggerShake,
     triggerSpin,
   ]);
@@ -465,32 +474,10 @@ export default function CipherSprint({
   useEffect(() => {
     startBriefingPhaseRef.current = startBriefingPhase;
     startChoosingPhaseRef.current = startChoosingPhase;
-    startLockingPhaseRef.current = startLockingPhase;
     resolveChoiceRef.current = resolveChoice;
-  }, [startBriefingPhase, startChoosingPhase, startLockingPhase, resolveChoice]);
-
-  /* ───────────────────────────────────────────────
-     Gate collision advances round
-     ─────────────────────────────────────────────── */
-  const handleGateCollision = useCallback(() => {
-    triggerBoost(1200);
-    showFeedback('⚡ Checkpoint Cleared! BOOST!', '#22c55e', 10, 1100);
-
-    if (boostTimeoutRef.current) window.clearTimeout(boostTimeoutRef.current);
-    boostTimeoutRef.current = window.setTimeout(() => {
-      setIsBoosting(false);
-      isBoostingRef.current = false;
-      const nextIndex = currentMaskIndexRef.current + 1;
-      if (nextIndex < maskedIndices.length) {
-        setCurrentMaskIndex(nextIndex);
-        currentMaskIndexRef.current = nextIndex;
-        setFirstTryForCurrent(true);
-        startBriefingPhase();
-      } else {
-        setSprintStep('finished');
-      }
-    }, 1200);
-  }, [maskedIndices.length, showFeedback, startBriefingPhase, triggerBoost]);
+    triggerShakeRef.current = triggerShake;
+    showFeedbackRef.current = showFeedback;
+  }, [startBriefingPhase, startChoosingPhase, resolveChoice, triggerShake, showFeedback]);
 
   /* ───────────────────────────────────────────────
      Game flow actions
@@ -499,14 +486,16 @@ export default function CipherSprint({
     clearAllFXTimeouts();
     setCurrentMaskIndex(0);
     currentMaskIndexRef.current = 0;
+    hasPickedRef.current = false;
     setAttempts([]);
     setLives(5);
     setFirstTryForCurrent(true);
     setIsPaused(false);
     setIsMenuOpen(false);
     setSprintStep('running');
-    setRoundPhase('briefing');
-    roundPhaseRef.current = 'briefing';
+    setCoins([]);
+    setSlimes([]);
+    slimesRef.current = [];
 
     // Initialize pre-revealed hints
     const initialSolved = {};
@@ -525,9 +514,11 @@ export default function CipherSprint({
     setIsCrashing(false);
     setIsPaused(false);
     setIsMenuOpen(false);
+    hasPickedRef.current = false;
+    setCoins([]);
+    setSlimes([]);
+    slimesRef.current = [];
     setSprintStep('running');
-    setRoundPhase('briefing');
-    roundPhaseRef.current = 'briefing';
     startBriefingPhase();
   };
 
@@ -653,19 +644,19 @@ export default function CipherSprint({
             allExited = false;
           }
 
-          // Check collision ONLY in 'choosing' phase and if coin is not already eaten
+          // Check symmetric collision ONLY in 'choosing' phase and if not picked yet
           if (
             phase === 'choosing' &&
             !pickedInFrame &&
-            !coin.eaten &&
-            nextX <= COLLISION_ZONE_END &&
-            nextX >= COLLISION_ZONE_START &&
+            !hasPickedRef.current &&
+            Math.abs(nextX - RUNNER_X) <= DIAMOND_HITBOX_HALF &&
             coin.lane === lane
           ) {
+            hasPickedRef.current = true;
             pickedInFrame = coin;
             changed = true;
-            // Picked diamond disappears immediately on contact (eaten: true)
-            updated.push({ ...coin, x: nextX, eaten: true, picked: true });
+            // Picked diamond stays on track, turns green/red via coin.picked; does NOT vanish
+            updated.push({ ...coin, x: nextX, picked: true });
             continue;
           }
 
@@ -679,62 +670,63 @@ export default function CipherSprint({
           setIsBadgePopping(true);
           badgePopTimeoutRef.current = window.setTimeout(() => setIsBadgePopping(false), 350);
 
-          startLockingPhase(pickedInFrame.char, pickedInFrame.lane);
+          if (resolveChoiceRef.current) {
+            resolveChoiceRef.current(pickedInFrame.char, pickedInFrame.lane, pickedInFrame.isCorrect);
+          }
           return updated;
         }
 
         // If all three exited off-screen left with nothing picked in choosing phase -> miss
-        if (allExited && prevCoins.length > 0 && phase === 'choosing' && !pickedCharRef.current) {
-          startLockingPhase(null, null);
+        if (allExited && prevCoins.length > 0 && phase === 'choosing' && !hasPickedRef.current) {
+          hasPickedRef.current = true;
+          if (resolveChoiceRef.current) {
+            resolveChoiceRef.current(null, null, false);
+          }
           return updated;
         }
 
         return changed ? updated : prevCoins;
       });
 
-      /* Obstacle Slimes movement & collision in 'resolved' phase */
-      if (phase === 'resolved' && slimesRef.current.length > 0) {
+      /* Obstacle Slimes movement & collision */
+      if (sprintStepRef.current === 'running' && slimesRef.current.length > 0) {
         setSlimes((prevSlimes) => {
           let changed = false;
-          const updated = prevSlimes.map((slime) => {
+          const updated = [];
+          for (let i = 0; i < prevSlimes.length; i++) {
+            const slime = prevSlimes[i];
             const nextX = slime.x - speed;
+
+            // Despawn below about x < -12
+            if (nextX < -12) {
+              changed = true;
+              continue;
+            }
+
             if (
               !slime.hit &&
-              nextX <= COLLISION_ZONE_END &&
-              nextX >= COLLISION_ZONE_START &&
+              Math.abs(nextX - RUNNER_X) <= SLIME_HITBOX_HALF &&
               slime.lane === lane
             ) {
               changed = true;
-              triggerShake();
+              if (triggerShakeRef.current) triggerShakeRef.current();
               setLives((l) => {
                 const next = l - 1;
                 if (next <= 0) setSprintStep('gameover');
                 return next;
               });
-              showFeedback('-1 Life! Slime Collision!', '#ef4444', 20 + slime.lane * 30 - 8, 900);
-              return { ...slime, x: nextX, hit: true };
+              if (showFeedbackRef.current) {
+                showFeedbackRef.current('-1 Life! Slime Collision!', '#ef4444', 20 + slime.lane * 30 - 8, 900);
+              }
+              updated.push({ ...slime, x: nextX, hit: true });
+              continue;
             }
+
             if (nextX !== slime.x) changed = true;
-            return { ...slime, x: nextX };
-          });
+            updated.push({ ...slime, x: nextX });
+          }
           slimesRef.current = updated;
           return changed ? updated : prevSlimes;
-        });
-      }
-
-      /* Gate movement + collision */
-      if (phase === 'resolved' && gateX < GATE_RESET_X) {
-        setGateX((prevGateX) => {
-          const nextGateX = prevGateX - speed;
-          if (nextGateX <= GATE_TRIGGER_X) {
-            if (!collisionHandledRef.current) {
-              collisionHandledRef.current = true;
-              window.cancelAnimationFrame(rafRef.current);
-              window.setTimeout(() => handleGateCollision(), 0);
-            }
-            return GATE_TRIGGER_X;
-          }
-          return nextGateX;
         });
       }
 
@@ -750,17 +742,18 @@ export default function CipherSprint({
     isCrashing,
     isPaused,
     isMenuOpen,
-    gateX,
-    handleGateCollision,
-    startLockingPhase,
-    triggerShake,
-    showFeedback,
   ]);
 
   /* ───────────────────────────────────────────────
      Level changes -> reset everything
      ─────────────────────────────────────────────── */
   useEffect(() => {
+    const currentLevelId = `${levelData?.level}-${levelData?.ciphertext}`;
+    if (prevLevelIdRef.current === currentLevelId) {
+      return;
+    }
+    prevLevelIdRef.current = currentLevelId;
+
     clearAllFXTimeouts();
     if (explanationIntervalRef.current) window.clearInterval(explanationIntervalRef.current);
     setSprintStep('ready');
@@ -768,6 +761,7 @@ export default function CipherSprint({
     currentMaskIndexRef.current = 0;
     setRoundPhase('briefing');
     roundPhaseRef.current = 'briefing';
+    hasPickedRef.current = false;
     setAttempts([]);
     setLives(5);
     setFirstTryForCurrent(true);
@@ -780,8 +774,6 @@ export default function CipherSprint({
     setRunnerLane(1);
     prevLaneRef.current = 1;
     runnerLaneRef.current = 1;
-    collisionHandledRef.current = false;
-    setGateX(GATE_RESET_X);
     setPickedChar(null);
     pickedCharRef.current = null;
     setPickedLane(null);
@@ -1063,7 +1055,7 @@ export default function CipherSprint({
                 </div>
                 <p className="cq-dossier-how-it-works">
                   <strong>How it works:</strong>{' '}
-                  Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter based on the Caesar Shift Key clue to clear the checkpoint gate. Decoy letters will cause a crash! Press <strong>F</strong> to toggle fullscreen.
+                  Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter based on the Caesar Shift Key clue to decrypt each letter. Dodge the obstacle slimes! Decoy letters will cause a crash! Press <strong>F</strong> to toggle fullscreen.
                 </p>
                 <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
                   Begin operation
@@ -1177,15 +1169,13 @@ export default function CipherSprint({
               </div>
             </div>
 
-            {/* Answer Diamonds in Phase 2 (choosing), Phase 3 (locking), Phase 4 (resolved) */}
+            {/* Answer Diamonds */}
             {sprintStep === 'running' &&
               coins.map((coin) => {
-                if (coin.eaten) return null;
                 let stateClass = '';
-                // Strict rules: Only the picked lane's diamond could ever change colour.
+                // Strict rules: Only the picked diamond turns green (correct) or red (wrong).
                 // The two unpicked diamonds stay the default blue/cyan for their whole life, including after the result.
-                // Never reveal the correct letter in green on an unpicked lane.
-                if (roundPhase === 'resolved' && coin.lane === pickedLane && coin.char === pickedChar) {
+                if (coin.picked) {
                   stateClass = coin.isCorrect ? 'correct' : 'wrong';
                 }
 
@@ -1202,7 +1192,7 @@ export default function CipherSprint({
                 );
               })}
 
-            {/* Obstacle Slimes (pure obstacles, no letters) in Phase 4 (run to gate) */}
+            {/* Obstacle Slimes (pure obstacles, no letters) */}
             {sprintStep === 'running' &&
               slimes.map((slime) => {
                 if (slime.hit) return null;
@@ -1221,32 +1211,11 @@ export default function CipherSprint({
                 );
               })}
 
-            {/* Checkpoint Gate */}
-            <div
-              className={`sprint-checkpoint-gate ${
-                isBoosting || sprintStep === 'finished' ? 'gate-cleared' : ''
-              }`}
-              style={{ left: `${sprintStep === 'finished' ? 15 : gateX}%` }}
-            >
-              <div className="gate-mossy-arch">
-                <div className="gate-pillar top" />
-                <div className="gate-energy-barrier">
-                  <div className="gate-rune-glyph">
-                    {isBoosting || sprintStep === 'finished' ? '✓' : 'ᛟ'}
-                  </div>
-                </div>
-                <div className="gate-pillar bottom" />
-              </div>
-              <div className="gate-badge">
-                {isBoosting || sprintStep === 'finished' ? 'CLEARED' : 'GATE'}
-              </div>
-            </div>
-
             {/* Centre-track Phase Banner & Filling Progress Bar */}
             {sprintStep === 'running' &&
               (roundPhase === 'briefing' ||
                 roundPhase === 'locking' ||
-                (roundPhase === 'resolved' && slimes.length === 0)) && (
+                roundPhase === 'resolved') && (
                 <div
                   key={`banner-${roundPhase}-${currentMaskIndex}-${firstTryForCurrent}`}
                   className={[
@@ -1260,11 +1229,6 @@ export default function CipherSprint({
                       : 'state-briefing',
                   ].join(' ')}
                 >
-                  <span className="sprint-r2-corner top-left" />
-                  <span className="sprint-r2-corner top-right" />
-                  <span className="sprint-r2-corner bottom-left" />
-                  <span className="sprint-r2-corner bottom-right" />
-
                   {roundPhase === 'briefing' && (
                     <>
                       <span className="sprint-r2-panel-tag">DECRYPTION BRIEF</span>
@@ -1330,7 +1294,7 @@ export default function CipherSprint({
                       >
                         {resolvedBannerText ||
                           (resolvedStatus === 'correct'
-                            ? 'Direct Hit! Checkpoint Cleared!'
+                            ? 'Direct Hit! Letter Decrypted!'
                             : pickedChar
                             ? `Picked '${pickedChar}' — Correct answer is '${currentTargetChar}'`
                             : `Missed Diamond — Correct answer is '${currentTargetChar}'`)}
@@ -1400,51 +1364,39 @@ export default function CipherSprint({
             )}
           </div>
 
-          {/* 2. Bottom-Left Floating A–Z / 1–26 Reference Strip */}
-          <div className="sprint-r2-az-strip">
-            <span className="sprint-r2-corner top-left" />
-            <span className="sprint-r2-corner top-right" />
-            <span className="sprint-r2-corner bottom-left" />
-            <span className="sprint-r2-corner bottom-right" />
-            <div className="sprint-r2-panel-header">
-              <span className="sprint-r2-panel-tag">A–Z REFERENCE</span>
+          {/* 2. Bottom-Left Floating Cipher Cheat Sheet (Caesar Fishing / Caesar Pac-Man) */}
+          <div className="caesar-floating-cheat-sheet sprint-cheat-sheet">
+            <div className="caesar-cheat-header">
+              <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
+              <span className="caesar-cheat-badge">Shift +{currentShiftKey}</span>
             </div>
-            <div className="sprint-r2-az-grid">
-              {ALPHABET.map((ch, i) => {
-                const isHighlighted = ch === currentBatonLetter;
-                return (
-                  <div
-                    key={ch}
-                    className={`sprint-r2-az-col ${isHighlighted ? 'highlighted' : ''}`}
-                  >
-                    <span className="sprint-r2-az-char">{ch}</span>
-                    <span className="sprint-r2-az-num">{i + 1}</span>
-                  </div>
-                );
-              })}
+            <div className="caesar-cheat-body">
+              <div className="caesar-cheat-labels">
+                <span className="caesar-cheat-label-plain">CIPHER</span>
+                <span className="caesar-cheat-label-shift">PLAIN</span>
+              </div>
+              <div className="caesar-cheat-columns">
+                {ALPHABET.map((ch) => {
+                  const isCurrent = ch === currentBatonLetter;
+                  return (
+                    <div
+                      key={ch}
+                      className={`caesar-cheat-col ${isCurrent ? 'highlighted' : ''}`}
+                    >
+                      <span className="caesar-cheat-plain">{ch}</span>
+                      <span className="caesar-cheat-shifted">{caesarShiftChar(ch, currentShiftKey)}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* 3. Bottom-Right Floating Shift Key Card */}
-          <div className="sprint-r2-shift-card">
-            <span className="sprint-r2-corner top-left" />
-            <span className="sprint-r2-corner top-right" />
-            <span className="sprint-r2-corner bottom-left" />
-            <span className="sprint-r2-corner bottom-right" />
-            <div className="sprint-r2-shift-header">
-              <span className="sprint-r2-panel-tag">SHIFT KEY</span>
-              <div className="sprint-r2-shift-flow">
-                <span className="sprint-r2-flow-chip cipher">{currentBatonLetter}</span>
-                <span className="sprint-r2-flow-arrow">→</span>
-                <span className="sprint-r2-flow-chip shift">+{currentShiftKey}</span>
-                <span className="sprint-r2-flow-arrow">→</span>
-                <span className="sprint-r2-flow-chip target">?</span>
-              </div>
-            </div>
-            <div className="sprint-r2-shift-body">
-              <span className="sprint-r2-shift-icon" role="img" aria-label="Key">🔑</span>
-              <span className="sprint-r2-shift-val">+{currentShiftKey}</span>
-            </div>
+          {/* 3. Bottom-Right Floating Shift Key Clue Card (Caesar Pac-Man) */}
+          <div className="caesar-floating-basket-card sprint-clue-card">
+            <div className="caesar-basket-icon">🔑</div>
+            <div className="caesar-basket-badge">+{currentShiftKey}</div>
+            <span className="caesar-basket-label">Caesar Shift Key Clue</span>
           </div>
 
           {/* 4. Floating Action / Outcome Panels */}
@@ -1493,7 +1445,7 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
     <div className="fg-success-panel">
       <h3>✅ SECURED!</h3>
-      <p>All checkpoints cleared successfully.</p>
+      <p>All letters decrypted successfully.</p>
       <button
         className="fg-btn fg-btn-primary"
         onClick={onVerifySubmit}
@@ -1566,7 +1518,7 @@ function CrashPanel({ message, onContinue }) {
         textAlign: 'center',
       }}
     >
-      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>💥 CRASH! GATE STAYED SHUT</strong>
+      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>💥 SYSTEM CRASH!</strong>
       <p
         style={{
           fontSize: '0.88rem',
@@ -1590,7 +1542,7 @@ function CrashPanel({ message, onContinue }) {
           padding: '12px',
         }}
       >
-        🔄 Try Checkpoint Again
+        🔄 Try Again
       </button>
     </div>
   );

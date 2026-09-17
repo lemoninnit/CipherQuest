@@ -712,9 +712,9 @@
    ─────────────────────────────────────────────── */
 .sprint-slime-obstacle-sprite {
   position: absolute;
-  width: 96px;
-  height: 90px;
-  max-height: 48%;
+  width: 200px;
+  height: 205px;
+  max-height: none;
   top: var(--lane-1-ground);
   transform: translate(-50%, -100%);
   display: flex;
@@ -733,10 +733,10 @@
 .sprint-slime-obstacle-sprite.lane-2 { top: var(--lane-2-ground); }
 
 .sprint-slime-img {
-  width: 90px;
-  max-width: 100%;
+  width: 185px;
+  max-width: none;
   height: auto;
-  max-height: 85px;
+  max-height: none;
   object-fit: contain;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
@@ -1827,13 +1827,13 @@
   z-index: 25;
   pointer-events: none;
   text-align: center;
-  background: rgba(3, 14, 28, 0.88);
+  background: rgba(3, 14, 28, 0.85);
   border: 1.5px solid rgba(0, 229, 255, 0.45);
   border-radius: 16px;
   padding: 16px 32px;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 25px rgba(0, 229, 255, 0.25), inset 0 0 16px rgba(0, 229, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
   animation: sprintR2BannerPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
   min-width: 320px;
@@ -1854,7 +1854,7 @@
 
 .sprint-r2-center-banner.state-correct {
   border-color: #22c55e;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 30px rgba(34, 197, 94, 0.4), inset 0 0 18px rgba(34, 197, 94, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(34, 197, 94, 0.35), inset 0 0 16px rgba(34, 197, 94, 0.08);
 }
 .sprint-r2-center-banner.state-correct .sprint-r2-corner {
   border-color: #22c55e;
@@ -1862,10 +1862,50 @@
 
 .sprint-r2-center-banner.state-wrong {
   border-color: #ef4444;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.75), 0 0 30px rgba(239, 68, 68, 0.4), inset 0 0 18px rgba(239, 68, 68, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(239, 68, 68, 0.35), inset 0 0 16px rgba(239, 68, 68, 0.08);
 }
 .sprint-r2-center-banner.state-wrong .sprint-r2-corner {
   border-color: #ef4444;
+}
+
+/* ───────────────────────────────────────────────
+   SHARED FLOATING CARDS MODIFIERS (SPRINT POSITIONING)
+   ─────────────────────────────────────────────── */
+
+/* Bottom-Left Floating Cipher Cheat Sheet (Image 2) */
+.caesar-floating-cheat-sheet.sprint-cheat-sheet {
+  top: auto;
+  bottom: 18px;
+  left: 24px;
+  z-index: 20;
+}
+
+/* Cheat Sheet Active Cipher Column Highlight (glow only, no layout shift) */
+.caesar-cheat-col.highlighted {
+  background: rgba(0, 229, 255, 0.18);
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.65), inset 0 0 6px rgba(0, 229, 255, 0.35);
+}
+
+.caesar-cheat-col.highlighted .caesar-cheat-plain {
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
+}
+
+.caesar-cheat-col.highlighted .caesar-cheat-shifted {
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow: 0 0 10px #00e5ff, 0 0 18px rgba(0, 229, 255, 0.85);
+}
+
+/* Bottom-Right Floating Shift Key Clue Card (Image 3) */
+.caesar-floating-basket-card.sprint-clue-card {
+  bottom: 18px;
+  right: 24px;
+  z-index: 20;
+  min-width: 170px;
+  padding: 10px 22px;
 }
 
 .sprint-r2-banner-title {
@@ -2183,19 +2223,19 @@
   left: 24px;
   width: 556px;
   max-width: calc(100vw - 360px);
-  height: 116px;
+  height: auto;
   box-sizing: border-box;
   z-index: 20;
-  background: rgba(3, 14, 28, 0.9);
+  background: rgba(3, 14, 28, 0.88);
   border: 1.5px solid rgba(0, 229, 255, 0.45);
-  border-radius: 12px;
-  padding: 14px 18px;
+  border-radius: 14px;
+  padding: 8px 16px 8px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 16px rgba(0, 229, 255, 0.15);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(0, 229, 255, 0.05);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 4px;
   pointer-events: auto;
 }
 
@@ -2283,17 +2323,18 @@
   right: 24px;
   z-index: 20;
   width: 252px;
-  height: 116px;
+  height: auto;
   box-sizing: border-box;
-  background: rgba(3, 14, 28, 0.9);
+  background: rgba(3, 14, 28, 0.88);
   border: 1.5px solid rgba(0, 229, 255, 0.45);
-  border-radius: 12px;
-  padding: 14px 18px;
+  border-radius: 14px;
+  padding: 8px 16px 8px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 16px rgba(0, 229, 255, 0.15);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(0, 229, 255, 0.05);
   display: flex;
   flex-direction: column;
+  gap: 4px;
   justify-content: space-between;
   align-items: stretch;
   pointer-events: auto;
@@ -2389,8 +2430,9 @@
 .sprint-r2-obstacle-slime {
   position: absolute;
   top: var(--lane-1-ground);
-  width: 96px;
-  height: 90px;
+  width: 200px;
+  height: 205px;
+  max-height: none;
   transform: translate(-50%, -100%);
   z-index: 14;
   pointer-events: none;
@@ -2407,10 +2449,10 @@
 .sprint-r2-obstacle-slime.lane-2 { top: var(--lane-2-ground); }
 
 .sprint-r2-obstacle-slime img {
-  width: 90px;
-  max-width: 100%;
+  width: 185px;
+  max-width: none;
   height: auto;
-  max-height: 85px;
+  max-height: none;
   object-fit: contain;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
@@ -2433,8 +2475,9 @@
     bottom: 12px;
     left: 18px;
     width: 504px;
-    height: 98px;
-    padding: 10px 14px;
+    height: auto;
+    padding: 6px 14px 6px;
+    gap: 3px;
   }
   .sprint-r2-az-col {
     width: 18px;
@@ -2451,8 +2494,18 @@
     bottom: 12px;
     right: 18px;
     width: 232px;
-    height: 98px;
-    padding: 10px 14px;
+    height: auto;
+    padding: 6px 14px 6px;
+    gap: 3px;
+  }
+  .caesar-floating-cheat-sheet.sprint-cheat-sheet {
+    bottom: 12px;
+    left: 18px;
+  }
+  .caesar-floating-basket-card.sprint-clue-card {
+    bottom: 12px;
+    right: 18px;
+    padding: 8px 18px;
   }
   .sprint-r2-shift-icon {
     font-size: 1.6rem;
@@ -2462,13 +2515,13 @@
   }
   .sprint-r2-obstacle-slime,
   .sprint-slime-obstacle-sprite {
-    width: 80px;
-    height: 76px;
+    width: 160px;
+    height: 164px;
   }
   .sprint-r2-obstacle-slime img,
   .sprint-slime-img {
-    width: 76px;
-    max-height: 72px;
+    width: 148px;
+    max-height: none;
   }
   .sprint-r2-banner-title {
     font-size: 1.25rem;
@@ -2504,8 +2557,9 @@
     bottom: 8px;
     left: 14px;
     width: 440px;
-    height: 84px;
-    padding: 6px 12px;
+    height: auto;
+    padding: 5px 12px 5px;
+    gap: 2px;
   }
   .sprint-r2-az-col {
     width: 16px;
@@ -2522,8 +2576,18 @@
     bottom: 8px;
     right: 14px;
     width: 210px;
-    height: 84px;
-    padding: 6px 12px;
+    height: auto;
+    padding: 5px 12px 5px;
+    gap: 2px;
+  }
+  .caesar-floating-cheat-sheet.sprint-cheat-sheet {
+    bottom: 8px;
+    left: 14px;
+  }
+  .caesar-floating-basket-card.sprint-clue-card {
+    bottom: 8px;
+    right: 14px;
+    padding: 6px 14px;
   }
   .sprint-r2-shift-icon {
     font-size: 1.3rem;
@@ -2533,13 +2597,13 @@
   }
   .sprint-r2-obstacle-slime,
   .sprint-slime-obstacle-sprite {
-    width: 68px;
-    height: 64px;
+    width: 130px;
+    height: 133px;
   }
   .sprint-r2-obstacle-slime img,
   .sprint-slime-img {
-    width: 64px;
-    max-height: 60px;
+    width: 120px;
+    max-height: none;
   }
   .sprint-r2-banner-title {
     font-size: 1.1rem;
