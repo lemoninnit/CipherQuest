@@ -65,7 +65,7 @@ export default function VigenereSprint({
   const [isBoosting, setIsBoosting] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const [slimeFrame, setSlimeFrame] = useState(0);
-  const [plantFrame, setPlantFrame] = useState(0);
+
 
   const rafRef = useRef(0);
   const collisionHandledRef = useRef(false);
@@ -85,7 +85,7 @@ export default function VigenereSprint({
   const laneTiltTimeoutRef = useRef(0);
   const explanationIntervalRef = useRef(0);
   const slimeIntervalRef = useRef(0);
-  const plantIntervalRef = useRef(0);
+
 
   useEffect(() => { isBoostingRef.current = isBoosting; }, [isBoosting]);
   useEffect(() => { runnerLaneRef.current = runnerLane; }, [runnerLane]);
@@ -142,7 +142,7 @@ export default function VigenereSprint({
 
   const orangeSlimeSrc = `/assets/sprint/obstacle/obstacle1/SlimeOrange_${PAD5(slimeFrame)}.png`;
   const basicSlimeSrc = `/assets/sprint/obstacle/obstacle2/SlimeBasic_${PAD5(slimeFrame)}.png`;
-  const blueFlowerSrc = `/assets/sprint/plants/Plants/BlueFlower1/BlueFlower_${PAD5(plantFrame)}.png`;
+
 
   useEffect(() => {
     if (isPausedRef.current || sprintStepRef.current !== 'running') return;
@@ -150,14 +150,6 @@ export default function VigenereSprint({
       setSlimeFrame((f) => (f + 1) % 30);
     }, 45);
     return () => window.clearInterval(slimeIntervalRef.current);
-  }, [isPaused, sprintStep]);
-
-  useEffect(() => {
-    if (isPausedRef.current || sprintStepRef.current !== 'running') return;
-    plantIntervalRef.current = window.setInterval(() => {
-      setPlantFrame((f) => (f + 1) % 60);
-    }, 55);
-    return () => window.clearInterval(plantIntervalRef.current);
   }, [isPaused, sprintStep]);
 
   useEffect(() => {
@@ -339,6 +331,7 @@ export default function VigenereSprint({
     } else {
       triggerShake();
       setIsCrashing(true);
+      isCrashingRef.current = true;
       setFirstTryForCurrent(false);
 
       const nextLives = lives - 1;
@@ -347,11 +340,19 @@ export default function VigenereSprint({
       if (nextLives <= 0) {
         setSprintStep('gameover');
       } else {
+        // Singular run: don't halt at an explanation screen.
+        // Show a brief inline crash message then auto-respawn the same gate.
         const reason = charUsed
-          ? `Wrong Letter! You collected decoy letter '${charUsed}'. Try again to decrypt cipher '${currentBatonLetter}'!`
-          : `Gate Shut! You didn't collect any letter coin to unlock the checkpoint gate. Try again to decrypt cipher '${currentBatonLetter}'!`;
-        setCrashMessage(reason);
-        setSprintStep('explanation');
+          ? `❌ Wrong: '${charUsed}'. Need to decrypt '${currentBatonLetter}'!`
+          : `❌ Gate Shut! Collect a letter for '${currentBatonLetter}'!`;
+        showFeedback(reason, '#ef4444', 50, 1400);
+        if (boostTimeoutRef.current) window.clearTimeout(boostTimeoutRef.current);
+        boostTimeoutRef.current = window.setTimeout(() => {
+          setIsCrashing(false);
+          isCrashingRef.current = false;
+          // Respawn the same gate so the runner can try again immediately
+          spawnCoinsAndGate(currentMaskIndexRef.current);
+        }, 1300);
       }
     }
   }, [

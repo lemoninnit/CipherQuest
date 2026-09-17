@@ -3472,7 +3472,43 @@
   z-index: 12;
 }
 
-/* Floating Word / Segment Panel (Top Center) */
+/* Fishing Rod Sprite — replaces the old brown SVG rod line */
+.caesar-fishing-fullscreen .caesar-fish-swim-lane .caesar-fishing-rod-sprite {
+  position: absolute;
+  bottom: 0;
+  /*
+   * Handle is at ~85% of frame width.
+   * width = 280px → 85% = 238px from left edge.
+   * Set left so the handle (right portion) sits at the screen centre.
+   */
+  left: calc(50% - 238px);
+  width: 280px;
+  height: 280px;
+
+  background-image: url('/assets/fish/fishing rod/Fishing Rod.png');
+  /* 8 frames side by side — show frame 0 (idle) */
+  background-size: 800% 100%;
+  background-position: 0% 0%;
+  background-repeat: no-repeat;
+
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 12;
+}
+
+/* Mirror the sprite toward the fish when it is to the RIGHT of the rod */
+.caesar-fishing-fullscreen .caesar-fish-swim-lane .caesar-fishing-rod-sprite.facing-right {
+  /*
+   * After scaleX(-1) the element flips around its own center.
+   * Handle was at 85% (238px) from left; after flip it sits at 15% (42px) from left.
+   * Shift left position so the handle still lands at 50%:
+   *   left = 50% - 42px
+   */
+  left: calc(50% - 42px);
+  transform: scaleX(-1);
+}
+
+
 .caesar-floating-word-panel {
   position: absolute;
   top: 14px;

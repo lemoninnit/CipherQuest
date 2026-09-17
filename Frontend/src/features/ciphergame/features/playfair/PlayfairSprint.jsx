@@ -89,7 +89,7 @@ export default function PlayfairSprint({
   const [isBoosting, setIsBoosting] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const [slimeFrame, setSlimeFrame] = useState(0);
-  const [plantFrame, setPlantFrame] = useState(0);
+
 
   const rafRef = useRef(0);
   const collisionHandledRef = useRef(false);
@@ -109,7 +109,7 @@ export default function PlayfairSprint({
   const laneTiltTimeoutRef = useRef(0);
   const explanationIntervalRef = useRef(0);
   const slimeIntervalRef = useRef(0);
-  const plantIntervalRef = useRef(0);
+
 
   useEffect(() => { isBoostingRef.current = isBoosting; }, [isBoosting]);
   useEffect(() => { runnerLaneRef.current = runnerLane; }, [runnerLane]);
@@ -126,7 +126,7 @@ export default function PlayfairSprint({
 
   const orangeSlimeSrc = `/assets/sprint/obstacle/obstacle1/SlimeOrange_${PAD5(slimeFrame)}.png`;
   const basicSlimeSrc = `/assets/sprint/obstacle/obstacle2/SlimeBasic_${PAD5(slimeFrame)}.png`;
-  const blueFlowerSrc = `/assets/sprint/plants/Plants/BlueFlower1/BlueFlower_${PAD5(plantFrame)}.png`;
+
 
   useEffect(() => {
     if (isPausedRef.current || sprintStepRef.current !== 'running') return;
@@ -134,14 +134,6 @@ export default function PlayfairSprint({
       setSlimeFrame((f) => (f + 1) % 30);
     }, 45);
     return () => window.clearInterval(slimeIntervalRef.current);
-  }, [isPaused, sprintStep]);
-
-  useEffect(() => {
-    if (isPausedRef.current || sprintStepRef.current !== 'running') return;
-    plantIntervalRef.current = window.setInterval(() => {
-      setPlantFrame((f) => (f + 1) % 60);
-    }, 55);
-    return () => window.clearInterval(plantIntervalRef.current);
   }, [isPaused, sprintStep]);
 
   useEffect(() => {
@@ -338,6 +330,7 @@ export default function PlayfairSprint({
     } else {
       triggerShake();
       setIsCrashing(true);
+      isCrashingRef.current = true;
       setFirstTryForCurrent(false);
 
       const nextLives = lives - 1;
@@ -346,11 +339,18 @@ export default function PlayfairSprint({
       if (nextLives <= 0) {
         setSprintStep('gameover');
       } else {
+        // Singular run: skip the explanation screen entirely.
+        // Show inline feedback and auto-respawn the same gate after a brief stumble.
         const reason = pairUsed
-          ? `Wrong Pair! You collected decoy pair '${pairUsed}'. Try again to decrypt cipher pair '${currentBatonPair}'!`
-          : `Gate Shut! You didn't collect any pair coin to unlock the checkpoint gate. Try again to decrypt cipher pair '${currentBatonPair}'!`;
-        setCrashMessage(reason);
-        setSprintStep('explanation');
+          ? `❌ Wrong pair: '${pairUsed}'. Need '${currentBatonPair}' for cipher '${currentBatonPair}'!`
+          : `❌ Gate Shut! Collect a pair coin for '${currentBatonPair}'!`;
+        showFeedback(reason, '#ef4444', 50, 1400);
+        if (boostTimeoutRef.current) window.clearTimeout(boostTimeoutRef.current);
+        boostTimeoutRef.current = window.setTimeout(() => {
+          setIsCrashing(false);
+          isCrashingRef.current = false;
+          spawnCoinsAndGate(currentMaskIndexRef.current);
+        }, 1300);
       }
     }
   }, [
@@ -870,10 +870,6 @@ export default function PlayfairSprint({
                 <span className="sprint-lane-badge">Bottom Lane</span>
               </div>
 
-              <div className="sprint-track-plants">
-                <img src={blueFlowerSrc} alt="Flower" className="sprint-plant flower-1" />
-                <img src={blueFlowerSrc} alt="Flower" className="sprint-plant flower-2" />
-              </div>
 
               <div
                 className={[
