@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Dashed Outer Orbit Ring -->
+  <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0, 229, 255, 0.3)" stroke-width="1.5" stroke-dasharray="3 3" />
+  
+  <!-- Top Circular Arrow (Neon Cyan #00e5ff) -->
+  <path d="M 32,38 A 22,22 0 1,1 68,38" fill="none" stroke="#00e5ff" stroke-width="4" stroke-linecap="round" />
+  <polyline points="62,30 68,38 76,34" fill="none" stroke="#00e5ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Bottom Circular Arrow (Neon Cyan #00e5ff) -->
+  <path d="M 68,62 A 22,22 0 1,1 32,62" fill="none" stroke="#00e5ff" stroke-width="4" stroke-linecap="round" />
+  <polyline points="38,70 32,62 24,66" fill="none" stroke="#00e5ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Letter A (Cyan #00e5ff) - Source Letter -->
+  <text x="24" y="45" fill="#00e5ff" font-size="13" font-weight="900" font-family="'Space Grotesk', 'Plus Jakarta Sans', sans-serif">A</text>
+  
+  <!-- Letter X (Neon Green #39ff14) - Target Shifted Letter -->
+  <text x="70" y="45" fill="#39ff14" font-size="13" font-weight="900" font-family="'Space Grotesk', 'Plus Jakarta Sans', sans-serif">X</text>
+</svg>

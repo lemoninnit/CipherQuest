@@ -27,14 +27,14 @@ const DashboardHome = () => {
       xp: '+100 XP / Level',
       art: 'caesar',
       svg: (
-        <svg viewBox="0 0 100 100" className="dh-card-svg">
+        <svg viewBox="0 0 100 100" className="dh-card-svg" aria-hidden="true">
           <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(0, 229, 255, 0.25)" strokeWidth="1.5" strokeDasharray="3 3" />
           <path d="M 32,38 A 22,22 0 1,1 68,38" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" />
           <polyline points="62,30 68,38 76,34" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M 68,62 A 22,22 0 1,1 32,62" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" />
           <polyline points="38,70 32,62 24,66" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-          <text x="26" y="44" fill="#00e5ff" fontSize="11" fontWeight="bold" fontFamily="sans-serif">A</text>
-          <text x="70" y="44" fill="#39ff14" fontSize="11" fontWeight="bold" fontFamily="sans-serif">X</text>
+          <text x="24" y="45" fill="#00e5ff" fontSize="13" fontWeight="900" fontFamily="'Space Grotesk', sans-serif">A</text>
+          <text x="70" y="45" fill="#39ff14" fontSize="13" fontWeight="900" fontFamily="'Space Grotesk', sans-serif">X</text>
         </svg>
       )
     },
