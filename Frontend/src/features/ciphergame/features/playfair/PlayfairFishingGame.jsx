@@ -554,7 +554,7 @@ export default function PlayfairFishingGame({
                 >
                   <span className="pf-cipher">{pair.cipherPair}</span>
                   <span className="pf-arrow">to</span>
-                  <strong>{solvedPairs[index] || '??'}</strong>
+                  <strong>{pair.plainPair}</strong>
                 </button>
               ))}
             </div>
@@ -656,7 +656,10 @@ export default function PlayfairFishingGame({
             <p>All pairs decrypted successfully.</p>
             <button
               className="fg-btn fg-btn-primary"
-              onClick={() => setShowExplanation(true)}
+              onClick={() => {
+                fishingSound.stopBgm();
+                setShowExplanation(true);
+              }}
               style={{
                 width: '100%',
                 background: 'var(--neon-green)',

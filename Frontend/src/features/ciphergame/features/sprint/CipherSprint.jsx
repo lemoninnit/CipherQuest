@@ -547,7 +547,7 @@ export default function CipherSprint({
   }, [toggleFullscreen]);
 
   /* ───────────────────────────────────────────────
-     Keyboard steering (gated to 'choosing' & 'resolved')
+     Keyboard steering (free across all round phases)
      ─────────────────────────────────────────────── */
   useEffect(() => {
     if (sprintStep !== 'running' || isCrashing) return undefined;
@@ -565,12 +565,6 @@ export default function CipherSprint({
         return;
       }
       if (isPausedRef.current) return;
-
-      // Gate lane steering to choosing & resolved only
-      const currentPhase = roundPhaseRef.current;
-      if (currentPhase !== 'choosing' && currentPhase !== 'resolved') {
-        return;
-      }
 
       if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
         setRunnerLane((prev) => Math.max(0, prev - 1));
@@ -600,7 +594,7 @@ export default function CipherSprint({
      ─────────────────────────────────────────────── */
   useEffect(() => {
     if (sprintStep !== 'running') return undefined;
-    if (isCrashing || isPaused || isMenuOpen) return undefined;
+    if (isCrashing || isPaused || isMenuOpen || showExplanation) return undefined;
 
     const updatePhysics = () => {
       if (isPausedRef.current || isCrashingRef.current || isMenuOpenRef.current || sprintStepRef.current !== 'running') {
@@ -742,6 +736,7 @@ export default function CipherSprint({
     isCrashing,
     isPaused,
     isMenuOpen,
+    showExplanation,
   ]);
 
   /* ───────────────────────────────────────────────
@@ -798,11 +793,11 @@ export default function CipherSprint({
      Explanation / submit handler
      ─────────────────────────────────────────────── */
   const handleVerifySubmit = () => {
+    clearAllFXTimeouts();
     setShowExplanation(true);
   };
 
   const handleCloseExplanation = () => {
-    setShowExplanation(false);
     onVerifySubmit();
   };
 

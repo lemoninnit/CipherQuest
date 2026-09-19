@@ -358,6 +358,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const bufferedDirRef = useRef(bufferedDir);
   const skillActiveRef = useRef(skillActive);
   const isInvulnerableRef = useRef(isInvulnerable);
+  const knightAttackingRef = useRef(false);
   const invulnerabilityTimerRef = useRef(null);
   const retryBtnRef = useRef(null);
   const autoRecapShownRef = useRef(false);
@@ -375,6 +376,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   useEffect(() => { bufferedDirRef.current = bufferedDir; }, [bufferedDir]);
   useEffect(() => { skillActiveRef.current = skillActive; }, [skillActive]);
   useEffect(() => { isInvulnerableRef.current = isInvulnerable; }, [isInvulnerable]);
+  useEffect(() => { knightAttackingRef.current = knightAttacking; }, [knightAttacking]);
 
   const activeSolvingIndex = React.useMemo(() => {
     if (!levelData || !levelData.plaintext) return -1;
@@ -680,9 +682,14 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
   // Main automatic tick loop (180ms loop) using Refs to prevent coordinate change stutter
   useEffect(() => {
-    if (gameOver || levelSolved || isMenuOpen || phase === 'ready') return;
+    if (gameOver || levelSolved || isMenuOpen || showExplanation || phase === 'ready') return undefined;
 
     const gameTick = () => {
+      if (knightAttackingRef.current) {
+        gameLoopRef.current = setTimeout(gameTick, 180);
+        return;
+      }
+
       const currentPacman = pacmanRef.current;
       const currentPacmanDir = pacmanDirRef.current;
       const currentBufferedDir = bufferedDirRef.current;
@@ -710,6 +717,70 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         const vec = DIR_VECTORS[activeDir];
         const nextRow = currentPacman.row + vec.r;
         const nextCol = currentPacman.col + vec.c;
+
+        const currentGhosts = ghostsRef.current;
+        const targetGhostAhead = currentGhosts.find(
+          (g) => !g.eaten && !g.dying && g.row === nextRow && g.col === nextCol && g.index !== -1
+        );
+
+        if (targetGhostAhead && currentSkillActive) {
+          // Freeze skill active & approaching correct ghost: Stop 1 tile short and execute attack animation!
+          setPacmanDir('NONE');
+          setBufferedDir('NONE');
+          setSkillActive(false);
+          setSkillTimeLeft(0);
+          skillActiveRef.current = false;
+          setKnightAttacking(true);
+          knightAttackingRef.current = true;
+
+          // Ghost disappears on hit frame (~240ms)
+          setTimeout(() => {
+            pacmanSound.playSfx('gold');
+            setGhosts((prev) => prev.map((g) => (g.id === targetGhostAhead.id ? { ...g, dying: true } : g)));
+          }, 240);
+
+          // Complete swing at ~480ms: remove ghost, credit decryption, grant grace period, resume
+          setTimeout(() => {
+            setGhosts((prev) => {
+              const nextG = prev.map((g) => (g.id === targetGhostAhead.id ? { ...g, eaten: true } : g));
+              if (targetQueueRef.current && targetQueueRef.current.length > 0) {
+                const nextTarget = targetQueueRef.current.shift();
+                const spawnPositions = getGhostStartPositions(currentTier);
+                const pos = spawnPositions[Math.floor(Math.random() * spawnPositions.length)];
+                nextG.push({
+                  id: `ghost-queued-${Date.now()}-${Math.random()}`,
+                  char: nextTarget.char,
+                  index: nextTarget.index,
+                  row: pos.row,
+                  col: pos.col,
+                  eaten: false,
+                  dir: pos.dir,
+                });
+              }
+              return nextG;
+            });
+
+            setEatenGhosts((prevEaten) => {
+              const nextEaten = prevEaten.includes(targetGhostAhead.index)
+                ? prevEaten
+                : [...prevEaten, targetGhostAhead.index];
+              const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
+              if (nextEaten.length === totalTargets) {
+                setLevelSolved(true);
+                pacmanSound.stopBgm();
+                pacmanSound.playSfx('win');
+              }
+              return nextEaten;
+            });
+
+            setKnightAttacking(false);
+            knightAttackingRef.current = false;
+            triggerInvulnerability(1200);
+          }, 480);
+
+          gameLoopRef.current = setTimeout(gameTick, 180);
+          return;
+        }
 
         if (currentGrid[nextRow] && currentGrid[nextRow][nextCol] === 0) {
           pRow = nextRow;
@@ -1034,6 +1105,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   };
 
   const beginExplanation = () => {
+    pacmanSound.stopBgm();
     autoRecapShownRef.current = true;
     setShowExplanation(true);
   };
@@ -1044,7 +1116,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   };
 
   const handleCloseExplanation = () => {
-    setShowExplanation(false);
     onVerifySubmit();
   };
 
@@ -1837,7 +1908,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     </tr>
                   </thead>
                   <tbody>
-                    {alphabet.map((kChar, rIdx) => {
+                    {alphabet.map((kChar) => {
                       const isCorrectKey = levelData.targetKey ? levelData.targetKey.includes(kChar) : false;
                       const rowLetters = tabulaRow(kChar);
                       return (

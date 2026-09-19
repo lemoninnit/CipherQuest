@@ -468,13 +468,13 @@ export default function VigenereFishingGame({
 
   const handleVerifySubmit = () => {
     if (!levelSolved) return;
+    fishingSound.stopBgm();
     setShowExplanation(true);
     setFloatingXp({ amount: 100, x: 80, y: 80 });
     setTimeout(() => setFloatingXp(null), 1200);
   };
 
   const handleCloseExplanation = () => {
-    setShowExplanation(false);
     onVerifySubmit();
   };
 
@@ -991,7 +991,7 @@ export default function VigenereFishingGame({
                     </tr>
                   </thead>
                   <tbody>
-                    {ALPHABET.map((kChar, rIdx) => {
+                    {ALPHABET.map((kChar) => {
                       const isCorrectKey = targetKey ? targetKey.includes(kChar) : false;
                       const rowLetters = tabulaRow(kChar);
                       return (

@@ -367,6 +367,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   /* ── verify ── */
   const handleVerifySubmit = () => {
     if (!levelSolved) return;
+    fishingSound.stopBgm();
     setShowExplanation(true);
     const xpReward = 100;
     setFloatingXp({ amount: xpReward, x: 80, y: 80 });
@@ -374,7 +375,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   };
 
   const handleCloseExplanation = () => {
-    setShowExplanation(false);
     onVerifySubmit();
   };
 

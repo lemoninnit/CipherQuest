@@ -1,28 +1,133 @@
 /* ── Cryptographic Recap Modal & Content Styling ── */
 
 .cq-recap-root {
-  overflow-y: auto;
-  padding: 30px 10px;
-  z-index: 9999;
-  transition: opacity 0.28s ease, filter 0.28s ease;
+  position: fixed !important;
+  inset: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px !important;
+  z-index: 10000 !important;
+  background: rgba(3, 9, 20, 0.96) !important;
+  backdrop-filter: blur(16px) !important;
+  box-sizing: border-box !important;
 }
 
-.cq-recap-fade-out {
-  opacity: 0;
-  filter: blur(8px);
-  pointer-events: none;
+.cq-recap-veil {
+  position: fixed;
+  inset: 0;
+  background: #030914;
+  z-index: 100000;
+  pointer-events: all;
+  animation: cqVeilFadeIn 0.2s ease forwards;
 }
 
+@keyframes cqVeilFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Fixed 3-Part Card Container ── */
 .cq-recap-card-expanded {
-  max-width: 1100px !important;
+  max-width: 1050px !important;
   width: 95% !important;
-  padding: 28px 36px !important;
+  max-height: 88vh !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 24px 30px 18px !important;
+  background: #061324 !important;
+  border: 1px solid var(--neon-green) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 0 40px rgba(57, 255, 20, 0.25) !important;
+  position: relative !important;
+  box-sizing: border-box !important;
 }
 
+/* ── 1. Fixed Header ── */
+.cq-recap-header {
+  flex-shrink: 0 !important;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.cq-recap-header .fg-recap-title {
+  color: var(--neon-green);
+  font-size: 1.65rem;
+  font-weight: 800;
+  margin: 0 0 4px;
+  text-shadow: 0 0 12px rgba(57, 255, 20, 0.35);
+  letter-spacing: 0.04em;
+}
+
+.cq-recap-header .fg-recap-subtitle {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* ── 2. Scrollable Body ── */
+.cq-recap-scrollable-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 10px;
+  margin-right: -4px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.5) rgba(3, 14, 28, 0.8);
+}
+
+.cq-recap-scrollable-body::-webkit-scrollbar {
+  width: 7px;
+}
+
+.cq-recap-scrollable-body::-webkit-scrollbar-track {
+  background: rgba(3, 14, 28, 0.8);
+  border-radius: 6px;
+}
+
+.cq-recap-scrollable-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.45);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+}
+
+.cq-recap-scrollable-body::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-cyan);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+}
+
+/* ── 3. Fixed Footer ── */
+.cq-recap-footer {
+  flex-shrink: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding-top: 14px !important;
+  margin-top: 6px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── Animation / Letter Row Box ── */
 .cq-recap-animation-box {
+  flex-shrink: 0;
   min-height: auto !important;
-  padding: 16px !important;
-  margin-bottom: 16px !important;
+  background: #030914 !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: var(--radius-lg) !important;
+  padding: 14px 16px !important;
+  margin-bottom: 0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
 }
 
 .cq-recap-space-gap {
@@ -30,20 +135,22 @@
   flex-shrink: 0;
 }
 
+/* ── Explanation Box ── */
 .cq-recap-explanation-box {
   background: rgba(255, 255, 255, 0.015) !important;
-  padding: 20px 24px !important;
-  border-radius: 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 14px !important;
+  padding: 16px 20px !important;
 }
 
 .cq-recap-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
 }
 
 .cq-recap-lead {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   line-height: 1.6;
   color: #e2e8f0;
 }
@@ -62,12 +169,13 @@
 }
 
 .cq-recap-note-callout {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   color: #cbd5e1;
   background: rgba(255, 215, 0, 0.06);
   border-left: 3px solid #ffd700;
   padding: 8px 14px;
   border-radius: 0 8px 8px 0;
+  line-height: 1.45;
 }
 
 /* ── Calculation Card & Chains ── */
@@ -75,16 +183,16 @@
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 12px 16px;
 }
 
 .cq-calc-card-title {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--neon-cyan);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .cq-calc-chain-grid {
@@ -125,12 +233,15 @@
   font-size: 0.86rem;
 }
 
-/* ── Shift Tables ── */
+/* ── Shift Tables & Horizontal Scrolling ── */
 .cq-shift-table-wrap {
   background: rgba(0, 229, 255, 0.04);
   border: 1px solid rgba(0, 229, 255, 0.18);
   border-radius: 12px;
   padding: 12px 16px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .cq-shift-table-title {
@@ -142,6 +253,30 @@
 
 .cq-table-scroll {
   overflow-x: auto;
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.4) rgba(3, 14, 28, 0.6);
+  padding-bottom: 6px;
+}
+
+.cq-table-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.cq-table-scroll::-webkit-scrollbar-track {
+  background: rgba(3, 14, 28, 0.6);
+  border-radius: 4px;
+}
+
+.cq-table-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.4);
+  border-radius: 4px;
+}
+
+.cq-table-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--neon-cyan);
 }
 
 .cq-alphabet-shift-table {
@@ -149,7 +284,7 @@
   text-align: center;
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;
-  min-width: 850px;
+  min-width: 800px;
   width: 100%;
 }
 
@@ -193,7 +328,7 @@
 
 /* ── Playfair Specific Styling ── */
 .cq-playfair-node {
-  min-width: 100px !important;
+  min-width: 90px !important;
   padding: 8px 12px !important;
   cursor: pointer;
 }
@@ -206,8 +341,8 @@
 .cq-playfair-breakdown-row {
   display: grid;
   grid-template-columns: 240px 1fr;
-  gap: 20px;
-  margin-top: 8px;
+  gap: 16px;
+  margin-top: 4px;
 }
 
 @media (max-width: 800px) {
@@ -220,7 +355,7 @@
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(0, 229, 255, 0.25);
   border-radius: 12px;
-  padding: 14px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -230,20 +365,20 @@
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--neon-cyan);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   text-align: center;
 }
 
 .cq-playfair-grid {
   display: grid;
-  grid-template-columns: repeat(5, 36px);
-  gap: 5px;
+  grid-template-columns: repeat(5, 34px);
+  gap: 4px;
   justify-content: center;
 }
 
 .cq-playfair-cell {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -253,7 +388,7 @@
   color: #fff;
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   transition: all 0.2s ease;
 }
 
@@ -269,7 +404,7 @@
   font-size: 0.68rem;
   color: var(--text-muted);
   text-align: center;
-  margin-top: 10px;
+  margin-top: 8px;
   line-height: 1.3;
 }
 
@@ -277,25 +412,25 @@
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
 .cq-rules-card-title {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--neon-cyan);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .cq-rules-list {
   margin: 0;
   padding-left: 18px;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: #cbd5e1;
-  line-height: 1.5;
+  line-height: 1.45;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -309,14 +444,14 @@
   background: rgba(255, 215, 0, 0.06);
   border: 1px solid rgba(255, 215, 0, 0.25);
   border-radius: 8px;
-  padding: 10px 14px;
-  margin-top: 10px;
+  padding: 8px 12px;
+  margin-top: 8px;
 }
 
 .cq-active-rule-header {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   color: #fff;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .cq-active-rule-header strong {
@@ -324,7 +459,7 @@
 }
 
 .cq-active-rule-desc {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: #94a3b8;
 }
 
@@ -338,13 +473,13 @@
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 14px 18px;
+  padding: 12px 16px;
 }
 
 .cq-playfair-pairs-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .cq-playfair-pair-chip {
@@ -353,10 +488,10 @@
   gap: 6px;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 4px 10px;
-  border-radius: 8px;
+  padding: 4px 8px;
+  border-radius: 6px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -370,7 +505,7 @@
 
 .cq-chip-num {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
 }
 
 .cq-chip-cipher {
@@ -389,17 +524,19 @@
 
 .cq-chip-rule {
   color: #ffd700;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
 }
 
+/* ── Unlock Button ── */
 .cq-unlock-btn {
   background: var(--neon-green) !important;
   color: #030914 !important;
   font-weight: 700 !important;
-  padding: 12px 32px !important;
+  padding: 11px 32px !important;
   border-radius: 12px !important;
-  font-size: 1rem !important;
+  font-size: 0.98rem !important;
   transition: all 0.25s ease !important;
+  cursor: pointer !important;
 }
 
 .cq-unlock-btn:hover:not(:disabled) {
@@ -411,3 +548,49 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* ── Viewport Scaling Media Queries (1366x768, 1280x720, etc.) ── */
+@media (max-height: 800px) {
+  .cq-recap-card-expanded {
+    max-height: 94vh !important;
+    padding: 16px 22px 14px !important;
+    border-radius: 16px !important;
+  }
+  
+  .cq-recap-header {
+    margin-bottom: 8px !important;
+  }
+  
+  .cq-recap-header .fg-recap-title {
+    font-size: 1.35rem !important;
+    margin-bottom: 2px !important;
+  }
+  
+  .cq-recap-header .fg-recap-subtitle {
+    font-size: 0.8rem !important;
+  }
+  
+  .cq-recap-scrollable-body {
+    gap: 10px !important;
+  }
+  
+  .cq-recap-animation-box {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+  
+  .cq-recap-explanation-box {
+    padding: 12px 16px !important;
+  }
+  
+  .cq-recap-footer {
+    padding-top: 10px !important;
+    margin-top: 4px !important;
+  }
+  
+  .cq-unlock-btn {
+    padding: 9px 24px !important;
+    font-size: 0.9rem !important;
+  }
+}
+
