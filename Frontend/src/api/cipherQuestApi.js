@@ -74,6 +74,26 @@ export const leaderboardApi = {
     request('GET', `/leaderboard?scope=${encodeURIComponent(scope)}`),
 };
 
+// ── SCORING SYSTEM (server-authoritative) ────────────────────────────
+// The client never submits score, streak, multiplier, or completion time.
+// The backend computes and validates everything from its own session data.
+export const scoringApi = {
+  // Begin a stage attempt; returns { sessionId, startedAt, ... }
+  startStage: (cipherType, difficultyTier, levelIndex) =>
+    request('POST', '/scoring/start', { cipherType, difficultyTier, levelIndex }),
+  // Complete successfully; returns score, streak, multiplier, time, total, bests
+  completeStage: (sessionId) =>
+    request('POST', `/scoring/complete/${sessionId}`),
+  // Register a failure; resets the streak, keeps the total score
+  failStage: (sessionId) =>
+    request('POST', `/scoring/fail/${sessionId}`),
+  // Per-stage leaderboard: category = 'score' | 'time'
+  getStageLeaderboard: (cipherType, difficultyTier, levelIndex, category = 'score') =>
+    request('GET', `/scoring/leaderboard?cipherType=${encodeURIComponent(cipherType)}`
+      + `&difficultyTier=${encodeURIComponent(difficultyTier)}&levelIndex=${levelIndex}`
+      + `&category=${encodeURIComponent(category)}`),
+};
+
 export const saveToken  = (token) => localStorage.setItem('cq_token', token);
 export const clearToken = ()      => localStorage.removeItem('cq_token');
 export const isLoggedIn = ()      => !!getToken();

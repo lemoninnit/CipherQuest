@@ -35,6 +35,24 @@ public class UserProgress {
     @Column(nullable = false)
     private int levelIndex; // 0 to 4 (5 levels per tier)
 
+    // ── Scoring System: personal bests ────────────────────────────────
+
+    /**
+     * Personal best score for this stage.
+     * Updated only when a new score EXCEEDS the stored value.
+     */
+    @Column(name = "best_score", nullable = false, columnDefinition = "int default 0")
+    @Builder.Default
+    private int bestScore = 0;
+
+    /**
+     * Personal best (fastest) successful completion time in milliseconds.
+     * Updated only when a new time is LOWER than the stored value.
+     * Null until the first successful completion with a valid time.
+     */
+    @Column(name = "best_time_ms")
+    private Long bestTimeMs;
+
     @Column(nullable = false)
     @Builder.Default
     private LocalDateTime completedAt = LocalDateTime.now();

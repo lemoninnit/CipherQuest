@@ -1,5 +1,6 @@
 import React from 'react';
 import '../CipherGame.css';
+import { useScoring } from '../core/hooks/ScoringContext';
 
 export default function GameHudBar({
   title,
@@ -35,6 +36,8 @@ export default function GameHudBar({
       </div>
 
       <div className="fg-header-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* ── SCORING SYSTEM: live score / streak / multiplier / stage timer ── */}
+        <ScoringStrip />
         {lives != null && (
           <div className="hearts-glow" style={{ display: 'flex', alignItems: 'center' }}>
             {Array.from({ length: maxLives }).map((_, i) => (
@@ -61,5 +64,54 @@ export default function GameHudBar({
         {customRightContent}
       </div>
     </header>
+  );
+}
+
+/**
+ * SCORING SYSTEM in-stage display (UI requirement 24):
+ * Current Score (total), Current Streak, Current Multiplier, Stage Timer.
+ * Renders nothing when there is no active scoring context (e.g. ready screen).
+ */
+function ScoringStrip() {
+  const scoring = useScoring();
+  if (!scoring || !scoring.stageStartedAt) return null;
+
+  const chipStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '3px 10px',
+    borderRadius: '14px',
+    background: 'rgba(0, 229, 255, 0.08)',
+    border: '1px solid rgba(0, 229, 255, 0.25)',
+    fontSize: '0.78rem',
+    fontWeight: 'bold',
+    fontFamily: 'JetBrains Mono, monospace',
+    whiteSpace: 'nowrap',
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={chipStyle} title="Total Score">
+        <span style={{ color: '#ffd700' }}>★</span>
+        <span style={{ color: '#fff' }}>{(scoring.totalScore || 0).toLocaleString()}</span>
+      </div>
+      <div style={chipStyle} title="Global Streak">
+        <span>🔥</span>
+        <span style={{ color: '#fff' }}>{scoring.streak}</span>
+      </div>
+      <div
+        style={{ ...chipStyle, borderColor: scoring.multiplier > 1 ? 'rgba(34, 197, 94, 0.5)' : 'rgba(0, 229, 255, 0.25)' }}
+        title="Streak Multiplier (applied to the next successful completion)"
+      >
+        <span style={{ color: scoring.multiplier > 1 ? '#22c55e' : '#00e5ff' }}>
+          {scoring.formattedMultiplier}
+        </span>
+      </div>
+      <div style={chipStyle} title="Stage Timer">
+        <span className="material-symbols-outlined" style={{ fontSize: '0.85rem', color: '#00e5ff' }}>timer</span>
+        <span style={{ color: '#fff' }}>{scoring.formattedTime}</span>
+      </div>
+    </div>
   );
 }

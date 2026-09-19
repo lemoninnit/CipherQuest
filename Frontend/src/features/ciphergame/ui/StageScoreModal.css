@@ -1,0 +1,197 @@
+/* ── SCORING SYSTEM: Stage Score Modal ─────────────────────────────── */
+
+.ssm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 9, 20, 0.82);
+  backdrop-filter: blur(6px);
+  animation: ssm-fade-in 0.2s ease-out;
+}
+
+@keyframes ssm-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.ssm-card {
+  width: min(480px, 92vw);
+  background: var(--card-bg, rgba(10, 18, 38, 0.96));
+  border: 1px solid var(--card-border, rgba(0, 229, 255, 0.3));
+  border-radius: 18px;
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.18);
+  padding: 24px 26px;
+  color: #fff;
+  animation: ssm-pop-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes ssm-pop-in {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.ssm-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ssm-header-icon {
+  color: #ffd700;
+  font-size: 1.6rem;
+}
+
+.ssm-title {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+}
+
+/* Hero score block */
+.ssm-score-hero {
+  text-align: center;
+  padding: 16px 12px;
+  border-radius: 14px;
+  background: rgba(0, 229, 255, 0.06);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  margin-bottom: 16px;
+}
+
+.ssm-score-label {
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+}
+
+.ssm-score-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: #22c55e;
+  text-shadow: 0 0 18px rgba(34, 197, 94, 0.5);
+  line-height: 1.2;
+}
+
+.ssm-score-formula {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.ssm-new-best {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 12px;
+  border-radius: 12px;
+  background: rgba(255, 215, 0, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  color: #ffd700;
+  font-size: 0.72rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  animation: ssm-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ssm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+/* Stats grid */
+.ssm-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.ssm-stat {
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ssm-stat-label {
+  font-size: 0.64rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 4px;
+}
+
+.ssm-stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.ssm-stat-value.ssm-cyan { color: #00e5ff; }
+.ssm-stat-value.ssm-gold { color: #ffd700; }
+
+.ssm-best-tag {
+  font-size: 0.56rem;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: rgba(255, 215, 0, 0.18);
+  border: 1px solid rgba(255, 215, 0, 0.5);
+  color: #ffd700;
+  letter-spacing: 1px;
+}
+
+/* Actions */
+.ssm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.ssm-btn {
+  flex: 1;
+  padding: 11px 18px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+  border: none;
+}
+
+.ssm-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+
+.ssm-btn-icon {
+  font-size: 1rem;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.ssm-btn-primary {
+  background: var(--neon-cyan, #00e5ff);
+  color: #030914;
+}
+
+.ssm-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .ssm-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}

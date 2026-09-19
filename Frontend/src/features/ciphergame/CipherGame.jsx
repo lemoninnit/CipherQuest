@@ -1,13 +1,18 @@
 import { Navigate } from "react-router-dom";
 import "./CipherGame.css";
 
+import { useAuth } from "../../context/AuthContext";
 import { useGameFlow } from "./core/hooks/useGameFlow";
+import { ScoringProvider } from "./core/hooks/ScoringContext";
 
 // UI selectors
 import DifficultySelector from "./ui/DifficultySelector";
 import StageRoadmap      from "./features/stages/StageRoadmap";
 import StageLoadingScreen from "./ui/StageLoadingScreen";
 import CompletionModal    from "./ui/CompletionModal";
+import StageScoreModal    from "./ui/StageScoreModal";
+import StageLeaderboard   from "./ui/StageLeaderboard";
+import StageFailNotice    from "./ui/StageFailNotice";
 
 // Caesar games
 import CaesarFishingGame from "./features/caesar/CaesarFishingGame";
@@ -24,12 +29,18 @@ import PlayfairSprint      from "./features/playfair/PlayfairSprint";
 
 export default function CipherGame() {
   const game = useGameFlow();
+  const { user } = useAuth();
   const {
     category, difficulty, currentStage,
     progress, completionModalData,
     goToCategories, selectDifficulty,
+    startStage,
     completeStage, backToStages, replayCurrentStage,
     handleContinueNextDifficulty, handleCloseCompletionModal,
+    // SCORING SYSTEM
+    stageStartedAt, stageResult, dismissStageResult, failStage,
+    stageFailNotice, dismissStageFailNotice,
+    leaderboardStage, openStageLeaderboard, closeStageLeaderboard,
   } = game;
 
   /* ─── Active game renderer ─── */
@@ -42,6 +53,8 @@ export default function CipherGame() {
       onBackToStages: backToStages,
       onVerifySubmit: completeStage,
       onReplayNewQuestion: replayCurrentStage,
+      // SCORING SYSTEM: games call this when the player fails (streak reset)
+      onStageFail: failStage,
     };
 
     let gameComponent = null;
@@ -81,13 +94,41 @@ export default function CipherGame() {
 
     return (
       <div className="cq-page-fade-in">
-        {gameComponent}
+        <ScoringProvider
+          stageStartedAt={stageStartedAt}
+          totalScore={user?.totalScore ?? 0}
+          streak={user?.gameStreak ?? 0}
+        >
+          {gameComponent}
+        </ScoringProvider>
         {completionModalData && (
           <CompletionModal
             modalData={completionModalData}
             onContinueNext={handleContinueNextDifficulty}
             onMainMenu={handleCloseCompletionModal}
           />
+        )}
+        {/* SCORING SYSTEM: post-completion score summary */}
+        {stageResult && !completionModalData && (
+          <StageScoreModal
+            result={stageResult}
+            onContinue={() => { dismissStageResult(); goToCategories(); }}
+            onViewLeaderboard={() => openStageLeaderboard(
+              stageResult.category, stageResult.difficulty, stageResult.stageIndex)}
+            onReplay={() => {
+              const { category: cat, difficulty: diff, stageIndex } = stageResult;
+              dismissStageResult();
+              startStage(cat, diff, stageIndex);
+            }}
+          />
+        )}
+
+        {/* SCORING SYSTEM: failure feedback (no score, streak reset) */}
+        <StageFailNotice notice={stageFailNotice} onDismiss={dismissStageFailNotice} />
+
+        {/* SCORING SYSTEM: per-stage HIGHEST SCORE / FASTEST TIME rankings */}
+        {leaderboardStage && (
+          <StageLeaderboard stage={leaderboardStage} onClose={closeStageLeaderboard} />
         )}
       </div>
     );
@@ -123,6 +164,26 @@ export default function CipherGame() {
             onContinueNext={handleContinueNextDifficulty}
             onMainMenu={handleCloseCompletionModal}
           />
+        )}
+
+        {/* SCORING SYSTEM: post-completion score summary (selector screens) */}
+        {stageResult && !completionModalData && (
+          <StageScoreModal
+            result={stageResult}
+            onContinue={() => { dismissStageResult(); goToCategories(); }}
+            onViewLeaderboard={() => openStageLeaderboard(
+              stageResult.category, stageResult.difficulty, stageResult.stageIndex)}
+            onReplay={() => {
+              const { category: cat, difficulty: diff, stageIndex } = stageResult;
+              dismissStageResult();
+              startStage(cat, diff, stageIndex);
+            }}
+          />
+        )}
+
+        {/* SCORING SYSTEM: per-stage HIGHEST SCORE / FASTEST TIME rankings */}
+        {leaderboardStage && (
+          <StageLeaderboard stage={leaderboardStage} onClose={closeStageLeaderboard} />
         )}
       </div>
     );

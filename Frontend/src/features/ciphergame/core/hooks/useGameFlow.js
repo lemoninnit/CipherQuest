@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthContext";
-import { userApi } from "../../../../api/cipherQuestApi";
+import { userApi, scoringApi } from "../../../../api/cipherQuestApi";
 import {
   getCaesarLevelData, getCaesarGameType,
   getVigenereLevelData, getVigenereGameType,
   getPlayfairLevelData, getPlayfairGameType,
 } from "../engine/levelData";
+import {
+  getBaseScore, getStreakMultiplier, calculateStageScore,
+} from "../engine/scoring";
 
 const VALID_CATEGORIES = ['caesar', 'vigenere', 'playfair'];
 
@@ -54,6 +57,25 @@ export function useGameFlow() {
   const [currentStage, setCurrentStage] = useState(null);
   const [loadingTargetStage, setLoadingTargetStage] = useState(null);
 
+  // ── SCORING SYSTEM state ──────────────────────────────────────────
+  // stageStartedAt : local timestamp captured when the stage starts (live timer)
+  // stageSessionId : server-side attempt id (anti-cheat); null when offline
+  // stageResult    : result of the last successful completion (score modal)
+  const [stageStartedAt, setStageStartedAt] = useState(null);
+  const stageSessionIdRef = useRef(null);
+  // Guards against duplicate failure signals for the same attempt (games may
+  // report a failure from more than one code path).
+  const lastFailedSessionRef = useRef(null);
+  const [stageResult, setStageResult] = useState(null);
+
+  // ── SCORING SYSTEM: per-stage leaderboard (HIGHEST SCORE / FASTEST TIME) ──
+  // leaderboardStage : stage descriptor for the leaderboard modal (null = closed)
+  const [leaderboardStage, setLeaderboardStage] = useState(null);
+
+  // ── SCORING SYSTEM: failure notice ────────────────────────────────
+  // Shown briefly after a failed attempt: no score, streak reset, total preserved.
+  const [stageFailNotice, setStageFailNotice] = useState(null);
+
   // Completion modal state for tier / grandmaster completion
   const [completionModalData, setCompletionModalData] = useState(null);
 
@@ -76,6 +98,30 @@ export function useGameFlow() {
     return (progress[cat]?.[diff] ?? []).includes(stageId);
   };
 
+  /**
+   * SCORING: register a server-side attempt and restart the live stage timer.
+   *
+   * Every attempt must start on the server (POST /api/scoring/start) so that
+   * completion time is server-derived and the score cannot be forged. Shared by
+   * startStage and by the post-failure re-arm, because the games retry in place
+   * rather than reopening the stage.
+   *
+   * Offline fallback: when the backend is unreachable, scoring still works
+   * locally via completeStage.
+   */
+  const requestStageSession = (cat, diff, stageIndex) => {
+    stageSessionIdRef.current = null;
+    setStageStartedAt(Date.now());
+    if (!user) return;
+
+    scoringApi
+      .startStage(cat.toUpperCase(), diff.toUpperCase(), stageIndex)
+      .then((res) => { stageSessionIdRef.current = res?.sessionId ?? null; })
+      .catch((err) => {
+        console.warn("Scoring start unavailable, using local scoring:", err.message);
+      });
+  };
+
   const startStage = (cat, diff, stageIndex) => {
     let levelData, gameType;
     if (cat === 'caesar') {
@@ -88,6 +134,12 @@ export function useGameFlow() {
       levelData = getPlayfairLevelData(diff, stageIndex);
       gameType  = getPlayfairGameType(stageIndex);
     }
+
+    // ── SCORING: start the stage timer + register a server-side session ──
+    lastFailedSessionRef.current = null;
+    setLeaderboardStage(null);
+    requestStageSession(cat, diff, stageIndex);
+
     setCurrentStage({
       id: `${cat}-${diff}-${stageIndex}`,
       category: cat,
@@ -108,6 +160,44 @@ export function useGameFlow() {
   const completeStage = async () => {
     if (!currentStage) return;
     const { category: cat, difficulty: diff, stageIndex, id } = currentStage;
+
+    // ── SCORING: server-authoritative completion ─────────────────────
+    // The backend increments the streak, recalculates the multiplier from
+    // the NEW streak, derives the completion time from server timestamps,
+    // and updates total score + personal bests. The client sends nothing
+    // but the sessionId.
+    let scoreResult = null;
+    const sessionId = stageSessionIdRef.current;
+    if (sessionId) {
+      try {
+        scoreResult = await scoringApi.completeStage(sessionId);
+      } catch (err) {
+        console.warn("Scoring complete failed, using local scoring:", err.message);
+      }
+    }
+    if (!scoreResult) {
+      // Local fallback (offline mode): streak +1 -> multiplier from NEW streak.
+      const currentStreak = Number(user?.gameStreak) || 0;
+      const newStreak = currentStreak + 1;
+      const multiplier = getStreakMultiplier(newStreak);
+      const baseScore = getBaseScore(diff);
+      scoreResult = {
+        score: calculateStageScore(baseScore, multiplier),
+        baseScore,
+        streak: newStreak,
+        multiplier,
+        completionTimeMs: stageStartedAt ? Date.now() - stageStartedAt : 0,
+        totalScore: (Number(user?.totalScore) || 0) + calculateStageScore(baseScore, multiplier),
+        bestScore: null,
+        bestTimeMs: null,
+        newBestScore: false,
+        newBestTime: false,
+        newBadges: [],
+        progressMap: null,
+      };
+    }
+    setStageResult({ ...scoreResult, category: cat, difficulty: diff, stageIndex });
+
     try {
       const response = await userApi.saveProgress(cat, diff, stageIndex);
       if (response && response.progressMap) {
@@ -199,11 +289,69 @@ export function useGameFlow() {
     startStage(cat, diff, stageIndex);
   };
 
-  const goToCategories   = () => { setCategory(null); setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); setCompletionModalData(null); };
-  const selectCategory   = (cat)  => { setCategory(cat); setDifficulty(null); setLoadingTargetStage(null); setCompletionModalData(null); };
-  const selectDifficulty = (diff) => { setDifficulty(diff); setLoadingTargetStage(null); setCompletionModalData(null); };
-  const backToDifficulty = () => { setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); setCompletionModalData(null); };
-  const backToStages     = () => { setCurrentStage(null); setLoadingTargetStage(null); setCompletionModalData(null); };
+  // ── SCORING: failure flow ─────────────────────────────────────────
+  // 0 points, streak -> 0, multiplier -> 1.00, total score preserved.
+  // Called by games when the player runs out of lives / fails the stage.
+  const failStage = async () => {
+    const sessionId = stageSessionIdRef.current;
+
+    // Ignore duplicate failure signals for the same attempt.
+    if (sessionId && lastFailedSessionRef.current === sessionId) return;
+
+    let failResult = null;
+    if (sessionId) {
+      lastFailedSessionRef.current = sessionId;
+      try {
+        failResult = await scoringApi.failStage(sessionId);
+      } catch (err) {
+        console.warn("Scoring fail unavailable:", err.message);
+      }
+    }
+    stageSessionIdRef.current = null;
+
+    // FAILURE BEHAVIOR (spec §7 / §18): no score, streak reset to 0,
+    // multiplier effective at 1.00x, existing total score preserved.
+    setStageFailNotice({
+      score: 0,
+      streak: failResult?.gameStreak ?? 0,
+      multiplier: failResult?.multiplier ?? 1,
+      totalScore: failResult?.totalScore ?? (Number(user?.totalScore) || 0),
+    });
+
+    if (refreshProfile) {
+      try { await refreshProfile(); } catch { /* offline: streak resets locally */ }
+    }
+
+    // Re-arm a fresh server-side attempt: the games retry the same stage in
+    // place, so a later success must still be scored by the server.
+    if (currentStage) {
+      requestStageSession(currentStage.category, currentStage.difficulty, currentStage.stageIndex);
+    }
+  };
+
+  const dismissStageFailNotice = () => setStageFailNotice(null);
+
+  // ── SCORING: per-stage leaderboard (HIGHEST SCORE / FASTEST TIME) ──
+  const openStageLeaderboard = (cat, diff, stageIndex) => {
+    setLeaderboardStage({
+      cipherType: String(cat).toUpperCase(),
+      difficultyTier: String(diff).toUpperCase(),
+      levelIndex: stageIndex,
+      category: cat,
+      difficulty: diff,
+      stageIndex,
+    });
+  };
+
+  const closeStageLeaderboard = () => setLeaderboardStage(null);
+
+  const dismissStageResult = () => setStageResult(null);
+
+  const goToCategories   = () => { setCategory(null); setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); setCompletionModalData(null); setLeaderboardStage(null); };
+  const selectCategory   = (cat)  => { setCategory(cat); setDifficulty(null); setLoadingTargetStage(null); setCompletionModalData(null); setLeaderboardStage(null); };
+  const selectDifficulty = (diff) => { setDifficulty(diff); setLoadingTargetStage(null); setCompletionModalData(null); setLeaderboardStage(null); };
+  const backToDifficulty = () => { setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); setCompletionModalData(null); setLeaderboardStage(null); };
+  const backToStages     = () => { setCurrentStage(null); setLoadingTargetStage(null); setCompletionModalData(null); setLeaderboardStage(null); };
 
   return {
     progress,
@@ -214,5 +362,9 @@ export function useGameFlow() {
     handleContinueNextDifficulty, handleCloseCompletionModal,
     goToCategories, selectCategory, selectDifficulty,
     backToDifficulty, backToStages,
+    // SCORING SYSTEM
+    stageStartedAt, stageResult, dismissStageResult, failStage,
+    stageFailNotice, dismissStageFailNotice,
+    leaderboardStage, openStageLeaderboard, closeStageLeaderboard,
   };
 }

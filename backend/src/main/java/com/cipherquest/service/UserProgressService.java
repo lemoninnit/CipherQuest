@@ -132,16 +132,35 @@ public class UserProgressService {
         validateCipherAndDifficulty(cipher, difficulty);
         assertTierUnlocked(userId, cipher, difficulty);
 
+        awardForCompletion(userId, cipher, difficulty, req.levelIndex());
+
+        List<String> newBadges = checkAndAwardBadges(userId, user);
+        Map<String, Map<String, List<Integer>>> progressMap = buildProgressMap(userId);
+        return new ProgressResponse(progressMap, newBadges);
+    }
+
+    /**
+     * Marks a level complete and awards XP (idempotent).
+     * Shared by the legacy progress endpoint and the scoring system.
+     */
+    @Transactional
+    public void awardForCompletion(Long userId, String cipherType, String difficultyTier, int levelIndex) {
+        User user = findUser(userId);
+        String cipher     = cipherType.toUpperCase();
+        String difficulty = difficultyTier.toUpperCase();
+
+        validateCipherAndDifficulty(cipher, difficulty);
+
         boolean alreadyDone = progressRepository
                 .existsByUserIdAndCipherTypeAndDifficultyTierAndLevelIndex(
-                        userId, cipher, difficulty, req.levelIndex());
+                        userId, cipher, difficulty, levelIndex);
 
         if (!alreadyDone) {
             UserProgress p = UserProgress.builder()
                     .user(user)
                     .cipherType(cipher)
                     .difficultyTier(difficulty)
-                    .levelIndex(req.levelIndex())
+                    .levelIndex(levelIndex)
                     .build();
             progressRepository.save(p);
 
@@ -150,10 +169,15 @@ public class UserProgressService {
             user.setTotalCiphersSolved(user.getTotalCiphersSolved() + 1);
             userRepository.save(user);
         }
+    }
 
-        List<String> newBadges = checkAndAwardBadges(userId, user);
-        Map<String, Map<String, List<Integer>>> progressMap = buildProgressMap(userId);
-        return new ProgressResponse(progressMap, newBadges);
+    /**
+     * Runs the badge checks for a user and returns newly awarded badge types.
+     * Shared by the legacy progress endpoint and the scoring system.
+     */
+    @Transactional
+    public List<String> awardBadgesForUser(Long userId, User user) {
+        return checkAndAwardBadges(userId, user);
     }
 
     /**
@@ -277,7 +301,9 @@ public class UserProgressService {
             onCooldown,
             user.getCooldownEndTime(),
             badges,
-            progressMap
+            progressMap,
+            user.getTotalScore(),
+            user.getGameStreak()
         );
     }
 }

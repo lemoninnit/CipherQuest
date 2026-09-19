@@ -47,4 +47,10 @@ public interface UserProgressRepository extends JpaRepository<UserProgress, Long
 
     @Query("SELECT p.user.id, COUNT(p) FROM UserProgress p WHERE UPPER(p.cipherType) = UPPER(:cipherType) GROUP BY p.user.id")
     List<Object[]> countCompletedByCipherPerUser(@Param("cipherType") String cipherType);
+
+    // ── Scoring System: per-stage leaderboard lookups ─────────────────
+
+    /** All progress rows for one stage (used by per-stage leaderboards). */
+    List<UserProgress> findByCipherTypeAndDifficultyTierAndLevelIndex(
+            String cipherType, String difficultyTier, int levelIndex);
 }
