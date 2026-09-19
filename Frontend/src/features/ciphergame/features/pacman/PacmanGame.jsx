@@ -1,18 +1,14 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useState, useEffect, useRef } from 'react';
 import './PacmanGame.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { pacmanSound } from './pacmanSound';
 import PauseMenu from '../../ui/PauseMenu';
-import {
-  CELL,
-  MAZE_DECOR,
-  WATER_ROCKS,
-  hedgeClass,
-  pathVariant,
-  facingFromDir
-} from './pacmanWorld';
+import CryptographicRecap from '../../ui/CryptographicRecap';
+import VictoryConfetti from '../../ui/VictoryConfetti';
+import { facingFromDir } from './pacmanWorld';
 
 const EASY_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -42,26 +38,7 @@ const tabulaRow = (keyLetter) => {
   return Array.from({ length: 26 }, (_, i) => idxToChar(i + k));
 };
 
-const getOrigIndex = (plaintext, charIndexWithoutSpaces) => {
-  let letterCount = 0;
-  for (let i = 0; i < plaintext.length; i++) {
-    if (plaintext[i] !== ' ') {
-      if (letterCount === charIndexWithoutSpaces) {
-        return i;
-      }
-      letterCount++;
-    }
-  }
-  return charIndexWithoutSpaces;
-};
 
-const caesarDecryptChar = (char, shift) => {
-  const code = char.charCodeAt(0);
-  if (code >= 65 && code <= 90) {
-    return String.fromCharCode(((code - 65 - shift + 26) % 26 + 26) % 26 + 65);
-  }
-  return char;
-};
 
 const caesarShiftChar = (char, shift) => {
   const code = char.charCodeAt(0);
@@ -188,8 +165,7 @@ const generateRandomPellets = (mazeGrid, ghostList, pacmanPos) => {
   return initialPellets;
 };
 
-const describePlayfairRule = (rule, mode = 'decrypt') => {
-  const direction = mode === 'decrypt' ? 'back' : 'forward';
+const describePlayfairRule = (rule) => {
   if (rule === 'row') return `Same row: move one column left for both letters.`;
   if (rule === 'column') return `Same column: move one row upward for both letters.`;
   return 'Rectangle: keep each row, swap to the other letter column.';
@@ -276,7 +252,7 @@ const generateInitialGhosts = (levelData, tier) => {
   const avoidLetters = new Set([...targetLetters, ...ciphertextLetters, ...plaintextLetters]);
   
   for (let i = 0; i < decoyCount; i++) {
-    let decoyChar = '';
+    let decoyChar;
     if (isPlayfair) {
       const pairs = levelData?.pairs || [];
       let attempts = 0;
@@ -313,23 +289,16 @@ const generateInitialGhosts = (levelData, tier) => {
 };
 
 export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
-  if (!levelData) {
-    return (
-      <div className="cipher-container">
-        <p style={{ color: '#f87171' }}>Loading game data...</p>
-        <button onClick={onBackToStages}>Back to Stages</button>
-      </div>
-    );
-  }
-
-  const isVigenere = !!levelData.targetKey;
+  const isVigenere = !!levelData?.targetKey;
   const isPlayfair = !!levelData.matrix;
   const isCaesar = !isVigenere && !isPlayfair;
   const targetShift = isVigenere ? 0 : (levelData.targetShifts?.[0] ?? levelData.shift ?? levelData.targetShift ?? 0);
   const currentTier = String(tier || levelData?.tier || 'easy').toLowerCase();
   const activeMazeGrid = getMazeGrid(currentTier);
   const activeMazeGridRef = useRef(activeMazeGrid);
-  activeMazeGridRef.current = activeMazeGrid;
+  useEffect(() => {
+    activeMazeGridRef.current = activeMazeGrid;
+  }, [activeMazeGrid]);
 
   // Initial Coordinates
   const initialPacman = { row: 1, col: 1 };
@@ -355,18 +324,13 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const [phase, setPhase] = useState('ready');
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [explanationStep, setExplanationStep] = useState(-1);
   const [showTabula, setShowTabula] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [pacman, setPacman] = useState(initialPacman);
   const [pacmanDir, setPacmanDir] = useState('NONE');
   const [bufferedDir, setBufferedDir] = useState('NONE');
-  const [knightFacing, setKnightFacing] = useState('RIGHT');
   const [knightAttacking, setKnightAttacking] = useState(false);
-  const [strikingGhosts, setStrikingGhosts] = useState({});
-
-  const [activeShift, setActiveShift] = useState(0); // starts at 0
   const [eatenGhosts, setEatenGhosts] = useState([]); // indices of eaten target letters
   const [lives, setLives] = useState(5); // 5 hearts
   const [flashError, setFlashError] = useState(false);
@@ -387,16 +351,12 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   // Dynamic non-wall non-stacking pellet arrays on load
   const [pellets, setPellets] = useState(() => generateRandomPellets(activeMazeGrid, initialGhosts, initialPacman));
 
-  const isPoweredUp = true;
-
   const pacmanRef = useRef(pacman);
   const ghostsRef = useRef(ghosts);
   const pelletsRef = useRef(pellets);
   const pacmanDirRef = useRef(pacmanDir);
   const bufferedDirRef = useRef(bufferedDir);
-  const activeShiftRef = useRef(activeShift);
   const skillActiveRef = useRef(skillActive);
-  const isPoweredUpRef = useRef(isPoweredUp);
   const isInvulnerableRef = useRef(isInvulnerable);
   const invulnerabilityTimerRef = useRef(null);
   const retryBtnRef = useRef(null);
@@ -413,9 +373,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   useEffect(() => { pelletsRef.current = pellets; }, [pellets]);
   useEffect(() => { pacmanDirRef.current = pacmanDir; }, [pacmanDir]);
   useEffect(() => { bufferedDirRef.current = bufferedDir; }, [bufferedDir]);
-  useEffect(() => { activeShiftRef.current = activeShift; }, [activeShift]);
   useEffect(() => { skillActiveRef.current = skillActive; }, [skillActive]);
-  useEffect(() => { isPoweredUpRef.current = isPoweredUp; }, [isPoweredUp]);
   useEffect(() => { isInvulnerableRef.current = isInvulnerable; }, [isInvulnerable]);
 
   const activeSolvingIndex = React.useMemo(() => {
@@ -474,10 +432,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setPacman(initialPacman);
     setPacmanDir('NONE');
     setBufferedDir('NONE');
-    setKnightFacing('RIGHT');
     setKnightAttacking(false);
-    setStrikingGhosts({});
-    setActiveShift(0);
     setEatenGhosts([]);
     setLives(5);
     setFlashError(false);
@@ -491,7 +446,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setPellets(generateRandomPellets(grid, initG, initialPacman));
     setPhase('ready');
     setShowExplanation(false);
-    setExplanationStep(-1);
     setIsMenuOpen(false);
     autoRecapShownRef.current = false;
     if (invulnerabilityTimerRef.current) {
@@ -636,7 +590,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   };
 
   const handleLoseHeart = (message) => {
-    if (isInvulnerableRef.current) return;
+    if (isInvulnerableRef.current || levelSolved) return;
 
     pacmanSound.playSfx('hit');
     triggerInvulnerability(1200); // 1.2s invulnerability window
@@ -653,6 +607,14 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       }
       return nextLives;
     });
+  };
+
+  const activateSkill = () => {
+    if (!hasSkillCharge || skillActive || gameOver || levelSolved) return;
+    setSkillActive(true);
+    setHasSkillCharge(false);
+    setSkillTimeLeft(6);
+    pacmanSound.playSfx('powerup');
   };
 
   // Steering control to set buffer direction only
@@ -699,14 +661,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameOver, levelSolved, hasSkillCharge, skillActive, isMenuOpen, phase]);
 
-  const activateSkill = () => {
-    if (!hasSkillCharge || skillActive || gameOver || levelSolved) return;
-    setSkillActive(true);
-    setHasSkillCharge(false);
-    setSkillTimeLeft(6);
-    pacmanSound.playSfx('powerup');
-  };
-
   useEffect(() => {
     if (!skillActive || isMenuOpen || phase === 'ready') return;
     const interval = setInterval(() => {
@@ -732,9 +686,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       const currentPacman = pacmanRef.current;
       const currentPacmanDir = pacmanDirRef.current;
       const currentBufferedDir = bufferedDirRef.current;
-      const currentActiveShift = activeShiftRef.current;
       const currentSkillActive = skillActiveRef.current;
-      const currentIsPoweredUp = isPoweredUpRef.current;
       const currentIsInvulnerable = isInvulnerableRef.current;
 
       // 1. Process Buffered Input
@@ -763,10 +715,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           pRow = nextRow;
           pCol = nextCol;
           setPacman({ row: nextRow, col: nextCol });
-          // update facing based on direction
-          setKnightFacing(activeDir);
         } else {
-          setKnightFacing(activeDir);
           setPacmanDir('NONE');
         }
       }
@@ -900,15 +849,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     setLevelSolved(true);
                     pacmanSound.stopBgm();
                     pacmanSound.playSfx('win');
-                    if (!isVigenere && !isPlayfair && !autoRecapShownRef.current) {
-                      beginExplanation();
-                    }
                   }
                   return nextEaten;
                 });
 
                 // start dying animation for this ghost
-                setStrikingGhosts((prev) => ({ ...prev, [ghost.id]: true }));
                 setKnightAttacking(true);
                 // Remove ghost after animation (480ms matches CSS animation) & replenish from queue
                 setTimeout(() => {
@@ -930,7 +875,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     }
                     return nextG;
                   });
-                  setStrikingGhosts((prev) => { const np = { ...prev }; delete np[ghost.id]; return np; });
                   setKnightAttacking(false);
                 }, 520);
                 return { ...ghost, dying: true }; // Atomically mark dying in the returned array
@@ -1072,10 +1016,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setPacman(initialPacman);
     setPacmanDir('NONE');
     setBufferedDir('NONE');
-    setKnightFacing('RIGHT');
     setKnightAttacking(false);
-    setStrikingGhosts({});
-    setActiveShift(0);
     setEatenGhosts([]);
     setLives(5);
     setGameOver(false);
@@ -1095,16 +1036,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const beginExplanation = () => {
     autoRecapShownRef.current = true;
     setShowExplanation(true);
-    setExplanationStep(-1);
-    const total = isPlayfair 
-      ? (levelData.pairs ? levelData.pairs.length : 0)
-      : (levelData.plaintext ? levelData.plaintext.replace(/\s+/g, '').length : 0);
-    let step = -1;
-    const iv = setInterval(() => {
-      step++;
-      setExplanationStep(step);
-      if (step >= total - 1) clearInterval(iv);
-    }, 600);
   };
 
   const handleVerifySubmit = () => {
@@ -1118,7 +1049,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   };
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  const words = (levelData.plaintext || '').split(/\s+/).filter(Boolean);
 
   if (phase === 'ready') {
     if (isOperationLoading) {
@@ -1334,176 +1264,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   return (
     <div className="pacman-container fg-root">
       {showExplanation && (
-        <div className="fg-recap-overlay" style={{ overflowY: 'auto', padding: '30px 10px', zIndex: 9999 }}>
-          <div className="fg-recap-card" style={{ maxWidth: '1100px', width: '95%', padding: '24px 32px' }}>
-            <h2 className="fg-recap-title">🔬 Cryptographic Recap</h2>
-            <p className="fg-recap-subtitle">Why Did This Work?</p>
-            <div className="fg-recap-animation-box" style={{ minHeight: 'auto', padding: '16px', marginBottom: '16px' }}>
-              {isPlayfair ? (
-                <div className="fg-recap-letter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
-                  {(levelData.pairs || []).map((plainPair, idx) => {
-                    const cipherPair = levelData.cipherPairs ? levelData.cipherPairs[idx] : '';
-                    const rule = levelData.rules ? levelData.rules[idx] : '';
-                    return (
-                      <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`} style={{ minWidth: '110px', padding: '12px 16px' }}>
-                        <span className="fg-recap-char-cipher" style={{ fontSize: '1.25rem' }}>{cipherPair}</span>
-                        <span className="fg-recap-math" style={{ fontSize: '0.7rem', color: 'var(--neon-yellow)' }}>({rule})</span>
-                        <span className="fg-recap-arrow">↓</span>
-                        <span className="fg-recap-char-plain" style={{ fontSize: '1.25rem' }}>{explanationStep >= idx ? plainPair : '__'}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="fg-recap-letter-row">
-                  {(levelData.plaintext || '').replace(/\s+/g, '').split('').map((plainCh, idx) => {
-                    const cipherCh = levelData.ciphertext ? levelData.ciphertext.replace(/\s+/g, '')[idx] : '';
-                    let mathDisplay = "";
-                    if (isVigenere) {
-                      const origIdx = getOrigIndex(levelData.plaintext || '', idx);
-                      const keyChar = levelData.targetKey ? levelData.targetKey[origIdx % levelData.targetKey.length] : '';
-                      const shiftVal = keyChar ? charToIdx(keyChar) : 0;
-                      mathDisplay = keyChar ? `-${keyChar} (${shiftVal})` : '';
-                    } else {
-                      let wi = 0, acc = 0;
-                      for (let i = 0; i < words.length; i++) {
-                        if (idx < acc + words[i].length) { wi = i; break; }
-                        acc += words[i].length;
-                      }
-                      const seg = levelData.targetShifts ? levelData.targetShifts[wi] : 0;
-                      mathDisplay = `-${seg}`;
-                    }
-                    return (
-                      <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}>
-                        <span className="fg-recap-char-cipher">{cipherCh}</span>
-                        <span className="fg-recap-math">{mathDisplay}</span>
-                        <span className="fg-recap-arrow">↓</span>
-                        <span className="fg-recap-char-plain">{plainCh}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <div className="fg-recap-explanation" style={{ background: 'rgba(255,255,255,0.015)' }}>
-              💡 {isPlayfair ? (
-                <>
-                  <strong>Playfair Cipher Decryption:</strong> digraph pairs are decrypted using a 5x5 key matrix.
-                  Depending on their geometric alignment in the grid, the letters move left (same row), move up (same column), or swap columns (rectangle).
-                  <br /><br />
-                  <strong>Why this worked:</strong> You successfully navigated the maze to eat the ghosts matching each plaintext pair, demonstrating how symmetric coordinates in the grid map to letters.
-                  <br /><br />
-                  <span style={{ color: 'var(--neon-cyan)', fontSize: '0.85rem' }}>Lesson context: {levelData.lesson}</span>
-                </>
-              ) : isVigenere ? (
-                <>
-                  <strong>Vigenère Cipher Decryption:</strong> Each ciphertext letter is shifted backward by the corresponding letter of the repeating keyword.
-                  By eating the correct ghosts in the maze, you solved the keyword alignment.
-                  <code>Plain[i] = (Cipher[i] - Key[i mod keyLen]) mod 26</code> maps every letter back.
-                </>
-              ) : (
-                <>
-                  <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is shifted backward by the key value.
-                  By eating the correct ghosts, you resolved the shifted characters.
-                  <code>Plain = (Cipher - Key) mod 26</code> maps every letter back uniformly.
-                </>
-              )}
-              {!isPlayfair && (isVigenere ? (
-                (() => {
-                  const uniqueKeyLetters = Array.from(new Set((levelData.targetKey || '').split('')));
-                  return uniqueKeyLetters.map((kChar, sIdx) => {
-                    const shiftVal = charToIdx(kChar);
-                    const sAlph = alphabet.map((_, i) => alphabet[(i + shiftVal) % 26]);
-                    return (
-                      <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
-                        <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
-                          🔑 Vigenère Row for Key Letter: <strong>{kChar}</strong> (Shift: +{shiftVal})
-                        </div>
-                        <div style={{ overflowX: 'auto' }}>
-                          <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
-                            <thead>
-                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                                <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
-                                {alphabet.map((ch, i) => (
-                                  <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
-                                    <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                    <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
-                                  </td>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
-                                {sAlph.map((ch, i) => (
-                                  <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
-                                    <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                    <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>{ch.charCodeAt(0) - 64}</div>
-                                  </td>
-                                ))}
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()
-              ) : (
-                levelData.targetShifts && levelData.targetShifts.map((shiftVal, sIdx) => {
-                  const sAlph = alphabet.map((_, i) => alphabet[(i + shiftVal) % 26]);
-                  return (
-                    <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
-                      <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
-                        🔑 Caesar Alphabet Shift Table {levelData.targetShifts.length > 1 ? `— Segment #${sIdx + 1}` : ''} (Key: +{shiftVal})
-                      </div>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                              <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
-                              {alphabet.map((ch, i) => (
-                                <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
-                                  <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                  <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
-                                </td>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
-                              {sAlph.map((ch, i) => (
-                                <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
-                                  <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                  <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>{ch.charCodeAt(0) - 64}</div>
-                                </td>
-                              ))}
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  );
-                })
-              ))}
-            </div>
-            <div className="fg-recap-actions" style={{ marginTop: 16 }}>
-              <button
-                className="fg-btn fg-btn-primary"
-                onClick={handleCloseExplanation}
-                disabled={
-                  isPlayfair 
-                    ? explanationStep < (levelData.pairs ? levelData.pairs.length - 1 : 0)
-                    : explanationStep < (levelData.plaintext ? levelData.plaintext.replace(/\s+/g, '').length - 1 : 0)
-                }
-                style={{ background: 'var(--neon-green)', color: '#030914' }}
-              >
-                Unlock Next Objective ➔
-              </button>
-            </div>
-          </div>
-        </div>
+        <CryptographicRecap
+          cipherType={isPlayfair ? 'playfair' : (isVigenere ? 'vigenere' : 'caesar')}
+          levelData={levelData}
+          onUnlockNext={handleCloseExplanation}
+        />
       )}
 
       {/* Header UI */}
@@ -1935,16 +1700,17 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           )}
 
           {/* 7. Floating Secured Victory Panel when level solved */}
+          {levelSolved && <VictoryConfetti isPaused={isMenuOpen} />}
           {levelSolved && (
             <div className="caesar-floating-victory-panel caesar-pacman-victory-panel">
-              <h3 className="caesar-victory-title">✅ SECURED!</h3>
+              <h3 className="caesar-victory-title">SECURED!</h3>
               <p className="caesar-victory-desc">All segments decrypted successfully.</p>
               <button
                 className="fg-btn fg-btn-primary"
                 onClick={handleVerifySubmit}
                 style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: 10 }}
               >
-                🚀 Verify & Submit
+                Verify & Submit
               </button>
               {onReplayNewQuestion && (
                 <button
@@ -1952,7 +1718,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   onClick={onReplayNewQuestion}
                   style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
                 >
-                  🔄 Play Again
+                  Play Again
                 </button>
               )}
             </div>
