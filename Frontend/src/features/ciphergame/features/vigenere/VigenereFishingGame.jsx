@@ -1,8 +1,11 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import PauseMenu from '../../ui/PauseMenu';
+import CryptographicRecap from '../../ui/CryptographicRecap';
+import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 
@@ -97,7 +100,6 @@ export default function VigenereFishingGame({
   const [caughtFish, setCaughtFish] = useState(null);
   const [splash, setSplash] = useState({ show: false, x: 0, y: 0 });
   const [showExplanation, setShowExplanation] = useState(false);
-  const [explanationStep, setExplanationStep] = useState(-1);
   const [chumCount, setChumCount] = useState(3);
   const [hoveredFish, setHoveredFish] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -143,12 +145,6 @@ export default function VigenereFishingGame({
       {isMuted ? '🔇' : '🔊'}
     </button>
   );
-
-  const activePreviewShifts = hoveredFish
-    ? activeShifts.map((shift, idx) =>
-        idx === activeSlot ? hoveredFish.value : shift
-      )
-    : activeShifts;
 
   /* ── ESC key to toggle pause menu ── */
   useEffect(() => {
@@ -292,7 +288,6 @@ export default function VigenereFishingGame({
     setChumCount(3);
     setLevelSolved(false);
     setShowExplanation(false);
-    setExplanationStep(-1);
     setHoveredFish(null);
     setIsCasting(false);
     setCaughtFish(null);
@@ -325,7 +320,7 @@ export default function VigenereFishingGame({
   }, [phase, allCorrect, levelSolved]);
 
   useEffect(() => {
-    if (phase !== 'playing' || isMenuOpen) return;
+    if (phase !== 'playing' || isMenuOpen || levelSolved) return;
     const tick = () => {
       setFishList(prev => prev.map(fish => tickFish(fish)));
       animationRef.current = requestAnimationFrame(tick);
@@ -333,7 +328,7 @@ export default function VigenereFishingGame({
 
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [phase, isMenuOpen]);
+  }, [phase, isMenuOpen, levelSolved]);
 
   // Ensure current target plaintext letter is always swimming in the pond
   useEffect(() => {
@@ -463,15 +458,6 @@ export default function VigenereFishingGame({
   const handleVerifySubmit = () => {
     if (!levelSolved) return;
     setShowExplanation(true);
-    setExplanationStep(-1);
-    const total = levelData.plaintext.replace(/\s+/g, '').length;
-    let step = -1;
-    const interval = setInterval(() => {
-      step++;
-      setExplanationStep(step);
-      if (step >= total - 1) clearInterval(interval);
-    }, 600);
-
     setFloatingXp({ amount: 100, x: 80, y: 80 });
     setTimeout(() => setFloatingXp(null), 1200);
   };
@@ -597,75 +583,11 @@ export default function VigenereFishingGame({
     <div className="fg-root caesar-fishing-fullscreen vigenere-fishing-fullscreen">
       {/* Recap & Learning Overlay */}
       {showExplanation && (
-        <div className="fg-recap-overlay">
-          <div className="fg-recap-modal" style={{ maxWidth: 840 }}>
-            <div className="fg-recap-header">
-              <span className="material-symbols-outlined fg-recap-icon" style={{ color: 'var(--neon-cyan)' }}>
-                auto_stories
-              </span>
-              <h2 className="fg-recap-title">Vigenère Decryption Recap</h2>
-              <span className="fg-recap-badge">Vigenère Cipher</span>
-            </div>
-            <p className="fg-recap-subtitle">
-              Every position was decrypted by subtracting its corresponding keyword letter shift!
-            </p>
-            <div className="fg-recap-segments-card">
-              <div className="fg-recap-segments-grid">
-                {words.map((word, wIdx) => {
-                  const cipherWord = cipherSegs[wIdx];
-                  const wordStartIdx = words.slice(0, wIdx).join('').length;
-
-                  return (
-                    <div key={wIdx} className="fg-recap-seg-box">
-                      <div className="fg-recap-seg-label">Segment #{wIdx + 1}</div>
-                      <div className="fg-recap-letters-row">
-                        {cipherWord.split('').map((cipherCh, cIdx) => {
-                          const globalIdx = wordStartIdx + cIdx;
-                          const isRevealed = globalIdx <= explanationStep;
-                          const slot = slotMap[wIdx]?.[cIdx] ?? 0;
-                          const keyChar = targetKey[slot];
-                          const plainCh = word[cIdx];
-
-                          return (
-                            <div
-                              key={cIdx}
-                              className={`fg-recap-letter-unit ${isRevealed ? 'revealed' : ''}`}
-                              style={isRevealed ? { borderColor: 'var(--neon-green)', background: 'rgba(57,255,20,0.06)' } : {}}
-                            >
-                              <span className="fg-recap-cipher">{cipherCh}</span>
-                              <span className="fg-recap-arrow">↓</span>
-                              <span className="fg-recap-plain" style={{ color: isRevealed ? 'var(--neon-green)' : 'var(--text-muted)' }}>
-                                {isRevealed ? plainCh : '?'}
-                              </span>
-                              <span className="fg-recap-shift-tag" style={{ fontSize: '0.6rem', color: 'var(--neon-cyan)' }}>
-                                -{keyChar}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="fg-recap-explanation" style={{ background: 'rgba(255,255,255,0.015)' }}>
-              💡 <strong>Vigenère Cipher Decryption:</strong> The keyword <code>{levelData.targetKey}</code> repeats continuously.
-              Each letter of the keyword determines how far that position was shifted.{' '}
-              <code>Plain = (Cipher − Key Letter + 26) mod 26</code> reveals the original text.
-            </div>
-            <div className="fg-recap-actions" style={{ marginTop: 16 }}>
-              <button
-                className="fg-btn fg-btn-primary"
-                onClick={handleCloseExplanation}
-                disabled={explanationStep < levelData.plaintext.replace(/\s+/g, '').length - 1}
-                style={{ background: 'var(--neon-green)', color: '#030914' }}
-              >
-                Unlock Next Objective →
-              </button>
-            </div>
-          </div>
-        </div>
+        <CryptographicRecap
+          cipherType="vigenere"
+          levelData={levelData}
+          onUnlockNext={handleCloseExplanation}
+        />
       )}
 
       <GameHudBar
@@ -984,16 +906,17 @@ export default function VigenereFishingGame({
         </div>
 
         {/* 5. Floating Secured Victory Panel when level solved */}
+        {levelSolved && <VictoryConfetti isPaused={isMenuOpen} />}
         {levelSolved && (
           <div className="caesar-floating-victory-panel">
-            <h3 className="caesar-victory-title">✅ SECURED!</h3>
+            <h3 className="caesar-victory-title">SECURED!</h3>
             <p className="caesar-victory-desc">All segments decrypted successfully.</p>
             <button
               className="fg-btn fg-btn-primary"
               onClick={handleVerifySubmit}
               style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: 10 }}
             >
-              🚀 Verify & Submit
+              Verify & Submit
             </button>
             {onReplayNewQuestion && (
               <button
@@ -1001,7 +924,7 @@ export default function VigenereFishingGame({
                 onClick={onReplayNewQuestion}
                 style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
               >
-                🔄 Play Again
+                Play Again
               </button>
             )}
           </div>
