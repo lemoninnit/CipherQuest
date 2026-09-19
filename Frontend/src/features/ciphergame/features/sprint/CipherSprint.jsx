@@ -7,6 +7,8 @@ import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import FullscreenButton from '../../ui/FullscreenButton';
 import PauseMenu from '../../ui/PauseMenu';
+import CryptographicRecap from '../../ui/CryptographicRecap';
+import VictoryConfetti from '../../ui/VictoryConfetti';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const BASE_SPEED = 0.22;
@@ -94,7 +96,6 @@ export default function CipherSprint({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [explanationStep, setExplanationStep] = useState(-1);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackColor, setFeedbackColor] = useState('#facc15');
   const [feedbackY, setFeedbackY] = useState(50);
@@ -131,7 +132,6 @@ export default function CipherSprint({
   const boostTimeoutRef = useRef(0);
   const shakeTimeoutRef = useRef(0);
   const laneTiltTimeoutRef = useRef(0);
-  const explanationIntervalRef = useRef(0);
   const slimeIntervalRef = useRef(0);
   const badgePopTimeoutRef = useRef(0);
 
@@ -755,7 +755,6 @@ export default function CipherSprint({
     prevLevelIdRef.current = currentLevelId;
 
     clearAllFXTimeouts();
-    if (explanationIntervalRef.current) window.clearInterval(explanationIntervalRef.current);
     setSprintStep('ready');
     setCurrentMaskIndex(0);
     currentMaskIndexRef.current = 0;
@@ -769,7 +768,6 @@ export default function CipherSprint({
     setSlimes([]);
     slimesRef.current = [];
     setShowExplanation(false);
-    setExplanationStep(-1);
     setIsPaused(false);
     setRunnerLane(1);
     prevLaneRef.current = 1;
@@ -791,7 +789,6 @@ export default function CipherSprint({
   useEffect(() => {
     return () => {
       clearAllFXTimeouts();
-      if (explanationIntervalRef.current) window.clearInterval(explanationIntervalRef.current);
       if (slimeIntervalRef.current)         window.clearInterval(slimeIntervalRef.current);
       if (rafRef.current)                   window.cancelAnimationFrame(rafRef.current);
     };
@@ -802,15 +799,6 @@ export default function CipherSprint({
      ─────────────────────────────────────────────── */
   const handleVerifySubmit = () => {
     setShowExplanation(true);
-    setExplanationStep(-1);
-    const total = levelData.plaintext.replace(/\s+/g, '').length;
-    let step = -1;
-    if (explanationIntervalRef.current) window.clearInterval(explanationIntervalRef.current);
-    explanationIntervalRef.current = window.setInterval(() => {
-      step++;
-      setExplanationStep(step);
-      if (step >= total - 1) window.clearInterval(explanationIntervalRef.current);
-    }, 600);
   };
 
   const handleCloseExplanation = () => {
@@ -837,157 +825,11 @@ export default function CipherSprint({
     >
       {/* ───── Recap overlay ───── */}
       {showExplanation && (
-        <div
-          className="fg-recap-overlay"
-          style={{ overflowY: 'auto', padding: '30px 10px', zIndex: 9999 }}
-        >
-          <div
-            className="fg-recap-card"
-            style={{ maxWidth: '1100px', width: '95%', padding: '24px 32px' }}
-          >
-            <h2 className="fg-recap-title">🔬 Cryptographic Recap</h2>
-            <p className="fg-recap-subtitle">Why Did This Work?</p>
-            <div
-              className="fg-recap-animation-box"
-              style={{ minHeight: 'auto', padding: '16px', marginBottom: '16px' }}
-            >
-              <div className="fg-recap-letter-row">
-                {levelData.plaintext.replace(/\s+/g, '').split('').map((plainCh, idx) => {
-                  const cipherCh = levelData.ciphertext.replace(/\s+/g, '')[idx];
-                  let wi = 0, acc = 0;
-                  for (let i = 0; i < words.length; i++) {
-                    if (idx < acc + words[i].length) { wi = i; break; }
-                    acc += words[i].length;
-                  }
-                  const seg = levelData.targetShifts[wi];
-                  return (
-                    <div
-                      key={idx}
-                      className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}
-                    >
-                      <span className="fg-recap-char-cipher">{cipherCh}</span>
-                      <span className="fg-recap-math">+{seg}</span>
-                      <span className="fg-recap-arrow">↓</span>
-                      <span className="fg-recap-char-plain">{plainCh}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div
-              className="fg-recap-explanation"
-              style={{ background: 'rgba(255,255,255,0.015)' }}
-            >
-              💡 <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is decoded by applying the Caesar shift key.
-              By steer-racing the runner into correct candidate lanes, you matched each secret shift.{' '}
-              <code>Plain = (Cipher + Key) mod 26</code> maps each letter back uniformly.
-              {levelData.targetShifts &&
-                levelData.targetShifts.map((shiftVal, sIdx) => {
-                  const sAlph = ALPHABET.map((_, i) => ALPHABET[(i + shiftVal) % 26]);
-                  return (
-                    <div
-                      key={sIdx}
-                      style={{
-                        marginTop: 16,
-                        background: 'rgba(0,229,255,0.05)',
-                        border: '1px solid rgba(0,229,255,0.2)',
-                        borderRadius: 12,
-                        padding: 12,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontWeight: 700,
-                          color: 'var(--neon-cyan)',
-                          marginBottom: 8,
-                          fontSize: '0.82rem',
-                        }}
-                      >
-                        🔑 Caesar Alphabet Shift Table
-                        {levelData.targetShifts.length > 1 ? ` — Segment #${sIdx + 1}` : ''} (Key: +{shiftVal})
-                      </div>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table
-                          style={{
-                            borderCollapse: 'collapse',
-                            textAlign: 'center',
-                            fontFamily: 'JetBrains Mono, monospace',
-                            fontSize: '0.7rem',
-                            minWidth: 850,
-                          }}
-                        >
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                              <th
-                                style={{
-                                  padding: '4px 2px',
-                                  textAlign: 'left',
-                                  color: 'var(--text-muted)',
-                                }}
-                              >
-                                Cipher:
-                              </th>
-                              {ALPHABET.map((ch, i) => (
-                                <td
-                                  key={i}
-                                  style={{
-                                    padding: '4px 2px',
-                                    color: '#fff',
-                                    background: 'rgba(255,255,255,0.02)',
-                                  }}
-                                >
-                                  <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                  <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
-                                </td>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <th
-                                style={{
-                                  padding: '4px 2px',
-                                  textAlign: 'left',
-                                  color: 'var(--text-muted)',
-                                }}
-                              >
-                                Plain:
-                              </th>
-                              {sAlph.map((ch, i) => (
-                                <td
-                                  key={i}
-                                  style={{
-                                    padding: '4px 2px',
-                                    color: 'var(--neon-cyan)',
-                                    background: 'rgba(0,229,255,0.02)',
-                                  }}
-                                >
-                                  <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                  <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>
-                                    {ch.charCodeAt(0) - 64}
-                                  </div>
-                                </td>
-                              ))}
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-            <div className="fg-recap-actions" style={{ marginTop: 16 }}>
-              <button
-                className="fg-btn fg-btn-primary"
-                onClick={handleCloseExplanation}
-                disabled={explanationStep < levelData.plaintext.replace(/\s+/g, '').length - 1}
-                style={{ background: 'var(--neon-green)', color: '#030914' }}
-              >
-                Unlock Next Objective ➔
-              </button>
-            </div>
-          </div>
-        </div>
+        <CryptographicRecap
+          cipherType="caesar"
+          levelData={levelData}
+          onUnlockNext={handleCloseExplanation}
+        />
       )}
 
       {/* HUD Header */}
@@ -1400,6 +1242,7 @@ export default function CipherSprint({
           </div>
 
           {/* 4. Floating Action / Outcome Panels */}
+          {sprintStep === 'finished' && <VictoryConfetti isPaused={isPaused} />}
           {sprintStep === 'finished' && (
             <div className="caesar-floating-victory-panel sprint-floating-victory-panel">
               <FinishedPanel
@@ -1444,7 +1287,7 @@ export default function CipherSprint({
 function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
     <div className="fg-success-panel">
-      <h3>✅ SECURED!</h3>
+      <h3>SECURED!</h3>
       <p>All letters decrypted successfully.</p>
       <button
         className="fg-btn fg-btn-primary"
@@ -1456,21 +1299,23 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
           marginTop: '10px',
         }}
       >
-        🚀 Verify & Submit
+        Verify & Submit
       </button>
-      <button
-        className="fg-btn fg-btn-secondary"
-        onClick={onReplayNewQuestion}
-        style={{
-          width: '100%',
-          marginTop: '10px',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          color: '#fff',
-        }}
-      >
-        🔄 Play Again
-      </button>
+      {onReplayNewQuestion && (
+        <button
+          className="fg-btn fg-btn-secondary"
+          onClick={onReplayNewQuestion}
+          style={{
+            width: '100%',
+            marginTop: '10px',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: '#fff',
+          }}
+        >
+          Play Again
+        </button>
+      )}
     </div>
   );
 }
@@ -1485,7 +1330,7 @@ function GameOverPanel({ onRetry }) {
         textAlign: 'center',
       }}
     >
-      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>💀 SYSTEM FAILURE!</strong>
+      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>SYSTEM FAILURE!</strong>
       <p style={{ fontSize: '0.88rem', lineHeight: '1.5', color: '#fda4af', margin: '12px 0' }}>
         Runner crashed too many times and ran out of lives.
       </p>
@@ -1502,7 +1347,7 @@ function GameOverPanel({ onRetry }) {
           padding: '12px',
         }}
       >
-        🔄 Try Again
+        Try Again
       </button>
     </div>
   );
@@ -1518,7 +1363,7 @@ function CrashPanel({ message, onContinue }) {
         textAlign: 'center',
       }}
     >
-      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>💥 SYSTEM CRASH!</strong>
+      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>CRASH! GATE STAYED SHUT</strong>
       <p
         style={{
           fontSize: '0.88rem',
@@ -1542,7 +1387,7 @@ function CrashPanel({ message, onContinue }) {
           padding: '12px',
         }}
       >
-        🔄 Try Again
+        Try Checkpoint Again
       </button>
     </div>
   );
