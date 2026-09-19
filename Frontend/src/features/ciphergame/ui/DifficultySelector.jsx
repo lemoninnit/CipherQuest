@@ -1,5 +1,20 @@
 import { useNavigate } from 'react-router-dom';
 
+const getCaesarArt = (tierKey) => {
+  const color = tierKey === 'EASY' ? '#00e5ff' : tierKey === 'MEDIUM' ? '#ffd700' : '#ff2a6d';
+  return (
+    <svg viewBox="0 0 100 100" className="cq-tier-card-svg" aria-hidden="true">
+      <circle cx="50" cy="50" r="42" fill="none" stroke={`${color}40`} strokeWidth="1.5" strokeDasharray="3 3" />
+      <path d="M 32,38 A 22,22 0 1,1 68,38" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />
+      <polyline points="62,30 68,38 76,34" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M 68,62 A 22,22 0 1,1 32,62" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" />
+      <polyline points="38,70 32,62 24,66" fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+      <text x="24" y="45" fill={color} fontSize="13" fontWeight="900" fontFamily="'Space Grotesk', sans-serif">A</text>
+      <text x="70" y="45" fill={tierKey === 'EASY' ? '#39ff14' : tierKey === 'MEDIUM' ? '#ff3366' : '#39ff14'} fontSize="13" fontWeight="900" fontFamily="'Space Grotesk', sans-serif">X</text>
+    </svg>
+  );
+};
+
 const cipherArtworks = {
   caesar: (
     <svg viewBox="0 0 100 100" className="cq-tier-card-svg" aria-hidden="true">
@@ -8,8 +23,8 @@ const cipherArtworks = {
       <polyline points="62,30 68,38 76,34" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M 68,62 A 22,22 0 1,1 32,62" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" />
       <polyline points="38,70 32,62 24,66" fill="none" stroke="#00e5ff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-      <text x="26" y="44" fill="#00e5ff" fontSize="11" fontWeight="bold" fontFamily="sans-serif">A</text>
-      <text x="70" y="44" fill="#39ff14" fontSize="11" fontWeight="bold" fontFamily="sans-serif">X</text>
+      <text x="24" y="45" fill="#00e5ff" fontSize="13" fontWeight="900" fontFamily="'Space Grotesk', sans-serif">A</text>
+      <text x="70" y="45" fill="#39ff14" fontSize="13" fontWeight="900" fontFamily="'Space Grotesk', sans-serif">X</text>
     </svg>
   ),
   vigenere: (
@@ -295,7 +310,7 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
                 )}
 
                 {/* Cipher Artwork Vector */}
-                {cipherArtworks[activeCategory] || cipherArtworks.caesar}
+                {activeCategory === 'caesar' ? getCaesarArt(tier.id.toUpperCase()) : (cipherArtworks[activeCategory] || cipherArtworks.caesar)}
               </div>
 
               {/* Card Body */}

@@ -51,6 +51,7 @@ public class UserProgressService {
     public UserProfileDto getFullProfile(Long userId) {
         User user = findUser(userId);
         autoRefillIfExpired(user);
+        checkAndAwardBadges(userId, user);
         userRepository.save(user);
         return buildProfileDto(user);
     }
@@ -210,24 +211,34 @@ public class UserProgressService {
         List<String> awarded = new ArrayList<>();
         long total = progressRepository.findByUserId(userId).size();
 
-        if (total == 1) awardIfNew(userId, user, "FIRST_CRACK", awarded);
+        if (total >= 1) awardIfNew(userId, user, "first_crack", awarded);
 
         for (String cipher : CIPHERS) {
-            long cipherTotal = DIFFICULTIES.stream()
-                .mapToLong(d -> progressRepository.countCompleted(userId, cipher, d))
-                .sum();
-            if (cipherTotal >= 15) {
-                String badge = switch (cipher) {
-                    case "CAESAR"   -> "CAESAR_MASTER";
-                    case "VIGENERE" -> "VIGENERE_MASTER";
-                    case "PLAYFAIR" -> "PLAYFAIR_MASTER";
-                    default         -> null;
-                };
-                if (badge != null) awardIfNew(userId, user, badge, awarded);
+            String cLower = cipher.toLowerCase();
+            long easyCount = progressRepository.countCompleted(userId, cipher, "EASY");
+            long mediumCount = progressRepository.countCompleted(userId, cipher, "MEDIUM");
+            long hardCount = progressRepository.countCompleted(userId, cipher, "HARD");
+            long cipherTotal = easyCount + mediumCount + hardCount;
+
+            if (easyCount >= 5) {
+                awardIfNew(userId, user, cLower + "_initiate", awarded);
+            }
+            if (mediumCount >= 5) {
+                awardIfNew(userId, user, cLower + "_expert", awarded);
+            }
+            if (cipherTotal >= 15 || (easyCount >= 5 && mediumCount >= 5 && hardCount >= 5)) {
+                awardIfNew(userId, user, cLower + "_grandmaster", awarded);
             }
         }
 
-        if (total >= 45) awardIfNew(userId, user, "CIPHER_LEGEND", awarded);
+        if (user.getStreak() >= 7) {
+            awardIfNew(userId, user, "streak_7_days", awarded);
+        }
+        if (user.getStreak() >= 30) {
+            awardIfNew(userId, user, "streak_30_days", awarded);
+        }
+
+        if (total >= 45) awardIfNew(userId, user, "cipher_legend", awarded);
         return awarded;
     }
 

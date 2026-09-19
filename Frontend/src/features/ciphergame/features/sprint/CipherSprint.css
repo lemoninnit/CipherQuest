@@ -6,10 +6,21 @@
   --sprint-bottom-clearance: 0px;
   --sprint-lane-height: calc((100% - var(--sprint-top-clearance)) / 3);
 
-  /* Grounding positions — aligned with the paved stone walkway top surface of each platform */
-  --lane-0-top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 0.12);
-  --lane-1-top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 1.12);
-  --lane-2-top: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 2.12);
+  /* Shared pixel art sink nudge */
+  --sprite-sink: 0px;
+
+  /* Grounding positions — measured top surface of the paved stone walkway in each platform tileset:
+     Lane 0: platform_upper.png  (56px / 326px = 0.172)
+     Lane 1: platform_middle.png (50px / 326px = 0.154)
+     Lane 2: platform_bottom.png (48px / 220px = 0.218) */
+  --lane-0-ground: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 0.172 + var(--sprite-sink));
+  --lane-1-ground: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 1.154 + var(--sprite-sink));
+  --lane-2-ground: calc(var(--sprint-top-clearance) + var(--sprint-lane-height) * 2.218 + var(--sprite-sink));
+
+  /* Legacy aliases for any older rules */
+  --lane-0-top: var(--lane-0-ground);
+  --lane-1-top: var(--lane-1-ground);
+  --lane-2-top: var(--lane-2-ground);
   /* Lane boundary colors for visual separation */
   --lane-edge: rgba(56, 189, 248, 0.35);
   --lane-edge-glow: rgba(56, 189, 248, 0.18);
@@ -488,23 +499,23 @@
   height: 155px;
   max-height: 60%;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   z-index: 22;
   pointer-events: none;
-  /* Default: center of lane 1 */
-  top: var(--lane-1-top);
-  transform: translateY(-84%);
+  /* Default: ground of lane 1 */
+  top: var(--lane-1-ground);
+  transform: translate(-50%, -100%);
   transition: top var(--transition-fast);
   will-change: top;
   /* Visual lane-constraint glow to show lane bounds */
   filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.2));
 }
 
-/* Lane positions — simply move top to each lane's center */
-.sprint-runner-sprite.lane-0 { top: var(--lane-0-top); }
-.sprint-runner-sprite.lane-1 { top: var(--lane-1-top); }
-.sprint-runner-sprite.lane-2 { top: var(--lane-2-top); }
+/* Lane positions — anchor to each lane's ground line */
+.sprint-runner-sprite.lane-0 { top: var(--lane-0-ground); }
+.sprint-runner-sprite.lane-1 { top: var(--lane-1-ground); }
+.sprint-runner-sprite.lane-2 { top: var(--lane-2-ground); }
 
 /* Lane-change brightness flash — no transform conflict */
 .sprint-runner-sprite.moving-up   { filter: brightness(1.2) drop-shadow(0 -2px 8px rgba(0,229,255,0.6)); }
@@ -517,7 +528,8 @@
   image-rendering: pixelated;
   image-rendering: crisp-edges;
   transform: scale(2.35);
-  transform-origin: center center;
+  transform-origin: center 61px;
+  margin-bottom: -23px;
   position: relative;
   filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8));
   will-change: background-position;
@@ -590,6 +602,31 @@
   100% { box-shadow: 0 0 20px rgba(0, 229, 255, 1); }
 }
 
+/* Runner baton pickup FX and result states */
+.runner-baton-glow.badge-pickup {
+  animation: badgePop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes badgePop {
+  0%   { transform: scale(1); filter: brightness(1); }
+  50%  { transform: scale(1.45); filter: brightness(2) drop-shadow(0 0 16px #00e5ff); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+.runner-baton-glow.badge-correct {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  border-color: #86efac;
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.95);
+  color: #ffffff;
+}
+
+.runner-baton-glow.badge-wrong {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  border-color: #fca5a5;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.95);
+  color: #ffffff;
+}
+
 /* ───────────────────────────────────────────────
    TARGET GEM — top-based lane positioning
    ─────────────────────────────────────────────── */
@@ -598,21 +635,21 @@
   width: 56px;
   height: 72px;
   max-height: 28%;
-  transform: translate(-50%, -50%);
+  top: var(--lane-1-ground);
+  transform: translate(-50%, -100%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   z-index: 15;
   animation: runeFloat 1.8s ease-in-out infinite;
   will-change: left;
-  /* Lane-sticking: hard clip to stay within bounds */
-  clip-path: inset(-5% 0 -5% 0);
+  clip-path: none;
   contain: layout paint style;
 }
-.sprint-target-gem-sprite.lane-0 { top: var(--lane-0-top); }
-.sprint-target-gem-sprite.lane-1 { top: var(--lane-1-top); }
-.sprint-target-gem-sprite.lane-2 { top: var(--lane-2-top); }
+.sprint-target-gem-sprite.lane-0 { top: var(--lane-0-ground); }
+.sprint-target-gem-sprite.lane-1 { top: var(--lane-1-ground); }
+.sprint-target-gem-sprite.lane-2 { top: var(--lane-2-ground); }
 
 .target-gem-aura {
   position: absolute;
@@ -661,9 +698,9 @@
 }
 
 @keyframes runeFloat {
-  /* Use translateY to float above the paved path */
-  0%, 100% { transform: translate(-50%, -80%) translateY(0px); }
-  50%       { transform: translate(-50%, -80%) translateY(-8px); }
+  /* Bottom-anchored float: repeat translate(-50%, -100%) to preserve ground anchor */
+  0%, 100% { transform: translate(-50%, -100%) translateY(0px); }
+  50%       { transform: translate(-50%, -100%) translateY(-10px); }
 }
 @keyframes gemPulse {
   0%   { transform: scale(0.9); opacity: 0.6; }
@@ -675,36 +712,35 @@
    ─────────────────────────────────────────────── */
 .sprint-slime-obstacle-sprite {
   position: absolute;
-  width: 120px;
-  height: 125px;
-  max-height: 48%;
-  transform: translate(-50%, -80%);
+  width: 200px;
+  height: 205px;
+  max-height: none;
+  top: var(--lane-1-ground);
+  transform: translate(-50%, -100%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   z-index: 14;
   animation: slimeHop 2s ease-in-out infinite;
   will-change: left;
-  /* Lane-sticking: hard clip to prevent bleed across lanes */
-  clip-path: inset(-4% 0 -2% 0);
-  contain: layout paint style;
-  /* Subtle lane boundary frame when obstacle enters view */
-  border-radius: 6px;
+  clip-path: none;
+  overflow: visible;
+  border-radius: 0;
 }
-.sprint-slime-obstacle-sprite.lane-0 { top: var(--lane-0-top); }
-.sprint-slime-obstacle-sprite.lane-1 { top: var(--lane-1-top); }
-.sprint-slime-obstacle-sprite.lane-2 { top: var(--lane-2-top); }
+.sprint-slime-obstacle-sprite.lane-0 { top: var(--lane-0-ground); }
+.sprint-slime-obstacle-sprite.lane-1 { top: var(--lane-1-ground); }
+.sprint-slime-obstacle-sprite.lane-2 { top: var(--lane-2-ground); }
 
 .sprint-slime-img {
-  width: 110px;
-  max-width: 100%;
+  width: 185px;
+  max-width: none;
   height: auto;
-  max-height: 95%;
+  max-height: none;
   object-fit: contain;
   image-rendering: pixelated;
-  transform: scale(1.35);
-  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.85));
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 10px rgba(239, 68, 68, 0.45));
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
@@ -727,8 +763,8 @@
 }
 
 @keyframes slimeHop {
-  0%, 100% { filter: none; }
-  40%      { filter: brightness(1.05) saturate(1.1); }
+  0%, 100% { transform: translate(-50%, -100%) translateY(0px); filter: none; }
+  40%      { transform: translate(-50%, -100%) translateY(-8px); filter: brightness(1.05) saturate(1.1); }
 }
 
 /* ───────────────────────────────────────────────
@@ -1368,9 +1404,22 @@
   --sprint-bottom-clearance: 0px;
   --sprint-lanes-height: calc(100% - var(--sprint-top-clearance));
   --lane-height: calc(var(--sprint-lanes-height) / 3);
-  --lane-0-top: calc(var(--sprint-top-clearance) + var(--lane-height) * 0.14);
-  --lane-1-top: calc(var(--sprint-top-clearance) + var(--lane-height) * 1.14);
-  --lane-2-top: calc(var(--sprint-top-clearance) + var(--lane-height) * 2.14);
+
+  /* Shared pixel art sink nudge */
+  --sprite-sink: 0px;
+
+  /* Grounding positions — measured top surface of the paved stone walkway in each platform tileset:
+     Lane 0: platform_upper.png  (56px / 326px = 0.172)
+     Lane 1: platform_middle.png (50px / 326px = 0.154)
+     Lane 2: platform_bottom.png (48px / 220px = 0.218) */
+  --lane-0-ground: calc(var(--sprint-top-clearance) + var(--lane-height) * 0.172 + var(--sprite-sink));
+  --lane-1-ground: calc(var(--sprint-top-clearance) + var(--lane-height) * 1.154 + var(--sprite-sink));
+  --lane-2-ground: calc(var(--sprint-top-clearance) + var(--lane-height) * 2.218 + var(--sprite-sink));
+
+  /* Legacy aliases for any older rules */
+  --lane-0-top: var(--lane-0-ground);
+  --lane-1-top: var(--lane-1-ground);
+  --lane-2-top: var(--lane-2-ground);
 }
 
 .sprint-track-fullscreen .sprint-lane {
@@ -1714,3 +1763,876 @@
   }
 }
 
+/* ==========================================================================
+   Cipher Sprint R2: 4-Phase Teaching Round Additive Styles
+   ========================================================================== */
+
+/* Corner Brackets Accents (Arcade Dungeon frame) */
+.sprint-r2-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--neon-cyan, #00e5ff);
+  pointer-events: none;
+  transition: border-color 0.25s ease;
+  z-index: 2;
+}
+.sprint-r2-corner.top-left { top: -1.5px; left: -1.5px; border-right: none; border-bottom: none; border-top-left-radius: 12px; }
+.sprint-r2-corner.top-right { top: -1.5px; right: -1.5px; border-left: none; border-bottom: none; border-top-right-radius: 12px; }
+.sprint-r2-corner.bottom-left { bottom: -1.5px; left: -1.5px; border-right: none; border-top: none; border-bottom-left-radius: 12px; }
+.sprint-r2-corner.bottom-right { bottom: -1.5px; right: -1.5px; border-left: none; border-top: none; border-bottom-right-radius: 12px; }
+
+/* Panel Tags (e.g. A–Z REFERENCE, SHIFT KEY, DECRYPTION BRIEF) */
+.sprint-r2-panel-tag {
+  display: inline-block;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--neon-cyan, #00e5ff);
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  padding: 2px 8px;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+  line-height: 1.2;
+}
+
+.sprint-r2-panel-tag.correct {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.45);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.25);
+}
+
+.sprint-r2-panel-tag.wrong {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.25);
+}
+
+/* Centre-track Phase Banner & Progress Bar */
+.sprint-r2-center-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  z-index: 25;
+  pointer-events: none;
+  text-align: center;
+  background: rgba(3, 14, 28, 0.85);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 16px;
+  padding: 16px 32px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
+  animation: sprintR2BannerPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+  min-width: 320px;
+  max-width: 520px;
+  box-sizing: border-box;
+}
+
+@keyframes sprintR2BannerPop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.sprint-r2-center-banner.state-correct {
+  border-color: #22c55e;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(34, 197, 94, 0.35), inset 0 0 16px rgba(34, 197, 94, 0.08);
+}
+.sprint-r2-center-banner.state-correct .sprint-r2-corner {
+  border-color: #22c55e;
+}
+
+.sprint-r2-center-banner.state-wrong {
+  border-color: #ef4444;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(239, 68, 68, 0.35), inset 0 0 16px rgba(239, 68, 68, 0.08);
+}
+.sprint-r2-center-banner.state-wrong .sprint-r2-corner {
+  border-color: #ef4444;
+}
+
+/* ───────────────────────────────────────────────
+   SHARED FLOATING CARDS MODIFIERS (SPRINT POSITIONING)
+   ─────────────────────────────────────────────── */
+
+/* Bottom-Left Floating Cipher Cheat Sheet (Image 2) */
+.caesar-floating-cheat-sheet.sprint-cheat-sheet {
+  top: auto;
+  bottom: 18px;
+  left: 24px;
+  z-index: 20;
+}
+
+/* Cheat Sheet Active Cipher Column Highlight (glow only, no layout shift) */
+.caesar-cheat-col.highlighted {
+  background: rgba(0, 229, 255, 0.18);
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.65), inset 0 0 6px rgba(0, 229, 255, 0.35);
+}
+
+.caesar-cheat-col.highlighted .caesar-cheat-plain {
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
+}
+
+.caesar-cheat-col.highlighted .caesar-cheat-shifted {
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow: 0 0 10px #00e5ff, 0 0 18px rgba(0, 229, 255, 0.85);
+}
+
+/* Bottom-Right Floating Shift Key Clue Card (Image 3) */
+.caesar-floating-basket-card.sprint-clue-card {
+  bottom: 18px;
+  right: 24px;
+  z-index: 20;
+  min-width: 170px;
+  padding: 10px 22px;
+}
+
+.sprint-r2-banner-title {
+  font-family: 'Outfit', 'Inter', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+  text-shadow: 0 0 16px rgba(0, 229, 255, 0.6), 0 2px 8px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.3px;
+}
+
+.sprint-r2-banner-title strong {
+  color: var(--neon-cyan, #00e5ff);
+}
+
+/* Styled Math Row & Chips */
+.sprint-r2-math-equation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 2px 0;
+}
+
+.sprint-r2-math-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.45rem;
+  font-weight: 800;
+  padding: 4px 14px;
+  border-radius: 8px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  color: #ffffff;
+  line-height: 1.2;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+  min-width: 38px;
+  text-align: center;
+}
+
+.sprint-r2-math-chip.cipher {
+  color: var(--neon-cyan, #00e5ff);
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.7);
+}
+
+.sprint-r2-math-chip.shift {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.12);
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+}
+
+.sprint-r2-math-chip.target.mystery {
+  color: #94a3b8;
+  border-style: dashed;
+}
+
+.sprint-r2-math-chip.target.locked {
+  color: var(--neon-cyan, #00e5ff);
+}
+
+.sprint-r2-math-chip.target.correct {
+  color: #22c55e;
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.18);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.5);
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.8);
+}
+
+.sprint-r2-math-chip.target.answer {
+  color: #ef4444;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.18);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.5);
+  text-shadow: 0 0 8px rgba(239, 68, 68, 0.8);
+}
+
+.sprint-r2-math-op {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #94a3b8;
+}
+
+.sprint-r2-banner-msg {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.sprint-r2-banner-msg.correct {
+  color: #22c55e;
+  text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.sprint-r2-banner-msg.wrong {
+  color: #ef4444;
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+/* Progress bar container and animated gradient fill with soft leading glow */
+.sprint-r2-progress-bar-container {
+  width: 260px;
+  height: 8px;
+  background: rgba(2, 8, 18, 0.9);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+  position: relative;
+}
+
+.sprint-r2-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0284c7, #00e5ff, #38bdf8);
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
+  transform-origin: left center;
+  position: relative;
+}
+
+.sprint-r2-progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: -2px;
+  bottom: -2px;
+  width: 14px;
+  background: radial-gradient(circle at center, #ffffff 20%, #00e5ff 70%, transparent 100%);
+  border-radius: 999px;
+  box-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff;
+}
+
+.sprint-r2-center-banner.state-correct .sprint-r2-progress-fill {
+  background: linear-gradient(90deg, #15803d, #22c55e, #4ade80);
+  box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+}
+.sprint-r2-center-banner.state-correct .sprint-r2-progress-fill::after {
+  background: radial-gradient(circle at center, #ffffff 20%, #22c55e 70%, transparent 100%);
+  box-shadow: 0 0 10px #22c55e, 0 0 20px #22c55e;
+}
+
+.sprint-r2-center-banner.state-wrong .sprint-r2-progress-fill {
+  background: linear-gradient(90deg, #b91c1c, #ef4444, #f87171);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+}
+.sprint-r2-center-banner.state-wrong .sprint-r2-progress-fill::after {
+  background: radial-gradient(circle at center, #ffffff 20%, #ef4444 70%, transparent 100%);
+  box-shadow: 0 0 10px #ef4444, 0 0 20px #ef4444;
+}
+
+@keyframes sprintR2Progress {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
+
+/* Paused state stops progress fill */
+.sprint-track-container.is-paused .sprint-r2-progress-fill {
+  animation-play-state: paused !important;
+}
+
+/* Top-Center Floating Word Panel */
+.sprint-r2-word-panel {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  pointer-events: auto;
+  background: rgba(3, 14, 28, 0.88);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 14px;
+  padding: 8px 20px 7px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(0, 229, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.sprint-r2-word-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  letter-spacing: 0.04em;
+}
+
+.sprint-r2-letters-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sprint-r2-letter-box {
+  width: 40px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(0, 229, 255, 0.28);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: all 0.2s ease;
+}
+
+.sprint-r2-letter-box.active {
+  border-color: var(--neon-cyan, #00e5ff);
+  background: rgba(0, 229, 255, 0.12);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.45);
+}
+
+.sprint-r2-letter-box.solved {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.14);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.35);
+}
+
+.sprint-r2-box-cipher {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.sprint-r2-box-plain {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.sprint-r2-letter-box.solved .sprint-r2-box-plain {
+  color: #22c55e;
+  text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.sprint-r2-word-hint {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #ffd700;
+  margin-top: 2px;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.35);
+}
+
+/* 3 Answer Diamonds (Phase 2 & 3) */
+.sprint-r2-diamond-sprite {
+  position: absolute;
+  top: var(--lane-1-ground);
+  width: 58px;
+  height: 62px;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+  animation: runeFloat 1.8s ease-in-out infinite;
+}
+
+.sprint-r2-diamond-sprite.lane-0 { top: var(--lane-0-ground); }
+.sprint-r2-diamond-sprite.lane-1 { top: var(--lane-1-ground); }
+.sprint-r2-diamond-sprite.lane-2 { top: var(--lane-2-ground); }
+
+.sprint-r2-diamond-inner {
+  width: 44px;
+  height: 44px;
+  background: rgba(3, 14, 28, 0.85);
+  border: 2px solid var(--neon-cyan, #00e5ff);
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.6), inset 0 0 10px rgba(0, 229, 255, 0.3);
+  transform: rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.sprint-r2-diamond-char {
+  transform: rotate(-45deg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
+}
+
+.sprint-r2-diamond-sprite.dimmed {
+  opacity: 0.45;
+  filter: grayscale(0.5);
+}
+
+.sprint-r2-diamond-sprite.correct .sprint-r2-diamond-inner {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.85), inset 0 0 12px rgba(34, 197, 94, 0.4) !important;
+  filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.7));
+}
+
+.sprint-r2-diamond-sprite.wrong .sprint-r2-diamond-inner {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 25px rgba(239, 68, 68, 0.85), inset 0 0 12px rgba(239, 68, 68, 0.4) !important;
+  filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.7));
+}
+
+/* Bottom-Left A–Z / 1–26 Reference Strip */
+.sprint-r2-az-strip {
+  position: absolute;
+  bottom: 18px;
+  left: 24px;
+  width: 556px;
+  max-width: calc(100vw - 360px);
+  height: auto;
+  box-sizing: border-box;
+  z-index: 20;
+  background: rgba(3, 14, 28, 0.88);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 14px;
+  padding: 8px 16px 8px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(0, 229, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: auto;
+}
+
+.sprint-r2-panel-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2px;
+  width: 100%;
+}
+
+.sprint-r2-az-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex: 1;
+}
+
+.sprint-r2-az-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  flex: 0 0 20px;
+  padding: 2px 0;
+  border-radius: 5px;
+  transition: all 0.2s ease;
+  opacity: 0.55;
+}
+
+.sprint-r2-az-char {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #cbd5e1;
+  line-height: 1;
+}
+
+.sprint-r2-az-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1;
+  margin-top: 4px;
+}
+
+.sprint-r2-az-col.highlighted {
+  opacity: 1;
+  background: rgba(0, 229, 255, 0.22);
+  border: 1.5px solid #00e5ff;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.75), inset 0 0 8px rgba(0, 229, 255, 0.35);
+  transform: scale(1.1);
+  animation: azCellPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes azCellPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.6), inset 0 0 8px rgba(0, 229, 255, 0.3);
+    transform: scale(1.08);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.95), inset 0 0 12px rgba(0, 229, 255, 0.5);
+    transform: scale(1.12);
+  }
+}
+
+.sprint-r2-az-col.highlighted .sprint-r2-az-char {
+  color: var(--neon-cyan, #00e5ff);
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.9);
+}
+
+.sprint-r2-az-col.highlighted .sprint-r2-az-num {
+  color: #ffd700;
+  font-weight: 800;
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.6);
+}
+
+/* Bottom-Right Shift Key Card */
+.sprint-r2-shift-card {
+  position: absolute;
+  bottom: 18px;
+  right: 24px;
+  z-index: 20;
+  width: 252px;
+  height: auto;
+  box-sizing: border-box;
+  background: rgba(3, 14, 28, 0.88);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 14px;
+  padding: 8px 16px 8px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(0, 229, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: space-between;
+  align-items: stretch;
+  pointer-events: auto;
+}
+
+.sprint-r2-shift-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.sprint-r2-shift-flow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sprint-r2-flow-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: var(--neon-cyan, #00e5ff);
+  text-shadow: 0 0 6px rgba(0, 229, 255, 0.5);
+  line-height: 1.2;
+}
+
+.sprint-r2-flow-chip.shift {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.12);
+  text-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.sprint-r2-flow-arrow {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.sprint-r2-shift-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 2px;
+}
+
+.sprint-r2-shift-icon {
+  font-size: 2rem;
+  display: inline-block;
+  animation: keyIdleShimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes keyIdleShimmer {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.4));
+  }
+  50% {
+    transform: translateY(-3px) rotate(-5deg);
+    filter: drop-shadow(0 0 16px rgba(255, 215, 0, 0.85));
+  }
+}
+
+.sprint-r2-shift-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.35rem;
+  font-weight: 900;
+  color: #f59e0b;
+  text-shadow: 0 0 16px rgba(245, 158, 11, 0.7), 0 0 30px rgba(245, 158, 11, 0.35);
+  line-height: 1;
+  animation: amberSoftPulse 2s ease-in-out infinite;
+}
+
+@keyframes amberSoftPulse {
+  0%, 100% {
+    transform: scale(1);
+    text-shadow: 0 0 14px rgba(245, 158, 11, 0.6), 0 0 24px rgba(245, 158, 11, 0.3);
+  }
+  50% {
+    transform: scale(1.04);
+    text-shadow: 0 0 22px rgba(245, 158, 11, 0.95), 0 0 40px rgba(245, 158, 11, 0.5);
+  }
+}
+
+/* Pure Obstacle Slimes (no letters) */
+.sprint-r2-obstacle-slime {
+  position: absolute;
+  top: var(--lane-1-ground);
+  width: 200px;
+  height: 205px;
+  max-height: none;
+  transform: translate(-50%, -100%);
+  z-index: 14;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: slimeHop 2s ease-in-out infinite;
+  clip-path: none;
+  overflow: visible;
+}
+
+.sprint-r2-obstacle-slime.lane-0 { top: var(--lane-0-ground); }
+.sprint-r2-obstacle-slime.lane-1 { top: var(--lane-1-ground); }
+.sprint-r2-obstacle-slime.lane-2 { top: var(--lane-2-ground); }
+
+.sprint-r2-obstacle-slime img {
+  width: 185px;
+  max-width: none;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  margin-bottom: 0px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 10px rgba(239, 68, 68, 0.45));
+}
+
+/* Responsive adjustments */
+/* Responsive adjustments */
+@media (max-height: 850px) {
+  .sprint-r2-word-panel {
+    top: 8px;
+    padding: 6px 16px 5px;
+  }
+  .sprint-r2-letter-box {
+    width: 36px;
+    height: 44px;
+  }
+  .sprint-r2-az-strip {
+    bottom: 12px;
+    left: 18px;
+    width: 504px;
+    height: auto;
+    padding: 6px 14px 6px;
+    gap: 3px;
+  }
+  .sprint-r2-az-col {
+    width: 18px;
+    flex: 0 0 18px;
+  }
+  .sprint-r2-az-char {
+    font-size: 1.15rem;
+  }
+  .sprint-r2-az-num {
+    font-size: 0.7rem;
+    margin-top: 3px;
+  }
+  .sprint-r2-shift-card {
+    bottom: 12px;
+    right: 18px;
+    width: 232px;
+    height: auto;
+    padding: 6px 14px 6px;
+    gap: 3px;
+  }
+  .caesar-floating-cheat-sheet.sprint-cheat-sheet {
+    bottom: 12px;
+    left: 18px;
+  }
+  .caesar-floating-basket-card.sprint-clue-card {
+    bottom: 12px;
+    right: 18px;
+    padding: 8px 18px;
+  }
+  .sprint-r2-shift-icon {
+    font-size: 1.6rem;
+  }
+  .sprint-r2-shift-val {
+    font-size: 1.95rem;
+  }
+  .sprint-r2-obstacle-slime,
+  .sprint-slime-obstacle-sprite {
+    width: 160px;
+    height: 164px;
+  }
+  .sprint-r2-obstacle-slime img,
+  .sprint-slime-img {
+    width: 148px;
+    max-height: none;
+  }
+  .sprint-r2-banner-title {
+    font-size: 1.25rem;
+  }
+  .sprint-r2-math-chip {
+    font-size: 1.15rem;
+    padding: 3px 10px;
+    min-width: 32px;
+  }
+  .sprint-r2-math-op {
+    font-size: 1.1rem;
+  }
+  .sprint-r2-flow-chip {
+    font-size: 0.75rem;
+    padding: 1px 5px;
+  }
+  .sprint-r2-panel-tag {
+    font-size: 0.65rem;
+    padding: 1px 6px;
+  }
+}
+
+@media (max-height: 768px) {
+  .sprint-r2-word-panel {
+    top: 6px;
+    padding: 4px 12px 4px;
+  }
+  .sprint-r2-letter-box {
+    width: 32px;
+    height: 40px;
+  }
+  .sprint-r2-az-strip {
+    bottom: 8px;
+    left: 14px;
+    width: 440px;
+    height: auto;
+    padding: 5px 12px 5px;
+    gap: 2px;
+  }
+  .sprint-r2-az-col {
+    width: 16px;
+    flex: 0 0 16px;
+  }
+  .sprint-r2-az-char {
+    font-size: 0.95rem;
+  }
+  .sprint-r2-az-num {
+    font-size: 0.58rem;
+    margin-top: 2px;
+  }
+  .sprint-r2-shift-card {
+    bottom: 8px;
+    right: 14px;
+    width: 210px;
+    height: auto;
+    padding: 5px 12px 5px;
+    gap: 2px;
+  }
+  .caesar-floating-cheat-sheet.sprint-cheat-sheet {
+    bottom: 8px;
+    left: 14px;
+  }
+  .caesar-floating-basket-card.sprint-clue-card {
+    bottom: 8px;
+    right: 14px;
+    padding: 6px 14px;
+  }
+  .sprint-r2-shift-icon {
+    font-size: 1.3rem;
+  }
+  .sprint-r2-shift-val {
+    font-size: 1.6rem;
+  }
+  .sprint-r2-obstacle-slime,
+  .sprint-slime-obstacle-sprite {
+    width: 130px;
+    height: 133px;
+  }
+  .sprint-r2-obstacle-slime img,
+  .sprint-slime-img {
+    width: 120px;
+    max-height: none;
+  }
+  .sprint-r2-banner-title {
+    font-size: 1.1rem;
+  }
+  .sprint-r2-math-chip {
+    font-size: 1rem;
+    padding: 2px 8px;
+    min-width: 28px;
+  }
+  .sprint-r2-math-op {
+    font-size: 0.95rem;
+  }
+  .sprint-r2-flow-chip {
+    font-size: 0.68rem;
+    padding: 1px 4px;
+  }
+  .sprint-r2-panel-tag {
+    font-size: 0.6rem;
+    padding: 1px 5px;
+  }
+}
+
+/* Pause freezing for all sprint-r2 elements and baton badge */
+.sprint-track-container.is-paused .sprint-r2-progress-fill,
+.sprint-track-container.is-paused .sprint-r2-diamond-sprite,
+.sprint-track-container.is-paused .sprint-r2-obstacle-slime,
+.sprint-track-container.is-paused .sprint-r2-shift-icon,
+.sprint-track-container.is-paused .sprint-r2-shift-val,
+.sprint-track-container.is-paused .sprint-r2-az-col.highlighted,
+.sprint-track-container.is-paused .runner-baton-glow {
+  animation-play-state: paused !important;
+}

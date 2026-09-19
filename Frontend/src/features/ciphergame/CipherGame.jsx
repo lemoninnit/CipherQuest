@@ -4,11 +4,10 @@ import "./CipherGame.css";
 import { useGameFlow } from "./core/hooks/useGameFlow";
 
 // UI selectors
-// CategorySelector kept in codebase for potential future use
-// import CategorySelector  from "./ui/CategorySelector";
 import DifficultySelector from "./ui/DifficultySelector";
 import StageRoadmap      from "./features/stages/StageRoadmap";
 import StageLoadingScreen from "./ui/StageLoadingScreen";
+import CompletionModal    from "./ui/CompletionModal";
 
 // Caesar games
 import CaesarFishingGame from "./features/caesar/CaesarFishingGame";
@@ -27,9 +26,10 @@ export default function CipherGame() {
   const game = useGameFlow();
   const {
     category, difficulty, currentStage,
-    progress,
+    progress, completionModalData,
     goToCategories, selectDifficulty,
     completeStage, backToStages, replayCurrentStage,
+    handleContinueNextDifficulty, handleCloseCompletionModal,
   } = game;
 
   /* ─── Active game renderer ─── */
@@ -79,7 +79,18 @@ export default function CipherGame() {
         );
     }
 
-    return <div className="cq-page-fade-in">{gameComponent}</div>;
+    return (
+      <div className="cq-page-fade-in">
+        {gameComponent}
+        {completionModalData && (
+          <CompletionModal
+            modalData={completionModalData}
+            onContinueNext={handleContinueNextDifficulty}
+            onMainMenu={handleCloseCompletionModal}
+          />
+        )}
+      </div>
+    );
   }
 
   /* ─── Selector Screens (Difficulty & Stage Roadmap) ─── */
@@ -102,6 +113,15 @@ export default function CipherGame() {
             completedLevels={progress}
             onSelectDifficulty={selectDifficulty}
             onBack={goToCategories}
+          />
+        )}
+
+        {/* Render Completion Modal on selector screens if open */}
+        {completionModalData && (
+          <CompletionModal
+            modalData={completionModalData}
+            onContinueNext={handleContinueNextDifficulty}
+            onMainMenu={handleCloseCompletionModal}
           />
         )}
       </div>

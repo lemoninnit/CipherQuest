@@ -28,13 +28,33 @@ function vigEnc(text, key) {
 }
 
 /** Build a boolean mask array: false = player must solve this letter */
-function makeMask(len, revealFraction = 0.5) {
+function makeMask(plainOrLen, revealFraction = 0.5) {
+  const isStr = typeof plainOrLen === 'string';
+  const len = isStr ? plainOrLen.length : plainOrLen;
   const mask = Array(len).fill(true);
-  const hideCount = Math.ceil(len * (1 - revealFraction));
-  const indices = Array.from({ length: len }, (_, i) => i)
+
+  const eligibleIndices = [];
+  for (let i = 0; i < len; i++) {
+    if (isStr) {
+      const code = plainOrLen.charCodeAt(i);
+      if (code >= 65 && code <= 90) {
+        eligibleIndices.push(i);
+      }
+    } else {
+      eligibleIndices.push(i);
+    }
+  }
+
+  const hideCount = Math.min(
+    eligibleIndices.length,
+    Math.ceil(eligibleIndices.length * (1 - revealFraction))
+  );
+
+  const hiddenIndices = [...eligibleIndices]
     .sort(() => Math.random() - 0.5)
     .slice(0, hideCount);
-  indices.forEach(i => { mask[i] = false; });
+
+  hiddenIndices.forEach(i => { mask[i] = false; });
   return mask;
 }
 
@@ -441,20 +461,28 @@ const caesarWords = {
 
 function buildCaesarLevel(plain, shift, stageIndex, difficulty, hint) {
   const ciphertext = caesarEnc(plain, shift);
-  const len = plain.length;
-  // Reveal more in easy, less in hard
   const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0.35;
-  const mask = makeMask(len, reveal);
+  const mask = makeMask(plain, reveal);
   // Starting shift must not equal the target shift
   let startShift;
   do { startShift = Math.floor(Math.random() * 5); } while (startShift === shift);
+
+  const words = plain.split(' ');
+  const masks = [];
+  let currentMaskIdx = 0;
+  words.forEach(word => {
+    masks.push(mask.slice(currentMaskIdx, currentMaskIdx + word.length));
+    currentMaskIdx += word.length + 1;
+  });
+
   return {
     level: stageIndex + 1,
     ciphertext,
     plaintext: plain,
     targetShifts: [shift],
     startShifts: [startShift],
-    masks: [mask],
+    fullMask: mask,
+    masks: masks,
     hint: hint,
   };
 }
@@ -1326,9 +1354,8 @@ const vigenereData = {
 
 function buildVigenereLevel(plain, key, stageIndex, difficulty, hint, keyClue, keyInfo) {
   const ciphertext = vigEnc(plain, key);
-  const len = plain.length;
   const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0.35;
-  const mask = makeMask(len, reveal);
+  const mask = makeMask(plain, reveal);
   const targetShifts = [];
   const startShifts = [];
   const masks = [];
@@ -1337,7 +1364,7 @@ function buildVigenereLevel(plain, key, stageIndex, difficulty, hint, keyClue, k
   words.forEach(word => {
     const wordMask = mask.slice(currentMaskIdx, currentMaskIdx + word.length);
     masks.push(wordMask);
-    currentMaskIdx += word.length;
+    currentMaskIdx += word.length + 1;
   });
   // For Vigenere, targetShifts should be the shift values from the key (A=0, B=1, ..., Z=25)
   key.split('').forEach(k => {
@@ -1354,6 +1381,7 @@ function buildVigenereLevel(plain, key, stageIndex, difficulty, hint, keyClue, k
     targetKey: key,
     targetShifts,
     startShifts,
+    fullMask: mask,
     masks,
     hint: hint,
     keyClue: keyClue,
@@ -2302,6 +2330,7 @@ function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, l
     rules: encryptedPairs.map((pair) => pair.rule),
     targetShifts,
     startShifts,
+    fullMask: mask,
     masks,
     hint,
     keyClue,

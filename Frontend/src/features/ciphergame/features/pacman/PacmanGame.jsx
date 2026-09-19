@@ -1,18 +1,14 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useState, useEffect, useRef } from 'react';
 import './PacmanGame.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { pacmanSound } from './pacmanSound';
 import PauseMenu from '../../ui/PauseMenu';
-import {
-  CELL,
-  MAZE_DECOR,
-  WATER_ROCKS,
-  hedgeClass,
-  pathVariant,
-  facingFromDir
-} from './pacmanWorld';
+import CryptographicRecap from '../../ui/CryptographicRecap';
+import VictoryConfetti from '../../ui/VictoryConfetti';
+import { facingFromDir } from './pacmanWorld';
 
 const EASY_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -42,26 +38,7 @@ const tabulaRow = (keyLetter) => {
   return Array.from({ length: 26 }, (_, i) => idxToChar(i + k));
 };
 
-const getOrigIndex = (plaintext, charIndexWithoutSpaces) => {
-  let letterCount = 0;
-  for (let i = 0; i < plaintext.length; i++) {
-    if (plaintext[i] !== ' ') {
-      if (letterCount === charIndexWithoutSpaces) {
-        return i;
-      }
-      letterCount++;
-    }
-  }
-  return charIndexWithoutSpaces;
-};
 
-const caesarDecryptChar = (char, shift) => {
-  const code = char.charCodeAt(0);
-  if (code >= 65 && code <= 90) {
-    return String.fromCharCode(((code - 65 - shift + 26) % 26 + 26) % 26 + 65);
-  }
-  return char;
-};
 
 const caesarShiftChar = (char, shift) => {
   const code = char.charCodeAt(0);
@@ -148,7 +125,7 @@ const getGhostStartPositions = (tier) => {
   ];
 };
 
-const MAX_ACTIVE_TARGET_GHOSTS = { easy: 8, medium: 5, hard: 6 };
+const MAX_ACTIVE_TARGET_GHOSTS = { easy: 8, medium: 8, hard: 8 };
 // Decoy ghost count also scales gently with tier for a bit more challenge.
 const DECOY_GHOST_COUNT = { easy: 2, medium: 2, hard: 2 };
 
@@ -188,11 +165,59 @@ const generateRandomPellets = (mazeGrid, ghostList, pacmanPos) => {
   return initialPellets;
 };
 
-const describePlayfairRule = (rule, mode = 'decrypt') => {
-  const direction = mode === 'decrypt' ? 'back' : 'forward';
+const describePlayfairRule = (rule) => {
   if (rule === 'row') return `Same row: move one column left for both letters.`;
   if (rule === 'column') return `Same column: move one row upward for both letters.`;
   return 'Rectangle: keep each row, swap to the other letter column.';
+};
+
+const getMask = (levelData, idx) => {
+  if (!levelData) return true;
+  if (levelData.fullMask && levelData.fullMask[idx] !== undefined) {
+    return levelData.fullMask[idx];
+  }
+  let wordStart = 0;
+  const words = (levelData.plaintext || '').split(' ');
+  for (let w = 0; w < words.length; w++) {
+    const word = words[w];
+    if (idx >= wordStart && idx < wordStart + word.length) {
+      return levelData.masks?.[w]?.[idx - wordStart] ?? true;
+    }
+    wordStart += word.length + 1;
+  }
+  return true;
+};
+
+// Helper to extract all required target items for levelData
+const getRequiredTargetItems = (levelData) => {
+  if (!levelData) return [];
+  const isPlayfair = !!levelData.matrix;
+  if (isPlayfair) {
+    const pairs = levelData.pairs || [];
+    return pairs.map((plainPair, i) => ({
+      index: i,
+      char: plainPair,
+      id: `ghost-target-${i}`
+    }));
+  }
+
+  const maskedIndices = [];
+  if (levelData && levelData.plaintext) {
+    for (let i = 0; i < levelData.plaintext.length; i++) {
+      const ch = levelData.plaintext[i];
+      if (ch >= 'A' && ch <= 'Z') {
+        if (!getMask(levelData, i)) {
+          maskedIndices.push(i);
+        }
+      }
+    }
+  }
+
+  return maskedIndices.map((idx) => ({
+    index: idx,
+    char: levelData.plaintext ? levelData.plaintext[idx] : '',
+    id: `ghost-target-${idx}`
+  }));
 };
 
 // Dynamically configure ghosts: capped active target letters + queue system + decoys.
@@ -203,72 +228,9 @@ const generateInitialGhosts = (levelData, tier) => {
   const startPositions = getGhostStartPositions(normTier);
 
   const isPlayfair = !!levelData.matrix;
-  if (isPlayfair) {
-    const pairs = levelData.pairs || [];
-    const allTargets = pairs.map((plainPair, i) => ({
-      id: `ghost-${i + 1}`,
-      char: plainPair,
-      index: i
-    }));
-
-    const activeTargets = allTargets.slice(0, maxActive);
-    const queue = allTargets.slice(maxActive);
-
-    const ghosts = activeTargets.map((item, i) => {
-      const pos = startPositions[i % startPositions.length];
-      return {
-        ...item,
-        row: pos.row,
-        col: pos.col,
-        eaten: false,
-        dir: pos.dir
-      };
-    });
-
-    // Add decoy ghosts for distraction/challenge
-    const alphabet = 'ABCDEFGHIKLMNOPQRSTUVWXYZ';
-    for (let i = 0; i < decoyCount; i++) {
-      let decoyPair = '';
-      do {
-        const c1 = alphabet[Math.floor(Math.random() * 25)];
-        const c2 = alphabet[Math.floor(Math.random() * 25)];
-        decoyPair = c1 + c2;
-      } while (pairs.includes(decoyPair));
-
-      const posIdx = activeTargets.length + i;
-      const pos = startPositions[posIdx % startPositions.length];
-
-      ghosts.push({
-        id: `ghost-decoy-${i + 1}`,
-        char: decoyPair,
-        index: -1, // Decoy indicator
-        row: pos.row,
-        col: pos.col,
-        eaten: false,
-        dir: pos.dir
-      });
-    }
-
-    return { ghosts, queue };
-  }
-
-  const maskedIndices = [];
-  if (levelData && levelData.masks && levelData.masks[0]) {
-    levelData.masks[0].forEach((m, idx) => {
-      if (!m) {
-        maskedIndices.push(idx);
-      }
-    });
-  }
-
-  const allTargets = maskedIndices.map((idx, i) => ({
-    id: `ghost-${i + 1}`,
-    char: levelData.plaintext ? levelData.plaintext[idx] : '',
-    index: idx
-  }));
-
-  const activeTargets = allTargets.slice(0, maxActive);
-  const queue = allTargets.slice(maxActive);
+  const requiredTargets = getRequiredTargetItems(levelData);
+  const activeTargets = requiredTargets.slice(0, maxActive);
+  const queue = requiredTargets.slice(maxActive);
 
   const ghosts = activeTargets.map((item, i) => {
     const pos = startPositions[i % startPositions.length];
@@ -277,19 +239,36 @@ const generateInitialGhosts = (levelData, tier) => {
       row: pos.row,
       col: pos.col,
       eaten: false,
+      dying: false,
       dir: pos.dir
     };
   });
 
   // Add decoy ghosts for distraction/challenge
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const targetLetters = levelData.plaintext ? maskedIndices.map(idx => levelData.plaintext[idx]) : [];
+  const alphabet = isPlayfair ? 'ABCDEFGHIKLMNOPQRSTUVWXYZ' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const targetLetters = requiredTargets.map(t => t.char);
+  const ciphertextLetters = levelData?.ciphertext ? levelData.ciphertext.split('') : [];
+  const plaintextLetters = levelData?.plaintext ? levelData.plaintext.split('') : [];
+  const avoidLetters = new Set([...targetLetters, ...ciphertextLetters, ...plaintextLetters]);
   
   for (let i = 0; i < decoyCount; i++) {
-    let decoyChar = '';
-    do {
-      decoyChar = alphabet[Math.floor(Math.random() * 26)];
-    } while (targetLetters.includes(decoyChar));
+    let decoyChar;
+    if (isPlayfair) {
+      const pairs = levelData?.pairs || [];
+      let attempts = 0;
+      do {
+        const c1 = alphabet[Math.floor(Math.random() * 25)];
+        const c2 = alphabet[Math.floor(Math.random() * 25)];
+        decoyChar = c1 + c2;
+        attempts++;
+      } while (pairs.includes(decoyChar) && attempts < 100);
+    } else {
+      let attempts = 0;
+      do {
+        decoyChar = alphabet[Math.floor(Math.random() * 26)];
+        attempts++;
+      } while ((avoidLetters.has(decoyChar) || targetLetters.includes(decoyChar)) && attempts < 100);
+    }
 
     const posIdx = activeTargets.length + i;
     const pos = startPositions[posIdx % startPositions.length];
@@ -301,6 +280,7 @@ const generateInitialGhosts = (levelData, tier) => {
       row: pos.row,
       col: pos.col,
       eaten: false,
+      dying: false,
       dir: pos.dir
     });
   }
@@ -309,23 +289,16 @@ const generateInitialGhosts = (levelData, tier) => {
 };
 
 export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
-  if (!levelData) {
-    return (
-      <div className="cipher-container">
-        <p style={{ color: '#f87171' }}>Loading game data...</p>
-        <button onClick={onBackToStages}>Back to Stages</button>
-      </div>
-    );
-  }
-
-  const isVigenere = !!levelData.targetKey;
+  const isVigenere = !!levelData?.targetKey;
   const isPlayfair = !!levelData.matrix;
   const isCaesar = !isVigenere && !isPlayfair;
   const targetShift = isVigenere ? 0 : (levelData.targetShifts?.[0] ?? levelData.shift ?? levelData.targetShift ?? 0);
   const currentTier = String(tier || levelData?.tier || 'easy').toLowerCase();
   const activeMazeGrid = getMazeGrid(currentTier);
   const activeMazeGridRef = useRef(activeMazeGrid);
-  activeMazeGridRef.current = activeMazeGrid;
+  useEffect(() => {
+    activeMazeGridRef.current = activeMazeGrid;
+  }, [activeMazeGrid]);
 
   // Initial Coordinates
   const initialPacman = { row: 1, col: 1 };
@@ -334,28 +307,30 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const targetQueueRef = useRef(initialGhostsData.queue);
   const initialGhosts = initialGhostsData.ghosts;
 
-  const maskedIndices = [];
-  if (levelData.masks && levelData.masks[0]) {
-    levelData.masks[0].forEach((m, idx) => {
-      if (!m) maskedIndices.push(idx);
-    });
-  }
+  const maskedIndices = React.useMemo(() => {
+    const indices = [];
+    if (!levelData || !levelData.plaintext) return indices;
+    for (let i = 0; i < levelData.plaintext.length; i++) {
+      const ch = levelData.plaintext[i];
+      if (ch >= 'A' && ch <= 'Z') {
+        if (!getMask(levelData, i)) {
+          indices.push(i);
+        }
+      }
+    }
+    return indices;
+  }, [levelData]);
 
   const [phase, setPhase] = useState('ready');
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [explanationStep, setExplanationStep] = useState(-1);
   const [showTabula, setShowTabula] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const [pacman, setPacman] = useState(initialPacman);
   const [pacmanDir, setPacmanDir] = useState('NONE');
   const [bufferedDir, setBufferedDir] = useState('NONE');
-  const [knightFacing, setKnightFacing] = useState('RIGHT');
   const [knightAttacking, setKnightAttacking] = useState(false);
-  const [strikingGhosts, setStrikingGhosts] = useState({});
-
-  const [activeShift, setActiveShift] = useState(0); // starts at 0
   const [eatenGhosts, setEatenGhosts] = useState([]); // indices of eaten target letters
   const [lives, setLives] = useState(5); // 5 hearts
   const [flashError, setFlashError] = useState(false);
@@ -376,16 +351,12 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   // Dynamic non-wall non-stacking pellet arrays on load
   const [pellets, setPellets] = useState(() => generateRandomPellets(activeMazeGrid, initialGhosts, initialPacman));
 
-  const isPoweredUp = true;
-
   const pacmanRef = useRef(pacman);
   const ghostsRef = useRef(ghosts);
   const pelletsRef = useRef(pellets);
   const pacmanDirRef = useRef(pacmanDir);
   const bufferedDirRef = useRef(bufferedDir);
-  const activeShiftRef = useRef(activeShift);
   const skillActiveRef = useRef(skillActive);
-  const isPoweredUpRef = useRef(isPoweredUp);
   const isInvulnerableRef = useRef(isInvulnerable);
   const invulnerabilityTimerRef = useRef(null);
   const retryBtnRef = useRef(null);
@@ -402,20 +373,19 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   useEffect(() => { pelletsRef.current = pellets; }, [pellets]);
   useEffect(() => { pacmanDirRef.current = pacmanDir; }, [pacmanDir]);
   useEffect(() => { bufferedDirRef.current = bufferedDir; }, [bufferedDir]);
-  useEffect(() => { activeShiftRef.current = activeShift; }, [activeShift]);
   useEffect(() => { skillActiveRef.current = skillActive; }, [skillActive]);
-  useEffect(() => { isPoweredUpRef.current = isPoweredUp; }, [isPoweredUp]);
   useEffect(() => { isInvulnerableRef.current = isInvulnerable; }, [isInvulnerable]);
 
   const activeSolvingIndex = React.useMemo(() => {
-    if (!levelData.masks || !levelData.masks[0]) return -1;
-    for (let i = 0; i < levelData.masks[0].length; i++) {
-      if (!levelData.masks[0][i] && !eatenGhosts.includes(i)) {
+    if (!levelData || !levelData.plaintext) return -1;
+    for (let i = 0; i < levelData.plaintext.length; i++) {
+      const ch = levelData.plaintext[i];
+      if (ch >= 'A' && ch <= 'Z' && !getMask(levelData, i) && !eatenGhosts.includes(i)) {
         return i;
       }
     }
     return -1;
-  }, [levelData.masks, eatenGhosts]);
+  }, [levelData, eatenGhosts]);
 
   const vigenereAlignmentItems = React.useMemo(() => {
     if (!isVigenere || !levelData.plaintext) return [];
@@ -431,7 +401,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         const slot = letterCounter % targetKey.length;
         const keyChar = targetKey[slot] || 'A';
         const shiftVal = charToIdx(keyChar);
-        const isSolved = eatenGhosts.includes(i) || (levelData.masks?.[0]?.[i] === true);
+        const isSolved = eatenGhosts.includes(i) || getMask(levelData, i);
         const isActive = i === activeSolvingIndex;
         items.push({
           id: `item-${i}`,
@@ -447,7 +417,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       }
     }
     return items;
-  }, [isVigenere, levelData.plaintext, levelData.ciphertext, levelData.targetKey, levelData.masks, eatenGhosts, activeSolvingIndex]);
+  }, [isVigenere, levelData.plaintext, levelData.ciphertext, levelData.targetKey, eatenGhosts, activeSolvingIndex, levelData]);
 
   const activeSolvingItem = React.useMemo(() => {
     return vigenereAlignmentItems.find((item) => item.isActive) || null;
@@ -462,10 +432,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setPacman(initialPacman);
     setPacmanDir('NONE');
     setBufferedDir('NONE');
-    setKnightFacing('RIGHT');
     setKnightAttacking(false);
-    setStrikingGhosts({});
-    setActiveShift(0);
     setEatenGhosts([]);
     setLives(5);
     setFlashError(false);
@@ -479,7 +446,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setPellets(generateRandomPellets(grid, initG, initialPacman));
     setPhase('ready');
     setShowExplanation(false);
-    setExplanationStep(-1);
     setIsMenuOpen(false);
     autoRecapShownRef.current = false;
     if (invulnerabilityTimerRef.current) {
@@ -490,6 +456,78 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     isInvulnerableRef.current = false;
     pacmanSound.pauseBgm();
   }, [levelData, tier]);
+
+  // Target Ghost Enforcement & Self-Healing loop:
+  // Guarantees that every unsolved target index ALWAYS has an active ghost on the maze board.
+  useEffect(() => {
+    if (phase === 'ready' || gameOver || levelSolved) return;
+    if (!levelData) return;
+
+    const requiredTargets = getRequiredTargetItems(levelData);
+    const unsolvedTargets = requiredTargets.filter(item => !eatenGhosts.includes(item.index));
+
+    if (unsolvedTargets.length === 0) return;
+
+    setGhosts((prevGhosts) => {
+      const activeGhostIndices = new Set(
+        prevGhosts
+          .filter(g => !g.eaten && !g.dying && g.index !== -1)
+          .map(g => g.index)
+      );
+
+      const missingTargets = unsolvedTargets.filter(t => !activeGhostIndices.has(t.index));
+      if (missingTargets.length === 0) return prevGhosts;
+
+      const currentGrid = activeMazeGridRef.current;
+      const spawnPositions = getGhostStartPositions(currentTier);
+      let updatedGhosts = [...prevGhosts];
+
+      missingTargets.forEach((targetItem, mIdx) => {
+        let spawnPos = null;
+        for (const pos of spawnPositions) {
+          const hasPacman = pacmanRef.current.row === pos.row && pacmanRef.current.col === pos.col;
+          const hasGhost = updatedGhosts.some(g => !g.eaten && !g.dying && g.row === pos.row && g.col === pos.col);
+          if (!hasPacman && !hasGhost && currentGrid[pos.row] && currentGrid[pos.row][pos.col] === 0) {
+            spawnPos = pos;
+            break;
+          }
+        }
+
+        if (!spawnPos) {
+          const openSpaces = [];
+          for (let r = 1; r < currentGrid.length - 1; r++) {
+            for (let c = 1; c < currentGrid[r].length - 1; c++) {
+              if (currentGrid[r][c] === 0) {
+                const hasPacman = pacmanRef.current.row === r && pacmanRef.current.col === c;
+                const hasGhost = updatedGhosts.some(g => !g.eaten && !g.dying && g.row === r && g.col === c);
+                if (!hasPacman && !hasGhost) {
+                  openSpaces.push({ row: r, col: c, dir: { r: 0, c: 1 } });
+                }
+              }
+            }
+          }
+          if (openSpaces.length > 0) {
+            spawnPos = openSpaces[Math.floor(Math.random() * openSpaces.length)];
+          } else {
+            spawnPos = spawnPositions[mIdx % spawnPositions.length];
+          }
+        }
+
+        updatedGhosts.push({
+          id: `ghost-target-${targetItem.index}-${Date.now()}-${Math.random()}`,
+          char: targetItem.char,
+          index: targetItem.index,
+          row: spawnPos.row,
+          col: spawnPos.col,
+          eaten: false,
+          dying: false,
+          dir: spawnPos.dir || { r: 0, c: 1 }
+        });
+      });
+
+      return updatedGhosts;
+    });
+  }, [eatenGhosts, phase, gameOver, levelSolved, levelData, currentTier]);
 
   const [isMuted, setIsMuted] = useState(false);
 
@@ -552,7 +590,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   };
 
   const handleLoseHeart = (message) => {
-    if (isInvulnerableRef.current) return;
+    if (isInvulnerableRef.current || levelSolved) return;
 
     pacmanSound.playSfx('hit');
     triggerInvulnerability(1200); // 1.2s invulnerability window
@@ -569,6 +607,14 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       }
       return nextLives;
     });
+  };
+
+  const activateSkill = () => {
+    if (!hasSkillCharge || skillActive || gameOver || levelSolved) return;
+    setSkillActive(true);
+    setHasSkillCharge(false);
+    setSkillTimeLeft(6);
+    pacmanSound.playSfx('powerup');
   };
 
   // Steering control to set buffer direction only
@@ -615,14 +661,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameOver, levelSolved, hasSkillCharge, skillActive, isMenuOpen, phase]);
 
-  const activateSkill = () => {
-    if (!hasSkillCharge || skillActive || gameOver || levelSolved) return;
-    setSkillActive(true);
-    setHasSkillCharge(false);
-    setSkillTimeLeft(6);
-    pacmanSound.playSfx('powerup');
-  };
-
   useEffect(() => {
     if (!skillActive || isMenuOpen || phase === 'ready') return;
     const interval = setInterval(() => {
@@ -648,9 +686,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       const currentPacman = pacmanRef.current;
       const currentPacmanDir = pacmanDirRef.current;
       const currentBufferedDir = bufferedDirRef.current;
-      const currentActiveShift = activeShiftRef.current;
       const currentSkillActive = skillActiveRef.current;
-      const currentIsPoweredUp = isPoweredUpRef.current;
       const currentIsInvulnerable = isInvulnerableRef.current;
 
       // 1. Process Buffered Input
@@ -679,10 +715,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           pRow = nextRow;
           pCol = nextCol;
           setPacman({ row: nextRow, col: nextCol });
-          // update facing based on direction
-          setKnightFacing(activeDir);
         } else {
-          setKnightFacing(activeDir);
           setPacmanDir('NONE');
         }
       }
@@ -816,15 +849,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     setLevelSolved(true);
                     pacmanSound.stopBgm();
                     pacmanSound.playSfx('win');
-                    if (!isVigenere && !isPlayfair && !autoRecapShownRef.current) {
-                      beginExplanation();
-                    }
                   }
                   return nextEaten;
                 });
 
                 // start dying animation for this ghost
-                setStrikingGhosts((prev) => ({ ...prev, [ghost.id]: true }));
                 setKnightAttacking(true);
                 // Remove ghost after animation (480ms matches CSS animation) & replenish from queue
                 setTimeout(() => {
@@ -846,7 +875,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     }
                     return nextG;
                   });
-                  setStrikingGhosts((prev) => { const np = { ...prev }; delete np[ghost.id]; return np; });
                   setKnightAttacking(false);
                 }, 520);
                 return { ...ghost, dying: true }; // Atomically mark dying in the returned array
@@ -988,10 +1016,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setPacman(initialPacman);
     setPacmanDir('NONE');
     setBufferedDir('NONE');
-    setKnightFacing('RIGHT');
     setKnightAttacking(false);
-    setStrikingGhosts({});
-    setActiveShift(0);
     setEatenGhosts([]);
     setLives(5);
     setGameOver(false);
@@ -1011,16 +1036,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const beginExplanation = () => {
     autoRecapShownRef.current = true;
     setShowExplanation(true);
-    setExplanationStep(-1);
-    const total = isPlayfair 
-      ? (levelData.pairs ? levelData.pairs.length : 0)
-      : (levelData.plaintext ? levelData.plaintext.replace(/\s+/g, '').length : 0);
-    let step = -1;
-    const iv = setInterval(() => {
-      step++;
-      setExplanationStep(step);
-      if (step >= total - 1) clearInterval(iv);
-    }, 600);
   };
 
   const handleVerifySubmit = () => {
@@ -1034,7 +1049,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   };
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  const words = (levelData.plaintext || '').split(/\s+/).filter(Boolean);
 
   if (phase === 'ready') {
     if (isOperationLoading) {
@@ -1250,176 +1264,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   return (
     <div className="pacman-container fg-root">
       {showExplanation && (
-        <div className="fg-recap-overlay" style={{ overflowY: 'auto', padding: '30px 10px', zIndex: 9999 }}>
-          <div className="fg-recap-card" style={{ maxWidth: '1100px', width: '95%', padding: '24px 32px' }}>
-            <h2 className="fg-recap-title">🔬 Cryptographic Recap</h2>
-            <p className="fg-recap-subtitle">Why Did This Work?</p>
-            <div className="fg-recap-animation-box" style={{ minHeight: 'auto', padding: '16px', marginBottom: '16px' }}>
-              {isPlayfair ? (
-                <div className="fg-recap-letter-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
-                  {(levelData.pairs || []).map((plainPair, idx) => {
-                    const cipherPair = levelData.cipherPairs ? levelData.cipherPairs[idx] : '';
-                    const rule = levelData.rules ? levelData.rules[idx] : '';
-                    return (
-                      <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`} style={{ minWidth: '110px', padding: '12px 16px' }}>
-                        <span className="fg-recap-char-cipher" style={{ fontSize: '1.25rem' }}>{cipherPair}</span>
-                        <span className="fg-recap-math" style={{ fontSize: '0.7rem', color: 'var(--neon-yellow)' }}>({rule})</span>
-                        <span className="fg-recap-arrow">↓</span>
-                        <span className="fg-recap-char-plain" style={{ fontSize: '1.25rem' }}>{explanationStep >= idx ? plainPair : '__'}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="fg-recap-letter-row">
-                  {(levelData.plaintext || '').replace(/\s+/g, '').split('').map((plainCh, idx) => {
-                    const cipherCh = levelData.ciphertext ? levelData.ciphertext.replace(/\s+/g, '')[idx] : '';
-                    let mathDisplay = "";
-                    if (isVigenere) {
-                      const origIdx = getOrigIndex(levelData.plaintext || '', idx);
-                      const keyChar = levelData.targetKey ? levelData.targetKey[origIdx % levelData.targetKey.length] : '';
-                      const shiftVal = keyChar ? charToIdx(keyChar) : 0;
-                      mathDisplay = keyChar ? `-${keyChar} (${shiftVal})` : '';
-                    } else {
-                      let wi = 0, acc = 0;
-                      for (let i = 0; i < words.length; i++) {
-                        if (idx < acc + words[i].length) { wi = i; break; }
-                        acc += words[i].length;
-                      }
-                      const seg = levelData.targetShifts ? levelData.targetShifts[wi] : 0;
-                      mathDisplay = `-${seg}`;
-                    }
-                    return (
-                      <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}>
-                        <span className="fg-recap-char-cipher">{cipherCh}</span>
-                        <span className="fg-recap-math">{mathDisplay}</span>
-                        <span className="fg-recap-arrow">↓</span>
-                        <span className="fg-recap-char-plain">{plainCh}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <div className="fg-recap-explanation" style={{ background: 'rgba(255,255,255,0.015)' }}>
-              💡 {isPlayfair ? (
-                <>
-                  <strong>Playfair Cipher Decryption:</strong> digraph pairs are decrypted using a 5x5 key matrix.
-                  Depending on their geometric alignment in the grid, the letters move left (same row), move up (same column), or swap columns (rectangle).
-                  <br /><br />
-                  <strong>Why this worked:</strong> You successfully navigated the maze to eat the ghosts matching each plaintext pair, demonstrating how symmetric coordinates in the grid map to letters.
-                  <br /><br />
-                  <span style={{ color: 'var(--neon-cyan)', fontSize: '0.85rem' }}>Lesson context: {levelData.lesson}</span>
-                </>
-              ) : isVigenere ? (
-                <>
-                  <strong>Vigenère Cipher Decryption:</strong> Each ciphertext letter is shifted backward by the corresponding letter of the repeating keyword.
-                  By eating the correct ghosts in the maze, you solved the keyword alignment.
-                  <code>Plain[i] = (Cipher[i] - Key[i mod keyLen]) mod 26</code> maps every letter back.
-                </>
-              ) : (
-                <>
-                  <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is shifted backward by the key value.
-                  By eating the correct ghosts, you resolved the shifted characters.
-                  <code>Plain = (Cipher - Key) mod 26</code> maps every letter back uniformly.
-                </>
-              )}
-              {!isPlayfair && (isVigenere ? (
-                (() => {
-                  const uniqueKeyLetters = Array.from(new Set((levelData.targetKey || '').split('')));
-                  return uniqueKeyLetters.map((kChar, sIdx) => {
-                    const shiftVal = charToIdx(kChar);
-                    const sAlph = alphabet.map((_, i) => alphabet[(i + shiftVal) % 26]);
-                    return (
-                      <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
-                        <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
-                          🔑 Vigenère Row for Key Letter: <strong>{kChar}</strong> (Shift: +{shiftVal})
-                        </div>
-                        <div style={{ overflowX: 'auto' }}>
-                          <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
-                            <thead>
-                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                                <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
-                                {alphabet.map((ch, i) => (
-                                  <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
-                                    <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                    <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
-                                  </td>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              <tr>
-                                <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
-                                {sAlph.map((ch, i) => (
-                                  <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
-                                    <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                    <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>{ch.charCodeAt(0) - 64}</div>
-                                  </td>
-                                ))}
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    );
-                  });
-                })()
-              ) : (
-                levelData.targetShifts && levelData.targetShifts.map((shiftVal, sIdx) => {
-                  const sAlph = alphabet.map((_, i) => alphabet[(i + shiftVal) % 26]);
-                  return (
-                    <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
-                      <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
-                        🔑 Caesar Alphabet Shift Table {levelData.targetShifts.length > 1 ? `— Segment #${sIdx + 1}` : ''} (Key: +{shiftVal})
-                      </div>
-                      <div style={{ overflowX: 'auto' }}>
-                        <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
-                          <thead>
-                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                              <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
-                              {alphabet.map((ch, i) => (
-                                <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
-                                  <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                  <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
-                                </td>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr>
-                              <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
-                              {sAlph.map((ch, i) => (
-                                <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
-                                  <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                  <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>{ch.charCodeAt(0) - 64}</div>
-                                </td>
-                              ))}
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  );
-                })
-              ))}
-            </div>
-            <div className="fg-recap-actions" style={{ marginTop: 16 }}>
-              <button
-                className="fg-btn fg-btn-primary"
-                onClick={handleCloseExplanation}
-                disabled={
-                  isPlayfair 
-                    ? explanationStep < (levelData.pairs ? levelData.pairs.length - 1 : 0)
-                    : explanationStep < (levelData.plaintext ? levelData.plaintext.replace(/\s+/g, '').length - 1 : 0)
-                }
-                style={{ background: 'var(--neon-green)', color: '#030914' }}
-              >
-                Unlock Next Objective ➔
-              </button>
-            </div>
-          </div>
-        </div>
+        <CryptographicRecap
+          cipherType={isPlayfair ? 'playfair' : (isVigenere ? 'vigenere' : 'caesar')}
+          levelData={levelData}
+          onUnlockNext={handleCloseExplanation}
+        />
       )}
 
       {/* Header UI */}
@@ -1454,7 +1303,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   <div className="fg-word-segment-card">
                     <div className="fg-letter-cells">
                       {(levelData.plaintext || '').split('').map((char, idx) => {
-                        const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
+                        const mask = getMask(levelData, idx);
                         const isGhostIndex = !mask;
                         const isEaten = eatenGhosts.includes(idx);
                         const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
@@ -1536,7 +1385,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 ) : (
                   <div className="fg-letter-cells">
                     {(levelData.plaintext || '').split('').map((char, idx) => {
-                      const mask = (levelData.masks && levelData.masks[0]) ? levelData.masks[0][idx] : true;
+                      const mask = getMask(levelData, idx);
                       const isGhostIndex = !mask;
                       const isEaten = eatenGhosts.includes(idx);
                       const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
@@ -1851,16 +1700,17 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           )}
 
           {/* 7. Floating Secured Victory Panel when level solved */}
+          {levelSolved && <VictoryConfetti isPaused={isMenuOpen} />}
           {levelSolved && (
             <div className="caesar-floating-victory-panel caesar-pacman-victory-panel">
-              <h3 className="caesar-victory-title">✅ SECURED!</h3>
+              <h3 className="caesar-victory-title">SECURED!</h3>
               <p className="caesar-victory-desc">All segments decrypted successfully.</p>
               <button
                 className="fg-btn fg-btn-primary"
                 onClick={handleVerifySubmit}
                 style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: 10 }}
               >
-                🚀 Verify & Submit
+                Verify & Submit
               </button>
               {onReplayNewQuestion && (
                 <button
@@ -1868,7 +1718,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   onClick={onReplayNewQuestion}
                   style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
                 >
-                  🔄 Play Again
+                  Play Again
                 </button>
               )}
             </div>

@@ -12,7 +12,7 @@ const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
 
-  const IMMERSIVE_ROUTES = ['/dashboard', '/dashboard/ciphergame', '/dashboard/leaderboard'];
+  const IMMERSIVE_ROUTES = ['/dashboard', '/dashboard/ciphergame', '/dashboard/leaderboard', '/dashboard/badges'];
   const immersive = IMMERSIVE_ROUTES.includes(location.pathname);
 
   React.useEffect(() => {

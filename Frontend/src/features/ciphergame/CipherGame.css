@@ -2859,12 +2859,15 @@
 }
 
 /* Problem 1: Matches .dh-card-svg line 284 — artwork graphic fills panel */
-.cq-tier-card-svg {
+.cq-tier-card-svg,
+.cq-card-img-symbol,
+.cq-tier-card-img-symbol {
   width: 100% !important;
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
-  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.5)) !important;
+  object-fit: contain !important;
+  filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.6)) !important;
   display: block !important;
 }
 
