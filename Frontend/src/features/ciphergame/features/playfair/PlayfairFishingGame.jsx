@@ -1,9 +1,12 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './PlayfairGame.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import PauseMenu from '../../ui/PauseMenu';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
+import CryptographicRecap from '../../ui/CryptographicRecap';
+import VictoryConfetti from '../../ui/VictoryConfetti';
 import {
   describePlayfairRule,
   transformPlayfairPair,
@@ -11,7 +14,7 @@ import {
 import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 
-const FISH_VALUES = ['fin', 'tide', 'reef', 'wake', 'foam', 'gill', 'sail', 'dock'];
+
 
 const normalizePair = (value) => String(value || '').replace(/[^A-Z]/g, '').slice(0, 2);
 
@@ -77,6 +80,7 @@ export default function PlayfairFishingGame({
   tier,
   onVerifySubmit,
   onBackToStages,
+  onReplayNewQuestion,
 }) {
   const matrix = levelData.matrix;
   const pairData = useMemo(() => levelData.cipherPairs.map((cipherPair, index) => {
@@ -104,7 +108,8 @@ export default function PlayfairFishingGame({
   const [castProgress, setCastProgress] = useState(0);
   const [splash, setSplash] = useState(null);
   const [feedback, setFeedback] = useState(null);
-  const [recapStep, setRecapStep] = useState(-1);
+  const [levelSolved, setLevelSolved] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
@@ -153,7 +158,7 @@ export default function PlayfairFishingGame({
   const rodFrameRef = useRef(null);
   // Ref to the pond container — needed to convert DOM-px fish.y → SVG viewBox units
   const pondRef = useRef(null);
-  const pondHeightRef = useRef(270);
+  const [pondHeight, setPondHeight] = useState(270);
 
   // Fishing rod sprite sheet: 8 frames in one horizontal row
   // 0-1 = idle, 2-4 = casting out, 5-7 = reeling in
@@ -175,6 +180,8 @@ export default function PlayfairFishingGame({
     setSolvedPairs(Array(pairData.length).fill(null));
     setMisses(0);
     setStreak(0);
+    setLevelSolved(false);
+    setShowExplanation(false);
     setBubbles(makeBubbles());
     setFishList(makeFishForPair(pairData[0].plainPair, matrix, tier));
   };
@@ -185,8 +192,10 @@ export default function PlayfairFishingGame({
     setSolvedPairs(Array(pairData.length).fill(null));
     setMisses(0);
     setStreak(0);
+    setLevelSolved(false);
+    setShowExplanation(false);
     setIsMenuOpen(false);
-  }, [levelData]);
+  }, [levelData, pairData.length]);
 
   /* ── ESC key to toggle pause menu ── */
   useEffect(() => {
@@ -209,7 +218,7 @@ export default function PlayfairFishingGame({
   };
 
   useEffect(() => {
-    if (phase !== 'playing' || isMenuOpen) return undefined;
+    if (phase !== 'playing' || isMenuOpen || levelSolved) return undefined;
 
     const tick = () => {
       setFishList((prev) => prev.map((fish) => tickFish(fish, { minY: 28, maxY: 196 })));
@@ -218,18 +227,7 @@ export default function PlayfairFishingGame({
 
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [phase, isMenuOpen]);
-
-  const finishStage = () => {
-    setPhase('recap');
-    setRecapStep(-1);
-    let step = -1;
-    const interval = setInterval(() => {
-      step += 1;
-      setRecapStep(step);
-      if (step >= pairData.length - 1) clearInterval(interval);
-    }, 650);
-  };
+  }, [phase, isMenuOpen, levelSolved]);
 
   const handleCatch = (fish) => {
     const candidate = normalizePair(fish.pair);
@@ -245,7 +243,7 @@ export default function PlayfairFishingGame({
       if (activeIndex >= pairData.length - 1) {
         fishingSound.stopBgm();
         fishingSound.playSfx('win');
-        setTimeout(finishStage, 650);
+        setLevelSolved(true);
       } else {
         const nextIndex = activeIndex + 1;
         setTimeout(() => {
@@ -275,7 +273,7 @@ export default function PlayfairFishingGame({
   };
 
   const castAt = (fish) => {
-    if (isCasting || phase !== 'playing') return;
+    if (isCasting || phase !== 'playing' || levelSolved) return;
     fishingSound.unlockAudio();
     fishingSound.playSfx('cast');
     setIsCasting(true);
@@ -285,9 +283,9 @@ export default function PlayfairFishingGame({
     // x: fish.x is a % → map to SVG viewBox width (700). Do NOT use DOM pond width.
     const tx = (fish.x / 100) * 700;
     // y: fish.y is DOM px → convert to SVG viewBox height (240)
-    const pondHeight = pondRef.current?.offsetHeight || 270;
-    pondHeightRef.current = pondHeight;
-    const ty = (fish.y / pondHeight) * 240;
+    const currentPondHeight = pondRef.current?.offsetHeight || 270;
+    setPondHeight(currentPondHeight);
+    const ty = (fish.y / currentPondHeight) * 240;
     setCastTarget({ x: tx, y: ty });
     // Flip sprite toward the fish (centre of 700-wide viewBox is 350)
     setRodFacingRight(tx > 350);
@@ -459,48 +457,18 @@ export default function PlayfairFishingGame({
     );
   }
 
-  if (phase === 'recap') {
-    const finished = recapStep >= pairData.length - 1;
-    return (
-      <div className="pf-root">
-        <header className="pf-header">
-          <div className="pf-header-title">Playfair Recap</div>
-          <div className="vg-stage-badge">Key: {levelData.key}</div>
-        </header>
 
-        <main className="vg-recap-overlay pf-recap-wrap">
-          <section className="vg-recap-card pf-recap-card">
-            <div className="vg-recap-title">Message Recovered</div>
-            <div className="pf-final-message">{levelData.displayPlaintext}</div>
-
-            <div className="pf-recap-grid">
-              {pairData.map((pair, index) => (
-                <div key={pair.cipherPair} className={`pf-recap-pair ${recapStep >= index ? 'lit' : ''}`}>
-                  <span className="pf-recap-small">#{index + 1}</span>
-                  <strong>{pair.cipherPair}</strong>
-                  <span>{pair.rule}</span>
-                  <strong className="pf-green">{pair.plainPair}</strong>
-                </div>
-              ))}
-            </div>
-
-            <div className="vg-recap-explanation">
-              <strong>Why this worked:</strong> Playfair does not decrypt letters one by one. It finds each encrypted
-              digraph in the key square, then applies one of three geometry rules. Same row moves left, same column moves
-              up, and rectangle pairs swap columns. {levelData.lesson}
-            </div>
-
-            <button className="vg-recap-proceed-btn" disabled={!finished} onClick={onVerifySubmit}>
-              {finished ? 'Unlock Next Stage' : 'Reviewing pairs...'}
-            </button>
-          </section>
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className="pf-root">
+      {showExplanation && (
+        <CryptographicRecap
+          cipherType="playfair"
+          levelData={levelData}
+          onUnlockNext={onVerifySubmit}
+        />
+      )}
+
       <GameHudBar
         title="Playfair Fishing"
         stage={levelData.level}
@@ -643,7 +611,7 @@ export default function PlayfairFishingGame({
               <div className="pf-reel-fish" style={{
                 left: `${(hookX / 700) * 100}%`,
                 // Convert SVG y back to DOM px so the fish tracks the line endpoint
-                top: `${(hookY / 240) * pondHeightRef.current - 10}px`,
+                top: `${(hookY / 240) * pondHeight - 10}px`,
               }}>
                 <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
                   <img
@@ -676,6 +644,47 @@ export default function PlayfairFishingGame({
       {feedback && (
         <div className={`pf-feedback ${feedback.tone}`}>
           {feedback.message}
+        </div>
+      )}
+
+      {/* Floating Victory Panel */}
+      {levelSolved && <VictoryConfetti isPaused={isMenuOpen} />}
+      {levelSolved && (
+        <div className="caesar-floating-victory-panel sprint-floating-victory-panel" style={{ zIndex: 100 }}>
+          <div className="fg-success-panel">
+            <h3>SECURED!</h3>
+            <p>All pairs decrypted successfully.</p>
+            <button
+              className="fg-btn fg-btn-primary"
+              onClick={() => setShowExplanation(true)}
+              style={{
+                width: '100%',
+                background: 'var(--neon-green)',
+                color: '#030914',
+                marginTop: '10px',
+              }}
+            >
+              Verify & Submit
+            </button>
+            {onReplayNewQuestion && (
+              <button
+                className="fg-btn fg-btn-secondary"
+                onClick={() => {
+                  setLevelSolved(false);
+                  onReplayNewQuestion();
+                }}
+                style={{
+                  width: '100%',
+                  marginTop: '10px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  color: '#fff',
+                }}
+              >
+                Play Again
+              </button>
+            )}
+          </div>
         </div>
       )}
 
