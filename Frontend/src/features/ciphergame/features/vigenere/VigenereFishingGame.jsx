@@ -66,8 +66,23 @@ export default function VigenereFishingGame({
   }, [words, cipherSegs, slotMap, targetKey, targetShifts]);
 
   const getInitialRevealed = useCallback(() => {
-    return words.map(w => Array(w.length).fill(false));
-  }, [words]);
+    if (levelData.masks && Array.isArray(levelData.masks)) {
+      return levelData.masks.map((row, wIdx) => {
+        if (row && Array.isArray(row)) return [...row];
+        return Array(words[wIdx]?.length || 0).fill(false);
+      });
+    }
+    let count = 0;
+    return words.map(w =>
+      w.split('').map(() => {
+        if (count < 2) {
+          count++;
+          return true;
+        }
+        return false;
+      })
+    );
+  }, [levelData.masks, words]);
 
   const [phase, setPhase] = useState('ready');
   const [isOperationLoading, setIsOperationLoading] = useState(false);

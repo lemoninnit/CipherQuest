@@ -3863,7 +3863,7 @@
   text-align: center;
   pointer-events: auto;
   min-width: 300px;
-  animation: caesarFadeIn 0.3s ease;
+  animation: caesarVictoryFadeIn 0.3s ease;
 }
 
 .caesar-victory-title {
@@ -3879,6 +3879,17 @@
   color: #e2f8ec;
   font-size: 0.88rem;
   margin: 0 0 12px;
+}
+
+@keyframes caesarVictoryFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% - 6px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
 }
 
 @keyframes caesarFadeIn {

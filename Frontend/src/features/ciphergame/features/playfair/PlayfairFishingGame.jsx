@@ -554,7 +554,7 @@ export default function PlayfairFishingGame({
                 >
                   <span className="pf-cipher">{pair.cipherPair}</span>
                   <span className="pf-arrow">to</span>
-                  <strong>{solvedPairs[index] || '??'}</strong>
+                  <strong>{pair.plainPair}</strong>
                 </button>
               ))}
             </div>

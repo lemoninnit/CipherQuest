@@ -546,17 +546,17 @@
 }
 .sprint-runner-char-sprite.jump {
   background: url('/assets/sprint/user/JUMP.png') 0 0 no-repeat;
-  animation: spriteJump 0.42s steps(5) forwards;
+  animation: spriteJump 0.42s steps(5) infinite;
 }
 .sprint-runner-char-sprite.death {
   background: url('/assets/sprint/user/DEATH.png') 0 0 no-repeat;
-  animation: spriteDeath 0.85s steps(12) forwards;
+  animation: spriteDeath 0.85s steps(11) forwards;
 }
 
 @keyframes spriteRun    { from { background-position: 0 0; } to { background-position: -768px 0; } }
 @keyframes spriteIdle   { from { background-position: 0 0; } to { background-position: -672px 0; } }
 @keyframes spriteJump   { from { background-position: 0 0; } to { background-position: -480px 0; } }
-@keyframes spriteDeath  { from { background-position: 0 0; } to { background-position: -1152px 0; } }
+@keyframes spriteDeath  { from { background-position: 0 0; } to { background-position: -1056px 0; } }
 
 /* Boost trail — drop-shadow based, no conflicting translate */
 .sprint-runner-sprite.boost-trail {
