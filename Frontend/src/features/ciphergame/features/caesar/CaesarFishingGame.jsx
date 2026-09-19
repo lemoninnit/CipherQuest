@@ -1,8 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useState, useEffect, useRef } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import PauseMenu from '../../ui/PauseMenu';
+import CryptographicRecap from '../../ui/CryptographicRecap';
+import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingTransform, makeSwimProps, tickFish, visualsForValue } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 
@@ -31,7 +34,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const words         = levelData.plaintext.split(' ');
   const cipherSegs    = levelData.ciphertext.split(' ');
   const getInitialShift = (segIdx) => normalizeShift(levelData.startShifts?.[segIdx] ?? levelData.startShifts?.[0] ?? 0);
-  const getTargetShift = (segIdx) => normalizeShift(26 - (levelData.targetShifts?.[segIdx] ?? levelData.targetShifts?.[0] ?? 0));
 
   /* ── state ── */
   const [phase, setPhase]                     = useState('ready');
@@ -50,19 +52,14 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const [caughtFish, setCaughtFish]           = useState(null);
   const [splash, setSplash]                   = useState({ show: false, x: 0, y: 0 });
   const [showExplanation, setShowExplanation] = useState(false);
-  const [explanationStep, setExplanationStep] = useState(-1);
   const [chumCount, setChumCount]             = useState(3);
   const [isMenuOpen, setIsMenuOpen]           = useState(false);
   const [rodFacingRight, setRodFacingRight]   = useState(false);
   const [isMuted, setIsMuted]                 = useState(false);
+  const [rodTip, setRodTip]                   = useState({ x: 110, y: 55 });
+  const [laneHeight, setLaneHeight]           = useState(500);
   const animationRef = useRef(null);
-  const resumeBtnRef = useRef(null);
-  const wasMenuOpenRef = useRef(false);
   const swimLaneRef = useRef(null);        // the swim-lane container div
-  const containerHeightRef = useRef(500); // last measured swim-lane height (px)
-  const rodSpriteRef = useRef(null);      // the rod sprite div
-  // Computed SVG-unit position of the rod tip (recalculated before every cast)
-  const rodTipRef = useRef({ x: 110, y: 55 });
 
   useEffect(() => {
     return () => {
@@ -240,14 +237,14 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   };
 
   useEffect(() => {
-    if (phase !== 'playing' || isMenuOpen) return;
+    if (phase !== 'playing' || isMenuOpen || levelSolved) return;
     const tick = () => {
       setFishList(prev => prev.map(f => tickFish(f)));
       animationRef.current = requestAnimationFrame(tick);
     };
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [phase, isMenuOpen]);
+  }, [phase, isMenuOpen, levelSolved]);
 
   /* ── casting ── */
 
@@ -272,7 +269,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     const tx = (fish.x / 100) * 500;
     // y: fish.y is DOM px → must convert to SVG viewBox height (260)
     const containerHeight = swimLaneRef.current?.offsetHeight || 500;
-    containerHeightRef.current = containerHeight;
     const ty = (fish.y / containerHeight) * 260;
     setCastTarget({ x: tx, y: ty });
     // --- Determine facing direction & compute SVG tip coords ---
@@ -294,10 +290,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
       const laneH  = containerHeight;
       const tipDomX = laneW / 2 + (facingRight ? (HANDLE - TIP) : -(HANDLE - TIP));
       const tipDomY = laneH - HANDLE; // sprite bottom = laneH, tip 12% from top = laneH - HANDLE
-      rodTipRef.current = {
+      setLaneHeight(containerHeight);
+      setRodTip({
         x: (tipDomX / laneW) * 500,
         y: (tipDomY / laneH) * 260,
-      };
+      });
     }
 
     let startTime = null;
@@ -371,15 +368,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const handleVerifySubmit = () => {
     if (!levelSolved) return;
     setShowExplanation(true);
-    setExplanationStep(-1);
-    const total = levelData.plaintext.replace(/\s+/g, '').length;
-    let step = -1;
-    const iv = setInterval(() => {
-      step++;
-      setExplanationStep(step);
-      if (step >= total - 1) clearInterval(iv);
-    }, 600);
-
     const xpReward = 100;
     setFloatingXp({ amount: xpReward, x: 80, y: 80 });
     setTimeout(() => setFloatingXp(null), 1200);
@@ -390,11 +378,9 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     onVerifySubmit();
   };
 
-  /* ── rod SVG coords ──
-   * rodTipX/Y is computed once per cast from the actual sprite DOM position
-   * so the SVG line origin is always pixel-aligned with the sprite tip. */
-  const rodTipX = rodTipRef.current.x;
-  const rodTipY = rodTipRef.current.y;
+  /* ── rod SVG coords ── */
+  const rodTipX = rodTip.x;
+  const rodTipY = rodTip.y;
   let hookX = rodTipX, hookY = rodTipY;
   if (isCasting && caughtFish && castTarget) {
     hookX = rodTipX + (castTarget.x - rodTipX) * castProgress;
@@ -402,24 +388,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   }
 
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-
-  /* ── rule violation feedback ── */
-  const getRuleViolation = () => {
-    const tWord = words[targetSegIdx];
-    const tCiph = cipherSegs[targetSegIdx];
-    const dec   = decryptedSegs[targetSegIdx];
-    const pShift = normalizeShift(activeShifts[targetSegIdx] ?? 0);
-    const tShift = getTargetShift(targetSegIdx);
-    if (dec === tWord) return null;
-    for (let i = 0; i < tWord.length; i++) {
-      if (dec[i] !== tWord[i]) {
-        return {
-          rule: `Shift ${formatShift(pShift)} is incorrect. The correct basket shift for this ciphertext is ${formatShift(tShift)}. Keep catching fish to adjust the basket shift!`
-        };
-      }
-    }
-    return null;
-  };
 
   /* ════ READY ════ */
   if (phase === 'ready') {
@@ -526,85 +494,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
       `}</style>
 
       {showExplanation && (
-        <div className="fg-recap-overlay" style={{ overflowY: 'auto', padding: '30px 10px' }}>
-          <div className="fg-recap-card" style={{ maxWidth: '1100px', width: '95%', padding: '24px 32px' }}>
-            <h2 className="fg-recap-title">🔬 Cryptographic Recap</h2>
-            <p className="fg-recap-subtitle">Why Did This Work?</p>
-            <div className="fg-recap-animation-box" style={{ minHeight: 'auto', padding: '16px', marginBottom: '16px' }}>
-              <div className="fg-recap-letter-row">
-                {levelData.plaintext.replace(/\s+/g, '').split('').map((plainCh, idx) => {
-                  const cipherCh = levelData.ciphertext.replace(/\s+/g, '')[idx];
-                  let wi = 0, acc = 0;
-                  for (let i = 0; i < words.length; i++) {
-                    if (idx < acc + words[i].length) { wi = i; break; }
-                    acc += words[i].length;
-                  }
-                  const seg = getTargetShift(wi);
-                  return (
-                    <div key={idx} className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}>
-                      <span className="fg-recap-char-cipher">{cipherCh}</span>
-                      <span className="fg-recap-math">+{seg}</span>
-                      <span className="fg-recap-arrow">↓</span>
-                      <span className="fg-recap-char-plain">{plainCh}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="fg-recap-explanation" style={{ background: 'rgba(255,255,255,0.015)' }}>
-              💡 <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is shifted forward by the basket correction value.
-              By catching fish with numeric modifiers, you tuned the basket shift to match the playable decryption key.{' '}
-              <code>Plain = (Cipher + Basket Shift) mod 26</code> maps every letter back uniformly.
-              {levelData.targetShifts && levelData.targetShifts.map((shiftVal, sIdx) => {
-                const decryptShift = normalizeShift(26 - shiftVal);
-                const sAlph = alphabet.map((_, i) => alphabet[(i + decryptShift) % 26]);
-                return (
-                  <div key={sIdx} style={{ marginTop: 16, background: 'rgba(0,229,255,0.05)', border: '1px solid rgba(0,229,255,0.2)', borderRadius: 12, padding: 12 }}>
-                    <div style={{ fontWeight: 700, color: 'var(--neon-cyan)', marginBottom: 8, fontSize: '0.82rem' }}>
-                      🔑 Caesar Decryption Shift Table {levelData.targetShifts.length > 1 ? `— Segment #${sIdx + 1}` : ''} (Basket: +{decryptShift})
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ borderCollapse: 'collapse', textAlign: 'center', fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', minWidth: 850 }}>
-                        <thead>
-                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Cipher:</th>
-                            {alphabet.map((ch, i) => (
-                              <td key={i} style={{ padding: '4px 2px', color: '#fff', background: 'rgba(255,255,255,0.02)' }}>
-                                <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>{i + 1}</div>
-                              </td>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <th style={{ padding: '4px 2px', textAlign: 'left', color: 'var(--text-muted)' }}>Plain:</th>
-                            {sAlph.map((ch, i) => (
-                              <td key={i} style={{ padding: '4px 2px', color: 'var(--neon-cyan)', background: 'rgba(0,229,255,0.02)' }}>
-                                <div style={{ fontWeight: 'bold' }}>{ch}</div>
-                                <div style={{ fontSize: '0.55rem', color: 'rgba(0,229,255,0.6)' }}>{ch.charCodeAt(0) - 64}</div>
-                              </td>
-                            ))}
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="fg-recap-actions" style={{ marginTop: 16 }}>
-              <button
-                className="fg-btn fg-btn-primary"
-                onClick={handleCloseExplanation}
-                disabled={explanationStep < levelData.plaintext.replace(/\s+/g, '').length - 1}
-                style={{ background: 'var(--neon-green)', color: '#030914' }}
-              >
-                Unlock Next Objective ➔
-              </button>
-            </div>
-          </div>
-        </div>
+        <CryptographicRecap
+          cipherType="caesar"
+          levelData={levelData}
+          onUnlockNext={handleCloseExplanation}
+        />
       )}
 
       <GameHudBar
@@ -664,7 +558,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
             <div className="fg-fish-entity" style={{
               left: `${(hookX / 500) * 100}%`,
               // Convert SVG y back to DOM px so the fish tracks the line endpoint
-              top: `${(hookY / 260) * containerHeightRef.current - 20}px`,
+              top: `${(hookY / 260) * laneHeight - 20}px`,
               transform: 'scale(1.2)',
               pointerEvents: 'none',
             }}>
@@ -799,16 +693,17 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         </div>
 
         {/* 6. Floating Secured Victory Panel when level solved */}
+        {levelSolved && <VictoryConfetti isPaused={isMenuOpen} />}
         {levelSolved && (
           <div className="caesar-floating-victory-panel">
-            <h3 className="caesar-victory-title">✅ SECURED!</h3>
+            <h3 className="caesar-victory-title">SECURED!</h3>
             <p className="caesar-victory-desc">All segments decrypted successfully.</p>
             <button
               className="fg-btn fg-btn-primary"
               onClick={handleVerifySubmit}
               style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: 10 }}
             >
-              🚀 Verify & Submit
+              Verify & Submit
             </button>
             {onReplayNewQuestion && (
               <button
@@ -816,7 +711,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                 onClick={onReplayNewQuestion}
                 style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
               >
-                🔄 Play Again
+                Play Again
               </button>
             )}
           </div>
