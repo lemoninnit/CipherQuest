@@ -656,7 +656,10 @@ export default function PlayfairFishingGame({
             <p>All pairs decrypted successfully.</p>
             <button
               className="fg-btn fg-btn-primary"
-              onClick={() => setShowExplanation(true)}
+              onClick={() => {
+                fishingSound.stopBgm();
+                setShowExplanation(true);
+              }}
               style={{
                 width: '100%',
                 background: 'var(--neon-green)',
