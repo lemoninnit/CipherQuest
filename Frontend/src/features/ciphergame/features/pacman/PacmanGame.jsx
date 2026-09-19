@@ -1811,6 +1811,61 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         </div>
       )}
 
+      {/* Tabula Recta Modal for Vigenère Mode */}
+      {showTabula && isVigenere && (
+        <div className="vg-modal-overlay" onClick={() => setShowTabula(false)}>
+          <div className="vg-modal-card tabula-modal" onClick={e => e.stopPropagation()}>
+            <div className="vg-modal-header">
+              <h3>📊 Interactive Tabula Recta</h3>
+              <button className="vg-modal-close" onClick={() => setShowTabula(false)}>×</button>
+            </div>
+            <div className="vg-modal-body">
+              <p className="vg-modal-instructions">
+                The Tabula Recta is a 26×26 grid of shifted alphabets. Find the column of your <strong>Cipher letter (C)</strong>,
+                then look at the row of your <strong>Key letter (K)</strong> to find the intersection, which is the <strong>Plain letter (P)</strong>!
+                <br />
+                <span style={{ color: 'var(--neon-yellow)' }}>★ Gold Rows: rows containing key letters for this level's key ("{levelData.targetKey}") are highlighted.</span>
+              </p>
+              <div className="vg-tabula-scroll-wrapper">
+                <table className="vg-tabula-full-grid">
+                  <thead>
+                    <tr>
+                      <th className="corner-cell">K \ P</th>
+                      {alphabet.map(ch => (
+                        <th key={ch} className="col-header">{ch}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {alphabet.map((kChar, rIdx) => {
+                      const isCorrectKey = levelData.targetKey ? levelData.targetKey.includes(kChar) : false;
+                      const rowLetters = tabulaRow(kChar);
+                      return (
+                        <tr key={kChar} className={isCorrectKey ? 'correct-key-row' : ''}>
+                          <td className="row-header">{kChar}</td>
+                          {rowLetters.map((cChar, cIdx) => {
+                            const plainLetter = idxToChar(cIdx);
+                            return (
+                              <td 
+                                key={cIdx} 
+                                className="cell"
+                                title={`Key: ${kChar}, Plain: ${plainLetter} → Cipher: ${cChar}`}
+                              >
+                                {cChar}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Shared Pause Menu */}
       <PauseMenu
         open={isMenuOpen}
