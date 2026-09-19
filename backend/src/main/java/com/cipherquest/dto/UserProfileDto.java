@@ -25,5 +25,8 @@ public record UserProfileDto(
         boolean onCooldown,
         LocalDateTime cooldownEndTime,
         java.util.List<String> earnedBadges,
-        java.util.Map<String, java.util.Map<String, java.util.List<Integer>>> progress
+        java.util.Map<String, java.util.Map<String, java.util.List<Integer>>> progress,
+        // Scoring System additions
+        int totalScore,
+        int gameStreak
 ) {}

@@ -80,6 +80,28 @@ public class User {
     @Builder.Default
     private int fishingBestScore = 0;
 
+    // ── Scoring System ────────────────────────────────────────────────
+    // Separate from the daily-login `streak` above:
+    //   - gameStreak  : global stage-completion streak (+1 per success, reset to 0 on failure)
+    //   - totalScore  : sum of all successfully earned stage scores (never reduced by failure)
+
+    /**
+     * Sum of all successfully earned stage scores.
+     * A failure resets the streak but NEVER subtracts from totalScore.
+     */
+    @Column(name = "total_score", nullable = false, columnDefinition = "int default 0")
+    @Builder.Default
+    private int totalScore = 0;
+
+    /**
+     * Global stage-completion streak. +1 after every successful stage
+     * completion (regardless of category/difficulty/mechanic), reset to 0 on failure.
+     * The streak multiplier is always recalculated from this value.
+     */
+    @Column(name = "game_streak", nullable = false, columnDefinition = "int default 0")
+    @Builder.Default
+    private int gameStreak = 0;
+
     // ── Site-wide Attempt System ──────────────────────────────────────
     // This is SEPARATE from:
     //   - Pac-Man lives  (in-game, client-side only, resets per level)

@@ -1,0 +1,264 @@
+/* ── SCORING SYSTEM: per-stage leaderboard modal ───────────────────── */
+
+.slb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 9, 20, 0.82);
+  backdrop-filter: blur(6px);
+  animation: slb-fade-in 0.2s ease-out;
+}
+
+@keyframes slb-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.slb-card {
+  width: min(560px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg, rgba(10, 18, 38, 0.96));
+  border: 1px solid var(--card-border, rgba(0, 229, 255, 0.3));
+  border-radius: 18px;
+  box-shadow: 0 0 40px rgba(0, 229, 255, 0.18);
+  color: #fff;
+  padding: 20px 22px 16px;
+  animation: slb-pop-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes slb-pop-in {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Header */
+.slb-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.slb-header-text {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.slb-header-icon {
+  color: #ffd700;
+  font-size: 1.9rem;
+}
+
+.slb-title {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+}
+
+.slb-subtitle {
+  margin: 2px 0 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.slb-close-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.slb-close-btn:hover { background: rgba(255, 255, 255, 0.14); }
+
+/* Category tabs */
+.slb-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.slb-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.slb-tab .material-symbols-outlined { font-size: 1rem; }
+
+.slb-tab:hover { color: #fff; border-color: rgba(0, 229, 255, 0.4); }
+
+.slb-tab.active {
+  background: rgba(0, 229, 255, 0.12);
+  border-color: rgba(0, 229, 255, 0.6);
+  color: #00e5ff;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.2);
+}
+
+/* Body */
+.slb-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 180px;
+}
+
+.slb-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 44px 16px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.slb-state .material-symbols-outlined { font-size: 2rem; color: #00e5ff; }
+.slb-state-error .material-symbols-outlined { color: #f87171; }
+
+.slb-spinner { animation: slb-spin 1s linear infinite; }
+
+@keyframes slb-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Table */
+.slb-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slb-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.84rem;
+}
+
+/* The FASTEST TIME category adds the informational score column */
+.slb-table-time .slb-row { grid-template-columns: 38px 1fr auto auto; }
+
+.slb-row-head {
+  background: transparent;
+  border-color: transparent;
+  font-size: 0.64rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  padding-bottom: 2px;
+}
+
+.slb-row.is-current {
+  background: rgba(0, 229, 255, 0.1);
+  border-color: rgba(0, 229, 255, 0.45);
+}
+
+.slb-col-rank {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+.slb-rank-1 { color: #ffd700; }
+.slb-rank-2 { color: #cbd5e1; }
+.slb-rank-3 { color: #d97706; }
+
+.slb-col-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slb-you-tag {
+  font-size: 0.6rem;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: rgba(0, 229, 255, 0.18);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  color: #00e5ff;
+  letter-spacing: 1px;
+}
+
+.slb-col-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.slb-col-metric {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  min-width: 82px;
+  text-align: right;
+}
+
+.slb-score { color: #ffd700; }
+.slb-time  { color: #22c55e; }
+
+/* Footer */
+.slb-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.slb-footer-mult {
+  font-family: 'JetBrains Mono', monospace;
+  color: rgba(0, 229, 255, 0.7);
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .slb-row { grid-template-columns: 30px 1fr auto; font-size: 0.78rem; }
+  .slb-col-metric { min-width: 66px; }
+  .slb-footer { flex-direction: column; align-items: flex-start; }
+}

@@ -1,0 +1,145 @@
+/* ── SCORING SYSTEM: stage failure notice ──────────────────────────── */
+
+.sfn-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 3, 6, 0.84);
+  backdrop-filter: blur(6px);
+  animation: sfn-fade-in 0.2s ease-out;
+}
+
+@keyframes sfn-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sfn-card {
+  width: min(440px, 92vw);
+  background: rgba(28, 8, 14, 0.96);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  border-radius: 18px;
+  box-shadow: 0 0 40px rgba(248, 113, 113, 0.18);
+  padding: 22px 24px;
+  color: #fff;
+  animation: sfn-pop-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes sfn-pop-in {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.sfn-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sfn-icon {
+  color: #f87171;
+  font-size: 1.7rem;
+}
+
+.sfn-title {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+}
+
+.sfn-score-hero {
+  text-align: center;
+  padding: 14px 12px;
+  border-radius: 14px;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  margin-bottom: 16px;
+}
+
+.sfn-score-label {
+  font-size: 0.68rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sfn-score-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: #f87171;
+  line-height: 1.2;
+}
+
+.sfn-score-note {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.sfn-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.sfn-stat {
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sfn-stat-label {
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+}
+
+.sfn-stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.sfn-stat-value.sfn-reset { color: #f87171; }
+.sfn-stat-value.sfn-gold { color: #ffd700; }
+
+.sfn-message {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.sfn-btn {
+  width: 100%;
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: none;
+  background: #f87171;
+  color: #1c080e;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.sfn-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
+
+@media (max-width: 420px) {
+  .sfn-stats-grid { grid-template-columns: 1fr; }
+}
