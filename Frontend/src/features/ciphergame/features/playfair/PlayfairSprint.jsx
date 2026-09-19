@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import '../sprint/CipherSprint.css';
 import '../../CipherGame.css';
@@ -6,6 +7,8 @@ import PauseMenu from '../../ui/PauseMenu';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import FullscreenButton from '../../ui/FullscreenButton';
+import CryptographicRecap from '../../ui/CryptographicRecap';
+import VictoryConfetti from '../../ui/VictoryConfetti';
 import {
   transformPlayfairPair,
 } from './PlayfairHelpers';
@@ -72,16 +75,15 @@ export default function PlayfairSprint({
   const [gateX, setGateX] = useState(GATE_RESET_X);
   const [collectedKey, setCollectedKey] = useState(null);
   const [isCrashing, setIsCrashing] = useState(false);
-  const [crashMessage, setCrashMessage] = useState('');
+  const crashMessage = '';
   const [lives, setLives] = useState(5);
   const [laneChangeEffect, setLaneChangeEffect] = useState(null);
   const [speedLines, setSpeedLines] = useState([]);
-  const [attempts, setAttempts] = useState([]);
+  const [, setAttempts] = useState([]);
   const [firstTryForCurrent, setFirstTryForCurrent] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
-  const [explanationStep, setExplanationStep] = useState(-1);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackColor, setFeedbackColor] = useState('#facc15');
   const [feedbackY, setFeedbackY] = useState(50);
@@ -107,7 +109,6 @@ export default function PlayfairSprint({
   const boostTimeoutRef = useRef(0);
   const shakeTimeoutRef = useRef(0);
   const laneTiltTimeoutRef = useRef(0);
-  const explanationIntervalRef = useRef(0);
   const slimeIntervalRef = useRef(0);
 
 
@@ -454,7 +455,6 @@ export default function PlayfairSprint({
 
   useEffect(() => {
     clearAllFXTimeouts();
-    if (explanationIntervalRef.current) window.clearInterval(explanationIntervalRef.current);
     setSprintStep('ready');
     setCurrentMaskIndex(0);
     currentMaskIndexRef.current = 0;
@@ -463,7 +463,6 @@ export default function PlayfairSprint({
     setFirstTryForCurrent(true);
     setCoins([]);
     setShowExplanation(false);
-    setExplanationStep(-1);
     setIsPaused(false);
     setRunnerLane(1);
     prevLaneRef.current = 1;
@@ -478,24 +477,13 @@ export default function PlayfairSprint({
   useEffect(() => {
     return () => {
       clearAllFXTimeouts();
-      if (explanationIntervalRef.current) window.clearInterval(explanationIntervalRef.current);
-      if (slimeIntervalRef.current)         window.clearInterval(slimeIntervalRef.current);
-      if (plantIntervalRef.current)         window.clearInterval(plantIntervalRef.current);
-      if (rafRef.current)                   window.cancelAnimationFrame(rafRef.current);
+      if (slimeIntervalRef.current) window.clearInterval(slimeIntervalRef.current);
+      if (rafRef.current)           window.cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
   const handleVerifySubmit = () => {
     setShowExplanation(true);
-    setExplanationStep(-1);
-    const total = pairData.length;
-    let step = -1;
-    if (explanationIntervalRef.current) window.clearInterval(explanationIntervalRef.current);
-    explanationIntervalRef.current = window.setInterval(() => {
-      step++;
-      setExplanationStep(step);
-      if (step >= total - 1) window.clearInterval(explanationIntervalRef.current);
-    }, 600);
   };
 
   const handleCloseExplanation = () => {
@@ -515,107 +503,11 @@ export default function PlayfairSprint({
       className={`sprint-container fg-root ${isFullscreen ? 'is-fullscreen' : ''}`}
     >
       {showExplanation && (
-        <div
-          className="fg-recap-overlay"
-          style={{ overflowY: 'auto', padding: '30px 10px', zIndex: 9999 }}
-        >
-          <div
-            className="fg-recap-card"
-            style={{ maxWidth: '1100px', width: '95%', padding: '24px 32px' }}
-          >
-            <h2 className="fg-recap-title">🔬 Playfair Cipher Recap</h2>
-            <p className="fg-recap-subtitle">Why Did This Work?</p>
-            <div
-              className="fg-recap-animation-box"
-              style={{ minHeight: 'auto', padding: '16px', marginBottom: '16px' }}
-            >
-              <div className="fg-recap-letter-row">
-                {pairData.map((pair, idx) => {
-                  return (
-                    <div
-                      key={idx}
-                      className={`fg-recap-node ${explanationStep >= idx ? 'active' : 'waiting'}`}
-                    >
-                      <span className="fg-recap-char-cipher">{pair.cipherPair}</span>
-                      <span className="fg-recap-arrow">↓</span>
-                      <span className="fg-recap-char-plain">{pair.plainPair}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div
-              className="fg-recap-explanation"
-              style={{ background: 'rgba(255,255,255,0.015)' }}
-            >
-              💡 <strong>Playfair Cipher Recap:</strong> The Playfair cipher uses a 5x5 key
-              matrix to encrypt/decrypt letter pairs based on three geometric rules — same row
-              (shift left), same column (shift up), or rectangle (swap corners).
-              <div
-                style={{
-                  marginTop: 16,
-                  background: 'rgba(0,229,255,0.05)',
-                  border: '1px solid rgba(0,229,255,0.2)',
-                  borderRadius: 12,
-                  padding: 12,
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: 700,
-                    color: 'var(--neon-cyan)',
-                    marginBottom: 8,
-                    fontSize: '0.82rem',
-                  }}
-                >
-                  🔑 Playfair 5x5 Key Matrix
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <table
-                    style={{
-                      borderCollapse: 'collapse',
-                      textAlign: 'center',
-                      fontFamily: 'JetBrains Mono, monospace',
-                      fontSize: '0.9rem',
-                    }}
-                  >
-                    <tbody>
-                      {levelData.matrix.map((row, rIdx) => (
-                        <tr key={rIdx}>
-                          {row.map((cell, cIdx) => (
-                            <td
-                              key={`${rIdx}-${cIdx}`}
-                              style={{
-                                width: '40px',
-                                height: '40px',
-                                border: '1px solid rgba(0, 229, 255, 0.3)',
-                                background: 'rgba(0, 0, 0, 0.3)',
-                                color: '#fff',
-                                fontWeight: 'bold',
-                              }}
-                            >
-                              {cell}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-            <div className="fg-recap-actions" style={{ marginTop: 16 }}>
-              <button
-                className="fg-btn fg-btn-primary"
-                onClick={handleCloseExplanation}
-                disabled={explanationStep < pairData.length - 1}
-                style={{ background: 'var(--neon-green)', color: '#030914' }}
-              >
-                Unlock Next Objective ➔
-              </button>
-            </div>
-          </div>
-        </div>
+        <CryptographicRecap
+          cipherType="playfair"
+          levelData={levelData}
+          onUnlockNext={handleCloseExplanation}
+        />
       )}
 
       <GameHudBar
@@ -809,7 +701,7 @@ export default function PlayfairSprint({
                   boxShadow: '0 0 15px rgba(0, 229, 255, 0.4)',
                 }}
               >
-                {sprintStep === 'finished' ? '🏁' : currentBatonPair}
+                {sprintStep === 'finished' ? 'DONE' : currentBatonPair}
               </div>
               <div className="baton-desc">
                 {sprintStep === 'finished'
@@ -957,6 +849,7 @@ export default function PlayfairSprint({
               )}
             </div>
 
+            {sprintStep === 'finished' && <VictoryConfetti isPaused={isPaused} />}
             <PairProgress
               pairData={pairData}
               hintIndices={hintIndices}
@@ -1012,7 +905,7 @@ function PauseResumeButton({ isPaused, toggle }) {
 function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
     <div className="fg-success-panel">
-      <h3>✅ SECURED!</h3>
+      <h3>SECURED!</h3>
       <p>All checkpoints cleared successfully.</p>
       <button
         className="fg-btn fg-btn-primary"
@@ -1024,21 +917,23 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
           marginTop: '10px',
         }}
       >
-        🚀 Verify & Submit
+        Verify & Submit
       </button>
-      <button
-        className="fg-btn fg-btn-secondary"
-        onClick={onReplayNewQuestion}
-        style={{
-          width: '100%',
-          marginTop: '10px',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          color: '#fff',
-        }}
-      >
-        🔄 Play Again
-      </button>
+      {onReplayNewQuestion && (
+        <button
+          className="fg-btn fg-btn-secondary"
+          onClick={onReplayNewQuestion}
+          style={{
+            width: '100%',
+            marginTop: '10px',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            color: '#fff',
+          }}
+        >
+          Play Again
+        </button>
+      )}
     </div>
   );
 }
@@ -1053,7 +948,7 @@ function GameOverPanel({ onRetry }) {
         textAlign: 'center',
       }}
     >
-      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>💀 SYSTEM FAILURE!</strong>
+      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>SYSTEM FAILURE!</strong>
       <p style={{ fontSize: '0.88rem', lineHeight: '1.5', color: '#fda4af', margin: '12px 0' }}>
         Runner crashed too many times and ran out of lives.
       </p>
@@ -1070,7 +965,7 @@ function GameOverPanel({ onRetry }) {
           padding: '12px',
         }}
       >
-        🔄 Try Again
+        Try Again
       </button>
     </div>
   );
@@ -1086,7 +981,7 @@ function CrashPanel({ message, onContinue }) {
         textAlign: 'center',
       }}
     >
-      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>💥 CRASH! GATE STAYED SHUT</strong>
+      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>CRASH! GATE STAYED SHUT</strong>
       <p
         style={{
           fontSize: '0.88rem',
@@ -1110,7 +1005,7 @@ function CrashPanel({ message, onContinue }) {
           padding: '12px',
         }}
       >
-        🔄 Try Checkpoint Again
+        Try Checkpoint Again
       </button>
     </div>
   );
