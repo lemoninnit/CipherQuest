@@ -991,7 +991,7 @@ export default function VigenereFishingGame({
                     </tr>
                   </thead>
                   <tbody>
-                    {ALPHABET.map((kChar, rIdx) => {
+                    {ALPHABET.map((kChar) => {
                       const isCorrectKey = targetKey ? targetKey.includes(kChar) : false;
                       const rowLetters = tabulaRow(kChar);
                       return (

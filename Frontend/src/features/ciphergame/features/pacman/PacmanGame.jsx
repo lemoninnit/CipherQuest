@@ -1908,7 +1908,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     </tr>
                   </thead>
                   <tbody>
-                    {alphabet.map((kChar, rIdx) => {
+                    {alphabet.map((kChar) => {
                       const isCorrectKey = levelData.targetKey ? levelData.targetKey.includes(kChar) : false;
                       const rowLetters = tabulaRow(kChar);
                       return (
