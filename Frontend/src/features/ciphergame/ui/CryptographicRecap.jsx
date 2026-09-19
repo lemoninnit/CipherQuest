@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import './CryptographicRecap.css';
+import './StageLoadingScreen.css';
 import {
   generatePlayfairMatrix,
   transformPlayfairPair,
@@ -32,7 +33,38 @@ export default function CryptographicRecap({
   const [explanationStep, setExplanationStep] = useState(-1);
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const [isExiting, setIsExiting] = useState(false);
+  const [exitProgress, setExitProgress] = useState(0);
+  const [exitStatusMsg, setExitStatusMsg] = useState('SYNCING OPERATION CLEARANCE...');
   const intervalRef = useRef(null);
+  const bodyScrollRef = useRef(null);
+
+  // Reset scroll to top on mount
+  useEffect(() => {
+    if (bodyScrollRef.current) {
+      bodyScrollRef.current.scrollTop = 0;
+    }
+  }, []);
+
+  // Staged reveal auto-scroll
+  useEffect(() => {
+    if (explanationStep < 0 || !bodyScrollRef.current) return;
+    const activeEl = bodyScrollRef.current.querySelector(
+      '.fg-recap-node.active:last-of-type, .cq-calc-chain-item.revealed:last-of-type, .cq-playfair-pair-chip.active'
+    );
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [explanationStep]);
+
+  const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
+  const tierName = capitalize(levelData.tier || levelData.difficulty || 'Easy');
+  const cipherCategoryName =
+    cipherType === 'vigenere'
+      ? 'Vigenère'
+      : cipherType === 'playfair'
+      ? 'Playfair'
+      : 'Caesar';
+  const stagesTitle = `${cipherCategoryName} — ${tierName} Stages`;
 
   /* ───────────────────────────────────────────────
      1. CAESAR DATA PREPARATION
@@ -251,10 +283,44 @@ export default function CryptographicRecap({
   const handleUnlockClick = () => {
     if (!isFullyRevealed || isExiting) return;
     setIsExiting(true);
-    setTimeout(() => {
-      if (onUnlockNext) onUnlockNext();
-    }, 280);
   };
+
+  /* ───────────────────────────────────────────────
+     EXIT LOADING SEQUENCE (Image 2 stage-loading style)
+     ─────────────────────────────────────────────── */
+  useEffect(() => {
+    if (!isExiting) return;
+
+    const duration = 1800; // 1.8s smooth exit loading sequence
+    const intervalTime = 25;
+    const increment = 100 / (duration / intervalTime);
+
+    const timer = setInterval(() => {
+      setExitProgress((prev) => {
+        const next = Math.min(prev + increment, 100);
+
+        if (next < 35) {
+          setExitStatusMsg('SYNCING OPERATION CLEARANCE & LOGGING PROTOCOLS...');
+        } else if (next < 70) {
+          setExitStatusMsg('UPDATING OPERATIVE CLEARANCE CREDENTIALS...');
+        } else if (next < 99) {
+          setExitStatusMsg('LOADING STAGE MAP & FINALIZING OBJECTIVES...');
+        } else {
+          setExitStatusMsg('OPERATIVE CLEARANCE VERIFIED. RETURNING TO STAGE MAP...');
+        }
+
+        if (next >= 100) {
+          clearInterval(timer);
+          setTimeout(() => {
+            if (onUnlockNext) onUnlockNext();
+          }, 120);
+        }
+        return next;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [isExiting, onUnlockNext]);
 
   // Determine active item for Playfair highlight
   const activePlayfairIndex = hoveredIdx !== null ? hoveredIdx : Math.max(0, explanationStep);
@@ -266,13 +332,65 @@ export default function CryptographicRecap({
 
   return (
     <div className="fg-recap-overlay cq-recap-root">
-      {isExiting && <div className="cq-recap-veil" />}
-      <div className="fg-recap-card cq-recap-card-expanded">
-        <h2 className="fg-recap-title">Cryptographic Recap</h2>
-        <p className="fg-recap-subtitle">Why Did This Work?</p>
+      {isExiting && (
+        <div className="cq-recap-veil">
+          <div className="cq-loading-screen" style={{ position: 'fixed', inset: 0, zIndex: 100000 }}>
+            {/* 21:9 Full-bleed Loading Screen Background */}
+            <img
+              className="cq-loading-bg-img"
+              src="/assets/ui/loading_screen_bg.png"
+              alt="Loading Background"
+              aria-hidden="true"
+            />
 
-        {/* ═══════════ TOP ANIMATION / NODE ROW ═══════════ */}
-        <div className="fg-recap-animation-box cq-recap-animation-box">
+            {/* Legibility Scrim Overlay */}
+            <div className="cq-loading-scrim" />
+
+            {/* Main HUD Loading Container */}
+            <div className="cq-loading-content">
+              {/* Top Operative HUD Header */}
+              <div className="cq-loading-header">
+                <div className="cq-loading-sub-badge">
+                  <span className="material-symbols-outlined cq-pulse-icon">shield</span>
+                  <span>CIPHER OPERATION DEPLOYMENT &bull; SECURE LINK</span>
+                </div>
+                <h1 className="cq-loading-title">{stagesTitle}</h1>
+              </div>
+
+              {/* Center Cybernetic Radar Spinner */}
+              <div className="cq-loading-spinner-wrapper">
+                <div className="cq-loading-ring cq-ring-outer" />
+                <div className="cq-loading-ring cq-ring-inner" />
+                <span className="material-symbols-outlined cq-loading-center-icon">lock</span>
+              </div>
+
+              {/* Bottom Progress Bar & Operative Status */}
+              <div className="cq-loading-bar-section">
+                <div className="cq-loading-status-row">
+                  <span className="cq-loading-status-text">{exitStatusMsg}</span>
+                  <span className="cq-loading-percent">{Math.round(exitProgress)}%</span>
+                </div>
+                <div className="cq-loading-track">
+                  <div
+                    className="cq-loading-fill"
+                    style={{ width: `${exitProgress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="fg-recap-card cq-recap-card-expanded">
+        <div className="cq-recap-header">
+          <h2 className="fg-recap-title">Cryptographic Recap</h2>
+          <p className="fg-recap-subtitle">Why Did This Work?</p>
+        </div>
+
+        {/* ═══════════ SCROLLABLE RECAP BODY ═══════════ */}
+        <div className="cq-recap-scrollable-body" ref={bodyScrollRef}>
+          {/* ═══════════ TOP ANIMATION / NODE ROW ═══════════ */}
+          <div className="fg-recap-animation-box cq-recap-animation-box">
           {cipherType === 'caesar' && caesarData && (
             <div className="fg-recap-letter-row">
               {caesarData.letters.map((node) => {
@@ -574,9 +692,10 @@ export default function CryptographicRecap({
             </div>
           )}
         </div>
+        </div>
 
-        {/* ═══════════ ACTION BUTTON ═══════════ */}
-        <div className="fg-recap-actions" style={{ marginTop: 20 }}>
+        {/* ═══════════ FIXED FOOTER ACTION BUTTON ═══════════ */}
+        <div className="fg-recap-actions cq-recap-footer">
           <button
             className="fg-btn fg-btn-primary cq-unlock-btn"
             onClick={handleUnlockClick}
