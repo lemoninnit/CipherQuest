@@ -482,7 +482,6 @@ export default function VigenereSprint({
       clearAllFXTimeouts();
       if (explanationIntervalRef.current) window.clearInterval(explanationIntervalRef.current);
       if (slimeIntervalRef.current)         window.clearInterval(slimeIntervalRef.current);
-      if (plantIntervalRef.current)         window.clearInterval(plantIntervalRef.current);
       if (rafRef.current)                   window.cancelAnimationFrame(rafRef.current);
     };
   }, []);

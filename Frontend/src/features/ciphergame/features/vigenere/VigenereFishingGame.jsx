@@ -10,6 +10,16 @@ const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const charToIdx = (char) => char.charCodeAt(0) - 65;
 
+const tabulaRow = (keyLetter) => {
+  const shift = charToIdx(keyLetter);
+  const row = [];
+  for (let i = 0; i < 26; i++) {
+    const cipherIdx = (i + shift) % 26;
+    row.push(ALPHABET[cipherIdx]);
+  }
+  return row;
+};
+
 const buildSlotMap = (segments, keyLen) => {
   let alphaIndex = 0;
   return segments.map((segment) =>
@@ -101,6 +111,7 @@ export default function VigenereFishingGame({
   const [chumCount, setChumCount] = useState(3);
   const [hoveredFish, setHoveredFish] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showTabula, setShowTabula] = useState(false);
   const [isMuted, setIsMuted]       = useState(false);
   const animationRef = useRef(null);
 
@@ -144,11 +155,7 @@ export default function VigenereFishingGame({
     </button>
   );
 
-  const activePreviewShifts = hoveredFish
-    ? activeShifts.map((shift, idx) =>
-        idx === activeSlot ? hoveredFish.value : shift
-      )
-    : activeShifts;
+
 
   /* ── ESC key to toggle pause menu ── */
   useEffect(() => {
@@ -822,8 +829,31 @@ export default function VigenereFishingGame({
             <span className="vg-floating-ref-title">📖 Vigenère Alignment</span>
           </div>
 
-          <div className="vg-formula-prominent">
-            Formula: <strong>Plain = (Cipher − Key + 26) mod 26</strong>
+          <div className="vg-pacman-title-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <div className="vg-formula-prominent" style={{ margin: 0 }}>
+              Formula: <strong>Plain = (Cipher − Key + 26) mod 26</strong>
+            </div>
+            <button
+              type="button"
+              className="vg-tabula-modal-btn vg-tabula-btn-compact"
+              onClick={() => setShowTabula(true)}
+              style={{
+                padding: '4px 10px',
+                fontSize: '0.75rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                borderRadius: '6px',
+                background: 'rgba(0, 229, 255, 0.15)',
+                border: '1px solid var(--neon-cyan)',
+                color: '#fff',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>grid_on</span>
+              <span>Tabula Recta</span>
+            </button>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1007,6 +1037,61 @@ export default function VigenereFishingGame({
           </div>
         )}
       </div>
+
+      {/* Tabula Recta Modal for Vigenère Mode */}
+      {showTabula && (
+        <div className="vg-modal-overlay" onClick={() => setShowTabula(false)}>
+          <div className="vg-modal-card tabula-modal" onClick={e => e.stopPropagation()}>
+            <div className="vg-modal-header">
+              <h3>📊 Interactive Tabula Recta</h3>
+              <button className="vg-modal-close" onClick={() => setShowTabula(false)}>×</button>
+            </div>
+            <div className="vg-modal-body">
+              <p className="vg-modal-instructions">
+                The Tabula Recta is a 26×26 grid of shifted alphabets. Find the column of your <strong>Cipher letter (C)</strong>,
+                then look at the row of your <strong>Key letter (K)</strong> to find the intersection, which is the <strong>Plain letter (P)</strong>!
+                <br />
+                <span style={{ color: 'var(--neon-yellow)' }}>★ Gold Rows: rows containing key letters for this level's key ("{targetKey}") are highlighted.</span>
+              </p>
+              <div className="vg-tabula-scroll-wrapper">
+                <table className="vg-tabula-full-grid">
+                  <thead>
+                    <tr>
+                      <th className="corner-cell">K \ P</th>
+                      {ALPHABET.map(ch => (
+                        <th key={ch} className="col-header">{ch}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ALPHABET.map((kChar, rIdx) => {
+                      const isCorrectKey = targetKey ? targetKey.includes(kChar) : false;
+                      const rowLetters = tabulaRow(kChar);
+                      return (
+                        <tr key={kChar} className={isCorrectKey ? 'correct-key-row' : ''}>
+                          <td className="row-header">{kChar}</td>
+                          {rowLetters.map((cChar, cIdx) => {
+                            const plainLetter = ALPHABET[cIdx];
+                            return (
+                              <td 
+                                key={cIdx} 
+                                className="cell"
+                                title={`Key: ${kChar}, Plain: ${plainLetter} → Cipher: ${cChar}`}
+                              >
+                                {cChar}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Shared Pause Menu */}
       <PauseMenu
