@@ -40,6 +40,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [activeShifts, setActiveShifts]       = useState(() => cipherSegs.map((_, idx) => getInitialShift(idx)));
   const [targetSegIdx, setTargetSegIdx]       = useState(0);
+  const [revealedSlots, setRevealedSlots]     = useState({});
   const [attemptsLeft, setAttemptsLeft]       = useState(15);
   const [levelSolved, setLevelSolved]         = useState(false);
   const [basketShake, setBasketShake]         = useState(false);
@@ -126,6 +127,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     fishingSound.unlockAudio();
     fishingSound.playBgm();
     setActiveShifts(cipherSegs.map((_, idx) => getInitialShift(idx)));
+    setRevealedSlots({});
     setTargetSegIdx(0);
     setAttemptsLeft(15);
     setChumCount(3);
@@ -139,6 +141,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   useEffect(() => {
     setPhase('ready');
     setIsMenuOpen(false);
+    setRevealedSlots({});
     setActiveShifts(cipherSegs.map((_, idx) => getInitialShift(idx)));
   }, [levelData]);
 
@@ -319,10 +322,26 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           setIsCasting(false);
           setCaughtFish(null);
           fishingSound.playSfx('catch');
-          setActiveShifts(prev => {
-            const nextShift = applyShiftDelta(prev[0] ?? getInitialShift(0), fish.value);
-            return cipherSegs.map(() => nextShift);
+          const nextShift = applyShiftDelta(activeShifts[0] ?? getInitialShift(0), fish.value);
+          const nextShifts = cipherSegs.map(() => nextShift);
+          setActiveShifts(nextShifts);
+
+          const nextDecSegs = cipherSegs.map((seg, i) =>
+            caesarShiftWord(seg, nextShifts[i] ?? 0)
+          );
+          setRevealedSlots(prev => {
+            const updated = { ...prev };
+            words.forEach((word, wIdx) => {
+              const decWord = nextDecSegs[wIdx] || '';
+              word.split('').forEach((ch, chIdx) => {
+                if (decWord[chIdx] === ch) {
+                  updated[`${wIdx}-${chIdx}`] = true;
+                }
+              });
+            });
+            return updated;
           });
+
           setBasketShake(true);
           setTimeout(() => setBasketShake(false), 400);
           setAttemptsLeft(prev => {
@@ -336,7 +355,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           setTimeout(() => {
             setFishList(prev => {
               const targetShift = normalizeShift(26 - (levelData.targetShifts?.[0] ?? 0));
-              const currentShift = basketShift;
+              const currentShift = nextShift;
               const diff = normalizeShift(targetShift - currentShift);
               let value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
               if (diff !== 0 && Math.random() > 0.4) {
@@ -367,6 +386,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   /* ── verify ── */
   const handleVerifySubmit = () => {
     if (!levelSolved) return;
+    fishingSound.stopBgm();
     setShowExplanation(true);
     const xpReward = 100;
     setFloatingXp({ amount: xpReward, x: 80, y: 80 });
@@ -374,7 +394,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   };
 
   const handleCloseExplanation = () => {
-    setShowExplanation(false);
     onVerifySubmit();
   };
 
@@ -593,7 +612,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               const isTargeted = targetSegIdx === wIdx;
               const segShift = normalizeShift(activeShifts[wIdx] ?? 0);
               const cipherWord = cipherSegs[wIdx];
-              const decWord = decryptedSegs[wIdx];
 
               return (
                 <div
@@ -611,12 +629,10 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                   </div>
                   <div className="fg-letter-cells">
                     {cipherWord.split('').map((cipherCh, chIdx) => {
-                      const maskList = levelData.masks[wIdx];
-                      const isPrefilled = tier === 'easy' && maskList?.[chIdx];
-                      const isCorrect = decWord[chIdx] === word[chIdx];
-                      const letterToShow = isPrefilled ? word[chIdx] : decWord[chIdx];
+                      const isRevealed = revealedSlots[`${wIdx}-${chIdx}`] === true;
+                      const letterToShow = isRevealed ? word[chIdx] : '_';
 
-                      const cellClass = (isPrefilled || isCorrect)
+                      const cellClass = isRevealed
                         ? 'fg-letter-cell correct-plain'
                         : 'fg-letter-cell unmatched-plain';
 

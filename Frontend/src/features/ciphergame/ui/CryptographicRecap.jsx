@@ -265,7 +265,8 @@ export default function CryptographicRecap({
   }, [activePlayfairPair]);
 
   return (
-    <div className={`fg-recap-overlay cq-recap-root ${isExiting ? 'cq-recap-fade-out' : ''}`}>
+    <div className="fg-recap-overlay cq-recap-root">
+      {isExiting && <div className="cq-recap-veil" />}
       <div className="fg-recap-card cq-recap-card-expanded">
         <h2 className="fg-recap-title">Cryptographic Recap</h2>
         <p className="fg-recap-subtitle">Why Did This Work?</p>
