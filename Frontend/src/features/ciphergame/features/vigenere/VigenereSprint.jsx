@@ -370,8 +370,7 @@ export default function VigenereSprint({
   ]);
 
   useEffect(() => {
-    if (sprintStep !== 'running') return undefined;
-    if (isCrashing || isPaused || isMenuOpen) return undefined;
+    if (sprintStep !== 'running' || isCrashing || isPaused || isMenuOpen || showExplanation) return undefined;
 
     const updatePhysics = () => {
       if (isPausedRef.current || isCrashingRef.current || isMenuOpenRef.current || sprintStepRef.current !== 'running') {
@@ -485,11 +484,11 @@ export default function VigenereSprint({
   }, []);
 
   const handleVerifySubmit = () => {
+    clearAllFXTimeouts();
     setShowExplanation(true);
   };
 
   const handleCloseExplanation = () => {
-    setShowExplanation(false);
     onVerifySubmit();
   };
 
