@@ -5913,29 +5913,39 @@
    ========================================================================== */
 
 /* Top-Center Cipher Row & Adjacent Status Badges */
-.vigenere-fishing-fullscreen .vg-cipher-main-row {
+.vigenere-fishing-fullscreen .fg-word-segments-row {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  flex-wrap: wrap;
   margin-bottom: 2px;
 }
 
-.vigenere-fishing-fullscreen .vg-cipher-key-pill {
+.vigenere-fishing-fullscreen .fg-word-segment-card {
+  padding: 8px 14px 8px !important;
+}
+
+/* Bottom-Center Floating Keyword Pill */
+.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(3, 14, 28, 0.9);
+  background: rgba(3, 14, 28, 0.92);
   border: 1.5px solid rgba(255, 215, 0, 0.55);
-  border-radius: 14px;
-  padding: 8px 14px;
+  border-radius: 12px;
+  padding: 6px 14px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 215, 0, 0.22);
+  pointer-events: auto;
 }
 
-.vigenere-fishing-fullscreen .vg-cipher-key-pill .vg-pill-lbl {
+.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 0.68rem;
   font-weight: 800;
@@ -5944,7 +5954,7 @@
   text-transform: uppercase;
 }
 
-.vigenere-fishing-fullscreen .vg-cipher-key-pill .vg-pill-val {
+.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-val {
   font-family: 'JetBrains Mono', monospace;
   font-size: 1.05rem;
   font-weight: 800;
@@ -5953,57 +5963,66 @@
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
-.vigenere-fishing-fullscreen .fg-word-segment-card {
-  padding: 8px 14px 8px !important;
-}
-
-/* Tightened Vigenère Alignment Panel (Bottom-Left) */
+/* Tightened Vigenère Alignment Panel (Bottom-Left) - Centered and Wider-Child Driven */
 .vigenere-fishing-fullscreen .vg-floating-ref-panel {
-  width: max-content !important;
-  min-width: 320px !important;
-  max-width: min(520px, calc(50vw - 36px)) !important;
-  padding: 10px 14px !important;
+  position: absolute !important;
   bottom: 18px !important;
   left: 22px !important;
+  z-index: 20 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  width: fit-content !important;
+  width: -moz-fit-content !important;
+  min-width: 0 !important;
+  max-width: min(380px, calc(50vw - 36px)) !important;
+  padding: 10px 14px !important;
+  background: rgba(3, 14, 28, 0.92) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.4) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05) !important;
+  pointer-events: auto !important;
   gap: 6px !important;
 }
 
-.vigenere-fishing-fullscreen .vg-floating-ref-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 2px;
-  width: 100%;
-}
-
 .vigenere-fishing-fullscreen .vg-floating-ref-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  margin: 0 auto !important;
 }
 
 .vigenere-fishing-fullscreen .vg-formula-badge {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 2px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  color: #94a3b8 !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  margin: 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .vigenere-fishing-fullscreen .vg-tabula-btn-compact {
-  padding: 3px 8px !important;
-  font-size: 0.72rem !important;
+  padding: 3px 10px !important;
+  font-size: 0.68rem !important;
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 4px !important;
   border-radius: 6px !important;
   background: rgba(0, 229, 255, 0.12) !important;
@@ -6013,6 +6032,7 @@
   white-space: nowrap !important;
   font-family: 'Space Grotesk', sans-serif !important;
   font-weight: 700 !important;
+  margin: 0 auto !important;
   transition: all 0.2s ease !important;
 }
 
@@ -6021,81 +6041,127 @@
   border-color: var(--neon-cyan) !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alignment-labels {
-  font-size: 0.72rem !important;
+.vigenere-fishing-fullscreen .vg-alignment-body {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   gap: 6px !important;
-  margin-right: 6px !important;
+  width: fit-content !important;
+  margin: 2px auto 0 auto !important;
+}
+
+.vigenere-fishing-fullscreen .vg-alignment-labels {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #94a3b8 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+  gap: 2px !important;
+  margin-right: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  text-align: right !important;
+  flex-shrink: 0 !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(1),
 .vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(2),
 .vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(4) {
-  height: 24px;
-  display: flex;
-  align-items: center;
+  height: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(3) {
-  height: 20px;
-  display: flex;
-  align-items: center;
+  height: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alignment-container {
+  display: flex !important;
   gap: 3px !important;
-  padding: 2px 0 !important;
+  padding: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: fit-content !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alignment-col {
-  padding: 3px 5px !important;
-  min-width: 24px !important;
-  gap: 4px !important;
-  border-radius: 6px !important;
+  padding: 2px 4px !important;
+  min-width: 18px !important;
+  gap: 2px !important;
+  border-radius: 4px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  border: 1px solid transparent !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
 }
 
 .vigenere-fishing-fullscreen .vg-align-cipher {
-  font-size: 1.05rem !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 15px !important;
   font-weight: 800 !important;
   color: #e2e8f0 !important;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
 }
 
 .vigenere-fishing-fullscreen .vg-align-key {
-  font-size: 1.05rem !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 15px !important;
   font-weight: 800 !important;
   color: var(--neon-cyan) !important;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
 }
 
 .vigenere-fishing-fullscreen .vg-align-shift {
-  font-size: 0.86rem !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px !important;
   font-weight: 700 !important;
   color: #ffd700 !important;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
 }
 
 .vigenere-fishing-fullscreen .vg-align-plain {
-  font-size: 1.1rem !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 15px !important;
   font-weight: 800 !important;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alignment-col.active-slot {
   background: rgba(0, 229, 255, 0.22) !important;
   border-color: var(--neon-cyan) !important;
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.45) !important;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.45) !important;
+}
+
+.vigenere-fishing-fullscreen .vg-alignment-space {
+  width: 6px !important;
+  flex-shrink: 0 !important;
 }
 
 /* Tightened Decryption Arithmetic Panel (Bottom-Right) */
@@ -6234,12 +6300,33 @@
 /* Responsive Fitting: 1440x900 and 1366x768 */
 @media (max-width: 1440px), (max-height: 850px) {
   .vigenere-fishing-fullscreen .vg-floating-ref-panel {
-    min-width: 300px !important;
-    max-width: 460px !important;
     bottom: 14px !important;
     left: 16px !important;
-    padding: 8px 12px !important;
-    gap: 5px !important;
+    padding: 8px 10px !important;
+    gap: 4px !important;
+  }
+
+  .vigenere-fishing-fullscreen .vg-formula-badge {
+    font-size: 0.64rem !important;
+    padding: 2px 6px !important;
+  }
+
+  .vigenere-fishing-fullscreen .vg-tabula-btn-compact {
+    padding: 2px 8px !important;
+    font-size: 0.64rem !important;
+  }
+
+  .vigenere-fishing-fullscreen .vg-fishing-bottom-keyword {
+    bottom: 14px !important;
+    padding: 4px 10px !important;
+  }
+
+  .vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl {
+    font-size: 0.62rem !important;
+  }
+
+  .vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-val {
+    font-size: 0.95rem !important;
   }
 
   .vigenere-fishing-fullscreen .vg-fishing-az-panel {
