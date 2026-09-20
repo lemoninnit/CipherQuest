@@ -8,7 +8,6 @@ import { ScoringProvider } from "./core/hooks/ScoringContext";
 // UI selectors
 import DifficultySelector from "./ui/DifficultySelector";
 import StageRoadmap      from "./features/stages/StageRoadmap";
-import StageLoadingScreen from "./ui/StageLoadingScreen";
 import CompletionModal    from "./ui/CompletionModal";
 import StageScoreModal    from "./ui/StageScoreModal";
 import StageLeaderboard   from "./ui/StageLeaderboard";
@@ -37,11 +36,25 @@ export default function CipherGame() {
     startStage,
     completeStage, backToStages, replayCurrentStage,
     handleContinueNextDifficulty, handleCloseCompletionModal,
+    returnToRoadmap,
     // SCORING SYSTEM
     stageStartedAt, stageResult, dismissStageResult, failStage,
     stageFailNotice, dismissStageFailNotice,
     leaderboardStage, openStageLeaderboard, closeStageLeaderboard,
   } = game;
+
+  const handleContinueFromScore = () => {
+    const cat = stageResult?.category || category;
+    const diff = stageResult?.difficulty || difficulty;
+    if (returnToRoadmap) {
+      returnToRoadmap(cat, diff);
+    } else {
+      dismissStageResult();
+      if (cat) game.selectCategory?.(cat);
+      if (diff) selectDifficulty(diff);
+      backToStages();
+    }
+  };
 
   /* ─── Active game renderer ─── */
   if (currentStage) {
@@ -112,7 +125,7 @@ export default function CipherGame() {
         {stageResult && !completionModalData && (
           <StageScoreModal
             result={stageResult}
-            onContinue={() => { dismissStageResult(); goToCategories(); }}
+            onContinue={handleContinueFromScore}
             onViewLeaderboard={() => openStageLeaderboard(
               stageResult.category, stageResult.difficulty, stageResult.stageIndex)}
             onReplay={() => {
@@ -170,7 +183,7 @@ export default function CipherGame() {
         {stageResult && !completionModalData && (
           <StageScoreModal
             result={stageResult}
-            onContinue={() => { dismissStageResult(); goToCategories(); }}
+            onContinue={handleContinueFromScore}
             onViewLeaderboard={() => openStageLeaderboard(
               stageResult.category, stageResult.difficulty, stageResult.stageIndex)}
             onReplay={() => {

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect, no-unused-vars */
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthContext";
@@ -219,7 +220,7 @@ export function useGameFlow() {
             [diff]: diffArr.includes(id) ? diffArr : [...diffArr, id],
           },
         };
-        try { localStorage.setItem("cipher_progress_v2", JSON.stringify(next)); } catch {}
+        try { localStorage.setItem("cipher_progress_v2", JSON.stringify(next)); } catch (e) { /* ignore storage error */ }
         return next;
       });
     }
@@ -347,6 +348,18 @@ export function useGameFlow() {
 
   const dismissStageResult = () => setStageResult(null);
 
+  const returnToRoadmap = (cat, diff) => {
+    const targetCat = cat || category;
+    const targetDiff = diff || difficulty;
+    if (targetCat) setCategory(targetCat);
+    if (targetDiff) setDifficulty(targetDiff);
+    setCurrentStage(null);
+    setLoadingTargetStage(null);
+    setStageResult(null);
+    setCompletionModalData(null);
+    setLeaderboardStage(null);
+  };
+
   const goToCategories   = () => { setCategory(null); setDifficulty(null); setCurrentStage(null); setLoadingTargetStage(null); setCompletionModalData(null); setLeaderboardStage(null); };
   const selectCategory   = (cat)  => { setCategory(cat); setDifficulty(null); setLoadingTargetStage(null); setCompletionModalData(null); setLeaderboardStage(null); };
   const selectDifficulty = (diff) => { setDifficulty(diff); setLoadingTargetStage(null); setCompletionModalData(null); setLeaderboardStage(null); };
@@ -361,10 +374,11 @@ export function useGameFlow() {
     startStage, finishLoadingStage, completeStage, replayCurrentStage,
     handleContinueNextDifficulty, handleCloseCompletionModal,
     goToCategories, selectCategory, selectDifficulty,
-    backToDifficulty, backToStages,
+    backToDifficulty, backToStages, returnToRoadmap,
     // SCORING SYSTEM
     stageStartedAt, stageResult, dismissStageResult, failStage,
     stageFailNotice, dismissStageFailNotice,
     leaderboardStage, openStageLeaderboard, closeStageLeaderboard,
   };
 }
+
