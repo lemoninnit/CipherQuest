@@ -5953,56 +5953,72 @@
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
-.vigenere-fishing-fullscreen .vg-cipher-solving-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(3, 14, 28, 0.9);
-  border: 1.5px solid rgba(0, 229, 255, 0.55);
-  border-radius: 14px;
-  padding: 8px 14px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(0, 229, 255, 0.22);
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.vigenere-fishing-fullscreen .vg-cipher-solving-pill .vg-pill-lbl {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: #94a3b8;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-right: 2px;
-}
-
-.vigenere-fishing-fullscreen .vg-cipher-solving-pill .vg-pill-pos {
-  font-size: 0.92rem;
-  font-weight: 800;
-  color: #ffffff;
-}
-
-.vigenere-fishing-fullscreen .vg-cipher-solving-pill .vg-pill-keychar {
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: var(--neon-cyan);
-  text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
-}
-
 .vigenere-fishing-fullscreen .fg-word-segment-card {
   padding: 8px 14px 8px !important;
 }
 
-/* Widened Vigenère Alignment Panel (Bottom-Left) */
+/* Tightened Vigenère Alignment Panel (Bottom-Left) */
 .vigenere-fishing-fullscreen .vg-floating-ref-panel {
-  width: min(520px, calc(50vw - 36px)) !important;
-  min-width: 470px !important;
-  max-width: 530px !important;
-  padding: 14px 18px !important;
+  width: max-content !important;
+  min-width: 320px !important;
+  max-width: min(520px, calc(50vw - 36px)) !important;
+  padding: 10px 14px !important;
   bottom: 18px !important;
   left: 22px !important;
-  gap: 8px !important;
+  gap: 6px !important;
+}
+
+.vigenere-fishing-fullscreen .vg-floating-ref-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 2px;
+  width: 100%;
+}
+
+.vigenere-fishing-fullscreen .vg-floating-ref-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.vigenere-fishing-fullscreen .vg-formula-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.vigenere-fishing-fullscreen .vg-tabula-btn-compact {
+  padding: 3px 8px !important;
+  font-size: 0.72rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  border-radius: 6px !important;
+  background: rgba(0, 229, 255, 0.12) !important;
+  border: 1px solid rgba(0, 229, 255, 0.4) !important;
+  color: #fff !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+}
+
+.vigenere-fishing-fullscreen .vg-tabula-btn-compact:hover {
+  background: rgba(0, 229, 255, 0.25) !important;
+  border-color: var(--neon-cyan) !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alignment-labels {
@@ -6026,15 +6042,15 @@
 }
 
 .vigenere-fishing-fullscreen .vg-alignment-container {
-  gap: 4px !important;
-  padding: 4px 2px !important;
+  gap: 3px !important;
+  padding: 2px 0 !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alignment-col {
-  padding: 4px 6px !important;
-  min-width: 28px !important;
-  gap: 6px !important;
-  border-radius: 8px !important;
+  padding: 3px 5px !important;
+  min-width: 24px !important;
+  gap: 4px !important;
+  border-radius: 6px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-align-cipher {
@@ -6082,42 +6098,32 @@
   box-shadow: 0 0 14px rgba(0, 229, 255, 0.45) !important;
 }
 
-.vigenere-fishing-fullscreen .vg-formula-prominent {
-  font-size: 0.78rem !important;
-  padding: 5px 12px !important;
-}
-
-.vigenere-fishing-fullscreen .vg-formula-prominent strong {
-  font-size: 0.84rem !important;
-}
-
-.vigenere-fishing-fullscreen .vg-samples-section {
-  padding-top: 6px !important;
-  gap: 3px !important;
-}
-
-.vigenere-fishing-fullscreen .vg-samples-title {
-  font-size: 0.78rem !important;
-  font-weight: 800 !important;
-}
-
-/* Widened Decryption Arithmetic Panel (Bottom-Right) */
+/* Tightened Decryption Arithmetic Panel (Bottom-Right) */
 .vigenere-fishing-fullscreen .vg-fishing-az-panel {
-  width: min(500px, calc(50vw - 36px)) !important;
-  min-width: 450px !important;
-  max-width: 510px !important;
-  padding: 12px 18px !important;
+  width: fit-content !important;
+  min-width: 360px !important;
+  max-width: 440px !important;
+  padding: 10px 14px !important;
   bottom: 18px !important;
   right: 22px !important;
-  gap: 8px !important;
+  gap: 6px !important;
+}
+
+.vigenere-fishing-fullscreen .vg-arithmetic-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.82rem;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .vigenere-fishing-fullscreen .vg-fishing-calc-card {
-  padding: 8px 14px !important;
+  padding: 6px 12px !important;
   background: rgba(2, 10, 24, 0.85) !important;
   border: 1.5px solid rgba(0, 229, 255, 0.35) !important;
-  border-radius: 12px !important;
-  gap: 5px !important;
+  border-radius: 10px !important;
+  gap: 4px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-top-row {
@@ -6125,73 +6131,76 @@
 }
 
 .vigenere-fishing-fullscreen .vg-calc-label {
-  font-size: 0.72rem !important;
+  font-size: 0.7rem !important;
   font-weight: 800 !important;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-badge {
-  font-size: 0.78rem !important;
+  font-size: 0.76rem !important;
   padding: 2px 8px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-formula-row {
-  gap: 14px !important;
-  margin: 4px 0 !important;
+  gap: 12px !important;
+  margin: 3px 0 !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-item {
-  padding: 4px 12px !important;
-  min-width: 60px !important;
+  padding: 3px 10px !important;
+  min-width: 54px !important;
   border-radius: 8px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-item .lbl {
-  font-size: 0.64rem !important;
+  font-size: 0.62rem !important;
   font-weight: 800 !important;
   letter-spacing: 0.06em !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-item strong {
-  font-size: 1.45rem !important;
+  font-size: 1.35rem !important;
   line-height: 1.15 !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-item .val {
-  font-size: 0.82rem !important;
+  font-size: 0.78rem !important;
   font-weight: 800 !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-op {
-  font-size: 1.4rem !important;
+  font-size: 1.3rem !important;
   font-weight: 900 !important;
   color: rgba(255, 255, 255, 0.6) !important;
 }
 
 /* Enlarged A-Z 26-Letter Grid */
 .vigenere-fishing-fullscreen .vg-sprint-alphabet-grid {
-  gap: 4px !important;
-  margin-top: 4px !important;
+  gap: 3px !important;
+  margin-top: 2px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alphabet-row {
-  gap: 3px !important;
+  gap: 2px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alphabet-cell {
-  padding: 4px 2px !important;
-  min-width: 22px !important;
-  max-width: 34px !important;
-  border-radius: 6px !important;
+  padding: 3px 2px !important;
+  min-width: 20px !important;
+  max-width: 32px !important;
+  border-radius: 5px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alpha-char {
-  font-size: 0.88rem !important;
+  font-size: 0.84rem !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alpha-val {
-  font-size: 0.72rem !important;
+  font-size: 0.68rem !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
 }
@@ -6218,53 +6227,51 @@
 
 /* Floating Chum Button Positioned Above Right Panel */
 .vigenere-fishing-fullscreen .vigenere-floating-chum-btn {
-  bottom: 235px !important;
+  bottom: 185px !important;
   right: 22px !important;
 }
 
 /* Responsive Fitting: 1440x900 and 1366x768 */
 @media (max-width: 1440px), (max-height: 850px) {
   .vigenere-fishing-fullscreen .vg-floating-ref-panel {
-    width: 480px !important;
-    min-width: 440px !important;
-    max-width: 490px !important;
+    min-width: 300px !important;
+    max-width: 460px !important;
     bottom: 14px !important;
     left: 16px !important;
-    padding: 10px 14px !important;
-    gap: 6px !important;
+    padding: 8px 12px !important;
+    gap: 5px !important;
   }
 
   .vigenere-fishing-fullscreen .vg-fishing-az-panel {
-    width: 460px !important;
-    min-width: 430px !important;
-    max-width: 470px !important;
+    min-width: 330px !important;
+    max-width: 410px !important;
     bottom: 14px !important;
     right: 16px !important;
-    padding: 10px 14px !important;
-    gap: 6px !important;
+    padding: 8px 12px !important;
+    gap: 5px !important;
   }
 
   .vigenere-fishing-fullscreen .vigenere-floating-chum-btn {
-    bottom: 225px !important;
+    bottom: 170px !important;
     right: 16px !important;
     padding: 8px 14px !important;
     font-size: 0.82rem !important;
   }
 
   .vigenere-fishing-fullscreen .vg-calc-item strong {
-    font-size: 1.3rem !important;
+    font-size: 1.2rem !important;
   }
 
   .vigenere-fishing-fullscreen .vg-calc-item .val {
-    font-size: 0.78rem !important;
+    font-size: 0.72rem !important;
   }
 
   .vigenere-fishing-fullscreen .vg-alpha-char {
-    font-size: 0.82rem !important;
+    font-size: 0.78rem !important;
   }
 
   .vigenere-fishing-fullscreen .vg-alpha-val {
-    font-size: 0.68rem !important;
+    font-size: 0.64rem !important;
   }
 }
 

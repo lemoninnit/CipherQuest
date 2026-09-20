@@ -734,13 +734,6 @@ export default function VigenereFishingGame({
                 );
               })}
             </div>
-
-            {/* Solving Status Badge right beside cipher letters */}
-            <div className="vg-cipher-solving-pill" title={`Active Target: Position #${currentTarget.globalIdx + 1}`}>
-              <span className="vg-pill-lbl">SOLVING</span>
-              <span className="vg-pill-pos">Pos #{currentTarget.globalIdx + 1}</span>
-              <span className="vg-pill-keychar">(Key '{currentKeyChar}')</span>
-            </div>
           </div>
           <div className="caesar-floating-hint">
             <span>💡 Keyword clue: <strong>"{levelData.keyClue}"</strong></span>
@@ -752,32 +745,15 @@ export default function VigenereFishingGame({
         {/* 2. Floating Reference Panel 1: Alignment (Bottom-Left) */}
         <div className="vg-floating-ref-panel">
           <div className="vg-floating-ref-header">
-            <span className="vg-floating-ref-title">📖 Vigenère Alignment</span>
-          </div>
-
-          <div className="vg-pacman-title-group" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <div className="vg-formula-prominent" style={{ margin: 0 }}>
-              Formula: <strong>Plain = (Cipher − Key + 26) mod 26</strong>
-            </div>
+            <span className="vg-floating-ref-title">Vigenère Alignment</span>
+            <span className="vg-formula-badge">Plain = (Cipher − Key + 26) mod 26</span>
             <button
               type="button"
               className="vg-tabula-modal-btn vg-tabula-btn-compact"
               onClick={() => setShowTabula(true)}
-              style={{
-                padding: '4px 10px',
-                fontSize: '0.75rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                borderRadius: '6px',
-                background: 'rgba(0, 229, 255, 0.15)',
-                border: '1px solid var(--neon-cyan)',
-                color: '#fff',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
+              title="Open Interactive Tabula Recta"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '0.9rem' }}>grid_on</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>grid_on</span>
               <span>Tabula Recta</span>
             </button>
           </div>
@@ -792,7 +768,7 @@ export default function VigenereFishingGame({
             <div className="vg-alignment-container">
               {alignmentItems.map(item => {
                 if (item.isSpace) {
-                  return <div key={item.id} style={{ width: 10, flexShrink: 0 }} />;
+                  return <div key={item.id} style={{ width: 8, flexShrink: 0 }} />;
                 }
                 const isRevealed = revealedMasks[item.wordIdx]?.[item.charIdx];
                 const isActive = item.globalIdx === currentTarget.globalIdx;
@@ -818,18 +794,6 @@ export default function VigenereFishingGame({
               })}
             </div>
           </div>
-
-          <div className="vg-samples-section">
-            <div className="vg-samples-title">
-              <span>Target Position #{currentTarget.globalIdx + 1}</span>
-              <span style={{ color: 'var(--neon-cyan)', fontFamily: 'JetBrains Mono, monospace' }}>
-                Key: '{currentKeyChar}' (-{currentKeyShift})
-              </span>
-            </div>
-            <div style={{ fontSize: '0.74rem', color: '#cbd5e1', lineHeight: '1.4' }}>
-              Cipher <strong>'{currentCipherChar}'</strong> ({charToIdx(currentCipherChar)}) − Key <strong>'{currentKeyChar}'</strong> ({currentKeyShift}) = Catch fish <strong>'{revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? currentTargetPlain : '?'}'</strong>
-            </div>
-          </div>
         </div>
 
         {/* 3. Floating Chum the Waters Button (Bottom-Right, above A-Z Panel) */}
@@ -846,15 +810,10 @@ export default function VigenereFishingGame({
         {/* 4. Floating Reference Panel 2: A-Z Value Table & Decryption Helper (Bottom-Right) */}
         <div className={`vg-floating-key-panel vg-fishing-az-panel ${basketShake ? 'shake' : ''}`}>
           <div className="vg-floating-current-slot">
-            <div>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                A–Z Value Reference
-              </div>
-              <div style={{ fontSize: '0.84rem', color: '#fff', fontWeight: 700 }}>
-                Decryption Arithmetic
-              </div>
+            <div className="vg-arithmetic-title">
+              Decryption Arithmetic
             </div>
-            <div className="vg-slot-badge-lg" style={{ fontSize: '0.9rem', padding: '2px 10px' }}>
+            <div className="vg-slot-badge-lg" style={{ fontSize: '0.82rem', padding: '2px 8px' }}>
               {solvedBlanks}/{totalBlanks} Solved
             </div>
           </div>
@@ -891,7 +850,7 @@ export default function VigenereFishingGame({
           </div>
 
           {/* 2-row x 13-col Alphabet grid showing all 26 letters */}
-          <div className="vg-sprint-alphabet-grid" style={{ marginTop: '2px' }}>
+          <div className="vg-sprint-alphabet-grid">
             <div className="vg-alphabet-row">
               {ALPHABET.slice(0, 13).map((ch, i) => {
                 const isCipher = ch === currentCipherChar;
@@ -923,13 +882,6 @@ export default function VigenereFishingGame({
                 );
               })}
             </div>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', color: 'var(--text-muted)', paddingTop: 4, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <span>Attempts Remaining:</span>
-            <span style={{ fontFamily: 'JetBrains Mono, monospace', color: attemptsLeft <= 5 ? '#f87171' : 'var(--neon-green)', fontWeight: 'bold' }}>
-              {attemptsLeft}
-            </span>
           </div>
 
           {floatingXp && (
