@@ -516,6 +516,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const isVigenere = !!levelData?.targetKey;
   const isPlayfair = !!levelData.matrix;
   const isCaesar = !isVigenere && !isPlayfair;
+  const cleanHint = levelData?.hint ? levelData.hint.trim() : '';
   const targetShift = isVigenere ? 0 : (levelData.targetShifts?.[0] ?? levelData.shift ?? levelData.targetShift ?? 0);
   const currentTier = String(tier || levelData?.tier || 'easy').toLowerCase();
   const activeMazeGrid = getMazeGrid(currentTier);
@@ -1411,16 +1412,24 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   <span className="cq-dossier-label">CIPHERTEXT</span>
                   <span className="cq-dossier-value cyan-mono">{levelData.ciphertext}</span>
                 </div>
+                {isVigenere && (
+                  <div className="cq-dossier-row">
+                    <span className="cq-dossier-label">KEYWORD</span>
+                    <span className="cq-dossier-value yellow-mono">{levelData.targetKey}</span>
+                  </div>
+                )}
                 {isPlayfair && (
                   <div className="cq-dossier-row">
                     <span className="cq-dossier-label">KEYWORD</span>
                     <span className="cq-dossier-value yellow-mono">{levelData.key}</span>
                   </div>
                 )}
-                <div className="cq-dossier-row">
-                  <span className="cq-dossier-label">HINT</span>
-                  <span className="cq-dossier-value hint-text">{levelData.hint}</span>
-                </div>
+                {cleanHint && (
+                  <div className="cq-dossier-row">
+                    <span className="cq-dossier-label">HINT</span>
+                    <span className="cq-dossier-value hint-text">{cleanHint}</span>
+                  </div>
+                )}
               </div>
               <p className="cq-dossier-how-it-works">
                 <strong>How it works:</strong>{' '}
@@ -1704,13 +1713,17 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 )}
               </div>
             )}
-            <div className="caesar-pacman-clue-banner">
-              💡 {isVigenere && levelData.keyClue ? (
-                <>Keyword Clue: <strong>"{levelData.keyClue}"</strong></>
-              ) : (
-                <>Clue Context: <strong>"{levelData.hint}"</strong></>
-              )}
-            </div>
+            {isVigenere ? (
+              cleanHint ? (
+                <div className="caesar-pacman-clue-banner">
+                  💡 Hint: <strong>"{cleanHint}"</strong>
+                </div>
+              ) : null
+            ) : (
+              <div className="caesar-pacman-clue-banner">
+                💡 Clue Context: <strong>"{levelData.hint}"</strong>
+              </div>
+            )}
           </section>
 
           {/* 3. Bottom-Left Floating Reference Panel */}
@@ -1743,7 +1756,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 <div className="vg-alignment-labels">
                   <div>CIPHER</div>
                   <div>KEY</div>
-                  <div>SHIFT</div>
                   <div style={{ color: 'var(--neon-green)' }}>PLAIN</div>
                 </div>
                 <div className="vg-alignment-container">
@@ -1755,11 +1767,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                       <div
                         key={item.id}
                         className={`vg-alignment-col ${item.isActive ? 'active-slot' : ''}`}
-                        title={`Pos #${item.index + 1}: ${item.cipherChar} (${charToIdx(item.cipherChar)}) − ${item.keyChar} (${item.shiftVal}) = ${item.isSolved ? item.plainChar : '?'}`}
+                        title={`Pos #${item.index + 1}: ${item.cipherChar} (${charToIdx(item.cipherChar)}) − ${item.keyChar} (${charToIdx(item.keyChar)}) = ${item.isSolved ? item.plainChar : '?'}`}
                       >
                         <span className="vg-align-cipher">{item.cipherChar}</span>
                         <span className="vg-align-key">{item.keyChar}</span>
-                        <span className="vg-align-shift">-{item.shiftVal}</span>
                         <span
                           className="vg-align-plain"
                           style={{
