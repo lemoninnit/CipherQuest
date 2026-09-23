@@ -9,6 +9,7 @@ import FullscreenButton from '../../ui/FullscreenButton';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
+import { sprintSound } from '../sprint/sprintSound';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const BASE_SPEED = 0.22;
@@ -113,6 +114,7 @@ export default function VigenereSprint({
   const [isSpinning, setIsSpinning] = useState(false);
   const [isBadgePopping, setIsBadgePopping] = useState(false);
   const [slimeFrame, setSlimeFrame] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
 
   /* ───────────────────────────────────────────────
      Refs — game truth inside RAF loop, timeout tracking
@@ -413,6 +415,7 @@ export default function VigenereSprint({
 
     if (isCorrect) {
       setResolvedStatus('correct');
+      sprintSound.playSfx('collect');
       triggerSpin();
       triggerBoost(1200);
       showFeedback('⚡ Correct Letter! BOOST!', '#22c55e', 10, 1100);
@@ -436,10 +439,13 @@ export default function VigenereSprint({
           if (startBriefingPhaseRef.current) startBriefingPhaseRef.current();
         } else {
           setSprintStep('finished');
+          sprintSound.stopBgm();
+          sprintSound.playSfx('win');
         }
       }, RESOLVED_MS);
     } else {
       setResolvedStatus(picked ? 'wrong' : 'missed');
+      sprintSound.playSfx('collision');
       triggerShake();
       setFirstTryForCurrent(false);
 
@@ -452,6 +458,8 @@ export default function VigenereSprint({
         if (nextLives <= 0) {
           startPhaseTimer(() => {
             setSprintStep('gameover');
+            sprintSound.stopBgm();
+            sprintSound.playSfx('lose');
           }, RESOLVED_MS);
         } else {
           startPhaseTimer(() => {
@@ -491,6 +499,8 @@ export default function VigenereSprint({
      Game flow actions
      ─────────────────────────────────────────────── */
   const handleStartSprint = () => {
+    sprintSound.unlockAudio();
+    sprintSound.playBgm();
     clearAllFXTimeouts();
     setCurrentMaskIndex(0);
     currentMaskIndexRef.current = 0;
@@ -516,6 +526,8 @@ export default function VigenereSprint({
   };
 
   const handleRetryFromCheckpoint = () => {
+    sprintSound.unlockAudio();
+    sprintSound.playBgm();
     clearAllFXTimeouts();
     setLives(5);
     setFirstTryForCurrent(true);
@@ -591,6 +603,9 @@ export default function VigenereSprint({
     if (runnerLane === prevLaneRef.current) return undefined;
     const dir = runnerLane < prevLaneRef.current ? 'moving-up' : 'moving-down';
     setLaneChangeEffect(dir);
+    if (sprintStepRef.current === 'running') {
+      sprintSound.playSfx(dir === 'moving-up' ? 'goUp' : 'goDown');
+    }
     prevLaneRef.current = runnerLane;
     if (laneTiltTimeoutRef.current) window.clearTimeout(laneTiltTimeoutRef.current);
     laneTiltTimeoutRef.current = window.setTimeout(() => setLaneChangeEffect(null), 180);
@@ -712,9 +727,14 @@ export default function VigenereSprint({
             ) {
               changed = true;
               if (triggerShakeRef.current) triggerShakeRef.current();
+              sprintSound.playSfx('collision');
               setLives((l) => {
                 const next = l - 1;
-                if (next <= 0) setSprintStep('gameover');
+                if (next <= 0) {
+                  setSprintStep('gameover');
+                  sprintSound.stopBgm();
+                  sprintSound.playSfx('lose');
+                }
                 return next;
               });
               if (showFeedbackRef.current) {
@@ -779,16 +799,58 @@ export default function VigenereSprint({
     runnerLaneRef.current = 1;
   }, [levelData]);
 
+  /* ───────────────────────────────────────────────
+     Audio — BGM follows the run state
+     ─────────────────────────────────────────────── */
+  useEffect(() => {
+    if (sprintStep === 'running' && !isPaused && !isMenuOpen && !showExplanation) {
+      sprintSound.playBgm();
+    } else {
+      sprintSound.pauseBgm();
+    }
+  }, [sprintStep, isPaused, isMenuOpen, showExplanation]);
+
   useEffect(() => {
     return () => {
       clearAllFXTimeouts();
       if (slimeIntervalRef.current) window.clearInterval(slimeIntervalRef.current);
       if (rafRef.current)           window.cancelAnimationFrame(rafRef.current);
+      sprintSound.stopBgm();
     };
   }, []);
 
+  /* ───────────────────────────────────────────────
+     Audio — mute toggle button
+     ─────────────────────────────────────────────── */
+  const toggleSound = () => {
+    const muted = sprintSound.toggleMute();
+    setIsMuted(muted);
+  };
+
+  const soundToggleButton = (
+    <button
+      className="fg-btn-icon"
+      onClick={toggleSound}
+      title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
+      style={{
+        background: 'rgba(255, 255, 255, 0.08)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        borderRadius: '8px',
+        color: '#fff',
+        padding: '4px 8px',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        fontSize: '1rem',
+      }}
+    >
+      {isMuted ? '🔇' : '🔊'}
+    </button>
+  );
+
   const handleVerifySubmit = () => {
     clearAllFXTimeouts();
+    sprintSound.stopBgm();
     setShowExplanation(true);
   };
 
@@ -831,7 +893,12 @@ export default function VigenereSprint({
         onBackToStages={onBackToStages}
         onOpenMenu={() => setIsMenuOpen(true)}
         lives={sprintStep === 'ready' ? null : lives}
-        customRightContent={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
+        customRightContent={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {soundToggleButton}
+            <FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
+          </div>
+        }
         extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
       />
 
@@ -901,7 +968,7 @@ export default function VigenereSprint({
                   <strong>How it works:</strong>{' '}
                   Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter calculated using the Vigenère keyword and shift value. Dodge the obstacle slimes! Decoy letters will cause a crash! Press <strong>F</strong> to toggle fullscreen.
                 </p>
-                <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
+                <button className="cq-dossier-action-btn" onClick={() => { sprintSound.unlockAudio(); setIsOperationLoading(true); }}>
                   Begin operation
                 </button>
               </div>
