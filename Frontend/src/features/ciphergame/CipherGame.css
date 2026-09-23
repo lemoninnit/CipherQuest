@@ -5986,12 +5986,16 @@
   margin-bottom: 2px;
 }
 
-.vigenere-fishing-fullscreen .fg-word-segment-card {
+.vigenere-fishing-fullscreen .fg-word-segment-card,
+.vigenere-sprint-fullscreen .fg-word-segment-card,
+.vg-pacman-fullscreen .fg-word-segment-card {
   padding: 8px 14px 8px !important;
 }
 
 /* Bottom-Center Floating Keyword Pill */
-.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword {
+.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword,
+.vigenere-sprint-fullscreen .vg-fishing-bottom-keyword,
+.vg-pacman-fullscreen .vg-fishing-bottom-keyword {
   position: absolute;
   bottom: 18px;
   left: 50%;
@@ -6010,7 +6014,9 @@
   pointer-events: auto;
 }
 
-.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl {
+.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl,
+.vigenere-sprint-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl,
+.vg-pacman-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 0.68rem;
   font-weight: 800;
@@ -6019,7 +6025,9 @@
   text-transform: uppercase;
 }
 
-.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-val {
+.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-val,
+.vigenere-sprint-fullscreen .vg-fishing-bottom-keyword .vg-pill-val,
+.vg-pacman-fullscreen .vg-fishing-bottom-keyword .vg-pill-val {
   font-family: 'JetBrains Mono', monospace;
   font-size: 1.05rem;
   font-weight: 800;
@@ -6029,7 +6037,9 @@
 }
 
 /* Tightened Vigenère Alignment Panel (Bottom-Left) - Centered and Wider-Child Driven */
-.vigenere-fishing-fullscreen .vg-floating-ref-panel {
+.vigenere-fishing-fullscreen .vg-floating-ref-panel,
+.vigenere-sprint-fullscreen .vg-floating-ref-panel,
+.vg-pacman-fullscreen .vg-floating-ref-panel {
   position: absolute !important;
   bottom: 18px !important;
   left: 22px !important;
@@ -6053,7 +6063,9 @@
   gap: 6px !important;
 }
 
-.vigenere-fishing-fullscreen .vg-floating-ref-title {
+.vigenere-fishing-fullscreen .vg-floating-ref-title,
+.vigenere-sprint-fullscreen .vg-floating-ref-title,
+.vg-pacman-fullscreen .vg-floating-ref-title {
   font-family: 'Space Grotesk', sans-serif !important;
   font-size: 0.78rem !important;
   font-weight: 800 !important;
@@ -6065,7 +6077,9 @@
   margin: 0 auto !important;
 }
 
-.vigenere-fishing-fullscreen .vg-formula-badge {
+.vigenere-fishing-fullscreen .vg-formula-badge,
+.vigenere-sprint-fullscreen .vg-formula-badge,
+.vg-pacman-fullscreen .vg-formula-badge {
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 0.68rem !important;
   font-weight: 700 !important;
@@ -6082,7 +6096,9 @@
   justify-content: center !important;
 }
 
-.vigenere-fishing-fullscreen .vg-tabula-btn-compact {
+.vigenere-fishing-fullscreen .vg-tabula-btn-compact,
+.vigenere-sprint-fullscreen .vg-tabula-btn-compact,
+.vg-pacman-fullscreen .vg-tabula-btn-compact {
   padding: 3px 10px !important;
   font-size: 0.68rem !important;
   display: inline-flex !important;
@@ -6101,12 +6117,16 @@
   transition: all 0.2s ease !important;
 }
 
-.vigenere-fishing-fullscreen .vg-tabula-btn-compact:hover {
+.vigenere-fishing-fullscreen .vg-tabula-btn-compact:hover,
+.vigenere-sprint-fullscreen .vg-tabula-btn-compact:hover,
+.vg-pacman-fullscreen .vg-tabula-btn-compact:hover {
   background: rgba(0, 229, 255, 0.25) !important;
   border-color: var(--neon-cyan) !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alignment-body {
+.vigenere-fishing-fullscreen .vg-alignment-body,
+.vigenere-sprint-fullscreen .vg-alignment-body,
+.vg-pacman-fullscreen .vg-alignment-body {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -6115,7 +6135,9 @@
   margin: 2px auto 0 auto !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alignment-labels {
+.vigenere-fishing-fullscreen .vg-alignment-labels,
+.vigenere-sprint-fullscreen .vg-alignment-labels,
+.vg-pacman-fullscreen .vg-alignment-labels {
   font-family: 'Space Grotesk', sans-serif !important;
   font-size: 10px !important;
   font-weight: 800 !important;
@@ -6133,21 +6155,31 @@
 
 .vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(1),
 .vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(2),
-.vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(4) {
+.vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(4),
+.vigenere-sprint-fullscreen .vg-alignment-labels > div:nth-child(1),
+.vigenere-sprint-fullscreen .vg-alignment-labels > div:nth-child(2),
+.vigenere-sprint-fullscreen .vg-alignment-labels > div:nth-child(4),
+.vg-pacman-fullscreen .vg-alignment-labels > div:nth-child(1),
+.vg-pacman-fullscreen .vg-alignment-labels > div:nth-child(2),
+.vg-pacman-fullscreen .vg-alignment-labels > div:nth-child(4) {
   height: 18px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(3) {
+.vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(3),
+.vigenere-sprint-fullscreen .vg-alignment-labels > div:nth-child(3),
+.vg-pacman-fullscreen .vg-alignment-labels > div:nth-child(3) {
   height: 16px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alignment-container {
+.vigenere-fishing-fullscreen .vg-alignment-container,
+.vigenere-sprint-fullscreen .vg-alignment-container,
+.vg-pacman-fullscreen .vg-alignment-container {
   display: flex !important;
   gap: 3px !important;
   padding: 0 !important;
@@ -6156,7 +6188,9 @@
   width: fit-content !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alignment-col {
+.vigenere-fishing-fullscreen .vg-alignment-col,
+.vigenere-sprint-fullscreen .vg-alignment-col,
+.vg-pacman-fullscreen .vg-alignment-col {
   padding: 2px 4px !important;
   min-width: 18px !important;
   gap: 2px !important;
@@ -6171,7 +6205,9 @@
   cursor: pointer !important;
 }
 
-.vigenere-fishing-fullscreen .vg-align-cipher {
+.vigenere-fishing-fullscreen .vg-align-cipher,
+.vigenere-sprint-fullscreen .vg-align-cipher,
+.vg-pacman-fullscreen .vg-align-cipher {
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 15px !important;
   font-weight: 800 !important;
@@ -6183,7 +6219,9 @@
   text-align: center !important;
 }
 
-.vigenere-fishing-fullscreen .vg-align-key {
+.vigenere-fishing-fullscreen .vg-align-key,
+.vigenere-sprint-fullscreen .vg-align-key,
+.vg-pacman-fullscreen .vg-align-key {
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 15px !important;
   font-weight: 800 !important;
@@ -6195,7 +6233,9 @@
   text-align: center !important;
 }
 
-.vigenere-fishing-fullscreen .vg-align-shift {
+.vigenere-fishing-fullscreen .vg-align-shift,
+.vigenere-sprint-fullscreen .vg-align-shift,
+.vg-pacman-fullscreen .vg-align-shift {
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 12px !important;
   font-weight: 700 !important;
@@ -6207,7 +6247,9 @@
   text-align: center !important;
 }
 
-.vigenere-fishing-fullscreen .vg-align-plain {
+.vigenere-fishing-fullscreen .vg-align-plain,
+.vigenere-sprint-fullscreen .vg-align-plain,
+.vg-pacman-fullscreen .vg-align-plain {
   font-family: 'JetBrains Mono', monospace !important;
   font-size: 15px !important;
   font-weight: 800 !important;
@@ -6218,19 +6260,25 @@
   text-align: center !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alignment-col.active-slot {
+.vigenere-fishing-fullscreen .vg-alignment-col.active-slot,
+.vigenere-sprint-fullscreen .vg-alignment-col.active-slot,
+.vg-pacman-fullscreen .vg-alignment-col.active-slot {
   background: rgba(0, 229, 255, 0.22) !important;
   border-color: var(--neon-cyan) !important;
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.45) !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alignment-space {
+.vigenere-fishing-fullscreen .vg-alignment-space,
+.vigenere-sprint-fullscreen .vg-alignment-space,
+.vg-pacman-fullscreen .vg-alignment-space {
   width: 6px !important;
   flex-shrink: 0 !important;
 }
 
 /* Tightened Decryption Arithmetic Panel (Bottom-Right) */
-.vigenere-fishing-fullscreen .vg-fishing-az-panel {
+.vigenere-fishing-fullscreen .vg-fishing-az-panel,
+.vigenere-sprint-fullscreen .vg-fishing-az-panel,
+.vg-pacman-fullscreen .vg-fishing-az-panel {
   width: fit-content !important;
   min-width: 360px !important;
   max-width: 440px !important;
@@ -6240,7 +6288,9 @@
   gap: 6px !important;
 }
 
-.vigenere-fishing-fullscreen .vg-arithmetic-title {
+.vigenere-fishing-fullscreen .vg-arithmetic-title,
+.vigenere-sprint-fullscreen .vg-arithmetic-title,
+.vg-pacman-fullscreen .vg-arithmetic-title {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 0.82rem;
   color: #ffffff;
@@ -6249,7 +6299,9 @@
   text-transform: uppercase;
 }
 
-.vigenere-fishing-fullscreen .vg-fishing-calc-card {
+.vigenere-fishing-fullscreen .vg-fishing-calc-card,
+.vigenere-sprint-fullscreen .vg-fishing-calc-card,
+.vg-pacman-fullscreen .vg-fishing-calc-card {
   padding: 6px 12px !important;
   background: rgba(2, 10, 24, 0.85) !important;
   border: 1.5px solid rgba(0, 229, 255, 0.35) !important;
@@ -6257,11 +6309,15 @@
   gap: 4px !important;
 }
 
-.vigenere-fishing-fullscreen .vg-calc-top-row {
+.vigenere-fishing-fullscreen .vg-calc-top-row,
+.vigenere-sprint-fullscreen .vg-calc-top-row,
+.vg-pacman-fullscreen .vg-calc-top-row {
   font-size: 0.74rem !important;
 }
 
-.vigenere-fishing-fullscreen .vg-calc-label {
+.vigenere-fishing-fullscreen .vg-calc-label,
+.vigenere-sprint-fullscreen .vg-calc-label,
+.vg-pacman-fullscreen .vg-calc-label {
   font-size: 0.7rem !important;
   font-weight: 800 !important;
   color: #94a3b8;
@@ -6269,90 +6325,122 @@
   letter-spacing: 0.04em;
 }
 
-.vigenere-fishing-fullscreen .vg-calc-badge {
+.vigenere-fishing-fullscreen .vg-calc-badge,
+.vigenere-sprint-fullscreen .vg-calc-badge,
+.vg-pacman-fullscreen .vg-calc-badge {
   font-size: 0.76rem !important;
   padding: 2px 8px !important;
 }
 
-.vigenere-fishing-fullscreen .vg-calc-formula-row {
+.vigenere-fishing-fullscreen .vg-calc-formula-row,
+.vigenere-sprint-fullscreen .vg-calc-formula-row,
+.vg-pacman-fullscreen .vg-calc-formula-row {
   gap: 12px !important;
   margin: 3px 0 !important;
 }
 
-.vigenere-fishing-fullscreen .vg-calc-item {
+.vigenere-fishing-fullscreen .vg-calc-item,
+.vigenere-sprint-fullscreen .vg-calc-item,
+.vg-pacman-fullscreen .vg-calc-item {
   padding: 3px 10px !important;
   min-width: 54px !important;
   border-radius: 8px !important;
 }
 
-.vigenere-fishing-fullscreen .vg-calc-item .lbl {
+.vigenere-fishing-fullscreen .vg-calc-item .lbl,
+.vigenere-sprint-fullscreen .vg-calc-item .lbl,
+.vg-pacman-fullscreen .vg-calc-item .lbl {
   font-size: 0.62rem !important;
   font-weight: 800 !important;
   letter-spacing: 0.06em !important;
 }
 
-.vigenere-fishing-fullscreen .vg-calc-item strong {
+.vigenere-fishing-fullscreen .vg-calc-item strong,
+.vigenere-sprint-fullscreen .vg-calc-item strong,
+.vg-pacman-fullscreen .vg-calc-item strong {
   font-size: 1.35rem !important;
   line-height: 1.15 !important;
 }
 
-.vigenere-fishing-fullscreen .vg-calc-item .val {
+.vigenere-fishing-fullscreen .vg-calc-item .val,
+.vigenere-sprint-fullscreen .vg-calc-item .val,
+.vg-pacman-fullscreen .vg-calc-item .val {
   font-size: 0.78rem !important;
   font-weight: 800 !important;
 }
 
-.vigenere-fishing-fullscreen .vg-calc-op {
+.vigenere-fishing-fullscreen .vg-calc-op,
+.vigenere-sprint-fullscreen .vg-calc-op,
+.vg-pacman-fullscreen .vg-calc-op {
   font-size: 1.3rem !important;
   font-weight: 900 !important;
   color: rgba(255, 255, 255, 0.6) !important;
 }
 
 /* Enlarged A-Z 26-Letter Grid */
-.vigenere-fishing-fullscreen .vg-sprint-alphabet-grid {
+.vigenere-fishing-fullscreen .vg-sprint-alphabet-grid,
+.vigenere-sprint-fullscreen .vg-sprint-alphabet-grid,
+.vg-pacman-fullscreen .vg-sprint-alphabet-grid {
   gap: 3px !important;
   margin-top: 2px !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alphabet-row {
+.vigenere-fishing-fullscreen .vg-alphabet-row,
+.vigenere-sprint-fullscreen .vg-alphabet-row,
+.vg-pacman-fullscreen .vg-alphabet-row {
   gap: 2px !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alphabet-cell {
+.vigenere-fishing-fullscreen .vg-alphabet-cell,
+.vigenere-sprint-fullscreen .vg-alphabet-cell,
+.vg-pacman-fullscreen .vg-alphabet-cell {
   padding: 3px 2px !important;
   min-width: 20px !important;
   max-width: 32px !important;
   border-radius: 5px !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alpha-char {
+.vigenere-fishing-fullscreen .vg-alpha-char,
+.vigenere-sprint-fullscreen .vg-alpha-char,
+.vg-pacman-fullscreen .vg-alpha-char {
   font-size: 0.84rem !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alpha-val {
+.vigenere-fishing-fullscreen .vg-alpha-val,
+.vigenere-sprint-fullscreen .vg-alpha-val,
+.vg-pacman-fullscreen .vg-alpha-val {
   font-size: 0.68rem !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alphabet-cell.is-cipher {
+.vigenere-fishing-fullscreen .vg-alphabet-cell.is-cipher,
+.vigenere-sprint-fullscreen .vg-alphabet-cell.is-cipher,
+.vg-pacman-fullscreen .vg-alphabet-cell.is-cipher {
   border: 1.5px solid var(--neon-cyan) !important;
   background: rgba(0, 229, 255, 0.28) !important;
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.55) !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alphabet-cell.is-cipher .vg-alpha-char {
+.vigenere-fishing-fullscreen .vg-alphabet-cell.is-cipher .vg-alpha-char,
+.vigenere-sprint-fullscreen .vg-alphabet-cell.is-cipher .vg-alpha-char,
+.vg-pacman-fullscreen .vg-alphabet-cell.is-cipher .vg-alpha-char {
   color: var(--neon-cyan) !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alphabet-cell.is-key {
+.vigenere-fishing-fullscreen .vg-alphabet-cell.is-key,
+.vigenere-sprint-fullscreen .vg-alphabet-cell.is-key,
+.vg-pacman-fullscreen .vg-alphabet-cell.is-key {
   border: 1.5px solid var(--neon-yellow) !important;
   background: rgba(255, 215, 0, 0.28) !important;
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.55) !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alphabet-cell.is-key .vg-alpha-char {
+.vigenere-fishing-fullscreen .vg-alphabet-cell.is-key .vg-alpha-char,
+.vigenere-sprint-fullscreen .vg-alphabet-cell.is-key .vg-alpha-char,
+.vg-pacman-fullscreen .vg-alphabet-cell.is-key .vg-alpha-char {
   color: var(--neon-yellow) !important;
 }
 
@@ -6364,37 +6452,51 @@
 
 /* Responsive Fitting: 1440x900 and 1366x768 */
 @media (max-width: 1440px), (max-height: 850px) {
-  .vigenere-fishing-fullscreen .vg-floating-ref-panel {
+  .vigenere-fishing-fullscreen .vg-floating-ref-panel,
+  .vigenere-sprint-fullscreen .vg-floating-ref-panel,
+  .vg-pacman-fullscreen .vg-floating-ref-panel {
     bottom: 14px !important;
     left: 16px !important;
     padding: 8px 10px !important;
     gap: 4px !important;
   }
 
-  .vigenere-fishing-fullscreen .vg-formula-badge {
+  .vigenere-fishing-fullscreen .vg-formula-badge,
+  .vigenere-sprint-fullscreen .vg-formula-badge,
+  .vg-pacman-fullscreen .vg-formula-badge {
     font-size: 0.64rem !important;
     padding: 2px 6px !important;
   }
 
-  .vigenere-fishing-fullscreen .vg-tabula-btn-compact {
+  .vigenere-fishing-fullscreen .vg-tabula-btn-compact,
+  .vigenere-sprint-fullscreen .vg-tabula-btn-compact,
+  .vg-pacman-fullscreen .vg-tabula-btn-compact {
     padding: 2px 8px !important;
     font-size: 0.64rem !important;
   }
 
-  .vigenere-fishing-fullscreen .vg-fishing-bottom-keyword {
+  .vigenere-fishing-fullscreen .vg-fishing-bottom-keyword,
+  .vigenere-sprint-fullscreen .vg-fishing-bottom-keyword,
+  .vg-pacman-fullscreen .vg-fishing-bottom-keyword {
     bottom: 14px !important;
     padding: 4px 10px !important;
   }
 
-  .vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl {
+  .vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl,
+  .vigenere-sprint-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl,
+  .vg-pacman-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl {
     font-size: 0.62rem !important;
   }
 
-  .vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-val {
+  .vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-val,
+  .vigenere-sprint-fullscreen .vg-fishing-bottom-keyword .vg-pill-val,
+  .vg-pacman-fullscreen .vg-fishing-bottom-keyword .vg-pill-val {
     font-size: 0.95rem !important;
   }
 
-  .vigenere-fishing-fullscreen .vg-fishing-az-panel {
+  .vigenere-fishing-fullscreen .vg-fishing-az-panel,
+  .vigenere-sprint-fullscreen .vg-fishing-az-panel,
+  .vg-pacman-fullscreen .vg-fishing-az-panel {
     min-width: 330px !important;
     max-width: 410px !important;
     bottom: 14px !important;
@@ -6410,672 +6512,15 @@
     font-size: 0.82rem !important;
   }
 
-  .vigenere-fishing-fullscreen .vg-calc-item strong {
+  .vigenere-fishing-fullscreen .vg-calc-item strong,
+  .vigenere-sprint-fullscreen .vg-calc-item strong,
+  .vg-pacman-fullscreen .vg-calc-item strong {
     font-size: 1.2rem !important;
   }
-
-  .vigenere-fishing-fullscreen .vg-calc-item .val {
-    font-size: 0.72rem !important;
-  }
-
-  .vigenere-fishing-fullscreen .vg-alpha-char {
-    font-size: 0.78rem !important;
-  }
-
-  .vigenere-fishing-fullscreen .vg-alpha-val {
-    font-size: 0.64rem !important;
-  }
 }
 
 /* ==========================================================================
-   Vigenère Sprint: Decryption Model Overhaul (Matching Vigenère Fishing)
-   ========================================================================== */
-
-/* Top-Center Word Segment Panel in Sprint */
-.sprint-container .vg-sprint-top-panel {
-  position: absolute !important;
-  top: 12px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  z-index: 20 !important;
-  pointer-events: auto !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-}
-
-.sprint-container .vg-sprint-top-panel .vg-cipher-main-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.sprint-container .vg-sprint-top-panel .vg-cipher-key-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(3, 14, 28, 0.9);
-  border: 1.5px solid rgba(255, 215, 0, 0.55);
-  border-radius: 14px;
-  padding: 8px 14px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 215, 0, 0.22);
-}
-
-.sprint-container .vg-sprint-top-panel .vg-cipher-key-pill .vg-pill-lbl {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: #94a3b8;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.sprint-container .vg-sprint-top-panel .vg-cipher-key-pill .vg-pill-val {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #ffd700;
-  letter-spacing: 0.08em;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-}
-
-.sprint-container .vg-sprint-top-panel .fg-word-segment-card {
-  border: 2px solid rgba(0, 229, 255, 0.65);
-  background: rgba(3, 14, 28, 0.88);
-  border-radius: 16px;
-  padding: 8px 14px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 0 24px rgba(0, 229, 255, 0.28), 0 8px 32px rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sprint-container .vg-sprint-top-panel .fg-letter-cells {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.sprint-container .vg-sprint-top-panel .fg-letter-cell {
-  width: 34px;
-  height: 48px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-family: 'JetBrains Mono', monospace;
-  transition: all 0.2s ease;
-}
-
-.sprint-container .vg-sprint-top-panel .fg-letter-cell .fg-cell-ciphertext {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #94a3b8;
-  line-height: 1;
-}
-
-.sprint-container .vg-sprint-top-panel .fg-letter-cell .fg-cell-plaintext {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: var(--neon-yellow);
-  line-height: 1.1;
-}
-
-.sprint-container .vg-sprint-top-panel .fg-letter-cell.correct-plain {
-  background: rgba(34, 197, 94, 0.18) !important;
-  border-color: var(--neon-green) !important;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.3) !important;
-}
-
-.sprint-container .vg-sprint-top-panel .fg-letter-cell.correct-plain .fg-cell-plaintext {
-  color: var(--neon-green) !important;
-}
-
-.sprint-container .vg-sprint-top-panel .fg-letter-cell.active-slot {
-  border-color: var(--neon-cyan) !important;
-  background: rgba(0, 229, 255, 0.18) !important;
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.5) !important;
-}
-
-.sprint-container .vg-sprint-top-panel .fg-letter-cell.active-slot .fg-cell-plaintext {
-  color: var(--neon-cyan) !important;
-}
-
-.sprint-container .vg-sprint-top-panel .vg-cipher-solving-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(3, 14, 28, 0.9);
-  border: 1.5px solid rgba(0, 229, 255, 0.55);
-  border-radius: 14px;
-  padding: 8px 14px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(0, 229, 255, 0.22);
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.sprint-container .vg-sprint-top-panel .vg-cipher-solving-pill .vg-pill-lbl {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: #94a3b8;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-right: 2px;
-}
-
-.sprint-container .vg-sprint-top-panel .vg-cipher-solving-pill .vg-pill-pos {
-  font-size: 0.92rem;
-  font-weight: 800;
-  color: #ffffff;
-}
-
-.sprint-container .vg-sprint-top-panel .vg-cipher-solving-pill .vg-pill-keychar {
-  font-size: 0.88rem;
-  font-weight: 800;
-  color: var(--neon-cyan);
-  text-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
-}
-
-/* Widened Alignment Panel in Sprint */
-.sprint-container .vg-sprint-ref-panel {
-  width: min(520px, calc(50vw - 36px)) !important;
-  min-width: 470px !important;
-  max-width: 530px !important;
-  padding: 14px 18px !important;
-  bottom: 18px !important;
-  left: 22px !important;
-  gap: 8px !important;
-  position: absolute !important;
-  z-index: 20 !important;
-  pointer-events: auto !important;
-  background: rgba(3, 14, 28, 0.88) !important;
-  border: 1.5px solid rgba(0, 229, 255, 0.4) !important;
-  border-radius: 16px !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05) !important;
-}
-
-.sprint-container .vg-sprint-ref-panel .vg-alignment-labels {
-  font-size: 0.72rem !important;
-  gap: 6px !important;
-  margin-right: 6px !important;
-}
-
-.sprint-container .vg-sprint-ref-panel .vg-alignment-labels > div:nth-child(1),
-.sprint-container .vg-sprint-ref-panel .vg-alignment-labels > div:nth-child(2),
-.sprint-container .vg-sprint-ref-panel .vg-alignment-labels > div:nth-child(4) {
-  height: 24px;
-  display: flex;
-  align-items: center;
-}
-
-.sprint-container .vg-sprint-ref-panel .vg-alignment-labels > div:nth-child(3) {
-  height: 20px;
-  display: flex;
-  align-items: center;
-}
-
-.sprint-container .vg-sprint-ref-panel .vg-alignment-container {
-  gap: 4px !important;
-  padding: 4px 2px !important;
-}
-
-.sprint-container .vg-sprint-ref-panel .vg-alignment-col {
-  padding: 4px 6px !important;
-  min-width: 28px !important;
-  gap: 6px !important;
-  border-radius: 8px !important;
-}
-
-.sprint-container .vg-sprint-ref-panel .vg-align-cipher {
-  font-size: 1.05rem !important;
-  font-weight: 800 !important;
-  color: #e2e8f0 !important;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sprint-container .vg-sprint-ref-panel .vg-align-key {
-  font-size: 1.05rem !important;
-  font-weight: 800 !important;
-  color: var(--neon-cyan) !important;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sprint-container .vg-sprint-ref-panel .vg-align-shift {
-  font-size: 0.86rem !important;
-  font-weight: 700 !important;
-  color: #ffd700 !important;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sprint-container .vg-sprint-ref-panel .vg-align-plain {
-  font-size: 1.1rem !important;
-  font-weight: 800 !important;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sprint-container .vg-sprint-ref-panel .vg-alignment-col.active-slot {
-  background: rgba(0, 229, 255, 0.22) !important;
-  border-color: var(--neon-cyan) !important;
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.45) !important;
-}
-
-/* Widened Decryption Arithmetic & A-Z Panel in Sprint */
-.sprint-container .vg-sprint-az-panel {
-  width: min(500px, calc(50vw - 36px)) !important;
-  min-width: 450px !important;
-  max-width: 510px !important;
-  padding: 12px 18px !important;
-  bottom: 18px !important;
-  right: 22px !important;
-  gap: 8px !important;
-  position: absolute !important;
-  z-index: 20 !important;
-  pointer-events: auto !important;
-  background: rgba(3, 14, 28, 0.88) !important;
-  border: 1.5px solid rgba(0, 229, 255, 0.4) !important;
-  border-radius: 16px !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05) !important;
-}
-
-/* Responsive Fitting for Vigenère Sprint: 1440x900 and 1366x768 */
-@media (max-width: 1440px), (max-height: 850px) {
-  .sprint-container .vg-sprint-ref-panel {
-    width: 480px !important;
-    min-width: 440px !important;
-    max-width: 490px !important;
-    bottom: 14px !important;
-    left: 16px !important;
-    padding: 10px 14px !important;
-    gap: 6px !important;
-  }
-
-  .sprint-container .vg-sprint-az-panel {
-    width: 460px !important;
-    min-width: 430px !important;
-    max-width: 470px !important;
-    bottom: 14px !important;
-    right: 16px !important;
-    padding: 10px 14px !important;
-    gap: 6px !important;
-  }
-}
-
-/* ==========================================================================
-   Vigenère Pac-Man: Floating Word Panel, Alignment Table & A-Z Reference Panels
-   ========================================================================== */
-
-/* Top Word Panel Overrides for Vigenère in Pac-Man */
-.pacman-layout .vg-cipher-main-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-}
-
-.pacman-layout .vg-cipher-key-pill {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 215, 0, 0.12);
-  border: 1.5px solid rgba(255, 215, 0, 0.6);
-  border-radius: 12px;
-  padding: 6px 14px;
-  flex-shrink: 0;
-  box-shadow: 0 0 14px rgba(255, 215, 0, 0.2);
-}
-
-.pacman-layout .vg-cipher-key-pill .vg-pill-lbl {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.64rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #fbbf24;
-  text-transform: uppercase;
-}
-
-.pacman-layout .vg-cipher-key-pill .vg-pill-val {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: 2px;
-}
-
-.pacman-layout .vg-cipher-solving-pill {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 229, 255, 0.1);
-  border: 1.5px solid rgba(0, 229, 255, 0.5);
-  border-radius: 12px;
-  padding: 6px 12px;
-  flex-shrink: 0;
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.2);
-}
-
-.pacman-layout .vg-cipher-solving-pill .vg-pill-lbl {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.64rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--neon-cyan);
-  text-transform: uppercase;
-}
-
-.pacman-layout .vg-cipher-solving-pill .vg-pill-val {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.92rem;
-  font-weight: 800;
-  color: #fff;
-}
-
-/* Widened Vigenère Alignment Panel in Pac-Man (Bottom-Left) */
-.pacman-layout .vg-pacman-ref-panel {
-  width: min(500px, calc(50vw - 36px)) !important;
-  min-width: 440px !important;
-  max-width: 510px !important;
-  padding: 12px 18px !important;
-  bottom: 16px !important;
-  left: 20px !important;
-  gap: 6px !important;
-  position: absolute !important;
-  z-index: 20 !important;
-  pointer-events: auto !important;
-  background: rgba(3, 14, 28, 0.88) !important;
-  border: 1.5px solid rgba(0, 229, 255, 0.4) !important;
-  border-radius: 16px !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05) !important;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels {
-  font-size: 0.72rem !important;
-  gap: 6px !important;
-  margin-right: 6px !important;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(1),
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(2),
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(4) {
-  height: 24px;
-  display: flex;
-  align-items: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(3) {
-  height: 20px;
-  display: flex;
-  align-items: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-container {
-  gap: 4px !important;
-  padding: 4px 2px !important;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-col {
-  padding: 4px 6px !important;
-  min-width: 28px !important;
-  gap: 6px !important;
-  border-radius: 8px !important;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-align-cipher {
-  font-size: 1.05rem !important;
-  font-weight: 800 !important;
-  color: #e2e8f0 !important;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-align-key {
-  font-size: 1.05rem !important;
-  font-weight: 800 !important;
-  color: var(--neon-cyan) !important;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-align-shift {
-  font-size: 0.86rem !important;
-  font-weight: 700 !important;
-  color: #ffd700 !important;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-align-plain {
-  font-size: 1.1rem !important;
-  font-weight: 800 !important;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-col.active-slot {
-  background: rgba(0, 229, 255, 0.22) !important;
-  border-color: var(--neon-cyan) !important;
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.45) !important;
-}
-
-/* Widened Decryption Arithmetic & A-Z Panel in Pac-Man (Bottom-Right) */
-.pacman-layout .vg-pacman-az-panel {
-  width: min(500px, calc(50vw - 36px)) !important;
-  min-width: 440px !important;
-  max-width: 510px !important;
-  padding: 12px 18px !important;
-  bottom: 16px !important;
-  right: 20px !important;
-  gap: 8px !important;
-  position: absolute !important;
-  z-index: 20 !important;
-  pointer-events: auto !important;
-  background: rgba(3, 14, 28, 0.88) !important;
-  border: 1.5px solid rgba(0, 229, 255, 0.4) !important;
-  border-radius: 16px !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05) !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-fishing-calc-card {
-  padding: 8px 14px !important;
-  background: rgba(2, 10, 24, 0.85) !important;
-  border: 1.5px solid rgba(0, 229, 255, 0.35) !important;
-  border-radius: 12px !important;
-  gap: 5px !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-calc-top-row {
-  font-size: 0.74rem !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-calc-label {
-  font-size: 0.72rem !important;
-  font-weight: 800 !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-calc-badge {
-  font-size: 0.78rem !important;
-  padding: 2px 8px !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-calc-formula-row {
-  gap: 14px !important;
-  margin: 4px 0 !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-calc-item {
-  padding: 4px 12px !important;
-  min-width: 60px !important;
-  border-radius: 8px !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-calc-item .lbl {
-  font-size: 0.64rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.06em !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-calc-item strong {
-  font-size: 1.45rem !important;
-  line-height: 1.15 !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-calc-item .val {
-  font-size: 0.82rem !important;
-  font-weight: 800 !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-calc-op {
-  font-size: 1.4rem !important;
-  font-weight: 900 !important;
-  color: rgba(255, 255, 255, 0.6) !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-sprint-alphabet-grid {
-  gap: 4px !important;
-  margin-top: 4px !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alphabet-row {
-  gap: 3px !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alphabet-cell {
-  padding: 4px 2px !important;
-  min-width: 22px !important;
-  max-width: 34px !important;
-  border-radius: 6px !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alpha-char {
-  font-size: 0.88rem !important;
-  font-weight: 800 !important;
-  line-height: 1.15 !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alpha-val {
-  font-size: 0.72rem !important;
-  font-weight: 800 !important;
-  line-height: 1.15 !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alphabet-cell.is-cipher {
-  border: 1.5px solid var(--neon-cyan) !important;
-  background: rgba(0, 229, 255, 0.25) !important;
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.5) !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alphabet-cell.is-key {
-  border: 1.5px solid #ffd700 !important;
-  background: rgba(255, 215, 0, 0.22) !important;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5) !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alphabet-cell.is-cipher.is-key {
-  border: 1.5px solid #22c55e !important;
-  background: rgba(34, 197, 94, 0.25) !important;
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.5) !important;
-}
-
-/* Skill Freeze Card docked directly above A-Z panel in Vigenère Pac-Man */
-.skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
-  bottom: 232px !important;
-  right: 20px !important;
-  min-width: 170px !important;
-  padding: 8px 14px !important;
-  z-index: 21 !important;
-}
-
-/* Responsive Fitting for Vigenère Pac-Man: 1440x900 and 1366x768 */
-@media (max-width: 1440px), (max-height: 850px) {
-  .pacman-layout .vg-pacman-ref-panel {
-    width: 460px !important;
-    min-width: 420px !important;
-    max-width: 470px !important;
-    bottom: 12px !important;
-    left: 16px !important;
-    padding: 10px 14px !important;
-    gap: 5px !important;
-  }
-
-  .pacman-layout .vg-pacman-az-panel {
-    width: 460px !important;
-    min-width: 420px !important;
-    max-width: 470px !important;
-    bottom: 12px !important;
-    right: 16px !important;
-    padding: 10px 14px !important;
-    gap: 5px !important;
-  }
-
-  .skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
-    bottom: 220px !important;
-    right: 16px !important;
-    padding: 6px 12px !important;
-  }
-}
-
-@media (max-height: 760px) {
-  .pacman-layout .vg-pacman-ref-panel {
-    bottom: 8px !important;
-    left: 12px !important;
-    padding: 8px 12px !important;
-  }
-
-  .pacman-layout .vg-pacman-az-panel {
-    bottom: 8px !important;
-    right: 12px !important;
-    padding: 8px 12px !important;
-  }
-
-  .skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
-    bottom: 205px !important;
-    right: 12px !important;
-  }
-}
-
-/* ==========================================================================
-   Vigenère Pac-Man: Compact Height, Widened Panels & Top-Right Skill Freeze
+   Vigenère Pac-Man: Board Clearance & Top-Right Skill Freeze Card
    ========================================================================== */
 
 /* 1. Lift maze board slightly in Vigenère Pac-Man for full clearance */
@@ -7106,373 +6551,7 @@
   gap: 3px !important;
 }
 
-/* 3. Vigenère Pac-Man Alignment Panel (Bottom-Left): Generous, Readable Size */
-.pacman-layout .vg-pacman-ref-panel {
-  width: min(620px, calc(48vw - 20px)) !important;
-  min-width: 480px !important;
-  max-width: 640px !important;
-  height: auto !important;
-  padding: 12px 18px 12px !important;
-  bottom: 14px !important;
-  left: 20px !important;
-  gap: 7px !important;
-  position: absolute !important;
-  z-index: 20 !important;
-  pointer-events: auto !important;
-  background: rgba(3, 14, 28, 0.92) !important;
-  border: 1.5px solid rgba(0, 229, 255, 0.42) !important;
-  border-radius: 16px !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), inset 0 0 16px rgba(0, 229, 255, 0.06) !important;
-}
-
-.pacman-layout .vg-pacman-ref-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-}
-
-.pacman-layout .vg-pacman-title-group {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: nowrap;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-floating-ref-title {
-  font-size: 0.88rem !important;
-  font-weight: 800 !important;
-  white-space: nowrap;
-  color: #ffffff;
-}
-
-.pacman-layout .vg-formula-compact {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.74rem;
-  color: #a0c4d8;
-  background: rgba(0, 229, 255, 0.08);
-  border: 1px solid rgba(0, 229, 255, 0.28);
-  border-radius: 6px;
-  padding: 2.5px 9px;
-  white-space: nowrap;
-}
-
-.pacman-layout .vg-formula-compact strong {
-  color: var(--neon-cyan);
-}
-
-.pacman-layout .vg-pacman-align-table-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 1px;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels {
-  font-size: 0.72rem !important;
-  gap: 4px !important;
-  margin-right: 6px !important;
-  font-weight: 800 !important;
-  color: #94a3b8;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(1),
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(2),
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(4) {
-  height: 24px !important;
-  display: flex;
-  align-items: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(3) {
-  height: 20px !important;
-  display: flex;
-  align-items: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-container {
-  gap: 4px !important;
-  padding: 2px 0 !important;
-  overflow-x: auto;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-alignment-col {
-  padding: 3px 5px !important;
-  min-width: 30px !important;
-  gap: 4px !important;
-  border-radius: 7px !important;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-align-cipher {
-  font-size: 1.05rem !important;
-  font-weight: 800 !important;
-  color: #e2e8f0 !important;
-  height: 24px !important;
-  line-height: 1 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-align-key {
-  font-size: 1.05rem !important;
-  font-weight: 800 !important;
-  color: var(--neon-cyan) !important;
-  height: 24px !important;
-  line-height: 1 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-align-shift {
-  font-size: 0.86rem !important;
-  font-weight: 700 !important;
-  color: #ffd700 !important;
-  height: 20px !important;
-  line-height: 1 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pacman-layout .vg-pacman-ref-panel .vg-align-plain {
-  font-size: 1.1rem !important;
-  font-weight: 800 !important;
-  height: 24px !important;
-  line-height: 1 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.pacman-layout .vg-pacman-ref-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-  font-size: 0.74rem;
-  color: #cbd5e1;
-  padding-top: 7px;
-  margin-top: 3px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.pacman-layout .vg-pacman-target-summary {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.76rem;
-}
-
-.pacman-layout .vg-target-tag {
-  font-size: 0.65rem;
-  font-weight: 800;
-  background: rgba(255, 215, 0, 0.18);
-  border: 1px solid rgba(255, 215, 0, 0.45);
-  color: #ffd700;
-  border-radius: 4px;
-  padding: 1.5px 6px;
-  letter-spacing: 0.05em;
-}
-
-.pacman-layout .vg-pacman-controls-hint {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.72rem;
-  color: #94a3b8;
-  white-space: nowrap;
-}
-
-/* 4. Vigenère Pac-Man A-Z Reference Panel (Bottom-Right): 3-Tier Clean Layout */
-.pacman-layout .vg-pacman-az-panel {
-  width: min(620px, calc(48vw - 20px)) !important;
-  min-width: 480px !important;
-  max-width: 640px !important;
-  height: auto !important;
-  padding: 12px 18px 12px !important;
-  bottom: 14px !important;
-  right: 20px !important;
-  gap: 7px !important;
-  position: absolute !important;
-  z-index: 20 !important;
-  pointer-events: auto !important;
-  background: rgba(3, 14, 28, 0.92) !important;
-  border: 1.5px solid rgba(0, 229, 255, 0.42) !important;
-  border-radius: 16px !important;
-  backdrop-filter: blur(14px) !important;
-  -webkit-backdrop-filter: blur(14px) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.65), inset 0 0 16px rgba(0, 229, 255, 0.06) !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-.pacman-layout .vg-pacman-az-top-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  width: 100%;
-}
-
-.pacman-layout .vg-pacman-az-title-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-
-.pacman-layout .vg-az-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #ffffff;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.pacman-layout .vg-pacman-calc-card {
-  padding: 5px 14px !important;
-  background: rgba(2, 10, 24, 0.88) !important;
-  border: 1.5px solid rgba(0, 229, 255, 0.38) !important;
-  border-radius: 10px !important;
-  margin: 1px 0 !important;
-  width: 100% !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-  box-shadow: inset 0 0 12px rgba(0, 229, 255, 0.05) !important;
-}
-
-.pacman-layout .vg-pacman-calc-card .vg-calc-formula-row {
-  gap: 14px !important;
-  margin: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  width: 100% !important;
-}
-
-.pacman-layout .vg-pacman-calc-card .vg-calc-item {
-  padding: 3px 12px !important;
-  min-width: 58px !important;
-  border-radius: 7px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-}
-
-.pacman-layout .vg-pacman-calc-card .vg-calc-item .lbl {
-  font-size: 0.62rem !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.05em !important;
-  text-transform: uppercase !important;
-  margin-bottom: 1px !important;
-}
-
-.pacman-layout .vg-pacman-calc-card .vg-calc-item strong {
-  font-size: 1.35rem !important;
-  line-height: 1.1 !important;
-}
-
-.pacman-layout .vg-pacman-calc-card .vg-calc-item .val {
-  font-size: 0.78rem !important;
-  font-weight: 800 !important;
-}
-
-.pacman-layout .vg-pacman-calc-card .vg-calc-op {
-  font-size: 1.3rem !important;
-  font-weight: 900 !important;
-  color: rgba(255, 255, 255, 0.65) !important;
-}
-
-.pacman-layout .vg-pacman-lives-box {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-sprint-alphabet-grid {
-  gap: 4px !important;
-  margin-top: 1px !important;
-  width: 100% !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alphabet-row {
-  gap: 4px !important;
-  display: grid !important;
-  grid-template-columns: repeat(13, 1fr) !important;
-  width: 100% !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alphabet-cell {
-  padding: 3px 0 !important;
-  min-width: 0 !important;
-  width: 100% !important;
-  max-width: none !important;
-  border-radius: 6px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alpha-char {
-  font-size: 0.88rem !important;
-  font-weight: 800 !important;
-  line-height: 1.1 !important;
-}
-
-.pacman-layout .vg-pacman-az-panel .vg-alpha-val {
-  font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  line-height: 1.1 !important;
-}
-
-/* 5. Responsive adjustments for 1440x900 and 1366x768 */
 @media (max-width: 1440px), (max-height: 850px) {
-  .pacman-layout .vg-pacman-ref-panel {
-    width: min(560px, calc(48vw - 16px)) !important;
-    min-width: 450px !important;
-    max-width: 580px !important;
-    bottom: 10px !important;
-    left: 14px !important;
-    padding: 10px 14px 10px !important;
-    gap: 6px !important;
-  }
-
-  .pacman-layout .vg-pacman-az-panel {
-    width: min(560px, calc(48vw - 16px)) !important;
-    min-width: 450px !important;
-    max-width: 580px !important;
-    bottom: 10px !important;
-    right: 14px !important;
-    padding: 10px 14px 10px !important;
-    gap: 6px !important;
-  }
-
-  .pacman-layout .vg-pacman-calc-card {
-    padding: 4px 10px !important;
-  }
-
-  .pacman-layout .vg-pacman-calc-card .vg-calc-item strong {
-    font-size: 1.2rem !important;
-  }
-
-  .pacman-layout .vg-pacman-az-panel .vg-alphabet-cell {
-    padding: 2.5px 0 !important;
-  }
-
   .skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
     top: 10px !important;
     right: 14px !important;
@@ -7481,69 +6560,10 @@
 }
 
 @media (max-height: 760px) {
-  .pacman-layout .vg-pacman-ref-panel {
-    width: min(520px, calc(48vw - 12px)) !important;
-    min-width: 420px !important;
-    bottom: 6px !important;
-    left: 10px !important;
-    padding: 8px 12px 7px !important;
-    gap: 4px !important;
-  }
-
-  .pacman-layout .vg-pacman-az-panel {
-    width: min(520px, calc(48vw - 12px)) !important;
-    min-width: 420px !important;
-    bottom: 6px !important;
-    right: 10px !important;
-    padding: 8px 12px 7px !important;
-    gap: 4px !important;
-  }
-
-  .pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(1),
-  .pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(2),
-  .pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(4) {
-    height: 20px !important;
-  }
-
-  .pacman-layout .vg-pacman-ref-panel .vg-alignment-labels > div:nth-child(3) {
-    height: 16px !important;
-  }
-
-  .pacman-layout .vg-pacman-ref-panel .vg-align-cipher,
-  .pacman-layout .vg-pacman-ref-panel .vg-align-key,
-  .pacman-layout .vg-pacman-ref-panel .vg-align-plain {
-    font-size: 0.95rem !important;
-    height: 20px !important;
-  }
-
-  .pacman-layout .vg-pacman-calc-card {
-    padding: 3px 8px !important;
-  }
-
-  .pacman-layout .vg-pacman-calc-card .vg-calc-item {
-    min-width: 48px !important;
-    padding: 2px 8px !important;
-  }
-
-  .pacman-layout .vg-pacman-calc-card .vg-calc-item strong {
-    font-size: 1.05rem !important;
-  }
-
-  .pacman-layout .vg-pacman-az-panel .vg-alphabet-cell {
-    padding: 2px 0 !important;
-  }
-
-  .pacman-layout .vg-pacman-az-panel .vg-alpha-char {
-    font-size: 0.8rem !important;
-  }
-
-  .pacman-layout .vg-pacman-az-panel .vg-alpha-val {
-    font-size: 0.65rem !important;
-  }
-
   .skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
     top: 8px !important;
     right: 10px !important;
     padding: 5px 10px !important;
   }
-}
+}
+

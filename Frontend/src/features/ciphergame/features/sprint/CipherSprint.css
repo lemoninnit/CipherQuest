@@ -1940,22 +1940,27 @@
 
 /* Bottom-Left Vigenère Alignment Panel */
 .vg-sprint-alignment-panel {
-  position: absolute;
-  bottom: 12px;
-  left: 20px;
+  position: absolute !important;
+  bottom: 12px !important;
+  left: 20px !important;
+  right: auto !important;
   z-index: 20;
   pointer-events: auto;
-  background: rgba(3, 14, 28, 0.88);
+  background: rgba(3, 14, 28, 0.92);
   border: 1.5px solid rgba(0, 229, 255, 0.45);
-  border-radius: 14px;
-  padding: 8px 16px 8px;
+  border-radius: 12px;
+  padding: 8px 14px 8px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(0, 229, 255, 0.05);
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  max-width: 480px;
+  align-items: center;
+  gap: 6px;
+  width: fit-content !important;
+  width: -moz-fit-content !important;
+  min-width: 0 !important;
+  max-width: min(440px, calc(50vw - 24px));
   box-sizing: border-box;
 }
 
@@ -1963,7 +1968,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+  width: 100%;
+  white-space: nowrap;
 }
 
 .vg-sprint-align-title {
@@ -1971,16 +1978,10 @@
   font-size: 0.76rem;
   font-weight: 800;
   color: #ffffff;
-  letter-spacing: 0.08em;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.vg-sprint-align-title::before {
-  content: '■';
-  color: var(--neon-cyan, #00e5ff);
-  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .vg-sprint-formula-badge {
@@ -1990,19 +1991,47 @@
   color: #00e5ff;
   background: rgba(0, 229, 255, 0.1);
   border: 1px solid rgba(0, 229, 255, 0.3);
-  padding: 1px 8px;
+  padding: 2px 8px;
   border-radius: 6px;
-  letter-spacing: 0.02em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.vg-sprint-tabula-btn {
+  padding: 2px 8px;
+  font-size: 0.66rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 6px;
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.vg-sprint-tabula-btn:hover {
+  background: rgba(0, 229, 255, 0.28);
+  border-color: var(--neon-cyan);
 }
 
 .vg-sprint-grid-container {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   background: rgba(0, 0, 0, 0.25);
   padding: 4px 8px;
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.06);
+  width: fit-content;
+  margin: 0 auto;
 }
 
 .vg-sprint-row-labels {
@@ -2083,52 +2112,7 @@
   text-shadow: 0 0 6px #00e5ff;
 }
 
-.vg-sprint-align-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 0.64rem;
-  color: #94a3b8;
-  line-height: 1.25;
-}
-
-.vg-sprint-footer-row-1 {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: 700;
-  color: #cbd5e1;
-}
-
-.vg-sprint-footer-row-2 {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.62rem;
-  color: #38bdf8;
-}
-
-/* Bottom-Left Vigenère Alignment Panel (Image 1) */
-.vg-sprint-alignment-panel {
-  position: absolute !important;
-  bottom: 12px !important;
-  left: 20px !important;
-  right: auto !important;
-  z-index: 20;
-  pointer-events: auto;
-  background: rgba(3, 14, 28, 0.88);
-  border: 1.5px solid rgba(0, 229, 255, 0.45);
-  border-radius: 14px;
-  padding: 8px 16px 8px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(0, 229, 255, 0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  max-width: 480px;
-  box-sizing: border-box;
-}
-
-/* Bottom-Right Vigenère Decryption Arithmetic & A-Z Reference Panel (Image 1) */
+/* Bottom-Right Vigenère Decryption Arithmetic & A-Z Reference Panel */
 .vg-sprint-arithmetic-panel {
   position: absolute !important;
   bottom: 12px !important;
@@ -2136,10 +2120,10 @@
   left: auto !important;
   z-index: 20;
   pointer-events: auto;
-  background: rgba(3, 14, 28, 0.88);
+  background: rgba(3, 14, 28, 0.92);
   border: 1.5px solid rgba(0, 229, 255, 0.45);
-  border-radius: 14px;
-  padding: 8px 16px 8px;
+  border-radius: 12px;
+  padding: 8px 14px 8px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 0 14px rgba(0, 229, 255, 0.05);
@@ -2157,20 +2141,6 @@
   gap: 8px;
 }
 
-.vg-sprint-ref-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.vg-sprint-ref-main-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.72rem;
-  font-weight: 800;
-  color: #94a3b8;
-  letter-spacing: 0.06em;
-}
-
 .vg-sprint-ref-sub-title {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 0.8rem;
@@ -2182,17 +2152,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.vg-sprint-keyword-tag {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.66rem;
-  font-weight: 700;
-  color: #00e5ff;
-  background: rgba(0, 229, 255, 0.1);
-  border: 1px solid rgba(0, 229, 255, 0.3);
-  padding: 1px 7px;
-  border-radius: 6px;
 }
 
 .vg-sprint-cleared-badge {

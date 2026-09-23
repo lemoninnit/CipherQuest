@@ -1,4 +1,3 @@
-import React from 'react';
 import '../CipherGame.css';
 import { useScoring } from '../core/hooks/ScoringContext';
 
@@ -16,8 +15,8 @@ export default function GameHudBar({
   customRightContent
 }) {
   return (
-    <header className="fg-header relative-header">
-      <div className="fg-header-left">
+    <header className="fg-header relative-header" style={{ position: 'relative' }}>
+      <div className="fg-header-left" style={{ zIndex: 6 }}>
         {isReady ? (
           <button className="fg-btn-back-nav" onClick={onBackToStages}>
             <span className="material-symbols-outlined">arrow_back</span>
@@ -31,11 +30,26 @@ export default function GameHudBar({
         )}
       </div>
 
-      <div className="fg-header-title" style={{ textAlign: 'center', flex: 1, fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.1rem', fontWeight: '700', color: '#ffffff' }}>
+      <div
+        className="fg-header-title"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          textAlign: 'center',
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: '1.1rem',
+          fontWeight: '700',
+          color: '#ffffff',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          zIndex: 5,
+        }}
+      >
         {title} {stage != null && `— Stage ${stage}`} {tier && `(${tier.toUpperCase()})`}
       </div>
 
-      <div className="fg-header-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className="fg-header-right" style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 6 }}>
         {/* ── SCORING SYSTEM: live score / streak / multiplier / stage timer ── */}
         <ScoringStrip />
         {lives != null && (
