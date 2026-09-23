@@ -28,7 +28,7 @@ function vigEnc(text, key) {
 }
 
 /** Build a boolean mask array: false = player must solve this letter */
-function makeMask(plainOrLen, revealFraction = 0.5) {
+function makeMask(plainOrLen, revealFraction = 0.5, minRevealedPerWord = 1) {
   const isStr = typeof plainOrLen === 'string';
   const len = isStr ? plainOrLen.length : plainOrLen;
   const mask = Array(len).fill(true);
@@ -55,6 +55,33 @@ function makeMask(plainOrLen, revealFraction = 0.5) {
     .slice(0, hideCount);
 
   hiddenIndices.forEach(i => { mask[i] = false; });
+
+  // Guarantee solvability: every word must keep at least `minRevealedPerWord`
+  // revealed letters, otherwise the first blank of a hidden word is pure
+  // guesswork when the shift clue is hidden (Caesar Pac-Man / Sprint med+hard).
+  if (isStr && minRevealedPerWord > 0) {
+    const words = isStr ? plainOrLen.split(' ') : [];
+    let wordStart = 0;
+    words.forEach(word => {
+      const wordLetters = [];
+      for (let i = 0; i < word.length; i++) {
+        const code = word.charCodeAt(i);
+        if (code >= 65 && code <= 90) wordLetters.push(wordStart + i);
+      }
+      if (wordLetters.length > minRevealedPerWord) {
+        const revealed = wordLetters.filter(i => mask[i]);
+        const toReveal = minRevealedPerWord - revealed.length;
+        if (toReveal > 0) {
+          const hidden = wordLetters.filter(i => !mask[i])
+            .sort(() => Math.random() - 0.5)
+            .slice(0, toReveal);
+          hidden.forEach(i => { mask[i] = true; });
+        }
+      }
+      wordStart += word.length + 1;
+    });
+  }
+
   return mask;
 }
 
