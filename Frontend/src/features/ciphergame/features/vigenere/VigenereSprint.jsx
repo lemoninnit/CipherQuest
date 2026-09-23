@@ -809,7 +809,7 @@ export default function VigenereSprint({
   return (
     <div
       ref={fsContainerRef}
-      className={`sprint-container fg-root ${isFullscreen ? 'is-fullscreen' : ''}`}
+      className={`sprint-container fg-root vigenere-sprint-fullscreen ${isFullscreen ? 'is-fullscreen' : ''}`}
     >
       {/* ───── Recap overlay ───── */}
       {showExplanation && (
@@ -900,7 +900,7 @@ export default function VigenereSprint({
         )
       ) : (
         /* ───── Running / Gameplay Layout ───── */
-        <div className="caesar-sprint-fullscreen sprint-fullscreen-stage">
+        <div className="caesar-sprint-fullscreen sprint-fullscreen-stage vigenere-sprint-fullscreen">
           {/* Edge-to-edge 3-lane Track */}
           <div
             className={[
@@ -1166,66 +1166,71 @@ export default function VigenereSprint({
           {/* ───── Floating Overlays ───── */}
 
           {/* 1. Top-Center Floating Word Panel */}
-          <div className="sprint-r2-word-panel">
-            <div className="sprint-r2-letters-row">
-              {levelData.plaintext.split('').map((char, idx) => {
-                if (char === ' ') {
-                  return <div key={idx} style={{ width: 14 }} />;
-                }
-                const isMasked = !hintIndices.has(idx);
-                const isCurrentActive = isMasked && idx === currentIdx && sprintStep === 'running';
-                const cipherCh = levelData.ciphertext[idx];
-                const isSolved = solvedLetters[idx] !== undefined;
-                const plainCh = isSolved ? solvedLetters[idx] : hintIndices.has(idx) ? char : '';
+          <div className="caesar-fishing-floating-word-panel vg-sprint-word-panel">
+            <div className="fg-word-segments-row">
+              <div className="fg-word-segment-card">
+                <div className="fg-letter-cells">
+                  {levelData.plaintext.split('').map((char, idx) => {
+                    if (char === ' ') {
+                      return <div key={idx} style={{ width: 10 }} />;
+                    }
+                    const isMasked = !hintIndices.has(idx);
+                    const isCurrentActive = isMasked && idx === currentIdx && sprintStep === 'running';
+                    const cipherCh = levelData.ciphertext[idx];
+                    const isSolved = solvedLetters[idx] !== undefined;
+                    const plainCh = isSolved ? solvedLetters[idx] : hintIndices.has(idx) ? char : '_';
 
-                return (
-                  <div
-                    key={idx}
-                    className={`sprint-r2-letter-box ${isSolved ? 'solved' : ''} ${isCurrentActive ? 'active' : ''}`}
-                    title={`Cipher: ${cipherCh} → ${isSolved ? plainCh : '?'}`}
-                  >
-                    <span className="sprint-r2-box-cipher">{cipherCh}</span>
-                    <span className="sprint-r2-box-plain">{plainCh}</span>
-                  </div>
-                );
-              })}
+                    let cellClass = "fg-letter-cell";
+                    if (isSolved || hintIndices.has(idx)) {
+                      cellClass += " correct-plain";
+                    } else if (isCurrentActive) {
+                      cellClass += " active-target";
+                    }
+
+                    return (
+                      <div key={idx} className={cellClass} title={`Cipher: ${cipherCh} → ${isSolved ? plainCh : '?'}`}>
+                        <span className="fg-cell-ciphertext">{cipherCh}</span>
+                        <span className="fg-cell-plaintext">{plainCh}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
             {(levelData.hint || levelData.keyClue) && (
-              <div className="sprint-r2-word-hint">
-                {levelData.keyClue && <span>Keyword clue: "{levelData.keyClue}"</span>}
-                {levelData.keyClue && levelData.hint && <span> · </span>}
-                {levelData.hint && <span>Hint: "{levelData.hint}"</span>}
+              <div className="caesar-floating-hint">
+                {levelData.keyClue && <span>💡 Keyword clue: <strong>"{levelData.keyClue}"</strong></span>}
+                {levelData.keyClue && levelData.hint && <span style={{ margin: '0 8px', opacity: 0.4 }}>|</span>}
+                {levelData.hint && <span>Hint: <strong>"{levelData.hint}"</strong></span>}
               </div>
             )}
           </div>
 
           {/* 2. Bottom-Left Vigenère Alignment Panel */}
-          <div className="vg-sprint-alignment-panel">
-            <div className="vg-sprint-align-header">
-              <span className="vg-sprint-align-title">Vigenère Alignment</span>
-              <span className="vg-sprint-formula-badge">Formula: Plain = (Cipher − Key + 26) mod 26</span>
-              <button
-                type="button"
-                className="vg-sprint-tabula-btn"
-                onClick={() => setShowTabula(true)}
-                title="Open Interactive Tabula Recta"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '0.8rem' }}>grid_on</span>
-                <span>Tabula Recta</span>
-              </button>
-            </div>
+          <div className="vg-floating-ref-panel vg-sprint-align-panel">
+            <div className="vg-floating-ref-title">Vigenère Alignment</div>
+            <div className="vg-formula-badge">Plain = (Cipher − Key + 26) mod 26</div>
+            <button
+              type="button"
+              className="vg-tabula-modal-btn vg-tabula-btn-compact"
+              onClick={() => setShowTabula(true)}
+              title="Open Interactive Tabula Recta"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '0.8rem' }}>grid_on</span>
+              <span>Tabula Recta</span>
+            </button>
 
-            <div className="vg-sprint-grid-container">
-              <div className="vg-sprint-row-labels">
-                <span className="vg-sprint-row-label">CIPHER</span>
-                <span className="vg-sprint-row-label">KEY</span>
-                <span className="vg-sprint-row-label">SHIFT</span>
-                <span className="vg-sprint-row-label" style={{ color: 'var(--neon-green)' }}>PLAIN</span>
+            <div className="vg-alignment-body">
+              <div className="vg-alignment-labels">
+                <div>CIPHER</div>
+                <div>KEY</div>
+                <div>SHIFT</div>
+                <div style={{ color: 'var(--neon-green)' }}>PLAIN</div>
               </div>
-              <div className="vg-sprint-grid-columns">
+              <div className="vg-alignment-container">
                 {levelData.plaintext.split('').map((char, idx) => {
                   if (char === ' ') {
-                    return <div key={idx} style={{ width: 6 }} />;
+                    return <div key={idx} className="vg-alignment-space" />;
                   }
                   const cipherCh = levelData.ciphertext[idx] || '';
                   let nonSpace = 0;
@@ -1252,20 +1257,21 @@ export default function VigenereSprint({
                   return (
                     <div
                       key={idx}
-                      className={`vg-sprint-grid-col ${isCurrent ? 'active' : ''}`}
+                      className={`vg-alignment-col ${isCurrent ? 'active-slot' : ''}`}
                       title={`Pos #${idx + 1}: ${cipherCh} (${cipherCh.charCodeAt(0) - 65}) − ${keyCh} (${shiftVal}) = ${isSolved || isHint ? plainDisplay : '?'}`}
                     >
-                      <span className="vg-sprint-cell cipher">{cipherCh}</span>
-                      <span className="vg-sprint-cell key">{keyCh}</span>
-                      <span className="vg-sprint-cell shift">-{shiftVal}</span>
+                      <span className="vg-align-cipher">{cipherCh}</span>
+                      <span className="vg-align-key">{keyCh}</span>
+                      <span className="vg-align-shift">-{shiftVal}</span>
                       <span
-                        className={`vg-sprint-cell plain ${
-                          isSolved || isHint
-                            ? 'solved'
+                        className="vg-align-plain"
+                        style={{
+                          color: isSolved || isHint
+                            ? 'var(--neon-green)'
                             : isCurrent
-                            ? 'active-mystery'
-                            : 'unsolved'
-                        }`}
+                            ? 'var(--neon-yellow)'
+                            : '#64748b'
+                        }}
                       >
                         {plainDisplay}
                       </span>
@@ -1277,41 +1283,42 @@ export default function VigenereSprint({
           </div>
 
           {/* 3. Bottom-Right Decryption Arithmetic & A-Z Reference */}
-          <div className="vg-sprint-arithmetic-panel">
-            <div className="vg-sprint-ref-header">
-              <span className="vg-sprint-ref-sub-title">Decryption Arithmetic</span>
-              <div className="vg-sprint-ref-header-right">
-                <span className="vg-sprint-cleared-badge">
-                  {Object.keys(solvedLetters).length}/{maskedIndices.length} Cleared
-                </span>
+          <div className="vg-floating-key-panel vg-fishing-az-panel vg-sprint-az-panel">
+            <div className="vg-floating-current-slot">
+              <div className="vg-arithmetic-title">
+                Decryption Arithmetic
+              </div>
+              <div className="vg-slot-badge-lg" style={{ fontSize: '0.82rem', padding: '2px 8px' }}>
+                {Object.keys(solvedLetters).length}/{maskedIndices.length} Solved
               </div>
             </div>
 
-            {/* Active Letter Decryption Equation */}
-            <div className="vg-sprint-active-card">
-              <div className="vg-sprint-active-head">
-                <span>ACTIVE LETTER DECRYPTION:</span>
-                <span className="vg-sprint-pos-pill">Pos #{currentIdx + 1}</span>
+            {/* Active calculation card */}
+            <div className="vg-fishing-calc-card">
+              <div className="vg-calc-top-row">
+                <span className="vg-calc-label">Active Letter Decryption:</span>
+                <span className="vg-calc-badge">Pos #{currentIdx + 1}</span>
               </div>
-              <div className="vg-sprint-active-eq">
-                <div className="vg-sprint-eq-box cipher">
-                  <span className="vg-sprint-eq-char">{currentBatonLetter || '-'}</span>
-                  <span className="vg-sprint-eq-num">
-                    {currentBatonLetter ? currentBatonLetter.charCodeAt(0) - 65 : 0}
-                  </span>
+              <div className="vg-calc-formula-row">
+                <div className="vg-calc-item cipher">
+                  <span className="lbl">Cipher</span>
+                  <strong>{currentBatonLetter || '-'}</strong>
+                  <span className="val">{currentBatonLetter ? currentBatonLetter.charCodeAt(0) - 65 : 0}</span>
                 </div>
-                <span className="vg-sprint-eq-op">−</span>
-                <div className="vg-sprint-eq-box key">
-                  <span className="vg-sprint-eq-char">{currentKeyChar || '-'}</span>
-                  <span className="vg-sprint-eq-num">{currentShiftKey}</span>
+                <span className="vg-calc-op">−</span>
+                <div className="vg-calc-item key">
+                  <span className="lbl">Key</span>
+                  <strong>{currentKeyChar || '-'}</strong>
+                  <span className="val">{currentShiftKey}</span>
                 </div>
-                <span className="vg-sprint-eq-op">=</span>
-                <div className="vg-sprint-eq-box target">
-                  <span className="vg-sprint-eq-char">
+                <span className="vg-calc-op">=</span>
+                <div className="vg-calc-item plain">
+                  <span className="lbl">Target</span>
+                  <strong style={{ color: 'var(--neon-green)' }}>
                     {solvedLetters[currentIdx] !== undefined ? currentTargetChar : '?'}
-                  </span>
+                  </strong>
                   <span
-                    className="vg-sprint-eq-num"
+                    className="val"
                     style={{ visibility: solvedLetters[currentIdx] !== undefined ? 'visible' : 'hidden' }}
                   >
                     {currentTargetChar ? currentTargetChar.charCodeAt(0) - 65 : 0}
@@ -1320,43 +1327,39 @@ export default function VigenereSprint({
               </div>
             </div>
 
-            {/* A–Z Value Reference Grid */}
-            <div className="vg-sprint-az-table">
-              <div className="vg-sprint-az-row">
-                {'ABCDEFGHIJKLM'.split('').map((ch, num) => {
+            {/* 2-row x 13-col Alphabet grid */}
+            <div className="vg-sprint-alphabet-grid">
+              <div className="vg-alphabet-row">
+                {ALPHABET.slice(0, 13).map((ch, i) => {
+                  const isCipher = ch === currentBatonLetter;
                   const isKey = ch === currentKeyChar;
+                  let cellClass = "vg-alphabet-cell";
+                  if (isCipher) cellClass += " is-cipher";
+                  if (isKey) cellClass += " is-key";
                   return (
-                    <div
-                      key={ch}
-                      className={`vg-sprint-az-cell ${isKey ? 'active-key' : ''}`}
-                    >
-                      <span className="vg-sprint-az-letter">{ch}</span>
-                      <span className="vg-sprint-az-val">{num}</span>
+                    <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
+                      <span className="vg-alpha-char">{ch}</span>
+                      <span className="vg-alpha-val">{i}</span>
                     </div>
                   );
                 })}
               </div>
-              <div className="vg-sprint-az-row">
-                {'NOPQRSTUVWXYZ'.split('').map((ch, idx) => {
-                  const num = idx + 13;
+              <div className="vg-alphabet-row">
+                {ALPHABET.slice(13, 26).map((ch, i) => {
+                  const val = i + 13;
+                  const isCipher = ch === currentBatonLetter;
                   const isKey = ch === currentKeyChar;
+                  let cellClass = "vg-alphabet-cell";
+                  if (isCipher) cellClass += " is-cipher";
+                  if (isKey) cellClass += " is-key";
                   return (
-                    <div
-                      key={ch}
-                      className={`vg-sprint-az-cell ${isKey ? 'active-key' : ''}`}
-                    >
-                      <span className="vg-sprint-az-letter">{ch}</span>
-                      <span className="vg-sprint-az-val">{num}</span>
+                    <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
+                      <span className="vg-alpha-char">{ch}</span>
+                      <span className="vg-alpha-val">{val}</span>
                     </div>
                   );
                 })}
               </div>
-            </div>
-
-            <div className="vg-sprint-ref-footer">
-              <span>
-                Lives Remaining: <span className="vg-sprint-lives-hearts">{'♥'.repeat(Math.max(0, lives))}</span> ({lives}/5)
-              </span>
             </div>
           </div>
 
