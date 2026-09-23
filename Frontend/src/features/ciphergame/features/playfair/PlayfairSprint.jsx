@@ -1288,17 +1288,11 @@ export default function PlayfairSprint({
 function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
     <div className="fg-success-panel">
-      <h3>SECURED!</h3>
-      <p>All digraphs decrypted successfully.</p>
+      <h3 className="caesar-victory-title">STAGE SECURED!</h3>
+      <p className="caesar-victory-desc">All digraphs decrypted successfully.</p>
       <button
         className="fg-btn fg-btn-primary"
         onClick={onVerifySubmit}
-        style={{
-          width: '100%',
-          background: 'var(--neon-green)',
-          color: '#030914',
-          marginTop: '10px',
-        }}
       >
         Verify & Submit
       </button>
@@ -1306,13 +1300,6 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
         <button
           className="fg-btn fg-btn-secondary"
           onClick={onReplayNewQuestion}
-          style={{
-            width: '100%',
-            marginTop: '10px',
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: '#fff',
-          }}
         >
           Play Again
         </button>

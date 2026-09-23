@@ -1,7 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import './CompletionModal.css';
 
 export default function CompletionModal({ modalData, onContinueNext, onMainMenu }) {
+  const [imgLoaded, setImgLoaded] = useState(false);
+
+  useEffect(() => {
+    if (modalData?.badgeImage) {
+      setImgLoaded(false);
+      const img = new Image();
+      img.src = modalData.badgeImage;
+      img.onload = () => setImgLoaded(true);
+      img.onerror = () => setImgLoaded(true);
+    }
+  }, [modalData?.badgeImage]);
+
   if (!modalData) return null;
 
   const {
@@ -34,7 +46,12 @@ export default function CompletionModal({ modalData, onContinueNext, onMainMenu 
         <div className="cq-badge-award-section">
           <div className="cq-badge-halo">
             <div className="cq-ambient-light" />
-            <img src={badgeImage} alt={badgeTitle} className="cq-badge-award-img" />
+            <img
+              src={badgeImage}
+              alt={badgeTitle}
+              className={`cq-badge-award-img ${imgLoaded ? 'cq-badge-loaded' : 'cq-badge-loading'}`}
+              onLoad={() => setImgLoaded(true)}
+            />
           </div>
 
           <div className="cq-badge-text-wrap">

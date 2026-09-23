@@ -891,12 +891,11 @@ export default function VigenereFishingGame({
         {levelSolved && <VictoryConfetti isPaused={isMenuOpen} />}
         {levelSolved && (
           <div className="caesar-floating-victory-panel">
-            <h3 className="caesar-victory-title">SECURED!</h3>
+            <h3 className="caesar-victory-title">STAGE SECURED!</h3>
             <p className="caesar-victory-desc">All segments decrypted successfully.</p>
             <button
               className="fg-btn fg-btn-primary"
               onClick={handleVerifySubmit}
-              style={{ width: '100%', background: 'var(--neon-green)', color: '#030914', marginTop: 10 }}
             >
               Verify & Submit
             </button>
@@ -904,7 +903,6 @@ export default function VigenereFishingGame({
               <button
                 className="fg-btn fg-btn-secondary"
                 onClick={onReplayNewQuestion}
-                style={{ width: '100%', marginTop: 10, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
               >
                 Play Again
               </button>

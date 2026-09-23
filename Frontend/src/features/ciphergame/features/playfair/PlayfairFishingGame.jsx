@@ -652,19 +652,13 @@ export default function PlayfairFishingGame({
       {levelSolved && (
         <div className="caesar-floating-victory-panel sprint-floating-victory-panel" style={{ zIndex: 100 }}>
           <div className="fg-success-panel">
-            <h3>SECURED!</h3>
-            <p>All pairs decrypted successfully.</p>
+            <h3 className="caesar-victory-title">STAGE SECURED!</h3>
+            <p className="caesar-victory-desc">All pairs decrypted successfully.</p>
             <button
               className="fg-btn fg-btn-primary"
               onClick={() => {
                 fishingSound.stopBgm();
                 setShowExplanation(true);
-              }}
-              style={{
-                width: '100%',
-                background: 'var(--neon-green)',
-                color: '#030914',
-                marginTop: '10px',
               }}
             >
               Verify & Submit
@@ -675,13 +669,6 @@ export default function PlayfairFishingGame({
                 onClick={() => {
                   setLevelSolved(false);
                   onReplayNewQuestion();
-                }}
-                style={{
-                  width: '100%',
-                  marginTop: '10px',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  color: '#fff',
                 }}
               >
                 Play Again

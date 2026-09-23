@@ -46,13 +46,17 @@ export default function CipherGame() {
   const handleContinueFromScore = () => {
     const cat = stageResult?.category || category;
     const diff = stageResult?.difficulty || difficulty;
-    if (returnToRoadmap) {
-      returnToRoadmap(cat, diff);
-    } else {
-      dismissStageResult();
-      if (cat) game.selectCategory?.(cat);
-      if (diff) selectDifficulty(diff);
-      backToStages();
+    dismissStageResult();
+
+    // If completion modal data is pending (e.g. tier finished), let CompletionModal show next
+    if (!completionModalData) {
+      if (returnToRoadmap) {
+        returnToRoadmap(cat, diff);
+      } else {
+        if (cat) game.selectCategory?.(cat);
+        if (diff) selectDifficulty(diff);
+        backToStages();
+      }
     }
   };
 
@@ -114,15 +118,9 @@ export default function CipherGame() {
         >
           {gameComponent}
         </ScoringProvider>
-        {completionModalData && (
-          <CompletionModal
-            modalData={completionModalData}
-            onContinueNext={handleContinueNextDifficulty}
-            onMainMenu={handleCloseCompletionModal}
-          />
-        )}
-        {/* SCORING SYSTEM: post-completion score summary */}
-        {stageResult && !completionModalData && (
+        
+        {/* SCORING SYSTEM: StageScoreModal pops up FIRST before CompletionModal */}
+        {stageResult ? (
           <StageScoreModal
             result={stageResult}
             onContinue={handleContinueFromScore}
@@ -134,7 +132,13 @@ export default function CipherGame() {
               startStage(cat, diff, stageIndex);
             }}
           />
-        )}
+        ) : completionModalData ? (
+          <CompletionModal
+            modalData={completionModalData}
+            onContinueNext={handleContinueNextDifficulty}
+            onMainMenu={handleCloseCompletionModal}
+          />
+        ) : null}
 
         {/* SCORING SYSTEM: failure feedback (no score, streak reset) */}
         <StageFailNotice notice={stageFailNotice} onDismiss={dismissStageFailNotice} />
@@ -170,17 +174,8 @@ export default function CipherGame() {
           />
         )}
 
-        {/* Render Completion Modal on selector screens if open */}
-        {completionModalData && (
-          <CompletionModal
-            modalData={completionModalData}
-            onContinueNext={handleContinueNextDifficulty}
-            onMainMenu={handleCloseCompletionModal}
-          />
-        )}
-
-        {/* SCORING SYSTEM: post-completion score summary (selector screens) */}
-        {stageResult && !completionModalData && (
+        {/* Modal sequencing on selector screens */}
+        {stageResult ? (
           <StageScoreModal
             result={stageResult}
             onContinue={handleContinueFromScore}
@@ -192,7 +187,13 @@ export default function CipherGame() {
               startStage(cat, diff, stageIndex);
             }}
           />
-        )}
+        ) : completionModalData ? (
+          <CompletionModal
+            modalData={completionModalData}
+            onContinueNext={handleContinueNextDifficulty}
+            onMainMenu={handleCloseCompletionModal}
+          />
+        ) : null}
 
         {/* SCORING SYSTEM: per-stage HIGHEST SCORE / FASTEST TIME rankings */}
         {leaderboardStage && (

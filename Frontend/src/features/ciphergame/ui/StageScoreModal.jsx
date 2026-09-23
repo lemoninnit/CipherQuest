@@ -1,13 +1,6 @@
 import { formatCompletionTime, formatMultiplier } from '../core/engine/scoring';
 import './StageScoreModal.css';
 
-/**
- * SCORING SYSTEM — post-completion summary (UI requirement 24).
- *
- * Displays after a successful stage completion:
- *   Stage Score, Completion Time, Current Streak, Current Multiplier,
- *   Total Score, Best Score, Best Time.
- */
 export default function StageScoreModal({ result, onContinue, onReplay, onViewLeaderboard }) {
   if (!result) return null;
 
@@ -27,78 +20,134 @@ export default function StageScoreModal({ result, onContinue, onReplay, onViewLe
   return (
     <div className="ssm-overlay" onClick={onContinue}>
       <div className="ssm-card" onClick={(e) => e.stopPropagation()}>
+        
+        {/* Top Glowing Ambient Accent */}
+        <div className="ssm-top-accent" />
+
+        {/* Tactical Corner Accents */}
+        <div className="ssm-corner top-left" />
+        <div className="ssm-corner top-right" />
+        <div className="ssm-corner bottom-left" />
+        <div className="ssm-corner bottom-right" />
+
+        {/* Header */}
         <div className="ssm-header">
-          <span className="material-symbols-outlined ssm-header-icon">military_tech</span>
-          <h2 className="ssm-title">STAGE SECURED</h2>
+          <div className="ssm-title-icon-halo">
+            <span className="material-symbols-outlined ssm-title-icon">verified_user</span>
+          </div>
+          <div className="ssm-header-text">
+            <h2 className="ssm-title">STAGE SECURED</h2>
+            <span className="ssm-subtitle-tag">SYSTEM CLEARANCE GRANTED</span>
+          </div>
         </div>
 
-        <div className="ssm-score-hero">
+        {/* Hero Score Block */}
+        <div className="ssm-score-block">
+          <div className="ssm-hero-radial-glow" />
           <div className="ssm-score-label">STAGE SCORE</div>
-          <div className="ssm-score-value">+{score.toLocaleString()}</div>
-          <div className="ssm-score-formula">
-            {baseScore} base × {formatMultiplier(multiplier)} streak multiplier
+          <div className="ssm-score-amount">+{score.toLocaleString()}</div>
+          
+          <div className="ssm-score-formula-pill">
+            <span>{baseScore} Base</span>
+            <span className="ssm-formula-dot">•</span>
+            <span>{formatMultiplier(multiplier)} Multiplier</span>
           </div>
+
           {(newBestScore || newBestTime) && (
-            <div className="ssm-new-best">NEW PERSONAL BEST!</div>
+            <div className="ssm-best-badge">
+              <span className="material-symbols-outlined ssm-star-icon">workspace_premium</span>
+              <span>NEW PERSONAL BEST!</span>
+            </div>
           )}
         </div>
 
-        <div className="ssm-stats-grid">
-          <div className="ssm-stat">
-            <div className="ssm-stat-label">Completion Time</div>
-            <div className="ssm-stat-value">
+        {/* Stats Grid */}
+        <div className="ssm-grid">
+          <div className="ssm-tile">
+            <div className="ssm-tile-header">
+              <span className="material-symbols-outlined ssm-tile-icon">timer</span>
+              <span className="ssm-tile-label">Completion Time</span>
+            </div>
+            <span className="ssm-tile-val">
               {formatCompletionTime(completionTimeMs)}
-              {newBestTime && <span className="ssm-best-tag">BEST</span>}
-            </div>
+              {newBestTime && <span className="ssm-tag">BEST</span>}
+            </span>
           </div>
-          <div className="ssm-stat">
-            <div className="ssm-stat-label">Current Streak</div>
-            <div className="ssm-stat-value">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="#ff9f1c" stroke="#ff9f1c" strokeWidth="1" aria-hidden="true" style={{ verticalAlign: 'middle', marginRight: '4px' }}>
-                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
-              </svg>
+
+          <div className="ssm-tile">
+            <div className="ssm-tile-header">
+              <span className="material-symbols-outlined ssm-tile-icon ssm-flame">local_fire_department</span>
+              <span className="ssm-tile-label">Current Streak</span>
+            </div>
+            <span className="ssm-tile-val ssm-orange">
               {streak}
+            </span>
+          </div>
+
+          <div className="ssm-tile">
+            <div className="ssm-tile-header">
+              <span className="material-symbols-outlined ssm-tile-icon ssm-cyan">bolt</span>
+              <span className="ssm-tile-label">Multiplier</span>
             </div>
+            <span className="ssm-tile-val ssm-cyan">
+              {formatMultiplier(multiplier)}
+            </span>
           </div>
-          <div className="ssm-stat">
-            <div className="ssm-stat-label">Multiplier</div>
-            <div className="ssm-stat-value ssm-cyan">{formatMultiplier(multiplier)}</div>
+
+          <div className="ssm-tile">
+            <div className="ssm-tile-header">
+              <span className="material-symbols-outlined ssm-tile-icon ssm-gold">stars</span>
+              <span className="ssm-tile-label">Total Score</span>
+            </div>
+            <span className="ssm-tile-val ssm-gold">
+              {(totalScore || 0).toLocaleString()}
+            </span>
           </div>
-          <div className="ssm-stat">
-            <div className="ssm-stat-label">Total Score</div>
-            <div className="ssm-stat-value ssm-gold">{(totalScore || 0).toLocaleString()}</div>
-          </div>
-          <div className="ssm-stat">
-            <div className="ssm-stat-label">Best Score</div>
-            <div className="ssm-stat-value">
+
+          <div className="ssm-tile">
+            <div className="ssm-tile-header">
+              <span className="material-symbols-outlined ssm-tile-icon">trophy</span>
+              <span className="ssm-tile-label">Best Score</span>
+            </div>
+            <span className="ssm-tile-val">
               {bestScore != null ? bestScore.toLocaleString() : '—'}
-              {newBestScore && <span className="ssm-best-tag">BEST</span>}
-            </div>
+              {newBestScore && <span className="ssm-tag">BEST</span>}
+            </span>
           </div>
-          <div className="ssm-stat">
-            <div className="ssm-stat-label">Best Time</div>
-            <div className="ssm-stat-value">
-              {bestTimeMs != null ? formatCompletionTime(bestTimeMs) : '—'}
+
+          <div className="ssm-tile">
+            <div className="ssm-tile-header">
+              <span className="material-symbols-outlined ssm-tile-icon">history</span>
+              <span className="ssm-tile-label">Best Time</span>
             </div>
+            <span className="ssm-tile-val">
+              {bestTimeMs != null ? formatCompletionTime(bestTimeMs) : '—'}
+            </span>
           </div>
         </div>
 
+        {/* Action Buttons (Vertically Stacked) */}
         <div className="ssm-actions">
-          {onViewLeaderboard && (
-            <button className="ssm-btn ssm-btn-secondary" onClick={onViewLeaderboard}>
-              <span className="material-symbols-outlined ssm-btn-icon">leaderboard</span>
-              Leaderboard
-            </button>
-          )}
-          {onReplay && (
-            <button className="ssm-btn ssm-btn-secondary" onClick={onReplay}>
-              Play Again
-            </button>
-          )}
-          <button className="ssm-btn ssm-btn-primary" onClick={onContinue}>
-            Continue
+          <button className="ssm-btn ssm-btn-pri" onClick={onContinue}>
+            <span>Continue</span>
+            <span className="material-symbols-outlined ssm-arrow-icon">arrow_forward</span>
           </button>
+
+          {onReplay && (
+            <button className="ssm-btn ssm-btn-sec" onClick={onReplay}>
+              <span className="material-symbols-outlined">replay</span>
+              <span>Play Again</span>
+            </button>
+          )}
+
+          {onViewLeaderboard && (
+            <button className="ssm-btn ssm-btn-sec" onClick={onViewLeaderboard}>
+              <span className="material-symbols-outlined">leaderboard</span>
+              <span>Leaderboard</span>
+            </button>
+          )}
         </div>
+
       </div>
     </div>
   );

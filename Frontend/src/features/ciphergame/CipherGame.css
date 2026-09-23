@@ -3847,38 +3847,103 @@
 }
 
 /* Floating Victory Panel when level is solved */
+/* In-Game Victory Secured Prompt Modal (Professional Cybersecurity Aesthetic) */
 .caesar-floating-victory-panel {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 30;
-  background: rgba(3, 20, 14, 0.94);
-  border: 2px solid var(--neon-green);
-  border-radius: 18px;
-  padding: 20px 32px;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 0 35px rgba(57, 255, 20, 0.35), 0 10px 40px rgba(0, 0, 0, 0.7);
+  background: linear-gradient(175deg, rgba(12, 26, 48, 0.96) 0%, rgba(6, 14, 28, 0.98) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  border-radius: 20px;
+  padding: 24px 28px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.8),
+    0 0 35px rgba(0, 229, 255, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
   text-align: center;
   pointer-events: auto;
-  min-width: 300px;
-  animation: caesarVictoryFadeIn 0.3s ease;
+  min-width: 320px;
+  max-width: 380px;
+  animation: caesarVictoryFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .caesar-victory-title {
-  color: var(--neon-green);
+  color: #ffffff;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 800;
-  margin: 0 0 6px;
-  letter-spacing: 0.04em;
+  margin: 0 0 4px;
+  letter-spacing: 1.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .caesar-victory-desc {
-  color: #e2f8ec;
-  font-size: 0.88rem;
-  margin: 0 0 12px;
+  color: #94a3b8;
+  font-size: 0.84rem;
+  margin: 0 0 16px;
+  line-height: 1.35;
+}
+
+/* In-Game Secured Modal Buttons */
+.caesar-floating-victory-panel .fg-btn-primary,
+.caesar-floating-victory-panel button.fg-btn-primary,
+.caesar-floating-victory-panel button[style*="neon-green"] {
+  width: 100% !important;
+  background: linear-gradient(135deg, #00e5ff 0%, #0284c7 100%) !important;
+  color: #020916 !important;
+  font-family: inherit !important;
+  font-weight: 800 !important;
+  font-size: 0.9rem !important;
+  letter-spacing: 0.5px !important;
+  border-radius: 12px !important;
+  border: none !important;
+  padding: 12px 18px !important;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.35) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  cursor: pointer !important;
+  margin-top: 6px !important;
+}
+
+.caesar-floating-victory-panel .fg-btn-primary:hover,
+.caesar-floating-victory-panel button.fg-btn-primary:hover,
+.caesar-floating-victory-panel button[style*="neon-green"]:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 0 28px rgba(0, 229, 255, 0.55) !important;
+  filter: brightness(1.1) !important;
+}
+
+.caesar-floating-victory-panel .fg-btn-secondary,
+.caesar-floating-victory-panel button.fg-btn-secondary {
+  width: 100% !important;
+  background: rgba(15, 27, 50, 0.75) !important;
+  border: 1px solid rgba(0, 229, 255, 0.25) !important;
+  color: #e0f2fe !important;
+  font-family: inherit !important;
+  font-weight: 700 !important;
+  font-size: 0.86rem !important;
+  border-radius: 12px !important;
+  padding: 11px 18px !important;
+  margin-top: 8px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.caesar-floating-victory-panel .fg-btn-secondary:hover,
+.caesar-floating-victory-panel button.fg-btn-secondary:hover {
+  background: rgba(24, 46, 88, 0.85) !important;
+  border-color: rgba(0, 229, 255, 0.5) !important;
+  color: #fff !important;
+  transform: translateY(-2px) !important;
 }
 
 @keyframes caesarVictoryFadeIn {

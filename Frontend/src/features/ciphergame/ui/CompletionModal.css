@@ -144,6 +144,17 @@
   height: 100%;
   object-fit: contain;
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.8));
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cq-badge-loading {
+  opacity: 0;
+  transform: scale(0.82);
+}
+
+.cq-badge-loaded {
+  opacity: 1;
+  transform: scale(1);
   animation: cqFloat 3s ease-in-out infinite;
 }
 
