@@ -1,8 +1,8 @@
-/* eslint-disable react-hooks/set-state-in-effect */
+﻿/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useRef, useState } from 'react';
+import GameHudBar from '../../ui/GameHudBar';
 import './PlayfairGame.css';
 import '../../CipherGame.css';
-import GameHudBar from '../../ui/GameHudBar';
 import PauseMenu from '../../ui/PauseMenu';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import CryptographicRecap from '../../ui/CryptographicRecap';
@@ -13,8 +13,6 @@ import {
 } from './PlayfairHelpers';
 import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
-
-
 
 const normalizePair = (value) => String(value || '').replace(/[^A-Z]/g, '').slice(0, 2);
 
@@ -109,14 +107,13 @@ export default function PlayfairFishingGame({
   const [splash, setSplash] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [levelSolved, setLevelSolved] = useState(false);
+  const [attemptsLeft, setAttemptsLeft] = useState(15);
   const [showExplanation, setShowExplanation] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
-    return () => {
-      fishingSound.stopBgm();
-    };
+    return () => { fishingSound.stopBgm(); };
   }, []);
 
   useEffect(() => {
@@ -132,36 +129,42 @@ export default function PlayfairFishingGame({
     setIsMuted(muted);
   };
 
+  const handleVerifySubmit = () => {
+    if (onVerifySubmit) onVerifySubmit();
+  };
+
+  const handleReplay = () => {
+    setLevelSolved(false);
+    onReplayNewQuestion && onReplayNewQuestion();
+  };
+
   const soundToggleButton = (
     <button
       className="fg-btn-icon"
       onClick={toggleSound}
-      title={isMuted ? "Unmute Sound" : "Mute Sound"}
+      title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
       style={{
-        background: 'rgba(255, 255, 255, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
+        background: 'rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.2)',
         borderRadius: '8px',
         color: '#fff',
         padding: '4px 8px',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
-        fontSize: '1rem'
+        fontSize: '1rem',
       }}
     >
-      {isMuted ? '🔇' : '🔊'}
+      {isMuted ? String.fromCodePoint(0x1F507) : String.fromCodePoint(0x1F50A)}
     </button>
   );
 
   const animationRef = useRef(null);
   const feedbackTimer = useRef(null);
   const rodFrameRef = useRef(null);
-  // Ref to the pond container — needed to convert DOM-px fish.y → SVG viewBox units
   const pondRef = useRef(null);
-  const [pondHeight, setPondHeight] = useState(270);
+  const [pondHeight, setPondHeight] = useState(500);
 
-  // Fishing rod sprite sheet: 8 frames in one horizontal row
-  // 0-1 = idle, 2-4 = casting out, 5-7 = reeling in
   const ROD_TOTAL_FRAMES = 8;
   const [rodFrame, setRodFrame] = useState(0);
   const [rodFacingRight, setRodFacingRight] = useState(false);
@@ -182,6 +185,7 @@ export default function PlayfairFishingGame({
     setStreak(0);
     setLevelSolved(false);
     setShowExplanation(false);
+    setAttemptsLeft(15);
     setBubbles(makeBubbles());
     setFishList(makeFishForPair(pairData[0].plainPair, matrix, tier));
   };
@@ -194,10 +198,10 @@ export default function PlayfairFishingGame({
     setStreak(0);
     setLevelSolved(false);
     setShowExplanation(false);
+    setAttemptsLeft(15);
     setIsMenuOpen(false);
   }, [levelData, pairData.length]);
 
-  /* ── ESC key to toggle pause menu ── */
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' || e.code === 'Escape') {
@@ -219,12 +223,10 @@ export default function PlayfairFishingGame({
 
   useEffect(() => {
     if (phase !== 'playing' || isMenuOpen || levelSolved) return undefined;
-
     const tick = () => {
       setFishList((prev) => prev.map((fish) => tickFish(fish, { minY: 28, maxY: 196 })));
       animationRef.current = requestAnimationFrame(tick);
     };
-
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
   }, [phase, isMenuOpen, levelSolved]);
@@ -239,7 +241,6 @@ export default function PlayfairFishingGame({
       setMisses(0);
       setStreak((value) => value + 1);
       showFeedback(`${candidate} is correct. ${currentRuleHint}`, 'success');
-
       if (activeIndex >= pairData.length - 1) {
         fishingSound.stopBgm();
         fishingSound.playSfx('win');
@@ -253,50 +254,42 @@ export default function PlayfairFishingGame({
       }
       return;
     }
-
     fishingSound.playSfx('lose');
     const nextMisses = misses + 1;
     setMisses(nextMisses);
     setStreak(0);
     showFeedback(`${candidate} does not fit. ${currentRuleHint}`, 'error');
+    setAttemptsLeft((prev) => {
+      const next = Math.max(0, prev - 1);
+      if (next <= 0) showFeedback('No attempts left! Try a different pair.', 'error');
+      return next;
+    });
     setTimeout(() => {
       setFishList((prev) => [
         ...prev,
-        {
-          ...fish,
-          id: `${Date.now()}-${fish.pair}`,
-          x: Math.random() > 0.5 ? 94 : 2,
-          y: 30 + Math.random() * 200,
-        },
+        { ...fish, id: `${Date.now()}-${fish.pair}`, x: Math.random() > 0.5 ? 94 : 2, y: 30 + Math.random() * 200 },
       ]);
     }, 500);
   };
 
   const castAt = (fish) => {
-    if (isCasting || phase !== 'playing' || levelSolved) return;
+    if (isCasting || phase !== 'playing' || levelSolved || attemptsLeft <= 0) return;
     fishingSound.unlockAudio();
     fishingSound.playSfx('cast');
     setIsCasting(true);
     setCaughtFish(fish);
-    // Remove immediately so the fish doesn't appear in both fishList and the hooked position
     setFishList((prev) => prev.filter((item) => item.id !== fish.id));
-    // x: fish.x is a % → map to SVG viewBox width (700). Do NOT use DOM pond width.
-    const tx = (fish.x / 100) * 700;
-    // y: fish.y is DOM px → convert to SVG viewBox height (240)
-    const currentPondHeight = pondRef.current?.offsetHeight || 270;
-    setPondHeight(currentPondHeight);
-    const ty = (fish.y / currentPondHeight) * 240;
-    setCastTarget({ x: tx, y: ty });
-    // Flip sprite toward the fish (centre of 700-wide viewBox is 350)
-    setRodFacingRight(tx > 350);
 
-    // Animate rod frames during cast-out (frames 2-4)
+    const currentPondHeight = pondRef.current?.offsetHeight || 500;
+    setPondHeight(currentPondHeight);
+    const tx = (fish.x / 100) * 500;
+    const ty = (fish.y / currentPondHeight) * 260;
+    setCastTarget({ x: tx, y: ty });
+    setRodFacingRight(tx > 250);
+
     let castFrameIndex = 2;
     const castFrameInterval = setInterval(() => {
-      setRodFrame((prev) => {
-        if (prev < 4) return prev + 1;
-        return 4;
-      });
+      setRodFrame((prev) => (prev < 4 ? prev + 1 : 4));
       castFrameIndex++;
       if (castFrameIndex > 4) clearInterval(castFrameInterval);
     }, 90);
@@ -307,16 +300,9 @@ export default function PlayfairFishingGame({
       if (!start) start = timestamp;
       const progressValue = Math.min((timestamp - start) / 320, 1);
       setCastProgress(progressValue);
-      if (progressValue < 1) {
-        requestAnimationFrame(castOut);
-        return;
-      }
-
+      if (progressValue < 1) { requestAnimationFrame(castOut); return; }
       setSplash({ x: fish.x, y: fish.y });
       setTimeout(() => setSplash(null), 450);
-      // Fish already removed from list at cast start
-
-      // Hold at cast frame 4 briefly, then animate reel-in frames (5-7)
       setTimeout(() => {
         let reelFrameIndex = 5;
         const reelFrameInterval = setInterval(() => {
@@ -324,17 +310,12 @@ export default function PlayfairFishingGame({
           reelFrameIndex++;
           if (reelFrameIndex > 7) clearInterval(reelFrameInterval);
         }, 90);
-
         let reelStart = null;
         const reelIn = (reelTimestamp) => {
           if (!reelStart) reelStart = reelTimestamp;
           const reelProgress = Math.min((reelTimestamp - reelStart) / 380, 1);
           setCastProgress(1 - reelProgress);
-          if (reelProgress < 1) {
-            requestAnimationFrame(reelIn);
-            return;
-          }
-          // Return to idle frame
+          if (reelProgress < 1) { requestAnimationFrame(reelIn); return; }
           setRodFrame(0);
           setIsCasting(false);
           setCaughtFish(null);
@@ -343,16 +324,13 @@ export default function PlayfairFishingGame({
         requestAnimationFrame(reelIn);
       }, 60);
     };
-
     requestAnimationFrame(castOut);
   };
 
   const cipherHighlight = new Set(activePair?.cipherPositions.map(positionKey) || []);
-  const pondWidth = 700; // SVG viewBox width
-  // rodTipX/Y: fixed anchor on the sprite where the fishing line starts.
-  // Flips to the opposite side when the sprite is mirrored (facing right).
-  const rodTipX = rodFacingRight ? 555 : 145;
-  const rodTipY = 80;
+  const pondWidth = 500;
+  const rodTipX = rodFacingRight ? 390 : 110;
+  const rodTipY = 60;
   const hookX = caughtFish ? rodTipX + (castTarget.x - rodTipX) * castProgress : rodTipX;
   const hookY = caughtFish ? rodTipY + (castTarget.y - rodTipY) * castProgress : rodTipY;
 
@@ -363,93 +341,39 @@ export default function PlayfairFishingGame({
           category="playfair"
           difficulty={tier}
           stageIndex={(levelData.level || 1) - 1}
-          onLoadingComplete={() => {
-            setIsOperationLoading(false);
-            startGame();
-          }}
+          onLoadingComplete={() => { setIsOperationLoading(false); startGame(); }}
         />
       );
     }
-
     return (
       <div className="pf-root">
-        <GameHudBar
-          title="Playfair Fishing"
-          stage={levelData.level}
-          tier={tier}
-          isReady={true}
-          onBackToStages={onBackToStages}
-          customRightContent={soundToggleButton}
-        />
-
+        <GameHudBar title="Playfair Fishing" stage={levelData.level} tier={tier} isReady={true} onBackToStages={onBackToStages} customRightContent={soundToggleButton} />
         <main className="cq-brief-screen">
-          <img
-            className="cq-bg-img"
-            src="/assets/fish/lobbybg/lobbybg.png"
-            alt="Lobby Background"
-            aria-hidden="true"
-          />
+          <img className="cq-bg-img" src="/assets/fish/lobbybg/lobbybg.png" alt="Lobby Background" aria-hidden="true" />
           <div className="cq-lobby-scrim" />
           <div className="cq-dossier-card">
-            {/* Left Column: Sprite Frame & Stage Code */}
             <div className="cq-dossier-left-col">
               <div className="cq-dossier-sprite-frame">
                 <div className="cq-dossier-sprite cq-dossier-sprite-fish" aria-hidden="true" />
               </div>
-              <div className="cq-dossier-stage-code">
-                {`OP-${String(levelData.level || 1).padStart(2, '0')}`}
-              </div>
+              <div className="cq-dossier-stage-code">{`OP-${String(levelData.level || 1).padStart(2, '00')}`}</div>
             </div>
-
-            {/* Right Column: Briefing Content */}
             <div className="cq-dossier-right-col">
               <div className="cq-dossier-tag">MISSION BRIEF</div>
               <h2 className="cq-dossier-title">Playfair Fishing</h2>
-              <p className="cq-dossier-subtitle">
-                Playfair encrypts letter pairs through a 5×5 matrix. Use row, column, and rectangle rules to recover candidate plaintext pairs.
-              </p>
+              <p className="cq-dossier-subtitle">Playfair encrypts letter pairs through a 5x5 matrix. Use row, column, and rectangle rules to recover candidate plaintext pairs.</p>
               <hr className="cq-dossier-divider" />
               <div className="cq-dossier-data">
-                <div className="cq-dossier-row">
-                  <span className="cq-dossier-label">CIPHERTEXT</span>
-                  <span className="cq-dossier-value cyan-mono">{levelData.pairCiphertext}</span>
-                </div>
-                <div className="cq-dossier-row">
-                  <span className="cq-dossier-label">KEYWORD</span>
-                  <span className="cq-dossier-value yellow-mono">{levelData.key}</span>
-                </div>
-                <div className="cq-dossier-row">
-                  <span className="cq-dossier-label">HINT</span>
-                  <span className="cq-dossier-value hint-text">{levelData.hint}</span>
-                </div>
-                {levelData.keyClue && (
-                  <div className="cq-dossier-row">
-                    <span className="cq-dossier-label">KEY CLUE</span>
-                    <span className="cq-dossier-value yellow-mono">{levelData.keyClue}</span>
-                  </div>
-                )}
+                <div className="cq-dossier-row"><span className="cq-dossier-label">CIPHERTEXT</span><span className="cq-dossier-value cyan-mono">{levelData.pairCiphertext}</span></div>
+                <div className="cq-dossier-row"><span className="cq-dossier-label">KEYWORD</span><span className="cq-dossier-value yellow-mono">{levelData.key}</span></div>
+                <div className="cq-dossier-row"><span className="cq-dossier-label">HINT</span><span className="cq-dossier-value hint-text">{levelData.hint}</span></div>
+                {levelData.keyClue && (<div className="cq-dossier-row"><span className="cq-dossier-label">KEY CLUE</span><span className="cq-dossier-value yellow-mono">{levelData.keyClue}</span></div>)}
               </div>
-
               <div className="pf-matrix-preview" aria-label="Playfair key matrix" style={{ margin: '8px auto 16px' }}>
-                {matrix.flat().map((letter) => (
-                  <span key={letter}>{letter}</span>
-                ))}
+                {matrix.flat().map((letter) => (<span key={letter}>{letter}</span>))}
               </div>
-
-              <p className="cq-dossier-how-it-works">
-                <strong>Fishing rule:</strong> each fish carries a two-letter plaintext candidate. Correct catches fill the message. Wrong catches explain the matrix rule you missed.
-              </p>
-
-              <button
-                className="cq-dossier-action-btn"
-                onClick={() => {
-                  fishingSound.unlockAudio();
-                  fishingSound.playBgm();
-                  setIsOperationLoading(true);
-                }}
-              >
-                Begin operation
-              </button>
+              <p className="cq-dossier-how-it-works"><strong>Fishing rule:</strong> each fish carries a two-letter plaintext candidate. Correct catches fill the message.</p>
+              <button className="cq-dossier-action-btn" onClick={() => { fishingSound.unlockAudio(); fishingSound.playBgm(); setIsOperationLoading(true); }}>Begin operation</button>
             </div>
           </div>
         </main>
@@ -457,235 +381,141 @@ export default function PlayfairFishingGame({
     );
   }
 
-
-
   return (
-    <div className="pf-root">
-      {showExplanation && (
-        <CryptographicRecap
-          cipherType="playfair"
-          levelData={levelData}
-          onUnlockNext={onVerifySubmit}
-        />
-      )}
+    <div className="fg-root caesar-fishing-fullscreen pf-fishing-fullscreen">
+      {showExplanation && (<CryptographicRecap cipherType="playfair" levelData={levelData} onUnlockNext={onVerifySubmit} />)}
+      <GameHudBar title="Playfair Fishing" stage={levelData.level} tier={tier} isReady={false} onOpenMenu={() => setIsMenuOpen(true)} attempts={attemptsLeft} customRightContent={soundToggleButton} />
+      <div className="caesar-fullscreen-stage">
+        <video className="fg-pond-video" src="/assets/fish/ocean_bg.mp4" autoPlay loop muted playsInline />
+        <div className="fg-pond-overlay" />
+        <div className="fg-wave" />
+        {bubbles.map((bubble) => (
+          <div key={bubble.id} className="fg-bubble" style={{ left: `${bubble.x}%`, width: `${bubble.size}px`, height: `${bubble.size}px`, animationDelay: `${bubble.delay}s`, animationDuration: `${bubble.duration}s` }} />
+        ))}
+        <div className="caesar-fish-swim-lane" ref={pondRef}>
+          {fishList.map((fish) => (
+            <div key={fish.id} className="fg-fish-entity" style={{ left: `${fish.x}%`, top: `${fish.y}px` }} onClick={() => castAt(fish)}>
+              <div className="fg-fish-facing" style={{ transform: facingTransform(fish.facing) }}>
+                <img className="fg-fish-sprite-img pf-fish-img" src={fish.imgSrc} alt="fish" draggable={false} />
+              </div>
+              <div className="pf-fish-badge" title={`${fish.pair} - ${currentRuleHint}`}>{fish.pair}</div>
+            </div>
+          ))}
+          {caughtFish && (
+            <div className="fg-fish-entity" style={{ left: `${(hookX / pondWidth) * 100}%`, top: `${(hookY / 260) * pondHeight - 20}px`, transform: 'scale(1.2)', pointerEvents: 'none' }}>
+              <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
+                <img className="fg-fish-sprite-img pf-fish-img" src={caughtFish.imgSrc} alt="fish" draggable={false} />
+              </div>
+              <div className="pf-fish-badge">{caughtFish.pair}</div>
+            </div>
+          )}
+          <div className={`pf-fishing-rod${rodFacingRight ? ' facing-right' : ''}`} style={{ '--rod-frame': rodFrame, '--rod-total': ROD_TOTAL_FRAMES }} aria-hidden="true" />
+          <svg className="fg-pond-svg" viewBox={`0 0 ${pondWidth} 260`} preserveAspectRatio="none">
+            {caughtFish && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />}
+          </svg>
+          {splash && <div className="fg-splash-effect" style={{ left: `${splash.x}%`, top: `${splash.y}px` }}>💦</div>}
+        </div>
 
-      <GameHudBar
-        title="Playfair Fishing"
-        stage={levelData.level}
-        tier={tier}
-        isReady={false}
-        onOpenMenu={() => setIsMenuOpen(true)}
-        customRightContent={soundToggleButton}
-      />
-
-      <main className="pf-game">
-        <aside className="pf-sidebar">
-          <section className="vg-sidebar-card">
-            <div className="vg-sidebar-title">Key Matrix</div>
-            <div className="pf-matrix">
-              {matrix.map((row, rowIndex) => row.map((letter, colIndex) => {
-                const key = `${rowIndex}-${colIndex}`;
-                const classes = cipherHighlight.has(key) ? 'cipher-cell' : '';
-                return (
-                  <span key={letter} className={classes}>{letter}</span>
-                );
-              }))}
-            </div>
-            <div className="pf-matrix-legend">
-              <span><i className="cipher-dot" /> cipher pair</span>
-            </div>
-          </section>
-
-          <section className="vg-sidebar-card">
-            <div className="vg-sidebar-title">Active Digraph</div>
-            <div className="pf-active-pair">
-              <span>{activePair.cipherPair}</span>
-              <small>catch plaintext pair #{activeIndex + 1}</small>
-            </div>
-            <div className="vg-progress-bar">
-              <div className="vg-progress-fill" style={{ width: `${progress * 100}%` }} />
-            </div>
-            <div className="pf-stat-row">
-              <span>Solved</span>
-              <strong>{solvedCount} / {pairData.length}</strong>
-            </div>
-            <div className="pf-stat-row">
-              <span>Streak</span>
-              <strong>{streak}</strong>
-            </div>
-          </section>
-
-          <section className="vg-sidebar-card">
-            <div className="vg-sidebar-title">Rule Scanner</div>
-            <div className={`pf-rule-pill ${revealRule ? 'revealed' : ''}`}>
-              {revealRule ? activePair.rule : 'hidden'}
-            </div>
-            <p className="pf-sidebar-note">
-              {revealRule
-                ? currentRuleHint
-                : 'Inspect the highlighted square positions. Two misses reveal the rule, but the answer still has to be caught.'}
-            </p>
-          </section>
-
-          <section className="vg-formula-box">
-            <strong>Playfair Decrypt</strong><br />
-            Row: move left. Column: move up.<br />
-            Rectangle: swap columns.<br />
-            I and J share one cell.
-          </section>
-        </aside>
-
-        <section className="pf-board">
-          <div className="pf-word-panel">
-            <div className="vg-word-panel-title">Recovered Message</div>
-            <div className="pf-pair-row">
-              {pairData.map((pair, index) => (
-                <button
-                  key={`${pair.cipherPair}-${index}`}
-                  className={`pf-pair-card ${index === activeIndex ? 'active' : ''} ${solvedPairs[index] ? 'solved' : ''}`}
-                  type="button"
-                  onClick={() => {
-                    if (!solvedPairs[index] && !isCasting) {
-                      setActiveIndex(index);
-                      setMisses(0);
-                      setFishList(makeFishForPair(pairData[index].plainPair, matrix, tier));
-                    }
-                  }}
-                >
-                  <span className="pf-cipher">{pair.cipherPair}</span>
-                  <span className="pf-arrow">to</span>
-                  <strong>{pair.plainPair}</strong>
-                </button>
-              ))}
-            </div>
-            <div className="vg-hint-banner">
-              <strong>Message hint:</strong> {levelData.hint}
-            </div>
-          </div>
-
-          <section className="pf-pond" ref={pondRef}>
-              {/* Ocean background video */}
-              <video
-                className="fg-pond-video"
-                src="/assets/fish/ocean_bg.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-              />
-              <div className="fg-pond-overlay" />
-            <div className="vg-pond-surface" />
-            {bubbles.map((bubble) => (
-              <div
-                key={bubble.id}
-                className="vg-bubble"
-                style={{
-                  left: `${bubble.x}%`,
-                  width: bubble.size,
-                  height: bubble.size,
-                  animationDelay: `${bubble.delay}s`,
-                  animationDuration: `${bubble.duration}s`,
-                }}
-              />
-            ))}
-            {fishList.map((fish) => (
+        {/* 1. Top-Center Word Panel */}
+        <div className="caesar-floating-word-panel">
+          <div className="vg-word-panel-title">Recovered Message</div>
+          <div className="pf-pair-row">
+            {pairData.map((pair, index) => (
               <button
-                key={fish.id}
-                className="pf-fish"
+                key={`${pair.cipherPair}-${index}`}
+                className={`pf-pair-card ${index === activeIndex ? 'active' : ''} ${solvedPairs[index] ? 'solved' : ''}`}
                 type="button"
-                style={{ left: `${fish.x}%`, top: fish.y }}
-                onClick={() => castAt(fish)}
+                onClick={() => { if (!solvedPairs[index] && !isCasting) { setActiveIndex(index); setMisses(0); setFishList(makeFishForPair(pairData[index].plainPair, matrix, tier)); } }}
               >
-                <div className="fg-fish-facing" style={{ transform: facingTransform(fish.facing) }}>
-                  <img
-                    className="fg-fish-sprite-img pf-fish-img"
-                    src={fish.imgSrc}
-                    alt="fish"
-                    draggable={false}
-                  />
-                </div>
-                <span className="pf-fish-badge">{fish.pair}</span>
+                <span className="pf-cipher">{pair.cipherPair}</span>
+                <span className="pf-arrow">to</span>
+                <strong>{pair.plainPair}</strong>
               </button>
             ))}
-            {caughtFish && (
-              <div className="pf-reel-fish" style={{
-                left: `${(hookX / 700) * 100}%`,
-                // Convert SVG y back to DOM px so the fish tracks the line endpoint
-                top: `${(hookY / 240) * pondHeight - 10}px`,
-              }}>
-                <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
-                  <img
-                    className="fg-fish-sprite-img pf-fish-img"
-                    src={caughtFish.imgSrc}
-                    alt="fish"
-                    draggable={false}
-                  />
-                </div>
-                <span className="pf-fish-badge">{caughtFish.pair}</span>
+          </div>
+          <div className="caesar-floating-hint">Hint: &quot;{levelData.hint}&quot;</div>
+        </div>
+
+        {/* 2. Top-Left Key Matrix */}
+        <div className="caesar-floating-cheat-sheet">
+          <div className="caesar-cheat-header">
+            <span className="caesar-cheat-title">Playfair Key Matrix</span>
+            <span className="caesar-cheat-badge caesar-cheat-badge-playfair">5x5 no J</span>
+          </div>
+          <div className="caesar-cheat-body">
+            <div className="pf-cheat-matrix-grid">
+              {matrix.map((row, rowIndex) =>
+                row.map((letter, colIndex) => {
+                  const key = `${rowIndex}-${colIndex}`;
+                  const isHighlighted = cipherHighlight.has(key);
+                  return (
+                    <span key={`${rowIndex}-${colIndex}`} className={`pf-cheat-cell${isHighlighted ? ' pf-cheat-cell-cipher' : ''}`}>{letter}</span>
+                  );
+                })
+              )}
+            </div>
+            {activePair && (
+              <div className="pf-cheat-active-pair">
+                <span className="pf-cheat-cipher-lbl">CIPHER</span>
+                <span className="pf-cheat-cipher-val">{activePair.cipherPair}</span>
+                <span className="pf-cheat-arrow">to</span>
+                <span className="pf-cheat-plain-lbl">PLAIN</span>
+                <span className="pf-cheat-plain-val">{activePair.plainPair}</span>
               </div>
             )}
-            {splash && <div className="pf-splash" style={{ left: `${splash.x}%`, top: splash.y }} />}
-            {/* Fishing rod sprite — flips toward the clicked fish */}
-            <div
-              className={`pf-fishing-rod${rodFacingRight ? ' facing-right' : ''}`}
-              style={{
-                '--rod-frame': rodFrame,
-                '--rod-total': ROD_TOTAL_FRAMES,
-              }}
-              aria-hidden="true"
-            />
-            <svg className="vg-pond-svg" viewBox={`0 0 ${pondWidth} 240`} preserveAspectRatio="none">
-              {caughtFish && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="vg-fish-line" />}
-            </svg>
-          </section>
-        </section>
-      </main>
-
-      {feedback && (
-        <div className={`pf-feedback ${feedback.tone}`}>
-          {feedback.message}
-        </div>
-      )}
-
-      {/* Floating Victory Panel */}
-      {levelSolved && <VictoryConfetti isPaused={isMenuOpen} />}
-      {levelSolved && (
-        <div className="caesar-floating-victory-panel sprint-floating-victory-panel" style={{ zIndex: 100 }}>
-          <div className="fg-success-panel">
-            <h3 className="caesar-victory-title">STAGE SECURED!</h3>
-            <p className="caesar-victory-desc">All pairs decrypted successfully.</p>
-            <button
-              className="fg-btn fg-btn-primary"
-              onClick={() => {
-                fishingSound.stopBgm();
-                setShowExplanation(true);
-              }}
-            >
-              Verify & Submit
-            </button>
-            {onReplayNewQuestion && (
-              <button
-                className="fg-btn fg-btn-secondary"
-                onClick={() => {
-                  setLevelSolved(false);
-                  onReplayNewQuestion();
-                }}
-              >
-                Play Again
-              </button>
-            )}
           </div>
         </div>
-      )}
 
-      {/* Menu Modal */}
+        {/* 3. Bottom-Left Guide */}
+        <div className="caesar-floating-guide">
+          <h3 className="caesar-guide-title">Playfair Guide</h3>
+          <p className="caesar-guide-desc">Playfair encrypts letter pairs (bigrams) via a 5x5 key matrix. I and J share one cell.</p>
+          <p className="caesar-guide-tip">Row: move left. Col: move up. Rectangle: swap columns.</p>
+        </div>
+
+        {/* 4. Bottom-Right Stats */}
+        <div className="pf-floating-stats-panel">
+          <div className="pf-floating-stats-header">
+            <span className="pf-floating-stats-title">Active Digraph</span>
+            <span className="pf-floating-stats-count">{solvedCount}/{pairData.length} Solved</span>
+          </div>
+          <div className="pf-floating-active-digraph">
+            <span className="pf-floating-cipher-pair">{activePair.cipherPair}</span>
+            <span className="pf-floating-catch-label">catch pair #{activeIndex + 1}</span>
+          </div>
+          <div className="vg-progress-bar" style={{ margin: '8px 0' }}>
+            <div className="vg-progress-fill" style={{ width: `${progress * 100}%` }} />
+          </div>
+          <div className="pf-floating-stat-row">
+            <span>Streak</span>
+            <strong style={{ color: streak > 0 ? 'var(--neon-yellow)' : 'var(--text-muted)' }}>{streak > 0 ? `${streak}` : streak}</strong>
+          </div>
+          <div className="pf-floating-rule-section">
+            <span className="pf-floating-rule-label">Rule Scanner</span>
+            <div className={`pf-rule-pill ${revealRule ? 'revealed' : ''}`}>{revealRule ? activePair.rule : 'hidden'}</div>
+            <p className="pf-sidebar-note" style={{ margin: '4px 0 0' }}>{revealRule ? currentRuleHint : '2 misses reveal the rule.'}</p>
+          </div>
+        </div>
+
+        {feedback && <div className={`pf-feedback ${feedback.tone}`}>{feedback.message}</div>}
+
+        {levelSolved && <VictoryConfetti isPaused={isMenuOpen} />}
+        {levelSolved && (
+          <div className="caesar-floating-victory-panel">
+            <h3 className="caesar-victory-title">STAGE SECURED!</h3>
+            <p className="caesar-victory-desc">All pairs decrypted successfully.</p>
+            <button className="fg-btn fg-btn-primary" onClick={handleVerifySubmit}>Verify &amp; Submit</button>
+            {onReplayNewQuestion && (
+              <button className="fg-btn fg-btn-secondary" onClick={handleReplay}>Play Again</button>
+            )}
+          </div>
+        )}
+      </div>
+
       <PauseMenu
         open={isMenuOpen}
         onResume={() => setIsMenuOpen(false)}
-        onTutorial={() => {
-          setIsMenuOpen(false);
-          setPhase('ready');
-        }}
+        onTutorial={() => { setIsMenuOpen(false); setPhase('ready'); }}
         onExit={onBackToStages}
       />
     </div>

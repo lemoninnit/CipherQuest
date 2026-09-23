@@ -1,7 +1,9 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import './PacmanGame.css';
 import '../../CipherGame.css';
+
+const CQS_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { pacmanSound } from './pacmanSound';
@@ -9,6 +11,7 @@ import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingFromDir } from './pacmanWorld';
+import { buildShiftCandidates, SHIFT_CANDIDATE_COUNT } from '../../core/engine/caesar';
 
 const EASY_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -228,6 +231,13 @@ const generateInitialGhosts = (levelData, tier) => {
   const startPositions = getGhostStartPositions(normTier);
 
   const isPlayfair = !!levelData.matrix;
+  const isVigenere = !!levelData.targetKey;
+  const isCaesar = !isPlayfair && !isVigenere;
+  // Caesar uses a single global encryption shift for the whole level.
+  const caesarTrueShift = isCaesar
+    ? (levelData.targetShifts?.[0] ?? levelData.shift ?? levelData.targetShift ?? 1)
+    : 0;
+  const candidateCount = SHIFT_CANDIDATE_COUNT[normTier] || 3;
   const requiredTargets = getRequiredTargetItems(levelData);
   const activeTargets = requiredTargets.slice(0, maxActive);
   const queue = requiredTargets.slice(maxActive);
@@ -244,7 +254,54 @@ const generateInitialGhosts = (levelData, tier) => {
     };
   });
 
-  // Add decoy ghosts for distraction/challenge
+  if (isCaesar) {
+    // ── Caesar Shift Ghosts ──
+    // ALL target ghosts carry the level's CORRECT decryption shift; decoy ghosts
+    // carry wrong candidate shifts (near-miss ±1/±2 on med/hard, random on easy).
+    // The player must derive the shift from the revealed letters, then only hunt
+    // ghosts displaying the matching value.
+    const candidates = buildShiftCandidates(caesarTrueShift, normTier, candidateCount);
+    const correctShift = candidates.find(c => c.isCorrect).shiftValue;
+
+    ghosts.forEach((g) => {
+      g.shiftValue = correctShift;
+      g.char = `−${correctShift}`;
+    });
+
+    // Add decoy ghosts carrying wrong shift values (deduplicated)
+    const usedWrong = new Set([correctShift]);
+    for (let i = 0; i < decoyCount; i++) {
+      let candidate = buildShiftCandidates(caesarTrueShift, normTier, candidateCount + 3)
+        .find(c => !usedWrong.has(c.shiftValue));
+      let v;
+      if (candidate) {
+        v = candidate.shiftValue;
+      } else {
+        // Fallback: any value != correct shift in 1..25
+        do { v = 1 + Math.floor(Math.random() * 25); } while (usedWrong.has(v));
+      }
+      usedWrong.add(v);
+
+      const posIdx = activeTargets.length + i;
+      const pos = startPositions[posIdx % startPositions.length];
+
+      ghosts.push({
+        id: `ghost-decoy-${i + 1}`,
+        char: `−${v}`,
+        shiftValue: v,
+        index: -1, // Decoy indicator
+        row: pos.row,
+        col: pos.col,
+        eaten: false,
+        dying: false,
+        dir: pos.dir
+      });
+    }
+
+    return { ghosts, queue };
+  }
+
+  // ── Vigenère / Playfair: original letter-based ghosts ──
   const alphabet = isPlayfair ? 'ABCDEFGHIKLMNOPQRSTUVWXYZ' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const targetLetters = requiredTargets.map(t => t.char);
   const ciphertextLetters = levelData?.ciphertext ? levelData.ciphertext.split('') : [];
@@ -287,6 +344,173 @@ const generateInitialGhosts = (levelData, tier) => {
 
   return { ghosts, queue };
 };
+/**
+ * Caesar Cheat Sheet — Decryption Guide (Bottom-Left Floating Panel)
+ *
+ * Tier-aware, accuracy-focused reference for Shift Ghosts gameplay:
+ *  - Shows the DECRYPTION direction (Cipher → Plain), which is what the player
+ *    actually does, replacing the old misleading encryption table.
+ *  - EASY: full 26-letter mapping + live worked example for the active blank.
+ *  - MEDIUM/HARD: no shift given — a derivation worksheet built from the
+ *    actually-revealed letter pairs (cipher − plain) plus a step checklist.
+ */
+function CaesarCheatSheet({
+  tier,
+  targetShift,
+  ciphertext,
+  plaintext,
+  fullMask,
+  activeIdx,
+  solvedCount,
+  totalCount,
+}) {
+  const isEasy = tier === 'easy';
+
+  /* Revealed (cipher, plain) pairs the player can legitimately see */
+  const revealedPairs = useMemo(() => {
+    const pairs = [];
+    for (let i = 0; i < plaintext.length; i++) {
+      const p = plaintext[i];
+      const masked = fullMask && fullMask[i] === false;
+      if (p >= 'A' && p <= 'Z' && !masked) {
+        pairs.push({ idx: i, cipherCh: ciphertext[i] || '', plainCh: p });
+      }
+    }
+    return pairs.slice(0, 3);
+  }, [plaintext, ciphertext, fullMask]);
+
+  /* Active blank worked example */
+  const activeExample = useMemo(() => {
+    if (activeIdx == null || activeIdx < 0) return null;
+    const cipherCh = ciphertext[activeIdx] || '';
+    const plainCh = plaintext[activeIdx] || '';
+    if (!cipherCh || !plainCh) return null;
+    return { cipherCh, plainCh };
+  }, [activeIdx, ciphertext, plaintext]);
+
+  /* EASY: A-Z strip columns — PLAIN on top, CIPHER below, numeric VALUE (1-26) */
+  const stripCols = useMemo(() => {
+    if (!isEasy) return [];
+    return CQS_ALPHABET.map((plain, i) => ({
+      plain,
+      // Encryption view of the table: plain + shift = cipher (user-facing keyshift)
+      cipher: caesarShiftChar(plain, targetShift),
+      value: i + 1,
+    }));
+  }, [isEasy, targetShift]);
+
+  /* Numeric position of a letter: A=1 … Z=26 */
+  const charValue = (ch) => {
+    const code = (ch || '').charCodeAt(0);
+    return code >= 65 && code <= 90 ? code - 64 : null;
+  };
+
+  return (
+    <div className="caesar-floating-cheat-sheet caesar-pacman-cheat-sheet cqs-cheat-sheet">
+      <div className="caesar-cheat-header">
+        <span className="caesar-cheat-title">🔐 Decryption Guide</span>
+        <span className={`caesar-cheat-badge ${isEasy ? '' : 'mystery'}`}>
+          {isEasy ? `Shift −${targetShift}` : 'Shift: ??'}
+        </span>
+      </div>
+
+      {isEasy ? (
+        <>
+          {activeExample && (
+            <div className="cqs-worked-example" title="Live decryption of the active blank">
+              <span className="cqs-we-stack">
+                <span className="cqs-we-cipher">{activeExample.cipherCh}</span>
+                <span className="cqs-we-sub">{charValue(activeExample.cipherCh)}</span>
+              </span>
+              <span className="cqs-we-op">−</span>
+              <span className="cqs-we-shift">{targetShift}</span>
+              <span className="cqs-we-op">=</span>
+              <span className="cqs-we-stack">
+                <span className="cqs-we-plain">{activeExample.plainCh}</span>
+                <span className="cqs-we-sub">{charValue(activeExample.plainCh)}</span>
+              </span>
+            </div>
+          )}
+
+          <div className="caesar-cheat-body">
+            <div className="caesar-cheat-labels cqs-labels-three">
+              <span className="caesar-cheat-label-plain">PLAIN</span>
+              <span className="caesar-cheat-label-shift">CIPHER</span>
+              <span className="cqs-label-value">VALUE</span>
+            </div>
+            <div className="caesar-cheat-columns">
+              {stripCols.map((c) => {
+                const isActive = activeExample && c.cipher === activeExample.cipherCh;
+                return (
+                  <div key={c.plain} className={`caesar-cheat-col cqs-col-three ${isActive ? 'highlighted' : ''}`}>
+                    <span className="caesar-cheat-plain">{c.plain}</span>
+                    <span className="caesar-cheat-shifted">{c.cipher}</span>
+                    <span className="cqs-cheat-value">{c.value}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      ) : (
+        <div className="cqs-derive-body">
+          <div className="cqs-derive-hint">
+            Compute <strong>shift = cipher − plain</strong> using the VALUE ruler (A=1 … Z=26):
+          </div>
+          <div className="cqs-derive-pairs">
+            {revealedPairs.length > 0 ? (
+              revealedPairs.map((p) => {
+                const s = ((p.cipherCh.charCodeAt(0) - 65) - (p.plainCh.charCodeAt(0) - 65) + 26) % 26;
+                return (
+                  <div key={p.idx} className="cqs-derive-pair">
+                    <span className="cqs-dp-stack">
+                      <span className="cqs-dp-cipher">{p.cipherCh}</span>
+                      <span className="cqs-dp-val">{charValue(p.cipherCh)}</span>
+                    </span>
+                    <span className="cqs-dp-op">−</span>
+                    <span className="cqs-dp-stack">
+                      <span className="cqs-dp-plain">{p.plainCh}</span>
+                      <span className="cqs-dp-val">{charValue(p.plainCh)}</span>
+                    </span>
+                    <span className="cqs-dp-eq">=</span>
+                    <span className="cqs-dp-shift">{s === 0 ? 26 : s}</span>
+                  </div>
+                );
+              })
+            ) : (
+              <span className="cqs-derive-empty">No letters revealed yet…</span>
+            )}
+          </div>
+
+          {/* Shift-agnostic letter ↔ value reference (A=1 … Z=26) */}
+          <div className="cqs-value-ruler">
+            <div className="cqs-ruler-row">
+              {CQS_ALPHABET.map((ch) => (
+                <span key={ch} className="cqs-ruler-letter">{ch}</span>
+              ))}
+            </div>
+            <div className="cqs-ruler-row">
+              {CQS_ALPHABET.map((ch, i) => (
+                <span key={ch} className="cqs-ruler-num">{i + 1}</span>
+              ))}
+            </div>
+          </div>
+
+          <div className="cqs-derive-steps">
+            <span className={revealedPairs.length >= 1 ? 'done' : ''}>① Derive from a pair</span>
+            <span className={revealedPairs.length >= 2 ? 'done' : ''}>② Verify on a 2nd</span>
+            <span className={solvedCount > 0 ? 'done' : ''}>③ Hunt the −shift ghost</span>
+          </div>
+        </div>
+      )}
+
+      <div className="cqs-progress-footer">
+        <span className="cqs-progress-label">Blanks solved</span>
+        <span className="cqs-progress-value">{solvedCount}/{totalCount}</span>
+      </div>
+    </div>
+  );
+}
 
 export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
   const isVigenere = !!levelData?.targetKey;
@@ -517,7 +741,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
         updatedGhosts.push({
           id: `ghost-target-${targetItem.index}-${Date.now()}-${Math.random()}`,
-          char: targetItem.char,
+          char: isCaesar ? `−${targetShift}` : targetItem.char,
+          shiftValue: isCaesar ? targetShift : undefined,
           index: targetItem.index,
           row: spawnPos.row,
           col: spawnPos.col,
@@ -749,7 +974,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 const pos = spawnPositions[Math.floor(Math.random() * spawnPositions.length)];
                 nextG.push({
                   id: `ghost-queued-${Date.now()}-${Math.random()}`,
-                  char: nextTarget.char,
+                  char: isCaesar ? `−${targetShift}` : nextTarget.char,
+                  shiftValue: isCaesar ? targetShift : undefined,
                   index: nextTarget.index,
                   row: pos.row,
                   col: pos.col,
@@ -958,7 +1184,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   handleLoseHeart(
                     isPlayfair
                       ? `Ouch! You ate Decoy Ghost '${ghost.char}' which is not part of the correct plaintext pairs. Use the Playfair matrix!`
-                      : `Ouch! You ate Decoy Ghost '${ghost.char}' which does not belong to the target blanks. Use the Shift Clue!`
+                      : (isCaesar
+                        ? `Wrong shift! '${ghost.char}' does not decrypt the cipher letter '${levelData.ciphertext?.[activeSolvingIndex] ?? ''}' into a letter that fits. Compare revealed letters against their cipher letters to find the true shift!`
+                        : `Ouch! You ate Decoy Ghost '${ghost.char}' which does not belong to the target blanks. Use the Shift Clue!`)
                   );
                 }
 
@@ -1195,7 +1423,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               </div>
               <p className="cq-dossier-how-it-works">
                 <strong>How it works:</strong>{' '}
-                Eat a yellow Skill Pellet, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct plaintext letter!
+                {isCaesar && currentTier !== 'easy'
+                  ? 'Find the shift by comparing revealed letters with their cipher letters (cipher − plain). Then eat a yellow Skill Pellet, press SPACEBAR for Decryption Mode, and eat the ghost carrying the CORRECT shift — wrong shift ghosts will hurt you!'
+                  : 'Eat a yellow Skill Pellet, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct shift value to decrypt the letter!'}
               </p>
               <button
                 className="cq-dossier-action-btn"
@@ -1406,7 +1636,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   ) : (
                     <>
                       <span className="caesar-pacman-shift-label">Active Shift:</span>
-                      <span className="caesar-pacman-shift-badge">+{targetShift}</span>
+                      <span className="caesar-pacman-shift-badge">
+                        {(isCaesar && currentTier !== 'easy') ? '??' : `+${targetShift}`}
+                      </span>
                     </>
                   )}
                 </div>
@@ -1482,26 +1714,16 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
           {/* 3. Bottom-Left Floating Reference Panel */}
           {isCaesar ? (
-            <div className="caesar-floating-cheat-sheet caesar-pacman-cheat-sheet">
-              <div className="caesar-cheat-header">
-                <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
-                <span className="caesar-cheat-badge">Shift +{targetShift}</span>
-              </div>
-              <div className="caesar-cheat-body">
-                <div className="caesar-cheat-labels">
-                  <span className="caesar-cheat-label-plain">PLAIN</span>
-                  <span className="caesar-cheat-label-shift">SHIFT</span>
-                </div>
-                <div className="caesar-cheat-columns">
-                  {alphabet.map((ch) => (
-                    <div key={ch} className="caesar-cheat-col">
-                      <span className="caesar-cheat-plain">{ch}</span>
-                      <span className="caesar-cheat-shifted">{caesarShiftChar(ch, targetShift)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <CaesarCheatSheet
+              tier={currentTier}
+              targetShift={targetShift}
+              ciphertext={levelData.ciphertext || ''}
+              plaintext={levelData.plaintext || ''}
+              fullMask={levelData.fullMask}
+              activeIdx={activeSolvingIndex}
+              solvedCount={eatenGhosts.length}
+              totalCount={maskedIndices.length}
+            />
           ) : isVigenere ? (
             <div className="vg-floating-ref-panel vg-pacman-ref-panel">
               <div className="vg-floating-ref-title">Vigenère Alignment</div>
@@ -1600,8 +1822,12 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 </>
               ) : (
                 <>
-                  <div className="caesar-basket-badge">+{targetShift}</div>
-                  <span className="caesar-basket-label">Caesar Shift Key Clue</span>
+                  <div className="caesar-basket-badge">
+                    {(isCaesar && currentTier !== 'easy') ? '??' : `+${targetShift}`}
+                  </div>
+                  <span className="caesar-basket-label">
+                    {(isCaesar && currentTier !== 'easy') ? 'Shift Unknown — Derive It!' : 'Caesar Shift Key Clue'}
+                  </span>
                 </>
               )}
             </div>

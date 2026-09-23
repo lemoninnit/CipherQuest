@@ -11,6 +11,7 @@ import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+import { buildShiftCandidates, SHIFT_CANDIDATE_COUNT } from '../../core/engine/caesar';
 const BASE_SPEED = 0.22;
 const BOOST_MULT = 1.6;
 const RUNNER_X = 14;
@@ -38,6 +39,23 @@ const getRandomDecoys = (correctChar, count) => {
   const pool = ALPHABET.filter((c) => c !== correctChar);
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
+};
+void getRandomDecoys; // retained for potential non-shift modes
+
+/**
+ * Shift Gate check: a picked gate label like "−5" is correct if decrypting the
+ * cipher letter with shift 5 yields the target plaintext letter.
+ */
+const pickedCharMatchesShift = (pickedLabel, cipherCh, targetChar) => {
+  if (!pickedLabel || !cipherCh || !targetChar) return false;
+  const match = String(pickedLabel).match(/-?\s*−?\s*(\d+)/);
+  if (!match) return false;
+  const shift = parseInt(match[1], 10);
+  if (!Number.isFinite(shift) || shift <= 0 || shift > 25) return false;
+  const code = (cipherCh || '').charCodeAt(0);
+  if (code < 65 || code > 90) return false;
+  const decrypted = String.fromCharCode((((code - 65 - shift) % 26) + 26) % 26 + 65);
+  return decrypted === targetChar;
 };
 
 export default function CipherSprint({
@@ -351,15 +369,27 @@ export default function CipherSprint({
 
     const tempIdx = maskedIndices[currentMaskIndexRef.current] ?? 0;
     const targetChar = currentTargetChar || (levelData.plaintext[tempIdx] ?? '');
-    const [decoy1, decoy2] = getRandomDecoys(targetChar, 2);
+
+    // ── Caesar Shift Gates ──
+    // Gates carry CANDIDATE SHIFT VALUES instead of plaintext letters. The gate
+    // whose shift correctly decrypts the current cipher letter is the correct one;
+    // near-miss shifts (±1/±2 on med/hard) act as decoys. The player must derive
+    // the shift themselves from the revealed letters, then steer into the gate.
+    // Only 3 lanes exist, so never spawn more than 3 gates.
+    const candidateCount = Math.min(SHIFT_CANDIDATE_COUNT[tier] || 3, 3);
+    const candidates = buildShiftCandidates(currentShiftKey, tier, candidateCount);
     const otherLanes = [0, 1, 2].filter((l) => l !== randLane);
 
     const startX = COIN_START_X;
-    const newCoins = [
-      { id: `c1-${Date.now()}`, lane: randLane, char: targetChar, x: startX, isCorrect: true, picked: false },
-      { id: `c2-${Date.now()}`, lane: otherLanes[0], char: decoy1, x: startX, isCorrect: false, picked: false },
-      { id: `c3-${Date.now()}`, lane: otherLanes[1], char: decoy2, x: startX, isCorrect: false, picked: false },
-    ];
+    const newCoins = candidates.map((cand, ci) => ({
+      id: `c${ci + 1}-${Date.now()}`,
+      lane: cand.isCorrect ? randLane : otherLanes[ci % otherLanes.length],
+      char: `−${cand.shiftValue}`,
+      shiftValue: cand.shiftValue,
+      x: startX,
+      isCorrect: cand.isCorrect,
+      picked: false,
+    }));
     setCoins((prev) => [...prev.filter((c) => c.x > -15), ...newCoins]);
 
     // Spawn obstacle slimes off-screen right, staggered
@@ -373,7 +403,7 @@ export default function CipherSprint({
       slimesRef.current = combined;
       return combined;
     });
-  }, [clearPhaseTimer, currentTargetChar, maskedIndices, levelData.plaintext]);
+  }, [clearPhaseTimer, currentShiftKey, currentTargetChar, maskedIndices, levelData.plaintext, tier]);
 
   /* ───────────────────────────────────────────────
      Phase 3: Resolved (immediate on diamond pick or miss)
@@ -391,7 +421,10 @@ export default function CipherSprint({
     const tempIdx = maskedIndices[currentMaskIndexRef.current] ?? 0;
     const cipherCh = levelData.ciphertext[tempIdx] ?? '';
     const targetChar = currentTargetChar || (levelData.plaintext[tempIdx] ?? '');
-    const isCorrect = (picked && picked === targetChar) || isCoinCorrect === true;
+    // Shift Gates: correctness = the picked gate's shift decrypts the cipher
+    // letter into the target plaintext letter (coin.isCorrect already encodes
+    // this, but re-verify against the letters for safety).
+    const isCorrect = isCoinCorrect === true || (picked !== null && pickedCharMatchesShift(picked, cipherCh, targetChar));
 
     setAttempts((prev) => [
       ...prev,
@@ -436,8 +469,8 @@ export default function CipherSprint({
       triggerShake();
       setFirstTryForCurrent(false);
 
-      // Worked answer banner: C + 5 = H
-      const workedAnswer = `${cipherCh} + ${currentShiftKey} = ${targetChar}`;
+      // Worked answer banner (decryption direction): C − shift = P
+      const workedAnswer = `${cipherCh} − ${currentShiftKey} = ${targetChar}`;
       setResolvedBannerText(workedAnswer);
 
       setLives((prevLives) => {
@@ -877,7 +910,7 @@ export default function CipherSprint({
                 <div className="cq-dossier-tag">MISSION BRIEF</div>
                 <h2 className="cq-dossier-title">Cipher Sprint Relay</h2>
                 <p className="cq-dossier-subtitle">
-                  Baton relay decryption challenge! Steer the runner into the lane carrying the correct plaintext letter to decrypt checkpoints.
+                  Shift Gate relay! Derive the Caesar shift, then steer the runner through the gate carrying the correct shift value to decrypt each letter.
                 </p>
                 <hr className="cq-dossier-divider" />
                 <div className="cq-dossier-data">
@@ -892,7 +925,7 @@ export default function CipherSprint({
                 </div>
                 <p className="cq-dossier-how-it-works">
                   <strong>How it works:</strong>{' '}
-                  Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter based on the Caesar Shift Key clue to decrypt each letter. Dodge the obstacle slimes! Decoy letters will cause a crash! Press <strong>F</strong> to toggle fullscreen.
+                  Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Gates carry shift values — enter the gate whose shift correctly decrypts the cipher letter (cipher − shift = plain). Dodge the obstacle slimes! Wrong shift gates will cause a crash! Press <strong>F</strong> to toggle fullscreen.
                 </p>
                 <button className="cq-dossier-action-btn" onClick={() => setIsOperationLoading(true)}>
                   Begin operation
@@ -1023,7 +1056,7 @@ export default function CipherSprint({
                     style={{ left: `${coin.x}%` }}
                   >
                     <div className="sprint-r2-diamond-inner">
-                      <span className="sprint-r2-diamond-char">{coin.char}</span>
+                      <span className="sprint-r2-diamond-char" style={{ fontSize: '0.92rem', letterSpacing: '0.5px' }}>{coin.char}</span>
                     </div>
                   </div>
                 );
@@ -1074,8 +1107,8 @@ export default function CipherSprint({
                       </div>
                       <div className="sprint-r2-math-equation">
                         <span className="sprint-r2-math-chip cipher">{currentBatonLetter}</span>
-                        <span className="sprint-r2-math-op">+</span>
-                        <span className="sprint-r2-math-chip shift">{currentShiftKey}</span>
+                        <span className="sprint-r2-math-op">−</span>
+                        <span className="sprint-r2-math-chip shift">{tier === 'easy' ? currentShiftKey : '?'}</span>
                         <span className="sprint-r2-math-op">→</span>
                         <span className="sprint-r2-math-chip target mystery">?</span>
                       </div>
@@ -1090,10 +1123,10 @@ export default function CipherSprint({
                       </div>
                       <div className="sprint-r2-math-equation">
                         <span className="sprint-r2-math-chip cipher">{currentBatonLetter}</span>
-                        <span className="sprint-r2-math-op">+</span>
-                        <span className="sprint-r2-math-chip shift">{currentShiftKey}</span>
+                        <span className="sprint-r2-math-op">−</span>
+                        <span className="sprint-r2-math-chip shift">{pickedChar || '?'}</span>
                         <span className="sprint-r2-math-op">=</span>
-                        <span className="sprint-r2-math-chip target locked">{pickedChar || '?'}</span>
+                        <span className="sprint-r2-math-chip target locked">{currentTargetChar || '?'}</span>
                       </div>
                     </>
                   )}
@@ -1113,7 +1146,7 @@ export default function CipherSprint({
                       </span>
                       <div className="sprint-r2-math-equation">
                         <span className="sprint-r2-math-chip cipher">{currentBatonLetter}</span>
-                        <span className="sprint-r2-math-op">+</span>
+                        <span className="sprint-r2-math-op">−</span>
                         <span className="sprint-r2-math-chip shift">{currentShiftKey}</span>
                         <span className="sprint-r2-math-op">=</span>
                         <span
@@ -1133,8 +1166,8 @@ export default function CipherSprint({
                           (resolvedStatus === 'correct'
                             ? 'Direct Hit! Letter Decrypted!'
                             : pickedChar
-                            ? `Picked '${pickedChar}' — Correct answer is '${currentTargetChar}'`
-                            : `Missed Diamond — Correct answer is '${currentTargetChar}'`)}
+                            ? `Gate '${pickedChar}' was the wrong shift — '${currentBatonLetter} − ${currentShiftKey} = '${currentTargetChar}'`
+                            : `Missed Gate — '${currentBatonLetter} − ${currentShiftKey} = '${currentTargetChar}'`)}
                       </div>
                     </>
                   )}
@@ -1202,38 +1235,57 @@ export default function CipherSprint({
           </div>
 
           {/* 2. Bottom-Left Floating Cipher Cheat Sheet (Caesar Fishing / Caesar Pac-Man) */}
-          <div className="caesar-floating-cheat-sheet sprint-cheat-sheet">
-            <div className="caesar-cheat-header">
-              <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
-              <span className="caesar-cheat-badge">Shift +{currentShiftKey}</span>
-            </div>
-            <div className="caesar-cheat-body">
-              <div className="caesar-cheat-labels">
-                <span className="caesar-cheat-label-plain">CIPHER</span>
-                <span className="caesar-cheat-label-shift">PLAIN</span>
+          {tier === 'easy' ? (
+            <div className="caesar-floating-cheat-sheet sprint-cheat-sheet">
+              <div className="caesar-cheat-header">
+                <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
+                <span className="caesar-cheat-badge">Shift +{currentShiftKey}</span>
               </div>
-              <div className="caesar-cheat-columns">
-                {ALPHABET.map((ch) => {
-                  const isCurrent = ch === currentBatonLetter;
-                  return (
-                    <div
-                      key={ch}
-                      className={`caesar-cheat-col ${isCurrent ? 'highlighted' : ''}`}
-                    >
-                      <span className="caesar-cheat-plain">{ch}</span>
-                      <span className="caesar-cheat-shifted">{caesarShiftChar(ch, currentShiftKey)}</span>
-                    </div>
-                  );
-                })}
+              <div className="caesar-cheat-body">
+                <div className="caesar-cheat-labels">
+                  <span className="caesar-cheat-label-plain">CIPHER</span>
+                  <span className="caesar-cheat-label-shift">PLAIN</span>
+                </div>
+                <div className="caesar-cheat-columns">
+                  {ALPHABET.map((ch) => {
+                    const isCurrent = ch === currentBatonLetter;
+                    return (
+                      <div
+                        key={ch}
+                        className={`caesar-cheat-col ${isCurrent ? 'highlighted' : ''}`}
+                      >
+                        <span className="caesar-cheat-plain">{ch}</span>
+                        <span className="caesar-cheat-shifted">{caesarShiftChar(ch, currentShiftKey)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* Med+Hard: no free cheat sheet — derive the shift from revealed letters */
+            <div className="caesar-floating-cheat-sheet sprint-cheat-sheet">
+              <div className="caesar-cheat-header">
+                <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
+                <span className="caesar-cheat-badge">Shift: ??</span>
+              </div>
+              <div className="caesar-cheat-body" style={{ padding: '10px 14px' }}>
+                <div style={{ fontSize: '0.72rem', lineHeight: 1.5, color: '#cbd5e1' }}>
+                  No shift clue on this tier. Derive it: compare a revealed letter with its
+                  cipher letter — <strong style={{ color: 'var(--neon-yellow)' }}>shift = cipher − plain</strong> (mod 26).
+                  Then steer into the gate carrying that shift!
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 3. Bottom-Right Floating Shift Key Clue Card (Caesar Pac-Man) */}
           <div className="caesar-floating-basket-card sprint-clue-card">
             <div className="caesar-basket-icon">🔑</div>
-            <div className="caesar-basket-badge">+{currentShiftKey}</div>
-            <span className="caesar-basket-label">Caesar Shift Key Clue</span>
+            <div className="caesar-basket-badge">{tier === 'easy' ? `+${currentShiftKey}` : '??'}</div>
+            <span className="caesar-basket-label">
+              {tier === 'easy' ? 'Caesar Shift Key Clue' : 'Shift Unknown — Derive It!'}
+            </span>
           </div>
 
           {/* 4. Floating Action / Outcome Panels */}
