@@ -6153,25 +6153,10 @@
   flex-shrink: 0 !important;
 }
 
-.vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(1),
-.vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(2),
-.vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(4),
-.vigenere-sprint-fullscreen .vg-alignment-labels > div:nth-child(1),
-.vigenere-sprint-fullscreen .vg-alignment-labels > div:nth-child(2),
-.vigenere-sprint-fullscreen .vg-alignment-labels > div:nth-child(4),
-.vg-pacman-fullscreen .vg-alignment-labels > div:nth-child(1),
-.vg-pacman-fullscreen .vg-alignment-labels > div:nth-child(2),
-.vg-pacman-fullscreen .vg-alignment-labels > div:nth-child(4) {
+.vigenere-fishing-fullscreen .vg-alignment-labels > div,
+.vigenere-sprint-fullscreen .vg-alignment-labels > div,
+.vg-pacman-fullscreen .vg-alignment-labels > div {
   height: 18px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
-}
-
-.vigenere-fishing-fullscreen .vg-alignment-labels > div:nth-child(3),
-.vigenere-sprint-fullscreen .vg-alignment-labels > div:nth-child(3),
-.vg-pacman-fullscreen .vg-alignment-labels > div:nth-child(3) {
-  height: 16px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
