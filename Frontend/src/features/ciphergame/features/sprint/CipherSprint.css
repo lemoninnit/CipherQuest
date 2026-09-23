@@ -3121,3 +3121,13 @@
 .sprint-track-container.is-paused .runner-baton-glow {
   animation-play-state: paused !important;
 }
+
+/* Vigenère Sprint Word Row alignment */
+.vigenere-sprint-fullscreen .fg-word-segments-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+

@@ -176,7 +176,9 @@ export default function VigenereSprint({
   /* ───────────────────────────────────────────────
      Derived (re-compute each render, cheap)
      ─────────────────────────────────────────────── */
-  const targetKey = levelData.targetKey || levelData.keyword || 'KEY';
+  const targetKey = levelData?.targetKey || levelData?.keyword || levelData?.key || 'KEY';
+  const keyClue = levelData?.keyClue || levelData?.keywordClue || levelData?.clue || '';
+  const hint = levelData?.hint || '';
   const currentIdx = maskedIndices[currentMaskIndex] ?? 0;
   const currentBatonLetter = levelData.ciphertext[currentIdx] ?? '';
   const currentTargetChar = levelData.plaintext[currentIdx] ?? vigenereDecryptChar(currentBatonLetter, 0);
@@ -880,12 +882,20 @@ export default function VigenereSprint({
                   </div>
                   <div className="cq-dossier-row">
                     <span className="cq-dossier-label">KEYWORD</span>
-                    <span className="cq-dossier-value cyan-mono">{targetKey}</span>
+                    <span className="cq-dossier-value yellow-mono">{targetKey}</span>
                   </div>
-                  <div className="cq-dossier-row">
-                    <span className="cq-dossier-label">HINT</span>
-                    <span className="cq-dossier-value hint-text">{levelData.hint}</span>
-                  </div>
+                  {keyClue && (
+                    <div className="cq-dossier-row">
+                      <span className="cq-dossier-label">KEYWORD CLUE</span>
+                      <span className="cq-dossier-value yellow-mono">{keyClue}</span>
+                    </div>
+                  )}
+                  {hint && (
+                    <div className="cq-dossier-row">
+                      <span className="cq-dossier-label">HINT</span>
+                      <span className="cq-dossier-value hint-text">{hint}</span>
+                    </div>
+                  )}
                 </div>
                 <p className="cq-dossier-how-it-works">
                   <strong>How it works:</strong>{' '}
@@ -1166,17 +1176,17 @@ export default function VigenereSprint({
           {/* ───── Floating Overlays ───── */}
 
           {/* 1. Top-Center Floating Word Panel */}
-          <div className="caesar-fishing-floating-word-panel vg-sprint-word-panel">
+          <div className="caesar-floating-word-panel vg-sprint-word-panel">
             <div className="fg-word-segments-row">
               <div className="fg-word-segment-card">
                 <div className="fg-letter-cells">
-                  {levelData.plaintext.split('').map((char, idx) => {
+                  {(levelData?.plaintext || '').split('').map((char, idx) => {
                     if (char === ' ') {
                       return <div key={idx} style={{ width: 10 }} />;
                     }
                     const isMasked = !hintIndices.has(idx);
                     const isCurrentActive = isMasked && idx === currentIdx && sprintStep === 'running';
-                    const cipherCh = levelData.ciphertext[idx];
+                    const cipherCh = levelData?.ciphertext?.[idx] || '';
                     const isSolved = solvedLetters[idx] !== undefined;
                     const plainCh = isSolved ? solvedLetters[idx] : hintIndices.has(idx) ? char : '_';
 
@@ -1197,11 +1207,11 @@ export default function VigenereSprint({
                 </div>
               </div>
             </div>
-            {(levelData.hint || levelData.keyClue) && (
+            {(keyClue || hint) && (
               <div className="caesar-floating-hint">
-                {levelData.keyClue && <span>💡 Keyword clue: <strong>"{levelData.keyClue}"</strong></span>}
-                {levelData.keyClue && levelData.hint && <span style={{ margin: '0 8px', opacity: 0.4 }}>|</span>}
-                {levelData.hint && <span>Hint: <strong>"{levelData.hint}"</strong></span>}
+                {keyClue && <span>💡 Keyword clue: <strong>"{keyClue}"</strong></span>}
+                {keyClue && hint && <span style={{ margin: '0 8px', opacity: 0.4 }}>·</span>}
+                {hint && <span>Hint: <strong>"{hint}"</strong></span>}
               </div>
             )}
           </div>
@@ -1282,7 +1292,15 @@ export default function VigenereSprint({
             </div>
           </div>
 
-          {/* 3. Bottom-Right Decryption Arithmetic & A-Z Reference */}
+          {/* 3. Bottom-Center Floating Keyword Pill */}
+          {targetKey && (
+            <div className="vg-fishing-bottom-keyword" title={`Repeating Keyword: ${targetKey}`}>
+              <span className="vg-pill-lbl">KEYWORD</span>
+              <span className="vg-pill-val">{targetKey}</span>
+            </div>
+          )}
+
+          {/* 4. Bottom-Right Decryption Arithmetic & A-Z Reference */}
           <div className="vg-floating-key-panel vg-fishing-az-panel vg-sprint-az-panel">
             <div className="vg-floating-current-slot">
               <div className="vg-arithmetic-title">
