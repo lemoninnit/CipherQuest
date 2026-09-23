@@ -838,7 +838,10 @@ export default function VigenereFishingGame({
                 <strong style={{ color: 'var(--neon-green)' }}>
                   {revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? currentTargetPlain : '?'}
                 </strong>
-                <span className="val">
+                <span
+                  className="val"
+                  style={{ visibility: revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? 'visible' : 'hidden' }}
+                >
                   {(charToIdx(currentCipherChar) - currentKeyShift + 26) % 26}
                 </span>
               </div>

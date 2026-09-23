@@ -1691,9 +1691,12 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     <div className="vg-calc-item plain">
                       <span className="lbl">Ghost</span>
                       <strong style={{ color: 'var(--neon-green)' }}>
-                        {activeSolvingItem.plainChar}
+                        {activeSolvingItem.isSolved ? activeSolvingItem.plainChar : '?'}
                       </strong>
-                      <span className="val">
+                      <span
+                        className="val"
+                        style={{ visibility: activeSolvingItem.isSolved ? 'visible' : 'hidden' }}
+                      >
                         {(charToIdx(activeSolvingItem.cipherChar) - activeSolvingItem.shiftVal + 26) % 26}
                       </span>
                     </div>

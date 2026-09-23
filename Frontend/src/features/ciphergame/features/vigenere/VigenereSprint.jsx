@@ -38,6 +38,16 @@ const getRandomDecoys = (correctChar, count) => {
   return shuffled.slice(0, count);
 };
 
+const tabulaRow = (keyLetter) => {
+  const shift = keyLetter.charCodeAt(0) - 65;
+  const row = [];
+  for (let i = 0; i < 26; i++) {
+    const cipherIdx = (i + shift) % 26;
+    row.push(ALPHABET[cipherIdx]);
+  }
+  return row;
+};
+
 export default function VigenereSprint({
   levelData,
   tier,
@@ -94,6 +104,7 @@ export default function VigenereSprint({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showTabula, setShowTabula] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackColor, setFeedbackColor] = useState('#facc15');
   const [feedbackY, setFeedbackY] = useState(50);
@@ -1156,7 +1167,6 @@ export default function VigenereSprint({
 
           {/* 1. Top-Center Floating Word Panel */}
           <div className="sprint-r2-word-panel">
-            <div className="sprint-r2-word-title">Decrypt the word "{levelData.ciphertext}"</div>
             <div className="sprint-r2-letters-row">
               {levelData.plaintext.split('').map((char, idx) => {
                 if (char === ' ') {
@@ -1180,18 +1190,29 @@ export default function VigenereSprint({
                 );
               })}
             </div>
-            {levelData.hint && (
+            {(levelData.hint || levelData.keyClue) && (
               <div className="sprint-r2-word-hint">
-                {levelData.keyClue ? `Keyword clue: "${levelData.keyClue}" · ` : ''}Hint: "{levelData.hint}"
+                {levelData.keyClue && <span>Keyword clue: "{levelData.keyClue}"</span>}
+                {levelData.keyClue && levelData.hint && <span> · </span>}
+                {levelData.hint && <span>Hint: "{levelData.hint}"</span>}
               </div>
             )}
           </div>
 
-          {/* 2. Bottom-Left Vigenère Alignment Panel (Image 1) */}
+          {/* 2. Bottom-Left Vigenère Alignment Panel */}
           <div className="vg-sprint-alignment-panel">
             <div className="vg-sprint-align-header">
-              <span className="vg-sprint-align-title">VIGENÈRE ALIGNMENT</span>
+              <span className="vg-sprint-align-title">Vigenère Alignment</span>
               <span className="vg-sprint-formula-badge">Formula: Plain = (Cipher − Key + 26) mod 26</span>
+              <button
+                type="button"
+                className="vg-sprint-tabula-btn"
+                onClick={() => setShowTabula(true)}
+                title="Open Interactive Tabula Recta"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '0.8rem' }}>grid_on</span>
+                <span>Tabula Recta</span>
+              </button>
             </div>
 
             <div className="vg-sprint-grid-container">
@@ -1199,7 +1220,7 @@ export default function VigenereSprint({
                 <span className="vg-sprint-row-label">CIPHER</span>
                 <span className="vg-sprint-row-label">KEY</span>
                 <span className="vg-sprint-row-label">SHIFT</span>
-                <span className="vg-sprint-row-label">PLAIN</span>
+                <span className="vg-sprint-row-label" style={{ color: 'var(--neon-green)' }}>PLAIN</span>
               </div>
               <div className="vg-sprint-grid-columns">
                 {levelData.plaintext.split('').map((char, idx) => {
@@ -1232,6 +1253,7 @@ export default function VigenereSprint({
                     <div
                       key={idx}
                       className={`vg-sprint-grid-col ${isCurrent ? 'active' : ''}`}
+                      title={`Pos #${idx + 1}: ${cipherCh} (${cipherCh.charCodeAt(0) - 65}) − ${keyCh} (${shiftVal}) = ${isSolved || isHint ? plainDisplay : '?'}`}
                     >
                       <span className="vg-sprint-cell cipher">{cipherCh}</span>
                       <span className="vg-sprint-cell key">{keyCh}</span>
@@ -1252,27 +1274,13 @@ export default function VigenereSprint({
                 })}
               </div>
             </div>
-
-            <div className="vg-sprint-align-footer">
-              <div className="vg-sprint-footer-row-1">
-                <span>Target Position #{currentIdx + 1}</span>
-                <span>Key: '{currentKeyChar}' (-{currentShiftKey})</span>
-              </div>
-              <div className="vg-sprint-footer-row-2">
-                Cipher '{currentBatonLetter}' ({currentBatonLetter ? currentBatonLetter.charCodeAt(0) - 65 : 0}) − Key '{currentKeyChar}' ({currentShiftKey}) = Steer into lane '{currentTargetChar}'
-              </div>
-            </div>
           </div>
 
-          {/* 3. Bottom-Right Decryption Arithmetic & A-Z Reference (Image 1) */}
+          {/* 3. Bottom-Right Decryption Arithmetic & A-Z Reference */}
           <div className="vg-sprint-arithmetic-panel">
             <div className="vg-sprint-ref-header">
-              <div className="vg-sprint-ref-title-group">
-                <span className="vg-sprint-ref-main-title">A–Z VALUE REFERENCE</span>
-                <span className="vg-sprint-ref-sub-title">Decryption Arithmetic</span>
-              </div>
+              <span className="vg-sprint-ref-sub-title">Decryption Arithmetic</span>
               <div className="vg-sprint-ref-header-right">
-                <span className="vg-sprint-keyword-tag">Key: {targetKey}</span>
                 <span className="vg-sprint-cleared-badge">
                   {Object.keys(solvedLetters).length}/{maskedIndices.length} Cleared
                 </span>
@@ -1299,8 +1307,13 @@ export default function VigenereSprint({
                 </div>
                 <span className="vg-sprint-eq-op">=</span>
                 <div className="vg-sprint-eq-box target">
-                  <span className="vg-sprint-eq-char">{currentTargetChar || '?'}</span>
-                  <span className="vg-sprint-eq-num">
+                  <span className="vg-sprint-eq-char">
+                    {solvedLetters[currentIdx] !== undefined ? currentTargetChar : '?'}
+                  </span>
+                  <span
+                    className="vg-sprint-eq-num"
+                    style={{ visibility: solvedLetters[currentIdx] !== undefined ? 'visible' : 'hidden' }}
+                  >
                     {currentTargetChar ? currentTargetChar.charCodeAt(0) - 65 : 0}
                   </span>
                 </div>
@@ -1369,6 +1382,61 @@ export default function VigenereSprint({
               <CrashPanel message={crashMessage} onContinue={handleContinueAfterCrash} />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Tabula Recta Modal for Vigenère Mode */}
+      {showTabula && (
+        <div className="vg-modal-overlay" onClick={() => setShowTabula(false)}>
+          <div className="vg-modal-card tabula-modal" onClick={e => e.stopPropagation()}>
+            <div className="vg-modal-header">
+              <h3>📊 Interactive Tabula Recta</h3>
+              <button className="vg-modal-close" onClick={() => setShowTabula(false)}>×</button>
+            </div>
+            <div className="vg-modal-body">
+              <p className="vg-modal-instructions">
+                The Tabula Recta is a 26×26 grid of shifted alphabets. Find the column of your <strong>Cipher letter (C)</strong>,
+                then look at the row of your <strong>Key letter (K)</strong> to find the intersection, which is the <strong>Plain letter (P)</strong>!
+                <br />
+                <span style={{ color: 'var(--neon-yellow)' }}>★ Gold Rows: rows containing key letters for this level's key ("{targetKey}") are highlighted.</span>
+              </p>
+              <div className="vg-tabula-scroll-wrapper">
+                <table className="vg-tabula-full-grid">
+                  <thead>
+                    <tr>
+                      <th className="corner-cell">K \ P</th>
+                      {ALPHABET.map(ch => (
+                        <th key={ch} className="col-header">{ch}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ALPHABET.map((kChar) => {
+                      const isCorrectKey = targetKey ? targetKey.includes(kChar) : false;
+                      const rowLetters = tabulaRow(kChar);
+                      return (
+                        <tr key={kChar} className={isCorrectKey ? 'correct-key-row' : ''}>
+                          <td className="row-header">{kChar}</td>
+                          {rowLetters.map((cChar, cIdx) => {
+                            const plainLetter = ALPHABET[cIdx];
+                            return (
+                              <td
+                                key={cIdx}
+                                className="cell"
+                                title={`Key: ${kChar}, Plain: ${plainLetter} → Cipher: ${cChar}`}
+                              >
+                                {cChar}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
