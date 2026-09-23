@@ -1854,18 +1854,12 @@
 
 .sprint-r2-center-banner.state-correct {
   border-color: #22c55e;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(34, 197, 94, 0.35), inset 0 0 16px rgba(34, 197, 94, 0.08);
-}
-.sprint-r2-center-banner.state-correct .sprint-r2-corner {
-  border-color: #22c55e;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(34, 197, 94, 0.35);
 }
 
 .sprint-r2-center-banner.state-wrong {
   border-color: #ef4444;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(239, 68, 68, 0.35), inset 0 0 16px rgba(239, 68, 68, 0.08);
-}
-.sprint-r2-center-banner.state-wrong .sprint-r2-corner {
-  border-color: #ef4444;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px rgba(239, 68, 68, 0.35);
 }
 
 /* ───────────────────────────────────────────────
@@ -2377,10 +2371,11 @@
 }
 
 .sprint-r2-math-chip.shift {
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.45);
-  background: rgba(245, 158, 11, 0.12);
-  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  color: #ffc146;
+  border-color: rgba(255, 193, 70, 0.45);
+  background: rgba(255, 193, 70, 0.12);
+  text-shadow: 0 0 8px rgba(255, 193, 70, 0.6);
+  box-shadow: 0 0 10px rgba(255, 193, 70, 0.25);
 }
 
 .sprint-r2-math-chip.target.mystery {
@@ -2416,31 +2411,32 @@
 }
 
 .sprint-r2-banner-msg {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Space Grotesk', 'Outfit', sans-serif;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
+  color: #cbd5e1;
 }
 
 .sprint-r2-banner-msg.correct {
-  color: #22c55e;
-  text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+  color: #cbd5e1;
+  text-shadow: none;
 }
 
 .sprint-r2-banner-msg.wrong {
-  color: #ef4444;
-  text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  color: #cbd5e1;
+  text-shadow: none;
 }
 
 /* Progress bar container and animated gradient fill with soft leading glow */
 .sprint-r2-progress-bar-container {
-  width: 260px;
-  height: 8px;
+  width: 240px;
+  height: 6px;
   background: rgba(2, 8, 18, 0.9);
-  border: 1px solid rgba(0, 229, 255, 0.35);
+  border: 1px solid rgba(0, 229, 255, 0.3);
   border-radius: 999px;
   overflow: hidden;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
   position: relative;
 }
 
@@ -2448,7 +2444,7 @@
   height: 100%;
   background: linear-gradient(90deg, #0284c7, #00e5ff, #38bdf8);
   border-radius: 999px;
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
   transform-origin: left center;
   position: relative;
 }
@@ -2457,30 +2453,30 @@
   content: '';
   position: absolute;
   right: 0;
-  top: -2px;
-  bottom: -2px;
-  width: 14px;
+  top: -1px;
+  bottom: -1px;
+  width: 10px;
   background: radial-gradient(circle at center, #ffffff 20%, #00e5ff 70%, transparent 100%);
   border-radius: 999px;
-  box-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff;
+  box-shadow: 0 0 8px #00e5ff;
 }
 
 .sprint-r2-center-banner.state-correct .sprint-r2-progress-fill {
   background: linear-gradient(90deg, #15803d, #22c55e, #4ade80);
-  box-shadow: 0 0 10px rgba(34, 197, 94, 0.8);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
 }
 .sprint-r2-center-banner.state-correct .sprint-r2-progress-fill::after {
   background: radial-gradient(circle at center, #ffffff 20%, #22c55e 70%, transparent 100%);
-  box-shadow: 0 0 10px #22c55e, 0 0 20px #22c55e;
+  box-shadow: 0 0 8px #22c55e;
 }
 
 .sprint-r2-center-banner.state-wrong .sprint-r2-progress-fill {
   background: linear-gradient(90deg, #b91c1c, #ef4444, #f87171);
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.8);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
 }
 .sprint-r2-center-banner.state-wrong .sprint-r2-progress-fill::after {
   background: radial-gradient(circle at center, #ffffff 20%, #ef4444 70%, transparent 100%);
-  box-shadow: 0 0 10px #ef4444, 0 0 20px #ef4444;
+  box-shadow: 0 0 8px #ef4444;
 }
 
 @keyframes sprintR2Progress {

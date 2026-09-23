@@ -179,8 +179,7 @@ export default function VigenereSprint({
      Derived (re-compute each render, cheap)
      ─────────────────────────────────────────────── */
   const targetKey = levelData?.targetKey || levelData?.keyword || levelData?.key || 'KEY';
-  const keyClue = levelData?.keyClue || levelData?.keywordClue || levelData?.clue || '';
-  const hint = levelData?.hint || '';
+  const cleanHint = levelData?.hint ? levelData.hint.trim() : '';
   const currentIdx = maskedIndices[currentMaskIndex] ?? 0;
   const currentBatonLetter = levelData.ciphertext[currentIdx] ?? '';
   const currentTargetChar = levelData.plaintext[currentIdx] ?? vigenereDecryptChar(currentBatonLetter, 0);
@@ -951,16 +950,10 @@ export default function VigenereSprint({
                     <span className="cq-dossier-label">KEYWORD</span>
                     <span className="cq-dossier-value yellow-mono">{targetKey}</span>
                   </div>
-                  {keyClue && (
-                    <div className="cq-dossier-row">
-                      <span className="cq-dossier-label">KEYWORD CLUE</span>
-                      <span className="cq-dossier-value yellow-mono">{keyClue}</span>
-                    </div>
-                  )}
-                  {hint && (
+                  {cleanHint && (
                     <div className="cq-dossier-row">
                       <span className="cq-dossier-label">HINT</span>
-                      <span className="cq-dossier-value hint-text">{hint}</span>
+                      <span className="cq-dossier-value hint-text">{cleanHint}</span>
                     </div>
                   )}
                 </div>
@@ -1274,11 +1267,9 @@ export default function VigenereSprint({
                 </div>
               </div>
             </div>
-            {(keyClue || hint) && (
+            {cleanHint && (
               <div className="caesar-floating-hint">
-                {keyClue && <span>💡 Keyword clue: <strong>"{keyClue}"</strong></span>}
-                {keyClue && hint && <span style={{ margin: '0 8px', opacity: 0.4 }}>·</span>}
-                {hint && <span>Hint: <strong>"{hint}"</strong></span>}
+                💡 Hint: <strong>"{cleanHint}"</strong>
               </div>
             )}
           </div>
@@ -1301,7 +1292,6 @@ export default function VigenereSprint({
               <div className="vg-alignment-labels">
                 <div>CIPHER</div>
                 <div>KEY</div>
-                <div>SHIFT</div>
                 <div style={{ color: 'var(--neon-green)' }}>PLAIN</div>
               </div>
               <div className="vg-alignment-container">
@@ -1339,7 +1329,6 @@ export default function VigenereSprint({
                     >
                       <span className="vg-align-cipher">{cipherCh}</span>
                       <span className="vg-align-key">{keyCh}</span>
-                      <span className="vg-align-shift">-{shiftVal}</span>
                       <span
                         className="vg-align-plain"
                         style={{
