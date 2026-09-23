@@ -88,7 +88,9 @@ export default function GameHudBar({
  */
 function ScoringStrip() {
   const scoring = useScoring();
-  if (!scoring || !scoring.stageStartedAt) return null;
+  if (!scoring) return null;
+
+  const formattedTime = scoring.stageStartedAt ? scoring.formattedTime : '00:00.000';
 
   const chipStyle = {
     display: 'flex',
@@ -112,19 +114,19 @@ function ScoringStrip() {
       </div>
       <div style={chipStyle} title="Global Streak">
         <span>🔥</span>
-        <span style={{ color: '#fff' }}>{scoring.streak}</span>
+        <span style={{ color: '#fff' }}>{scoring.streak || 0}</span>
       </div>
       <div
-        style={{ ...chipStyle, borderColor: scoring.multiplier > 1 ? 'rgba(34, 197, 94, 0.5)' : 'rgba(0, 229, 255, 0.25)' }}
+        style={{ ...chipStyle, borderColor: (scoring.multiplier || 1) > 1 ? 'rgba(34, 197, 94, 0.5)' : 'rgba(0, 229, 255, 0.25)' }}
         title="Streak Multiplier (applied to the next successful completion)"
       >
-        <span style={{ color: scoring.multiplier > 1 ? '#22c55e' : '#00e5ff' }}>
-          {scoring.formattedMultiplier}
+        <span style={{ color: (scoring.multiplier || 1) > 1 ? '#22c55e' : '#00e5ff' }}>
+          {scoring.formattedMultiplier || '1.00x'}
         </span>
       </div>
       <div style={chipStyle} title="Stage Timer">
         <span className="material-symbols-outlined" style={{ fontSize: '0.85rem', color: '#00e5ff' }}>timer</span>
-        <span style={{ color: '#fff' }}>{scoring.formattedTime}</span>
+        <span style={{ color: '#fff' }}>{formattedTime}</span>
       </div>
     </div>
   );

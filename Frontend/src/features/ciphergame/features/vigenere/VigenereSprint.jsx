@@ -54,6 +54,7 @@ export default function VigenereSprint({
   onVerifySubmit,
   onBackToStages,
   onReplayNewQuestion,
+  onStartStageTimer,
 }) {
   const {
     containerRef: fsContainerRef,
@@ -844,6 +845,7 @@ export default function VigenereSprint({
             stageIndex={(levelData.level || 1) - 1}
             onLoadingComplete={() => {
               setIsOperationLoading(false);
+              onStartStageTimer?.();
               handleStartSprint();
             }}
           />

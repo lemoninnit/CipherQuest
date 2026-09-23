@@ -30,7 +30,7 @@ const formatShift = (shift) => `+${normalizeShift(shift)}`;
 
 const FISH_VALUES = [+1, +2, +3, +4, +5, +6, +7, +8, +9, +10, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10];
 
-export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
+export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion, onStartStageTimer }) {
   const words         = levelData.plaintext.split(' ');
   const cipherSegs    = levelData.ciphertext.split(' ');
   const getInitialShift = (segIdx) => normalizeShift(levelData.startShifts?.[segIdx] ?? levelData.startShifts?.[0] ?? 0);
@@ -399,6 +399,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           stageIndex={(levelData.level || 1) - 1}
           onLoadingComplete={() => {
             setIsOperationLoading(false);
+            onStartStageTimer?.();
             startGame();
           }}
         />

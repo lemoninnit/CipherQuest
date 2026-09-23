@@ -33,7 +33,7 @@ export default function CipherGame() {
     category, difficulty, currentStage,
     progress, completionModalData,
     goToCategories, selectDifficulty,
-    startStage,
+    startStage, startStageTimer,
     completeStage, backToStages, replayCurrentStage,
     handleContinueNextDifficulty, handleCloseCompletionModal,
     returnToRoadmap,
@@ -75,6 +75,7 @@ export default function CipherGame() {
       onBackToStages: backToStages,
       onVerifySubmit: completeStage,
       onReplayNewQuestion: replayCurrentStage,
+      onStartStageTimer: startStageTimer,
       // SCORING SYSTEM: games call this when the player fails (streak reset)
       onStageFail: failStage,
     };

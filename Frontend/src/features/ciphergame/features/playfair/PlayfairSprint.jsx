@@ -46,6 +46,7 @@ export default function PlayfairSprint({
   onVerifySubmit,
   onBackToStages,
   onReplayNewQuestion,
+  onStartStageTimer,
 }) {
   const matrix = levelData.matrix;
 
@@ -841,6 +842,7 @@ export default function PlayfairSprint({
             stageIndex={(levelData.level || 1) - 1}
             onLoadingComplete={() => {
               setIsOperationLoading(false);
+              onStartStageTimer?.();
               handleStartSprint();
             }}
           />

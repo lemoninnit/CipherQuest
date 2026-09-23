@@ -136,10 +136,9 @@ export function useGameFlow() {
       gameType  = getPlayfairGameType(stageIndex);
     }
 
-    // ── SCORING: start the stage timer + register a server-side session ──
     lastFailedSessionRef.current = null;
     setLeaderboardStage(null);
-    requestStageSession(cat, diff, stageIndex);
+    setStageStartedAt(null);
 
     setCurrentStage({
       id: `${cat}-${diff}-${stageIndex}`,
@@ -149,6 +148,12 @@ export function useGameFlow() {
       gameType,
       levelData,
     });
+  };
+
+  const startStageTimer = () => {
+    if (!currentStage) return;
+    const { category: cat, difficulty: diff, stageIndex } = currentStage;
+    requestStageSession(cat, diff, stageIndex);
   };
 
   const finishLoadingStage = () => {
@@ -371,7 +376,7 @@ export function useGameFlow() {
     category, difficulty, currentStage, loadingTargetStage,
     completionModalData,
     isUnlocked, isStageCompleted,
-    startStage, finishLoadingStage, completeStage, replayCurrentStage,
+    startStage, startStageTimer, finishLoadingStage, completeStage, replayCurrentStage,
     handleContinueNextDifficulty, handleCloseCompletionModal,
     goToCategories, selectCategory, selectDifficulty,
     backToDifficulty, backToStages, returnToRoadmap,

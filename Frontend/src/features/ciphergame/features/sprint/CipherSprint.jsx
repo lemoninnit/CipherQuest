@@ -64,6 +64,7 @@ export default function CipherSprint({
   onVerifySubmit,
   onBackToStages,
   onReplayNewQuestion,
+  onStartStageTimer,
 }) {
   const {
     containerRef: fsContainerRef,
@@ -882,6 +883,7 @@ export default function CipherSprint({
             stageIndex={(levelData.level || 1) - 1}
             onLoadingComplete={() => {
               setIsOperationLoading(false);
+              onStartStageTimer?.();
               handleStartSprint();
             }}
           />

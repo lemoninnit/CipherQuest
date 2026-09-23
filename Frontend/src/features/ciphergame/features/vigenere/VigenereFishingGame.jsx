@@ -40,7 +40,8 @@ export default function VigenereFishingGame({
   tier,
   onVerifySubmit,
   onBackToStages,
-  onReplayNewQuestion
+  onReplayNewQuestion,
+  onStartStageTimer
 }) {
   const words = useMemo(() => (levelData.plaintext || '').split(' '), [levelData.plaintext]);
   const cipherSegs = useMemo(() => (levelData.ciphertext || '').split(' '), [levelData.ciphertext]);
@@ -508,6 +509,7 @@ export default function VigenereFishingGame({
           stageIndex={(levelData.level || 1) - 1}
           onLoadingComplete={() => {
             setIsOperationLoading(false);
+            onStartStageTimer?.();
             startGame();
           }}
         />

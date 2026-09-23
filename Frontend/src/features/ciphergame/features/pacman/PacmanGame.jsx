@@ -512,7 +512,7 @@ function CaesarCheatSheet({
   );
 }
 
-export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion }) {
+export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion, onStartStageTimer }) {
   const isVigenere = !!levelData?.targetKey;
   const isPlayfair = !!levelData.matrix;
   const isCaesar = !isVigenere && !isPlayfair;
@@ -1358,6 +1358,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           stageIndex={(levelData.level || 1) - 1}
           onLoadingComplete={() => {
             setIsOperationLoading(false);
+            onStartStageTimer?.();
             setPhase('playing');
           }}
         />

@@ -1,4 +1,4 @@
-﻿/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import GameHudBar from '../../ui/GameHudBar';
 import './PlayfairGame.css';
@@ -79,6 +79,7 @@ export default function PlayfairFishingGame({
   onVerifySubmit,
   onBackToStages,
   onReplayNewQuestion,
+  onStartStageTimer,
 }) {
   const matrix = levelData.matrix;
   const pairData = useMemo(() => levelData.cipherPairs.map((cipherPair, index) => {
@@ -341,7 +342,7 @@ export default function PlayfairFishingGame({
           category="playfair"
           difficulty={tier}
           stageIndex={(levelData.level || 1) - 1}
-          onLoadingComplete={() => { setIsOperationLoading(false); startGame(); }}
+          onLoadingComplete={() => { setIsOperationLoading(false); onStartStageTimer?.(); startGame(); }}
         />
       );
     }
