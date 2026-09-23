@@ -690,3 +690,265 @@
   border-radius: 20px;
   letter-spacing: 0.04em;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Playfair Fishing — Fullscreen Layout (matches Caesar/Vigenere)
+   ═══════════════════════════════════════════════════════════ */
+
+/* Root override: pf-fishing-fullscreen sits inside fg-root */
+.pf-fishing-fullscreen {
+  /* fg-root already handles full-height flex column */
+}
+
+/* Playfair rod is slightly smaller in the swim lane vs the old pond */
+.caesar-fish-swim-lane .pf-fishing-rod {
+  --rod-frame: 0;
+  --rod-total: 8;
+  position: absolute;
+  bottom: 0;
+  left: calc(50% - 238px);
+  width: 280px;
+  height: 280px;
+  background-image: url('/assets/fish/fishing rod/Fishing Rod.png');
+  background-size: calc(var(--rod-total) * 100%) 100%;
+  background-position-x: calc(var(--rod-frame) * (100% / (var(--rod-total) - 1)));
+  background-position-y: 0;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 11;
+}
+
+.caesar-fish-swim-lane .pf-fishing-rod.facing-right {
+  left: calc(50% - 42px);
+  transform: scaleX(-1);
+}
+
+/* Fish badge: two-letter pair label */
+.fg-fish-entity .pf-fish-badge {
+  min-width: 34px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  background: rgba(3, 9, 20, 0.88);
+  color: var(--neon-cyan);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 900;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* ── Key Matrix Cheat Sheet (inside caesar-floating-cheat-sheet) ── */
+.pf-cheat-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  margin-bottom: 8px;
+}
+
+.pf-cheat-cell {
+  display: grid;
+  place-items: center;
+  min-height: 26px;
+  border-radius: 5px;
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  background: rgba(0, 229, 255, 0.05);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+
+.pf-cheat-cell-cipher {
+  border-color: var(--neon-yellow);
+  background: rgba(255, 215, 0, 0.14);
+  color: var(--neon-yellow);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.22);
+}
+
+/* Active pair row below the matrix */
+.pf-cheat-active-pair {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(0, 229, 255, 0.05);
+  border: 1px dashed rgba(0, 229, 255, 0.18);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.76rem;
+}
+
+.pf-cheat-cipher-lbl,
+.pf-cheat-plain-lbl {
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pf-cheat-cipher-val {
+  color: var(--neon-yellow);
+  font-weight: 900;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+}
+
+.pf-cheat-plain-val {
+  color: var(--neon-green);
+  font-weight: 900;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+}
+
+.pf-cheat-arrow {
+  color: var(--text-muted);
+  margin: 0 2px;
+}
+
+/* ── Bottom-Right Stats Panel ── */
+.pf-floating-stats-panel {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  width: 220px;
+  background: rgba(6, 19, 36, 0.88);
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  border-radius: 16px;
+  padding: 14px 16px;
+  backdrop-filter: blur(12px);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.pf-floating-stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.pf-floating-stats-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+}
+
+.pf-floating-stats-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: rgba(0, 229, 255, 0.07);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 99px;
+  padding: 1px 8px;
+}
+
+.pf-floating-active-digraph {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.pf-floating-cipher-pair {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--neon-yellow);
+  font-weight: 900;
+  font-size: 2rem;
+  letter-spacing: 0.18em;
+  line-height: 1;
+}
+
+.pf-floating-catch-label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.pf-floating-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.pf-floating-rule-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pf-floating-rule-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+}
+
+/* Pair cards inside the floating word panel */
+.caesar-floating-word-panel .pf-pair-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 6px 0 4px;
+}
+
+.caesar-floating-word-panel .pf-pair-card {
+  min-width: 68px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.caesar-floating-word-panel .pf-pair-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 229, 255, 0.35);
+}
+
+.caesar-floating-word-panel .pf-pair-card.active {
+  border-color: var(--neon-yellow);
+  box-shadow: 0 0 14px rgba(255, 215, 0, 0.2);
+}
+
+.caesar-floating-word-panel .pf-pair-card.solved {
+  border-color: rgba(57, 255, 20, 0.35);
+  background: rgba(57, 255, 20, 0.07);
+  pointer-events: none;
+}
+
+.caesar-floating-word-panel .pf-cipher {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.caesar-floating-word-panel .pf-arrow {
+  color: rgba(255,255,255,0.25);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
+
+.caesar-floating-word-panel .pf-pair-card strong {
+  color: var(--neon-green);
+  font-size: 0.95rem;
+}

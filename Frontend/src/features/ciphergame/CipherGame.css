@@ -4094,6 +4094,374 @@
   text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
 }
 
+/* ══════════════════════════════════════════════════════════════════
+   Caesar Pac-Man — Decryption Guide (upgraded cheat sheet)
+   Correct decryption direction, live worked example, tier-aware.
+   ENLARGED: scoped under .cqs-cheat-sheet (beats shared shrink rules),
+   width clamped to stay clear of the bottom-center clue card.
+   ══════════════════════════════════════════════════════════════════ */
+.cqs-cheat-sheet {
+  max-width: min(820px, calc(50vw - 160px));
+  min-width: 300px;
+  padding: 13px 20px 12px;
+  border-width: 2px;
+}
+
+/* Header */
+.cqs-cheat-sheet .caesar-cheat-header {
+  margin-bottom: 9px;
+}
+
+.cqs-cheat-sheet .caesar-cheat-title {
+  font-size: 0.9rem;
+}
+
+.cqs-cheat-sheet .caesar-cheat-badge {
+  font-size: 0.86rem;
+  padding: 2.5px 11px;
+}
+
+/* Mystery badge (med/hard): unknown shift */
+.caesar-cheat-badge.mystery {
+  color: var(--neon-yellow);
+  background: rgba(255, 215, 0, 0.08);
+  border-color: rgba(255, 215, 0, 0.4);
+}
+
+/* ── EASY: live worked example card ── */
+.cqs-worked-example {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  margin-bottom: 10px;
+  padding: 8px 16px;
+  background: rgba(0, 229, 255, 0.07);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.cqs-we-cipher,
+.cqs-we-plain {
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cqs-we-cipher {
+  color: #7ba7bc;
+}
+
+.cqs-we-plain {
+  color: var(--neon-green);
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.55);
+}
+
+.cqs-we-shift {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--neon-yellow);
+}
+
+.cqs-we-op {
+  font-size: 1.05rem;
+  color: rgba(160, 196, 216, 0.7);
+  font-weight: 700;
+}
+
+/* Active-column highlight in the A-Z strip */
+.caesar-cheat-col.highlighted .caesar-cheat-plain {
+  color: var(--neon-yellow);
+  font-weight: 900;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
+.caesar-cheat-col.highlighted .caesar-cheat-shifted {
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* ── MEDIUM/HARD: derivation worksheet ── */
+.cqs-derive-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cqs-derive-hint {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+.cqs-derive-hint strong {
+  color: var(--neon-yellow);
+}
+
+.cqs-derive-pairs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cqs-derive-pair {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  background: rgba(0, 229, 255, 0.05);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.cqs-dp-cipher,
+.cqs-dp-plain {
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cqs-dp-cipher {
+  color: #7ba7bc;
+}
+
+.cqs-dp-plain {
+  color: rgba(185, 215, 235, 0.85);
+}
+
+.cqs-dp-op,
+.cqs-dp-eq {
+  font-size: 0.95rem;
+  color: rgba(160, 196, 216, 0.6);
+  font-weight: 700;
+}
+
+.cqs-dp-shift {
+  font-size: 1.18rem;
+  font-weight: 800;
+  color: var(--neon-yellow);
+  min-width: 24px;
+  text-align: center;
+}
+
+.cqs-derive-empty {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem;
+  color: rgba(160, 196, 216, 0.55);
+  font-style: italic;
+}
+
+.cqs-derive-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.76rem;
+  color: rgba(160, 196, 216, 0.55);
+  line-height: 1.35;
+}
+
+.cqs-derive-steps span {
+  transition: color 0.25s ease;
+}
+
+.cqs-derive-steps span.done {
+  color: var(--neon-green);
+}
+
+/* ── Numeric VALUE row & labels (A=1 … Z=26) ── */
+/* Scoped to .cqs-cheat-sheet so the enlarged sizes win over the shared
+   `.caesar-cheat-*` shrink rules in the responsive media queries below. */
+.cqs-labels-three {
+  gap: 4px;
+}
+
+.cqs-cheat-sheet .caesar-cheat-label-plain,
+.cqs-cheat-sheet .caesar-cheat-label-shift {
+  font-size: 0.72rem;
+}
+
+.cqs-label-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: var(--neon-yellow);
+  flex-shrink: 0;
+}
+
+.cqs-cheat-sheet .caesar-cheat-columns {
+  gap: 4px;
+}
+
+.cqs-cheat-sheet .caesar-cheat-col {
+  min-width: 19px;
+  gap: 5px;
+}
+
+.cqs-col-three {
+  gap: 3px;
+}
+
+.cqs-cheat-sheet .caesar-cheat-plain {
+  font-size: 1.02rem;
+}
+
+.cqs-cheat-sheet .caesar-cheat-shifted {
+  font-size: 1.08rem;
+}
+
+.cqs-cheat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(255, 215, 0, 0.55);
+  line-height: 1;
+}
+
+.caesar-cheat-col.highlighted .cqs-cheat-value {
+  color: var(--neon-yellow);
+  font-weight: 900;
+}
+
+/* ── Worked example: letter stacked over its value ── */
+.cqs-we-stack,
+.cqs-dp-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1;
+}
+
+.cqs-we-sub,
+.cqs-dp-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(255, 215, 0, 0.55);
+  line-height: 1;
+}
+
+/* ── MEDIUM/HARD: shift-agnostic letter ↔ value ruler ── */
+.cqs-value-ruler {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 12px 7px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+
+.cqs-ruler-row {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cqs-ruler-letter {
+  flex: 1;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: rgba(185, 215, 235, 0.75);
+  line-height: 1;
+}
+
+.cqs-ruler-num {
+  flex: 1;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 215, 0, 0.6);
+  line-height: 1;
+}
+
+/* ── Shared progress footer ── */
+.cqs-progress-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 229, 255, 0.15);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.cqs-progress-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(160, 196, 216, 0.55);
+}
+
+.cqs-progress-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--neon-cyan);
+}
+
+/* ── Responsive scale: shrink gracefully but stay readable ── */
+@media (max-width: 1390px), (max-height: 820px) {
+  .cqs-cheat-sheet {
+    max-width: min(780px, calc(50vw - 150px));
+    padding: 11px 16px 10px;
+  }
+  .cqs-cheat-sheet .caesar-cheat-plain { font-size: 0.92rem; }
+  .cqs-cheat-sheet .caesar-cheat-shifted { font-size: 0.98rem; }
+  .cqs-cheat-sheet .caesar-cheat-col { min-width: 17px; gap: 4px; }
+  .cqs-cheat-value { font-size: 0.66rem; }
+  .cqs-we-cipher, .cqs-we-plain { font-size: 1.3rem; }
+  .cqs-we-shift { font-size: 1.15rem; }
+  .cqs-dp-cipher, .cqs-dp-plain { font-size: 1.1rem; }
+  .cqs-dp-shift { font-size: 1.08rem; }
+  .cqs-ruler-letter { font-size: 0.74rem; }
+  .cqs-ruler-num { font-size: 0.64rem; }
+  .cqs-derive-hint { font-size: 0.76rem; }
+  .cqs-derive-steps { font-size: 0.7rem; }
+  .cqs-progress-label { font-size: 0.66rem; }
+  .cqs-progress-value { font-size: 0.84rem; }
+}
+
+@media (max-width: 1150px) {
+  .cqs-cheat-sheet {
+    max-width: calc(50vw - 140px);
+    min-width: 260px;
+    padding: 9px 13px 8px;
+  }
+  .cqs-cheat-sheet .caesar-cheat-plain { font-size: 0.84rem; }
+  .cqs-cheat-sheet .caesar-cheat-shifted { font-size: 0.9rem; }
+  .cqs-cheat-sheet .caesar-cheat-col { min-width: 14px; gap: 3px; }
+  .cqs-cheat-value { font-size: 0.58rem; }
+  .cqs-we-cipher, .cqs-we-plain { font-size: 1.15rem; }
+  .cqs-we-shift { font-size: 1rem; }
+  .cqs-dp-cipher, .cqs-dp-plain { font-size: 1rem; }
+  .cqs-ruler-letter { font-size: 0.66rem; }
+  .cqs-ruler-num { font-size: 0.56rem; }
+}
+
+/* Extra headroom on very large screens */
+@media (min-width: 1700px) {
+  .cqs-cheat-sheet .caesar-cheat-plain { font-size: 1.12rem; }
+  .cqs-cheat-sheet .caesar-cheat-shifted { font-size: 1.18rem; }
+  .cqs-cheat-sheet .caesar-cheat-col { min-width: 21px; }
+  .cqs-cheat-value { font-size: 0.78rem; }
+  .cqs-we-cipher, .cqs-we-plain { font-size: 1.6rem; }
+  .cqs-we-shift { font-size: 1.42rem; }
+  .cqs-dp-cipher, .cqs-dp-plain { font-size: 1.32rem; }
+  .cqs-ruler-letter { font-size: 0.9rem; }
+  .cqs-ruler-num { font-size: 0.76rem; }
+}
+
 /* Extra spacious on wide screens */
 @media (min-width: 1600px) {
   .caesar-floating-cheat-sheet {
