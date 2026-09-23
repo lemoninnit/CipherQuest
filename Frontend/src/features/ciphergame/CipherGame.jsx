@@ -46,11 +46,16 @@ export default function CipherGame() {
   const handleContinueFromScore = () => {
     const cat = stageResult?.category || category;
     const diff = stageResult?.difficulty || difficulty;
+    const stageIdx = stageResult?.stageIndex ?? currentStage?.stageIndex;
+
     dismissStageResult();
 
     // If completion modal data is pending (e.g. tier finished), let CompletionModal show next
     if (!completionModalData) {
-      if (returnToRoadmap) {
+      if (typeof stageIdx === 'number' && stageIdx >= 0 && stageIdx < 4) {
+        // Auto-advance directly to the next stage (Stage 1 -> 2 -> 3 -> 4 -> 5)
+        startStage(cat, diff, stageIdx + 1);
+      } else if (returnToRoadmap) {
         returnToRoadmap(cat, diff);
       } else {
         if (cat) game.selectCategory?.(cat);
