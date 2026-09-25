@@ -23,9 +23,9 @@ Frontend/src/features/ciphergame/features/
 
 ---
 
-## 🎨 2. Component Structure (`<Cipher>TutorialModal.jsx`)
+## 🎨 2. Component Structure & Data Schema (`<Cipher>TutorialModal.jsx`)
 
-Each tutorial modal component follows this unified pattern:
+Each tutorial modal component follows a **Hero-First + Dual Intel Grid** architectural layout.
 
 ### A. Props Contract
 ```jsx
@@ -37,13 +37,48 @@ Each tutorial modal component follows this unified pattern:
 />
 ```
 
-### B. State Engine
-1. **`currentStep`** (`0` to `4`): Active step index out of 5 steps.
-2. **`isClosing`** (`boolean`): Triggered prior to closing to allow a smooth **220ms CSS exit animation** (`cqModalScaleOut` / `cqTutFadeOut`) before unmounting.
-3. **`isPlaying`** (`boolean`): Pause/play toggle for looping viewport animations.
-4. **Step-Specific Animation States**:
-   - E.g. `encryptCharIdx` for step-by-step word encoding loops.
-   - E.g. `scanKey` & `scannerFound` for cryptanalysis key scanner loops.
+### B. Header Hierarchy & Layout Specification
+1. **Header Layout**:
+   - **Category Tag** (`.cq-tut-category-label`): Small cyan uppercase label on top (e.g. `FIELD MANUAL: CAESAR SHIFT`).
+   - **Main Heading** (`<h2>`): Large white glowing step title (e.g. `What is Caesar Shift?`).
+   - **No duplicate step counter in header**: Progress tracking is handled visually by the bottom stepper pills.
+2. **Hero Animation Viewport** (`.cq-tut-animation-wrapper`):
+   - Dominates top ~60% of the body canvas with a radial dark backdrop, scanlines, and live interactive animations.
+3. **Dual Intel Card Grid** (`.cq-tut-intel-grid`):
+   - Replaces heavy textbook blocks with 2 side-by-side HUD micro-cards:
+     - **Intel Card 1 (`core-card`)**: Cyan accent border, punchy core mechanic breakdown.
+     - **Intel Card 2 (`tip-card`)**: Amber accent border, action-oriented cue or operational rule.
+
+### C. `TUTORIAL_STEPS` Data Schema (Without Emojis)
+```javascript
+const TUTORIAL_STEPS = [
+  {
+    id: 1,
+    title: 'Monoalphabetic Substitution',
+    subtitle: 'What is Caesar Shift?',
+    icon: 'menu_book',
+    conceptTag: 'DIRECTIVE 01 // FOUNDATION',
+    intel1: {
+      tag: 'CORE MECHANIC',
+      title: 'Direct Letter Shift',
+      text: (
+        <>
+          Each character in your message is replaced by a letter a <strong>fixed number of positions</strong> down the alphabet.
+        </>
+      )
+    },
+    intel2: {
+      tag: 'OPERATIVE RULE',
+      title: 'Uniform Spacing',
+      text: (
+        <>
+          Distance remains constant. If <strong>A &rarr; D (+3)</strong>, then <strong>B &rarr; E (+3)</strong> under the exact same shift key.
+        </>
+      )
+    }
+  }
+];
+```
 
 ---
 
@@ -52,24 +87,24 @@ Each tutorial modal component follows this unified pattern:
 The modal supports **two distinct UX triggers**:
 
 ```
-                              ┌────────────────────────────────────────┐
-                              │     User Interaction on Dashboard      │
-                              └───────────────────┬────────────────────┘
-                                                  │
-                  ┌───────────────────────────────┴───────────────────────────────┐
-                  ▼                                                               ▼
-  [Click Caesar Shift Card]                                        [Click "Show Tutorial" Button]
-  Navigates to /dashboard/ciphergame                               Opens Modal in-place on Dashboard
-  State: { category: 'caesar', showTutorial: true }                State: showTutorial = true
-                  │                                                               │
-                  ▼                                                               ▼
-  Landing Cooldown (0.4s):                                         Opens immediately on Dashboard
-  - .cq-tutorial-preparing-overlay blurs page                      - Blurs & dims Dashboard backdrop
-  - Click shield blocks all pointer interactions                   - Header button: "Close Tutorial"
-                  │
-                  ▼
-  Modal pops up after 400ms delay
-  - Header button: "Skip Tutorial"
+                               ┌────────────────────────────────────────┐
+                               │     User Interaction on Dashboard      │
+                               └───────────────────┬────────────────────┘
+                                                   │
+                   ┌───────────────────────────────┴───────────────────────────────┐
+                   ▼                                                               ▼
+   [Click Caesar Shift Card]                                        [Click "Show Tutorial" Button]
+   Navigates to /dashboard/ciphergame                               Opens Modal in-place on Dashboard
+   State: { category: 'caesar', showTutorial: true }                State: showTutorial = true
+                   │                                                               │
+                   ▼                                                               ▼
+   Landing Cooldown (0.4s):                                         Opens immediately on Dashboard
+   - .cq-tutorial-preparing-overlay blurs page                      - Blurs & dims Dashboard backdrop
+   - Click shield blocks all pointer interactions                   - Header button: "Close Tutorial"
+                   │
+                   ▼
+   Modal pops up after 400ms delay
+   - Header button: "Skip Tutorial"
 ```
 
 ---
@@ -134,13 +169,56 @@ Every cipher tutorial consists of **5 standardized educational steps**:
 Key CSS selectors to reuse across all cipher modals:
 
 ```css
+/* Header category label & main h2 title */
+.cq-tut-category-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: var(--neon-cyan, #00e5ff);
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.cq-tut-header h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #ffffff;
+  margin: 0;
+}
+
+/* Dual Intel Grid & Micro-cards */
+.cq-tut-intel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.cq-tut-intel-card {
+  background: rgba(15, 20, 29, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cq-tut-intel-card.core-card {
+  border-left: 3px solid var(--neon-cyan, #00e5ff);
+}
+
+.cq-tut-intel-card.tip-card {
+  border-left: 3px solid #f59e0b;
+}
+
 /* Immediate blur & click shield during 0.4s cooldown */
 .cq-tutorial-preparing-overlay {
   position: fixed;
   inset: 0;
   z-index: 9980;
   backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   background: transparent;
   pointer-events: all;
   cursor: wait;
@@ -151,12 +229,12 @@ Key CSS selectors to reuse across all cipher modals:
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(6, 11, 20, 0.82);
-  backdrop-filter: blur(12px);
+  background: rgba(4, 8, 15, 0.88);
+  backdrop-filter: blur(14px);
   animation: cqTutFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Smooth exit animation */
+/* Smooth exit animations */
 .cq-tut-backdrop.cq-tut-closing {
   animation: cqTutFadeOut 0.22s ease-in forwards;
 }
@@ -171,6 +249,6 @@ Key CSS selectors to reuse across all cipher modals:
 ## 🚀 Replicating for Vigenère & Playfair
 When you are ready to build **Vigenère** or **Playfair** tutorials:
 1. Copy `CaesarTutorialModal.jsx` to `VigenereTutorialModal.jsx` (or `PlayfairTutorialModal.jsx`).
-2. Update the `TUTORIAL_STEPS` array content with Vigenère/Playfair formulas and tips.
+2. Update the `TUTORIAL_STEPS` array content using the `intel1` and `intel2` data schema (without emojis).
 3. Replace the viewport renderers in `renderAnimationViewport()` with Vigenère key grid / Playfair matrix visualizations.
 4. Wire the trigger into `CipherGame.jsx` for `category === 'vigenere'` or `'playfair'`.

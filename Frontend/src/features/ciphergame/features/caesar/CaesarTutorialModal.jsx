@@ -3,6 +3,7 @@ import './CaesarTutorialModal.css';
 
 /**
  * CAESAR SHIFT TUTORIAL STEPS METADATA
+ * Refactored for HUD-style tactical intel cards & gamified micro-copy
  */
 const TUTORIAL_STEPS = [
   {
@@ -10,74 +11,125 @@ const TUTORIAL_STEPS = [
     title: 'Monoalphabetic Substitution',
     subtitle: 'What is Caesar Shift?',
     icon: 'menu_book',
-    conceptTag: 'FOUNDATIONAL CONCEPT',
-    formula: 'Ciphertext Letter = Plaintext Letter shifted by Key',
-    description: (
-      <>
-        The <strong>Caesar Shift</strong> is one of the earliest and simplest cryptographic techniques, famously used by Julius Caesar to protect secret military communications.
-        Each letter in your plaintext message is replaced by another letter a fixed number of positions down the alphabet.
-      </>
-    ),
-    tip: 'Letters retain their relative distance. For example, if A becomes D, then B will always become E under the same key.'
+    conceptTag: 'DIRECTIVE 01 // FOUNDATION',
+    intel1: {
+      tag: 'CORE MECHANIC',
+      title: 'Direct Letter Shift',
+      text: (
+        <>
+          Each character in your message is replaced by a letter a <strong>fixed number of positions</strong> down the alphabet.
+        </>
+      )
+    },
+    intel2: {
+      tag: 'OPERATIVE RULE',
+      title: 'Uniform Spacing',
+      text: (
+        <>
+          Distance remains constant. If <strong>A &rarr; D (+3)</strong>, then <strong>B &rarr; E (+3)</strong> under the exact same shift key.
+        </>
+      )
+    }
   },
   {
     id: 2,
     title: 'The Shift Key (K)',
     subtitle: 'How Shift Mechanics Work',
     icon: 'vpn_key',
-    conceptTag: 'SHIFT ALGORITHM',
-    formula: 'C = (P + K) mod 26',
-    description: (
-      <>
-        The numeric <strong>Key (K)</strong> specifies how many spaces forward each letter shifts.
-        Positions wrap around after <strong>Z (25)</strong> back to <strong>A (0)</strong> using modular arithmetic.
-      </>
-    ),
-    tip: 'Try dragging the Key Slider in the animation screen above to see how changing K immediately shifts the ciphertext alphabet!'
+    conceptTag: 'DIRECTIVE 02 // KEY MECHANICS',
+    intel1: {
+      tag: 'ALGORITHM',
+      title: 'Shift Value (K)',
+      text: (
+        <>
+          Key <strong>K</strong> specifies displacement. Position indexes wrap around automatically from <strong>Z (25)</strong> back to <strong>A (0)</strong>.
+        </>
+      )
+    },
+    intel2: {
+      tag: 'TRY IT NOW',
+      title: 'Interactive Test',
+      text: (
+        <>
+          Drag the <strong>cyan slider</strong> in the screen above to watch the ciphertext alphabet shift dynamically in real-time.
+        </>
+      )
+    }
   },
   {
     id: 3,
     title: 'Encrypting a Message',
     subtitle: 'Character-by-Character Encoding',
     icon: 'lock',
-    conceptTag: 'ENCRYPTION PROCESS',
-    formula: 'Process every letter individually',
-    description: (
-      <>
-        To encrypt a full message, operatives process letters one by one.
-        For example, encoding the word <strong>SECRET</strong> with <strong>Key = 3</strong> shifts <strong>S &rarr; V</strong>, <strong>E &rarr; H</strong>, <strong>C &rarr; F</strong>, <strong>R &rarr; U</strong>, <strong>E &rarr; H</strong>, and <strong>T &rarr; W</strong>.
-      </>
-    ),
-    tip: 'Non-alphabetic characters like spaces, numbers, and punctuation marks are preserved without modification.'
+    conceptTag: 'DIRECTIVE 03 // ENCRYPTION PIPELINE',
+    intel1: {
+      tag: 'OPERATION',
+      title: 'Sequence Encoding',
+      text: (
+        <>
+          Letters process one-by-one. With <strong>Key = 3</strong>, <strong>SECRET</strong> encrypts into <strong>V H F U H W</strong>.
+        </>
+      )
+    },
+    intel2: {
+      tag: 'PROTOCOL',
+      title: 'Punctuation Bypass',
+      text: (
+        <>
+          Non-alphabetic symbols (spaces, numbers, and punctuation) pass through <strong>unmodified</strong>.
+        </>
+      )
+    }
   },
   {
     id: 4,
     title: 'Decrypting Intercepted Data',
     subtitle: 'Reversing the Cipher',
     icon: 'lock_open',
-    conceptTag: 'DECRYPTION PROCESS',
-    formula: 'P = (C - K) mod 26',
-    description: (
-      <>
-        To read an encrypted dispatch, operatives perform the exact inverse operation.
-        Subtract the key value <strong>K</strong> from each ciphertext letter to slide backwards along the alphabet wheel and reveal the plaintext.
-      </>
-    ),
-    tip: 'If subtraction yields a negative position index, simply add 26 to wrap around correctly.'
+    conceptTag: 'DIRECTIVE 04 // DECRYPTION PIPELINE',
+    intel1: {
+      tag: 'DECRYPTION',
+      title: 'Inverse Shift',
+      text: (
+        <>
+          Subtract key value <strong>K</strong> from ciphertext letters to slide backwards and reveal the original plaintext.
+        </>
+      )
+    },
+    intel2: {
+      tag: 'LOOP RULE',
+      title: 'Underflow Wrap',
+      text: (
+        <>
+          If subtraction yields a position index below <strong>A</strong>, simply add <strong>26</strong> to wrap back to <strong>Z</strong>.
+        </>
+      )
+    }
   },
   {
     id: 5,
     title: 'Cryptanalysis & Weaknesses',
     subtitle: 'Brute-Force & Frequency Attacks',
     icon: 'warning',
-    conceptTag: 'FIELD CRYPTANALYSIS',
-    formula: 'Only 25 Possible Keys',
-    description: (
-      <>
-        Because there are only <strong>25 possible shift keys</strong> (key 0 leaves text unchanged), Caesar ciphers are easily broken by testing all keys in seconds or analyzing common English letter frequencies.
-      </>
-    ),
-    tip: 'You are now ready to jump into field operations! Test your decoding speed in CipherQuest stages.'
+    conceptTag: 'DIRECTIVE 05 // CRYPTANALYSIS',
+    intel1: {
+      tag: 'VULNERABILITY',
+      title: 'Small Key Space',
+      text: (
+        <>
+          Only <strong>25 possible shift keys</strong> exist. Automated scanners can crack Caesar ciphers in microseconds.
+        </>
+      )
+    },
+    intel2: {
+      tag: 'MISSION READY',
+      title: 'Operational Status',
+      text: (
+        <>
+          Briefing complete! You are ready to crack intercepted dispatches in <strong>CipherQuest stages</strong>.
+        </>
+      )
+    }
   }
 ];
 
@@ -194,7 +246,7 @@ export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipB
           <div className="cq-tut-viewport cq-tut-step1-viewport">
             <div className="cq-tut-laser-scanline" />
             <div className="cq-tut-track-container">
-              <div className="cq-tut-track-label">PLAIN TEXT</div>
+              <div className="cq-tut-track-label">PLAIN TEXT ALPHABET</div>
               <div className="cq-tut-letters-row">
                 {PLAIN_ALPHABET.slice(0, 12).map((char, i) => (
                   <div key={`p-${i}`} className="cq-tut-char-box cq-tut-char-plain">
@@ -374,7 +426,7 @@ export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipB
               </div>
 
               <div className={`cq-tut-scan-status ${scannerFound ? 'status-success' : 'status-scanning'}`}>
-                {scannerFound ? '✓ MATCH DETECTED (English Word Found)' : '⚡ SCANNING ALL 25 KEYS...'}
+                {scannerFound ? 'MATCH DETECTED (English Word Found)' : 'SCANNING ALL 25 KEYS...'}
               </div>
             </div>
           </div>
@@ -394,8 +446,8 @@ export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipB
           <div className="cq-tut-header-title">
             <span className="material-symbols-outlined cq-tut-header-icon">{stepData.icon}</span>
             <div>
-              <h2>FIELD MANUAL: CAESAR SHIFT</h2>
-              <span className="cq-tut-subtitle">{stepData.subtitle}</span>
+              <span className="cq-tut-category-label">FIELD MANUAL: CAESAR SHIFT</span>
+              <h2>{stepData.subtitle}</h2>
             </div>
           </div>
 
@@ -406,7 +458,7 @@ export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipB
 
         {/* MAIN BODY */}
         <div className="cq-tut-body">
-          {/* ANIMATION SCREEN */}
+          {/* HERO ANIMATION VIEWPORT */}
           <div className="cq-tut-animation-wrapper">
             <div className="cq-tut-viewport-header">
               <span className="cq-tut-badge">{stepData.conceptTag}</span>
@@ -426,25 +478,23 @@ export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipB
             {renderAnimationViewport()}
           </div>
 
-          {/* CONTEXT EXPLANATION CARD */}
-          <div className="cq-tut-context-card">
-            <div className="cq-tut-context-header">
-              <span className="material-symbols-outlined text-cyan">info</span>
-              <h3>{stepData.title}</h3>
-            </div>
-
-            <p className="cq-tut-description">{stepData.description}</p>
-
-            <div className="cq-tut-formula-pill">
-              <span className="material-symbols-outlined">functions</span>
-              <code>{stepData.formula}</code>
-            </div>
-
-            {stepData.tip && (
-              <div className="cq-tut-tip-box">
-                <strong>💡 Operative Tip:</strong> {stepData.tip}
+          {/* DYNAMIC DUAL INTEL GRID */}
+          <div className="cq-tut-intel-grid">
+            <div className="cq-tut-intel-card core-card">
+              <div className="cq-tut-intel-header">
+                <span className="cq-tut-intel-tag tag-cyan">{stepData.intel1.tag}</span>
+                <h4>{stepData.intel1.title}</h4>
               </div>
-            )}
+              <p className="cq-tut-intel-text">{stepData.intel1.text}</p>
+            </div>
+
+            <div className="cq-tut-intel-card tip-card">
+              <div className="cq-tut-intel-header">
+                <span className="cq-tut-intel-tag tag-amber">{stepData.intel2.tag}</span>
+                <h4>{stepData.intel2.title}</h4>
+              </div>
+              <p className="cq-tut-intel-text">{stepData.intel2.text}</p>
+            </div>
           </div>
         </div>
 
@@ -480,3 +530,4 @@ export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipB
     </div>
   );
 }
+
