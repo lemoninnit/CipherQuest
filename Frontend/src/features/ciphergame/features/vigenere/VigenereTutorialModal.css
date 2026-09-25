@@ -1,0 +1,324 @@
+/* VIGENÈRE TUTORIAL MODAL SPECIFIC STYLING */
+
+/* Backdrop Overlay & Smooth Glassmorphism */
+.cq-tut-backdrop {
+  background: radial-gradient(circle at 50% 45%, rgba(10, 16, 28, 0.94) 0%, rgba(3, 6, 12, 0.97) 100%) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+}
+
+.cq-tutorial-preparing-overlay {
+  background: rgba(4, 8, 16, 0.6) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+/* Step 1: Vigenere Square Mini Matrix */
+.cq-vig-step1-viewport {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  position: relative;
+}
+
+.cq-vig-square-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(8, 14, 26, 0.85);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.08);
+}
+
+.cq-vig-square-header {
+  display: flex;
+  gap: 4px;
+}
+
+.cq-vig-corner-box {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: var(--neon-cyan, #00e5ff);
+  font-size: 1rem;
+}
+
+.cq-vig-grid-header-col {
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00e5ff;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.cq-vig-grid-row {
+  display: flex;
+  gap: 4px;
+}
+
+.cq-vig-grid-header-row {
+  width: 32px;
+  height: 32px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.cq-vig-grid-cell {
+  width: 32px;
+  height: 32px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e2e8f0;
+  font-family: monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.cq-vig-cell-highlight {
+  background: rgba(0, 229, 255, 0.25);
+  border-color: #00e5ff;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+.cq-vig-square-caption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.5px;
+}
+
+.cq-vig-square-caption .material-symbols-outlined {
+  font-size: 16px;
+  color: #00e5ff;
+}
+
+/* Step 2: Live Keyword Alignment Track */
+.cq-vig-step2-viewport {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.cq-vig-preset-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10, 15, 26, 0.7);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+.cq-vig-controls-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.8px;
+}
+
+.cq-vig-preset-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #cbd5e1;
+  padding: 4px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cq-vig-preset-btn:hover {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: #00e5ff;
+  color: #ffffff;
+}
+
+.cq-vig-preset-btn.active {
+  background: linear-gradient(135deg, #00e5ff 0%, #00b4d8 100%);
+  border-color: #00e5ff;
+  color: #030914;
+  font-weight: 800;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.5);
+}
+
+.cq-vig-alignment-display {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(6, 11, 20, 0.88);
+  padding: 16px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.cq-vig-track-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cq-vig-track-tag {
+  width: 50px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.cq-vig-track-tag.tag-plain {
+  color: #00e5ff;
+}
+
+.cq-vig-track-tag.tag-key {
+  color: #a855f7;
+}
+
+.cq-vig-track-letters {
+  display: flex;
+  gap: 4px;
+}
+
+.cq-vig-char-key {
+  background: rgba(168, 85, 247, 0.18) !important;
+  border: 1px solid rgba(168, 85, 247, 0.5) !important;
+  color: #f3e8ff !important;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.4), inset 0 0 8px rgba(168, 85, 247, 0.15) !important;
+}
+
+.cq-vig-connectors-row {
+  display: flex;
+  padding-left: 62px;
+  gap: 4px;
+}
+
+.cq-vig-connector-icon {
+  width: 34px;
+  text-align: center;
+  font-size: 14px !important;
+  color: rgba(0, 229, 255, 0.45);
+  transition: all 0.2s ease;
+}
+
+/* Step 3: Intersection Lookup Stepper */
+.cq-vig-step3-viewport {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+}
+
+.cq-vig-lookup-status {
+  display: flex;
+  justify-content: center;
+}
+
+.cq-vig-lookup-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  color: #e2e8f0;
+}
+
+.cq-vig-plus {
+  color: #f59e0b;
+  font-weight: bold;
+}
+
+.cq-vig-triple-track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cq-vig-stepper-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cq-vig-line-label {
+  width: 60px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #00e5ff;
+  text-align: right;
+}
+
+.cq-vig-line-label.label-key {
+  color: #a855f7;
+}
+
+.cq-vig-line-label.label-cipher {
+  color: #22c55e;
+}
+
+.key-tile {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: #d8b4fe;
+}
+
+.active-key-tile {
+  background: rgba(168, 85, 247, 0.4);
+  border-color: #a855f7;
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(168, 85, 247, 0.65);
+  transform: scale(1.1);
+}
+
+/* Step 4: Decryption Card & Modular Subtraction Formula */
+.cq-vig-formula-banner {
+  margin-top: 12px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px dashed rgba(0, 229, 255, 0.3);
+  padding: 6px 16px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.cq-vig-formula-banner code {
+  color: #00e5ff;
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { DashboardChromeContext } from '../../layout/DashboardLayout';
 import CaesarTutorialModal from '../../ciphergame/features/caesar/CaesarTutorialModal';
+import VigenereTutorialModal from '../../ciphergame/features/vigenere/VigenereTutorialModal';
 import './DashboardHome.css';
 
 const DashboardHome = () => {
@@ -10,6 +11,7 @@ const DashboardHome = () => {
   const { user, logout } = useAuth();
   const { openSettings } = useContext(DashboardChromeContext);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialCategory, setTutorialCategory] = useState('caesar');
   const [activeCardId, setActiveCardId] = useState(null);
   const [cooldownRemaining, setCooldownRemaining] = useState('');
 
@@ -422,6 +424,7 @@ const DashboardHome = () => {
                       className="dh-card-show-tutorial-btn"
                       onClick={(e) => {
                         e.stopPropagation();
+                        setTutorialCategory(card.id);
                         setShowTutorial(true);
                       }}
                     >
@@ -436,12 +439,20 @@ const DashboardHome = () => {
         </div>
       </div>
 
-      {/* Caesar Tutorial Modal for Dashboard in-place view */}
-      <CaesarTutorialModal
-        isOpen={showTutorial}
-        onClose={() => setShowTutorial(false)}
-        skipButtonText="Close Tutorial"
-      />
+      {/* Tutorial Modals for Dashboard in-place view */}
+      {tutorialCategory === 'vigenere' ? (
+        <VigenereTutorialModal
+          isOpen={showTutorial}
+          onClose={() => setShowTutorial(false)}
+          skipButtonText="Close Tutorial"
+        />
+      ) : (
+        <CaesarTutorialModal
+          isOpen={showTutorial}
+          onClose={() => setShowTutorial(false)}
+          skipButtonText="Close Tutorial"
+        />
+      )}
     </div>
   );
 };

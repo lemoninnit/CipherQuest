@@ -14,8 +14,9 @@ import StageScoreModal    from "./ui/StageScoreModal";
 import StageLeaderboard   from "./ui/StageLeaderboard";
 import StageFailNotice    from "./ui/StageFailNotice";
 
-// Caesar tutorial
+// Caesar & Vigenere tutorials
 import CaesarTutorialModal from "./features/caesar/CaesarTutorialModal";
+import VigenereTutorialModal from "./features/vigenere/VigenereTutorialModal";
 
 // Caesar games
 import CaesarFishingGame from "./features/caesar/CaesarFishingGame";
@@ -35,16 +36,27 @@ export default function CipherGame() {
   const { user } = useAuth();
   const location = useLocation();
   const [showCaesarTutorial, setShowCaesarTutorial] = useState(false);
+  const [showVigenereTutorial, setShowVigenereTutorial] = useState(false);
   const [isTutorialPreparing, setIsTutorialPreparing] = useState(false);
 
   useEffect(() => {
-    if (location.state?.showTutorial && (game.category === 'caesar' || location.state?.category === 'caesar')) {
-      setIsTutorialPreparing(true);
-      const timer = setTimeout(() => {
-        setIsTutorialPreparing(false);
-        setShowCaesarTutorial(true);
-      }, 400);
-      return () => clearTimeout(timer);
+    if (location.state?.showTutorial) {
+      const activeCat = game.category || location.state?.category;
+      if (activeCat === 'caesar') {
+        setIsTutorialPreparing(true);
+        const timer = setTimeout(() => {
+          setIsTutorialPreparing(false);
+          setShowCaesarTutorial(true);
+        }, 400);
+        return () => clearTimeout(timer);
+      } else if (activeCat === 'vigenere') {
+        setIsTutorialPreparing(true);
+        const timer = setTimeout(() => {
+          setIsTutorialPreparing(false);
+          setShowVigenereTutorial(true);
+        }, 400);
+        return () => clearTimeout(timer);
+      }
     }
   }, [location.state, game.category]);
   const {
@@ -233,6 +245,12 @@ export default function CipherGame() {
         <CaesarTutorialModal
           isOpen={showCaesarTutorial}
           onClose={() => setShowCaesarTutorial(false)}
+        />
+
+        {/* Vigenere Tutorial Modal */}
+        <VigenereTutorialModal
+          isOpen={showVigenereTutorial}
+          onClose={() => setShowVigenereTutorial(false)}
         />
       </div>
     );
