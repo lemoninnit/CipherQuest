@@ -1,4 +1,5 @@
-import { Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import "./CipherGame.css";
 
 import { useAuth } from "../../context/AuthContext";
@@ -12,6 +13,9 @@ import CompletionModal    from "./ui/CompletionModal";
 import StageScoreModal    from "./ui/StageScoreModal";
 import StageLeaderboard   from "./ui/StageLeaderboard";
 import StageFailNotice    from "./ui/StageFailNotice";
+
+// Caesar tutorial
+import CaesarTutorialModal from "./features/caesar/CaesarTutorialModal";
 
 // Caesar games
 import CaesarFishingGame from "./features/caesar/CaesarFishingGame";
@@ -29,6 +33,20 @@ import PlayfairSprint      from "./features/playfair/PlayfairSprint";
 export default function CipherGame() {
   const game = useGameFlow();
   const { user } = useAuth();
+  const location = useLocation();
+  const [showCaesarTutorial, setShowCaesarTutorial] = useState(false);
+  const [isTutorialPreparing, setIsTutorialPreparing] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.showTutorial && (game.category === 'caesar' || location.state?.category === 'caesar')) {
+      setIsTutorialPreparing(true);
+      const timer = setTimeout(() => {
+        setIsTutorialPreparing(false);
+        setShowCaesarTutorial(true);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state, game.category]);
   const {
     category, difficulty, currentStage,
     progress, completionModalData,
@@ -205,6 +223,17 @@ export default function CipherGame() {
         {leaderboardStage && (
           <StageLeaderboard stage={leaderboardStage} onClose={closeStageLeaderboard} />
         )}
+
+        {/* Click blocking & immediate background blur overlay during 1.2s preparation */}
+        {isTutorialPreparing && (
+          <div className="cq-tutorial-preparing-overlay" />
+        )}
+
+        {/* Caesar Tutorial Modal */}
+        <CaesarTutorialModal
+          isOpen={showCaesarTutorial}
+          onClose={() => setShowCaesarTutorial(false)}
+        />
       </div>
     );
   }
