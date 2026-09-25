@@ -14,9 +14,10 @@ import StageScoreModal    from "./ui/StageScoreModal";
 import StageLeaderboard   from "./ui/StageLeaderboard";
 import StageFailNotice    from "./ui/StageFailNotice";
 
-// Caesar & Vigenere tutorials
+// Caesar, Vigenere & Playfair tutorials
 import CaesarTutorialModal from "./features/caesar/CaesarTutorialModal";
 import VigenereTutorialModal from "./features/vigenere/VigenereTutorialModal";
+import PlayfairTutorialModal from "./features/playfair/PlayfairTutorialModal";
 
 // Caesar games
 import CaesarFishingGame from "./features/caesar/CaesarFishingGame";
@@ -37,6 +38,7 @@ export default function CipherGame() {
   const location = useLocation();
   const [showCaesarTutorial, setShowCaesarTutorial] = useState(false);
   const [showVigenereTutorial, setShowVigenereTutorial] = useState(false);
+  const [showPlayfairTutorial, setShowPlayfairTutorial] = useState(false);
   const [isTutorialPreparing, setIsTutorialPreparing] = useState(false);
 
   useEffect(() => {
@@ -54,6 +56,13 @@ export default function CipherGame() {
         const timer = setTimeout(() => {
           setIsTutorialPreparing(false);
           setShowVigenereTutorial(true);
+        }, 400);
+        return () => clearTimeout(timer);
+      } else if (activeCat === 'playfair') {
+        setIsTutorialPreparing(true);
+        const timer = setTimeout(() => {
+          setIsTutorialPreparing(false);
+          setShowPlayfairTutorial(true);
         }, 400);
         return () => clearTimeout(timer);
       }
@@ -251,6 +260,12 @@ export default function CipherGame() {
         <VigenereTutorialModal
           isOpen={showVigenereTutorial}
           onClose={() => setShowVigenereTutorial(false)}
+        />
+
+        {/* Playfair Tutorial Modal */}
+        <PlayfairTutorialModal
+          isOpen={showPlayfairTutorial}
+          onClose={() => setShowPlayfairTutorial(false)}
         />
       </div>
     );

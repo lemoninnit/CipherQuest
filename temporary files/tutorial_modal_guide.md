@@ -1,6 +1,6 @@
 # 📖 CipherQuest Interactive Tutorial Modal Blueprint
 
-This document provides the complete architectural guide and blueprint for building interactive multi-step tutorial modals in **CipherQuest**. Use this reference when building tutorial modals for **Vigenère Matrix** and **Playfair Matrix**.
+This document provides the complete architectural guide and blueprint for building interactive multi-step tutorial modals in **CipherQuest**. Modals completed: **Caesar Shift**, **Vigenère Matrix**, and **Playfair Matrix**.
 
 ---
 
@@ -11,14 +11,14 @@ For each cipher mode (e.g. `caesar`, `vigenere`, `playfair`), encapsulate the tu
 ```text
 Frontend/src/features/ciphergame/features/
 ├── caesar/
-│   ├── CaesarTutorialModal.jsx
-│   └── CaesarTutorialModal.css
+│   ├── CaesarTutorialModal.jsx    (Completed)
+│   └── CaesarTutorialModal.css    (Completed)
 ├── vigenere/
-│   ├── VigenereTutorialModal.jsx  (To be created)
-│   └── VigenereTutorialModal.css  (To be created)
+│   ├── VigenereTutorialModal.jsx  (Completed)
+│   └── VigenereTutorialModal.css  (Completed)
 └── playfair/
-    ├── PlayfairTutorialModal.jsx  (To be created)
-    └── PlayfairTutorialModal.css  (To be created)
+    ├── PlayfairTutorialModal.jsx  (Completed)
+    └── PlayfairTutorialModal.css  (Completed)
 ```
 
 ---

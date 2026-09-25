@@ -1,0 +1,378 @@
+/* ─────────────────────────────────────────────────────────────
+   PLAYFAIR MATRIX TUTORIAL STYLES
+   Tactical HUD styling with glowing 5x5 matrix cells & animation
+───────────────────────────────────────────────────────────── */
+
+/* Viewport Layout Adjustments */
+.cq-pf-step1-viewport,
+.cq-pf-step2-viewport,
+.cq-pf-step3-viewport,
+.cq-pf-step4-viewport,
+.cq-pf-step5-viewport {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  padding: 12px 16px;
+  box-sizing: border-box;
+  gap: 10px;
+}
+
+/* Force laser scanline on top of all hero viewport elements */
+.cq-tut-laser-scanline {
+  z-index: 10 !important;
+  pointer-events: none !important;
+}
+
+/* Step 1: 5x5 Key Matrix */
+.cq-pf-matrix-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.cq-pf-matrix-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--neon-cyan, #00e5ff);
+  text-transform: uppercase;
+}
+
+.cq-pf-matrix-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(4, 10, 20, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
+}
+
+.cq-pf-grid-row {
+  display: flex;
+  gap: 4px;
+}
+
+.cq-pf-grid-cell {
+  width: 38px;
+  height: 38px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.cq-pf-cell-coord {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 0.48rem;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.cq-pf-cell-char {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #e2e8f0;
+}
+
+.cq-pf-cell-key {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: rgba(0, 229, 255, 0.5);
+}
+
+.cq-pf-cell-key .cq-pf-cell-char {
+  color: #00e5ff;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+}
+
+.cq-pf-cell-merged {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.cq-pf-cell-merged .cq-pf-cell-char {
+  color: #f59e0b;
+  font-size: 0.8rem;
+}
+
+.cq-pf-matrix-caption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  z-index: 2;
+}
+
+.cq-pf-matrix-caption .material-symbols-outlined {
+  font-size: 16px;
+  color: var(--neon-cyan, #00e5ff);
+}
+
+/* Step 2: Digraph Splitter & Padding Simulator */
+.cq-pf-preset-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.cq-pf-controls-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #94a3b8;
+}
+
+.cq-pf-preset-btn {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cq-pf-preset-btn:hover {
+  border-color: rgba(0, 229, 255, 0.4);
+  color: #ffffff;
+}
+
+.cq-pf-preset-btn.active {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+}
+
+.cq-pf-digraph-pipeline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: rgba(10, 16, 26, 0.75);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 12px;
+  padding: 14px 20px;
+  width: 90%;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.cq-pf-pipeline-raw,
+.cq-pf-pipeline-pairs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cq-pf-pipeline-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #64748b;
+  min-width: 130px;
+}
+
+.cq-pf-raw-text {
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #ffffff;
+}
+
+.cq-pf-pipeline-arrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--neon-cyan, #00e5ff);
+}
+
+.cq-pf-pipeline-arrow .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.cq-pf-pairs-row {
+  display: flex;
+  gap: 8px;
+}
+
+.cq-pf-pair-box {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  gap: 4px;
+
+}
+
+.cq-pf-pair-has-x {
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.cq-pf-pair-char {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #00e5ff;
+}
+
+.cq-pf-char-x {
+  color: #f59e0b;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.8);
+}
+
+/* Step 3: Rule Stepper */
+.cq-pf-rule-tabs {
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.cq-pf-rule-tab {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cq-pf-rule-tab.active {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+}
+
+.cq-pf-rule-display {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  z-index: 2;
+}
+
+.cq-pf-mini-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(4, 10, 20, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 8px;
+  padding: 6px;
+}
+
+.cq-pf-mini-matrix .cq-pf-grid-cell {
+  width: 28px;
+  height: 28px;
+}
+
+.cq-pf-mini-matrix .cq-pf-cell-char {
+  font-size: 0.8rem;
+}
+
+.cq-pf-cell-in {
+  background: rgba(0, 229, 255, 0.25);
+  border-color: #00e5ff;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+.cq-pf-cell-in .cq-pf-cell-char {
+  color: #00e5ff;
+}
+
+.cq-pf-cell-out {
+  background: rgba(245, 158, 11, 0.3);
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
+.cq-pf-cell-out .cq-pf-cell-char {
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.cq-pf-rule-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 12px 16px;
+  max-width: 240px;
+}
+
+.cq-pf-banner-io {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cq-pf-io-tag {
+  font-size: 1.1rem;
+  font-weight: 900;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.cq-pf-io-tag.plain-tag {
+  background: rgba(0, 229, 255, 0.15);
+  color: #00e5ff;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+}
+
+.cq-pf-io-tag.cipher-tag {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+}
+
+.cq-pf-arrow-icon {
+  color: #94a3b8;
+}
+
+.cq-pf-banner-desc {
+  font-size: 0.72rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+/* Formula Banners */
+.cq-pf-formula-banner {
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 16px;
+  z-index: 2;
+}
+
+.cq-pf-formula-banner code {
+  font-family: monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #00e5ff;
+}

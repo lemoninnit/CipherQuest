@@ -228,6 +228,8 @@
   background: #00e5ff;
   box-shadow: 0 0 15px #00e5ff, 0 0 35px #00e5ff;
   animation: laserScan 2.5s ease-in-out infinite alternate;
+  z-index: 10;
+  pointer-events: none;
 }
 
 @keyframes laserScan {

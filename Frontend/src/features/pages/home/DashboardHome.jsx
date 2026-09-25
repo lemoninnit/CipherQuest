@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { DashboardChromeContext } from '../../layout/DashboardLayout';
 import CaesarTutorialModal from '../../ciphergame/features/caesar/CaesarTutorialModal';
 import VigenereTutorialModal from '../../ciphergame/features/vigenere/VigenereTutorialModal';
+import PlayfairTutorialModal from '../../ciphergame/features/playfair/PlayfairTutorialModal';
 import './DashboardHome.css';
 
 const DashboardHome = () => {
@@ -442,6 +443,12 @@ const DashboardHome = () => {
       {/* Tutorial Modals for Dashboard in-place view */}
       {tutorialCategory === 'vigenere' ? (
         <VigenereTutorialModal
+          isOpen={showTutorial}
+          onClose={() => setShowTutorial(false)}
+          skipButtonText="Close Tutorial"
+        />
+      ) : tutorialCategory === 'playfair' ? (
+        <PlayfairTutorialModal
           isOpen={showTutorial}
           onClose={() => setShowTutorial(false)}
           skipButtonText="Close Tutorial"
