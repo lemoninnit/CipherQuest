@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/purity, react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
@@ -26,19 +26,80 @@ const applyShiftDelta = (curr, delta) => {
   return normalizeShift(curr + delta);
 };
 
-const formatShift = (shift) => `+${normalizeShift(shift)}`;
+const formatShift = (shift) => normalizeShift(shift) === 0 ? '0' : `+${normalizeShift(shift)}`;
 
-const FISH_VALUES = [+1, +2, +3, +4, +5, +6, +7, +8, +9, +10, -1, -2, -3, -4, -5, -6, -7, -8, -9, -10];
+const generateCaesarFishValues = (targetShift, currentShift, difficulty = 'easy', totalCount = 9) => {
+  const diffNorm = normalizeShift(targetShift - currentShift);
+  const signedDist = diffNorm > 13 ? diffNorm - 26 : diffNorm;
+  
+  const maxLimit = difficulty === 'easy' ? 7 : difficulty === 'medium' ? 14 : 24;
+  const radius = difficulty === 'easy' ? 4 : difficulty === 'medium' ? 5 : 6;
+  
+  const pool = new Set();
+  
+  // Direct solver if within limit
+  if (signedDist !== 0 && Math.abs(signedDist) <= maxLimit) {
+    pool.add(signedDist);
+  }
+  
+  // Two-step decomposition
+  if (signedDist !== 0) {
+    const p1 = Math.trunc(signedDist / 2);
+    const p2 = signedDist - p1;
+    if (p1 !== 0 && Math.abs(p1) <= maxLimit) pool.add(p1);
+    if (p2 !== 0 && Math.abs(p2) <= maxLimit) pool.add(p2);
+  }
+  
+  // Offset window around signedDist (or around 1 if signedDist is 0)
+  const center = signedDist === 0 ? 1 : signedDist;
+  const minVal = Math.max(-maxLimit, center - radius);
+  const maxVal = Math.min(maxLimit, center + radius);
+  
+  for (let v = minVal; v <= maxVal; v++) {
+    if (v !== 0) pool.add(v);
+  }
+  
+  // Ensure mixed signs
+  const hasPos = Array.from(pool).some(v => v > 0);
+  const hasNeg = Array.from(pool).some(v => v < 0);
+  if (!hasPos) {
+    for (let v = 1; v <= Math.min(3, maxLimit); v++) pool.add(v);
+  }
+  if (!hasNeg) {
+    for (let v = -1; v >= Math.max(-3, -maxLimit); v--) pool.add(v);
+  }
+  
+  const candidates = Array.from(pool);
+  const result = [];
+  
+  // Guarantee direct solver or decomposed parts first
+  if (signedDist !== 0 && Math.abs(signedDist) <= maxLimit) {
+    result.push(signedDist);
+  }
+  
+  const remainingCandidates = candidates.filter(c => !result.includes(c)).sort(() => Math.random() - 0.5);
+  for (const c of remainingCandidates) {
+    if (result.length >= totalCount) break;
+    result.push(c);
+  }
+  
+  while (result.length < totalCount) {
+    const fallback = candidates[Math.floor(Math.random() * candidates.length)] || 1;
+    result.push(fallback);
+  }
+  
+  return result.sort(() => Math.random() - 0.5);
+};
 
 export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion, onStartStageTimer }) {
   const words         = levelData.plaintext.split(' ');
   const cipherSegs    = levelData.ciphertext.split(' ');
-  const getInitialShift = (segIdx) => normalizeShift(levelData.startShifts?.[segIdx] ?? levelData.startShifts?.[0] ?? 0);
+  const getInitialShift = () => 0;
 
   /* ── state ── */
   const [phase, setPhase]                     = useState('ready');
   const [isOperationLoading, setIsOperationLoading] = useState(false);
-  const [activeShifts, setActiveShifts]       = useState(() => cipherSegs.map((_, idx) => getInitialShift(idx)));
+  const [activeShifts, setActiveShifts]       = useState(() => cipherSegs.map(() => getInitialShift()));
   const [targetSegIdx, setTargetSegIdx]       = useState(0);
   const [attemptsLeft, setAttemptsLeft]       = useState(15);
   const [levelSolved, setLevelSolved]         = useState(false);
@@ -113,19 +174,21 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [phase, showExplanation]);  /* ── derived ── */
+  }, [phase, showExplanation]);
+
+  /* ── derived ── */
   const basketShift = normalizeShift(activeShifts[0] ?? getInitialShift(0));
   const decryptedSegs = cipherSegs.map((seg, i) =>
     caesarShiftWord(seg, activeShifts[i] ?? 0)
   );
 
-  const allCorrect = decryptedSegs.every((dec, i) => dec === words[i]);
+  const allCorrect = basketShift !== 0 && decryptedSegs.every((dec, i) => dec === words[i]);
 
   /* ── start game ── */
   const startGame = () => {
     fishingSound.unlockAudio();
     fishingSound.playBgm();
-    setActiveShifts(cipherSegs.map((_, idx) => getInitialShift(idx)));
+    setActiveShifts(cipherSegs.map(() => getInitialShift()));
     setTargetSegIdx(0);
     setAttemptsLeft(15);
     setChumCount(3);
@@ -139,7 +202,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   useEffect(() => {
     setPhase('ready');
     setIsMenuOpen(false);
-    setActiveShifts(cipherSegs.map((_, idx) => getInitialShift(idx)));
+    setActiveShifts(cipherSegs.map(() => getInitialShift()));
   }, [levelData]);
 
   /* ── detect solve ── */
@@ -158,48 +221,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     const list = [];
     const targetShift = normalizeShift(26 - (levelData.targetShifts?.[0] ?? 0));
     const currentShift = basketShift;
-    const diff = normalizeShift(targetShift - currentShift);
-
-    const helpers = [];
-    if (diff !== 0) {
-      // Direct single-fish solver
-      if (FISH_VALUES.includes(diff)) {
-        helpers.push(diff);
-      } else if (FISH_VALUES.includes(-normalizeShift(26 - diff))) {
-        helpers.push(-normalizeShift(26 - diff));
-      }
-      
-      // Two-fish solvers
-      for (const val of FISH_VALUES) {
-        const remaining = normalizeShift(diff - val);
-        const remNeg = -normalizeShift(26 - remaining);
-        if (FISH_VALUES.includes(remaining)) {
-          helpers.push(val);
-          helpers.push(remaining);
-          break;
-        } else if (FISH_VALUES.includes(remNeg)) {
-          helpers.push(val);
-          helpers.push(remNeg);
-          break;
-        }
-      }
-    }
-
-    // Build a diverse base pool: all 8 fish values shuffled, then pad with helpers/randoms
-    const TOTAL_FISH = 9;
-    const shuffledAll = [...FISH_VALUES].sort(() => Math.random() - 0.5);
-    const valuePool = [...shuffledAll];
-    // Inject helpers at the start so at least 1-2 helpful fish are guaranteed
-    helpers.forEach(h => valuePool.unshift(h));
+    const valuePool = generateCaesarFishValues(targetShift, currentShift, tier, 9);
 
     const usedY = [];
-    for (let i = 0; i < TOTAL_FISH; i++) {
-      let value;
-      if (i < valuePool.length) {
-        value = valuePool[i];
-      } else {
-        value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
-      }
+    for (let i = 0; i < valuePool.length; i++) {
+      const value = valuePool[i];
 
       // Spread fish vertically so they don't all cluster on the same row
       let y;
@@ -247,7 +273,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   }, [phase, isMenuOpen, levelSolved]);
 
   /* ── casting ── */
-
   const handleChumWaters = () => {
     if (chumCount <= 0 || isCasting) return;
     fishingSound.playSfx('chum');
@@ -274,14 +299,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     // --- Determine facing direction & compute SVG tip coords ---
     const facingRight = tx > 250;
     setRodFacingRight(facingRight);
-    /*
-     * Sprite dimensions (must match CSS):
-     *   SPRITE = 500px, handle at 88% → 440px from left,  tip at 12% → 60px.
-     * For left-facing:  element left = 50% - 440, visual tip x = 50% - 440 + 60 = 50% - 380
-     * For right-facing: element left = 50% - 60,  visual tip x = 50% - 60  + 440 = 50% + 380
-     * Either way:  tipDomX = laneW/2 ± 380
-     * tipDomY = laneH - 440  (sprite height 500, tip at 12% from top = 60px → bottom-60px)
-     */
     {
       const SPRITE = 500;
       const HANDLE = SPRITE * 0.88; // 440
@@ -306,7 +323,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
       setSplash({ show: true, x: fish.x, y: fish.y });
       setTimeout(() => setSplash({ show: false, x: 0, y: 0 }), 500);
-      // Fish is already removed from fishList — no second filter needed
 
       setTimeout(() => {
         let rs = null;
@@ -319,10 +335,8 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           setIsCasting(false);
           setCaughtFish(null);
           fishingSound.playSfx('catch');
-          setActiveShifts(prev => {
-            const nextShift = applyShiftDelta(prev[0] ?? getInitialShift(0), fish.value);
-            return cipherSegs.map(() => nextShift);
-          });
+          const nextShift = applyShiftDelta(activeShifts[0] ?? getInitialShift(0), fish.value);
+          setActiveShifts(cipherSegs.map(() => nextShift));
           setBasketShake(true);
           setTimeout(() => setBasketShake(false), 400);
           setAttemptsLeft(prev => {
@@ -336,16 +350,9 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           setTimeout(() => {
             setFishList(prev => {
               const targetShift = normalizeShift(26 - (levelData.targetShifts?.[0] ?? 0));
-              const currentShift = basketShift;
-              const diff = normalizeShift(targetShift - currentShift);
-              let value = FISH_VALUES[Math.floor(Math.random() * FISH_VALUES.length)];
-              if (diff !== 0 && Math.random() > 0.4) {
-                if (FISH_VALUES.includes(diff)) {
-                  value = diff;
-                } else if (FISH_VALUES.includes(-normalizeShift(26 - diff))) {
-                  value = -normalizeShift(26 - diff);
-                }
-              }
+              const currentShift = nextShift;
+              const newPool = generateCaesarFishValues(targetShift, currentShift, tier, 5);
+              const value = newPool[Math.floor(Math.random() * newPool.length)];
               return [...prev, {
                 id: Date.now(),
                 value,
@@ -614,12 +621,12 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                     {cipherWord.split('').map((cipherCh, chIdx) => {
                       const maskList = levelData.masks[wIdx];
                       const isPrefilled = tier === 'easy' && maskList?.[chIdx];
-                      const isCorrect = decWord[chIdx] === word[chIdx];
-                      const letterToShow = isPrefilled ? word[chIdx] : decWord[chIdx];
+                      const isCorrect = segShift !== 0 && decWord[chIdx] === word[chIdx];
+                      const letterToShow = isPrefilled ? word[chIdx] : (segShift === 0 ? '_' : decWord[chIdx]);
 
                       const cellClass = (isPrefilled || isCorrect)
                         ? 'fg-letter-cell correct-plain'
-                        : 'fg-letter-cell unmatched-plain';
+                        : (segShift === 0 ? 'fg-letter-cell masked' : 'fg-letter-cell unmatched-plain');
 
                       return (
                         <div key={chIdx} className={cellClass}>

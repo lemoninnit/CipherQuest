@@ -13,6 +13,40 @@ const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const charToIdx = (char) => char.charCodeAt(0) - 65;
 
+const generateVigenereCandidateLetters = (targetLetter, difficulty = 'easy', totalCount = 9) => {
+  const target = (targetLetter || 'A').toUpperCase();
+  const targetIdx = target.charCodeAt(0) - 65;
+  const radius = difficulty === 'easy' ? 4 : difficulty === 'medium' ? 5 : 6;
+  
+  const pool = new Set();
+  pool.add(target);
+  
+  for (let offset = 1; offset <= radius; offset++) {
+    const fIdx = (targetIdx + offset) % 26;
+    const bIdx = (targetIdx - offset + 26) % 26;
+    pool.add(ALPHABET[fIdx]);
+    pool.add(ALPHABET[bIdx]);
+  }
+  
+  let extra = 1;
+  while (pool.size < totalCount) {
+    const fIdx = (targetIdx + radius + extra) % 26;
+    const bIdx = (targetIdx - radius - extra + 26) % 26;
+    pool.add(ALPHABET[fIdx]);
+    if (pool.size < totalCount) pool.add(ALPHABET[bIdx]);
+    extra++;
+  }
+  
+  const candidates = Array.from(pool);
+  const result = [target];
+  const decoys = candidates.filter(c => c !== target).sort(() => Math.random() - 0.5);
+  for (const d of decoys) {
+    if (result.length >= totalCount) break;
+    result.push(d);
+  }
+  return result.sort(() => Math.random() - 0.5);
+};
+
 const tabulaRow = (keyLetter) => {
   const shift = charToIdx(keyLetter);
   const row = [];
@@ -235,23 +269,9 @@ export default function VigenereFishingGame({
   }, [cipherSegs, slotMap, targetKey, targetShifts, words, flatLetterPositions, revealedMasks, currentTarget.globalIdx]);
 
   const spawnFish = useCallback(() => {
-    const correctLetter = currentTargetPlain || ALPHABET[0];
-    const letters = new Set([correctLetter]);
-
-    // Add letters from other unsolved positions for realistic variety
-    flatLetterPositions.forEach(p => {
-      if (!revealedMasks[p.wordIdx]?.[p.charIdx] && letters.size < 6) {
-        letters.add(p.plainChar);
-      }
-    });
-
-    while (letters.size < 9) {
-      letters.add(ALPHABET[Math.floor(Math.random() * ALPHABET.length)]);
-    }
-
-    const shuffled = [...letters].sort(() => Math.random() - 0.5);
+    const letters = generateVigenereCandidateLetters(currentTargetPlain, tier, 9);
     const usedY = [];
-    const list = shuffled.map((letter, i) => {
+    const list = letters.map((letter, i) => {
       let y;
       let attempts = 0;
       do {
@@ -271,7 +291,7 @@ export default function VigenereFishingGame({
       };
     });
     setFishList(list);
-  }, [currentTargetPlain, flatLetterPositions, revealedMasks]);
+  }, [currentTargetPlain, tier]);
 
   const spawnBubbles = () => {
     const list = [];
@@ -443,11 +463,13 @@ export default function VigenereFishingGame({
           setTimeout(() => {
             setFishList(prev => {
               const usedLetters = new Set(prev.map(item => item.letter));
+              const candidates = generateVigenereCandidateLetters(currentTargetPlain, tier, 9);
               let letter = currentTargetPlain;
               if (usedLetters.has(letter) || Math.random() > 0.45) {
-                do {
-                  letter = ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
-                } while (usedLetters.has(letter));
+                const available = candidates.filter(c => !usedLetters.has(c));
+                letter = available.length > 0
+                  ? available[Math.floor(Math.random() * available.length)]
+                  : candidates[Math.floor(Math.random() * candidates.length)];
               }
               return [...prev, {
                 id: Date.now(),

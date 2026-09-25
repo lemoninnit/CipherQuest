@@ -33,10 +33,20 @@ const vigenereDecryptChar = (cipherChar, keyShift) => {
   return cipherChar;
 };
 
-const getRandomDecoys = (correctChar, count) => {
-  const pool = ALPHABET.filter((c) => c !== correctChar);
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+const getRandomDecoys = (correctChar, count, tier = 'easy') => {
+  const normTier = String(tier || 'easy').toLowerCase();
+  const radius = normTier === 'easy' ? 4 : normTier === 'medium' ? 5 : 6;
+  const targetIdx = (correctChar || 'A').toUpperCase().charCodeAt(0) - 65;
+  const pool = [];
+  for (let offset = 1; offset <= radius; offset++) {
+    pool.push(ALPHABET[(targetIdx + offset) % 26]);
+    pool.push(ALPHABET[(targetIdx - offset + 26) % 26]);
+  }
+  const uniquePool = Array.from(new Set(pool)).filter((c) => c !== correctChar);
+  const shuffled = uniquePool.sort(() => Math.random() - 0.5);
+  if (shuffled.length >= count) return shuffled.slice(0, count);
+  const allOther = ALPHABET.filter((c) => c !== correctChar && !shuffled.includes(c)).sort(() => Math.random() - 0.5);
+  return [...shuffled, ...allOther].slice(0, count);
 };
 
 const tabulaRow = (keyLetter) => {
@@ -360,7 +370,7 @@ export default function VigenereSprint({
 
     const tempIdx = maskedIndices[currentMaskIndexRef.current] ?? 0;
     const targetChar = currentTargetChar || (levelData.plaintext[tempIdx] ?? '');
-    const [decoy1, decoy2] = getRandomDecoys(targetChar, 2);
+    const [decoy1, decoy2] = getRandomDecoys(targetChar, 2, tier);
     const otherLanes = [0, 1, 2].filter((l) => l !== randLane);
 
     const startX = COIN_START_X;
@@ -382,7 +392,7 @@ export default function VigenereSprint({
       slimesRef.current = combined;
       return combined;
     });
-  }, [clearPhaseTimer, currentTargetChar, maskedIndices, levelData.plaintext]);
+  }, [clearPhaseTimer, currentTargetChar, maskedIndices, levelData.plaintext, tier]);
 
   /* ───────────────────────────────────────────────
      Phase 3: Resolved (immediate on diamond pick or miss)
@@ -1639,8 +1649,9 @@ function CrashPanel({ message, onContinue }) {
 function useMemoLevelMeta(levelData, tier) {
   return React.useMemo(() => {
     const hintIndices = new Set();
-    if (tier === 'easy' || tier === 'medium') {
-      const numHints = tier === 'easy' ? 2 : 1;
+    const normTier = String(tier || 'easy').toLowerCase();
+    if (normTier === 'easy' || normTier === 'medium') {
+      const numHints = normTier === 'easy' ? 2 : 1;
       let hintsFound = 0;
       for (let i = 0; i < levelData.plaintext.length; i++) {
         if (

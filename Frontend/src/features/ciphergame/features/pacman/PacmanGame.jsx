@@ -11,7 +11,6 @@ import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingFromDir } from './pacmanWorld';
-import { buildShiftCandidates, SHIFT_CANDIDATE_COUNT } from '../../core/engine/caesar';
 
 const EASY_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -224,20 +223,126 @@ const getRequiredTargetItems = (levelData) => {
 };
 
 // Dynamically configure ghosts: capped active target letters + queue system + decoys.
+const generateCaesarShiftCandidates = (trueShift, tier = 'easy', count = 4) => {
+  const normTier = String(tier || 'easy').toLowerCase();
+  const maxLimit = normTier === 'easy' ? 7 : normTier === 'medium' ? 14 : 24;
+  const radius = normTier === 'easy' ? 4 : normTier === 'medium' ? 5 : 6;
+
+  const correctVal = trueShift;
+  const correctStr = correctVal > 0 ? `+${correctVal}` : `${correctVal}`;
+  const correctNorm = ((correctVal % 26) + 26) % 26 || 1;
+
+  const usedSigned = new Set([correctVal]);
+  const candidates = [
+    {
+      signedVal: correctVal,
+      shiftValue: correctNorm,
+      char: correctStr,
+      isCorrect: true,
+    }
+  ];
+
+  // 1. Decoy with opposite sign if within limit
+  const oppositeVal = -correctVal;
+  if (!usedSigned.has(oppositeVal) && Math.abs(oppositeVal) <= maxLimit) {
+    usedSigned.add(oppositeVal);
+    candidates.push({
+      signedVal: oppositeVal,
+      shiftValue: Math.abs(oppositeVal),
+      char: oppositeVal > 0 ? `+${oppositeVal}` : `${oppositeVal}`,
+      isCorrect: false,
+    });
+  }
+
+  // 2. Neighboring shift window around correctVal (e.g. ±1, ±2, ±3, ±4), clamped to maxLimit
+  const neighborPool = [];
+  for (let offset = 1; offset <= radius; offset++) {
+    const valPlus = correctVal + offset;
+    const valMinus = correctVal - offset;
+    if (valPlus !== 0 && Math.abs(valPlus) <= maxLimit && !usedSigned.has(valPlus)) {
+      neighborPool.push(valPlus);
+    }
+    if (valMinus !== 0 && Math.abs(valMinus) <= maxLimit && !usedSigned.has(valMinus)) {
+      neighborPool.push(valMinus);
+    }
+    if (-valPlus !== 0 && Math.abs(-valPlus) <= maxLimit && !usedSigned.has(-valPlus)) {
+      neighborPool.push(-valPlus);
+    }
+    if (-valMinus !== 0 && Math.abs(-valMinus) <= maxLimit && !usedSigned.has(-valMinus)) {
+      neighborPool.push(-valMinus);
+    }
+  }
+
+  const shuffledNeighbors = neighborPool.sort(() => Math.random() - 0.5);
+  for (const val of shuffledNeighbors) {
+    if (candidates.length >= count) break;
+    if (!usedSigned.has(val)) {
+      usedSigned.add(val);
+      candidates.push({
+        signedVal: val,
+        shiftValue: Math.abs(val),
+        char: val > 0 ? `+${val}` : `${val}`,
+        isCorrect: false,
+      });
+    }
+  }
+
+  // Fallback within [-maxLimit, +maxLimit]
+  let fb = 1;
+  while (candidates.length < count && fb <= maxLimit) {
+    for (const val of [fb, -fb]) {
+      if (candidates.length >= count) break;
+      if (!usedSigned.has(val) && val !== 0) {
+        usedSigned.add(val);
+        candidates.push({
+          signedVal: val,
+          shiftValue: Math.abs(val),
+          char: val > 0 ? `+${val}` : `${val}`,
+          isCorrect: false,
+        });
+      }
+    }
+    fb++;
+  }
+
+  return candidates.sort(() => Math.random() - 0.5);
+};
+
 const generateInitialGhosts = (levelData, tier) => {
   const normTier = String(tier || levelData?.tier || 'easy').toLowerCase();
-  const maxActive = MAX_ACTIVE_TARGET_GHOSTS[normTier] || 8;
-  const decoyCount = DECOY_GHOST_COUNT[normTier] || 2;
   const startPositions = getGhostStartPositions(normTier);
-
   const isPlayfair = !!levelData.matrix;
   const isVigenere = !!levelData.targetKey;
   const isCaesar = !isPlayfair && !isVigenere;
-  // Caesar uses a single global encryption shift for the whole level.
-  const caesarTrueShift = isCaesar
-    ? (levelData.targetShifts?.[0] ?? levelData.shift ?? levelData.targetShift ?? 1)
-    : 0;
-  const candidateCount = SHIFT_CANDIDATE_COUNT[normTier] || 3;
+
+  if (isCaesar) {
+    // ── Caesar Shift Goblins (Mixed +/- candidate shift decision) ──
+    const caesarTrueShift = levelData.targetShifts?.[0] ?? levelData.shift ?? levelData.targetShift ?? 1;
+    const candidateCount = normTier === 'hard' ? 5 : 4;
+    const candidates = generateCaesarShiftCandidates(caesarTrueShift, normTier, candidateCount);
+
+    const ghosts = candidates.map((cand, i) => {
+      const pos = startPositions[i % startPositions.length];
+      return {
+        id: `ghost-caesar-${cand.signedVal}-${i}`,
+        char: cand.char,
+        signedVal: cand.signedVal,
+        shiftValue: cand.shiftValue,
+        isCorrect: cand.isCorrect,
+        index: cand.isCorrect ? 0 : -1,
+        row: pos.row,
+        col: pos.col,
+        eaten: false,
+        dying: false,
+        dir: pos.dir || { r: 0, c: 1 }
+      };
+    });
+
+    return { ghosts, queue: [] };
+  }
+
+  const maxActive = MAX_ACTIVE_TARGET_GHOSTS[normTier] || 8;
+  const decoyCount = DECOY_GHOST_COUNT[normTier] || 2;
   const requiredTargets = getRequiredTargetItems(levelData);
   const activeTargets = requiredTargets.slice(0, maxActive);
   const queue = requiredTargets.slice(maxActive);
@@ -254,54 +359,7 @@ const generateInitialGhosts = (levelData, tier) => {
     };
   });
 
-  if (isCaesar) {
-    // ── Caesar Shift Ghosts ──
-    // ALL target ghosts carry the level's CORRECT decryption shift; decoy ghosts
-    // carry wrong candidate shifts (near-miss ±1/±2 on med/hard, random on easy).
-    // The player must derive the shift from the revealed letters, then only hunt
-    // ghosts displaying the matching value.
-    const candidates = buildShiftCandidates(caesarTrueShift, normTier, candidateCount);
-    const correctShift = candidates.find(c => c.isCorrect).shiftValue;
-
-    ghosts.forEach((g) => {
-      g.shiftValue = correctShift;
-      g.char = `−${correctShift}`;
-    });
-
-    // Add decoy ghosts carrying wrong shift values (deduplicated)
-    const usedWrong = new Set([correctShift]);
-    for (let i = 0; i < decoyCount; i++) {
-      let candidate = buildShiftCandidates(caesarTrueShift, normTier, candidateCount + 3)
-        .find(c => !usedWrong.has(c.shiftValue));
-      let v;
-      if (candidate) {
-        v = candidate.shiftValue;
-      } else {
-        // Fallback: any value != correct shift in 1..25
-        do { v = 1 + Math.floor(Math.random() * 25); } while (usedWrong.has(v));
-      }
-      usedWrong.add(v);
-
-      const posIdx = activeTargets.length + i;
-      const pos = startPositions[posIdx % startPositions.length];
-
-      ghosts.push({
-        id: `ghost-decoy-${i + 1}`,
-        char: `−${v}`,
-        shiftValue: v,
-        index: -1, // Decoy indicator
-        row: pos.row,
-        col: pos.col,
-        eaten: false,
-        dying: false,
-        dir: pos.dir
-      });
-    }
-
-    return { ghosts, queue };
-  }
-
-  // ── Vigenère / Playfair: original letter-based ghosts ──
+  // ── Vigenère / Playfair: clustered decoy generation ──
   const alphabet = isPlayfair ? 'ABCDEFGHIKLMNOPQRSTUVWXYZ' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const targetLetters = requiredTargets.map(t => t.char);
   const ciphertextLetters = levelData?.ciphertext ? levelData.ciphertext.split('') : [];
@@ -312,19 +370,41 @@ const generateInitialGhosts = (levelData, tier) => {
     let decoyChar;
     if (isPlayfair) {
       const pairs = levelData?.pairs || [];
-      let attempts = 0;
-      do {
-        const c1 = alphabet[Math.floor(Math.random() * 25)];
-        const c2 = alphabet[Math.floor(Math.random() * 25)];
-        decoyChar = c1 + c2;
-        attempts++;
-      } while (pairs.includes(decoyChar) && attempts < 100);
+      const matrix = levelData?.matrix || [];
+      const basePair = pairs[i % pairs.length] || 'AB';
+      const decoys = [];
+      const [a, b] = basePair;
+      let posA = { r: 0, c: 0 }, posB = { r: 0, c: 0 };
+      if (matrix.length === 5) {
+        for (let r = 0; r < 5; r++) {
+          for (let c = 0; c < 5; c++) {
+            if (matrix[r][c] === a) posA = { r, c };
+            if (matrix[r][c] === b) posB = { r, c };
+          }
+        }
+        for (const [dr, dc] of [[0, 1], [0, -1], [1, 0], [-1, 0], [1, 1], [-1, -1]]) {
+          const nA = matrix[(posA.r + dr + 5) % 5][(posA.c + dc + 5) % 5];
+          const nB = matrix[(posB.r + dr + 5) % 5][(posB.c + dc + 5) % 5];
+          if (nA !== b) decoys.push(`${nA}${b}`);
+          if (nB !== a) decoys.push(`${a}${nB}`);
+          if (nA !== nB) decoys.push(`${nA}${nB}`);
+        }
+      }
+      const validDecoys = decoys.filter(d => !pairs.includes(d));
+      decoyChar = validDecoys[Math.floor(Math.random() * validDecoys.length)] || `${b}${a}`;
     } else {
-      let attempts = 0;
-      do {
-        decoyChar = alphabet[Math.floor(Math.random() * 26)];
-        attempts++;
-      } while ((avoidLetters.has(decoyChar) || targetLetters.includes(decoyChar)) && attempts < 100);
+      const primaryTarget = targetLetters[i % targetLetters.length] || 'A';
+      const targetIdx = primaryTarget.charCodeAt(0) - 65;
+      const radius = normTier === 'easy' ? 4 : normTier === 'medium' ? 5 : 6;
+      const nearbyLetters = [];
+      for (let offset = 1; offset <= radius; offset++) {
+        nearbyLetters.push(alphabet[(targetIdx + offset) % 26]);
+        nearbyLetters.push(alphabet[(targetIdx - offset + 26) % 26]);
+      }
+      const filtered = nearbyLetters.filter(ch => !avoidLetters.has(ch) && !targetLetters.includes(ch));
+      decoyChar = filtered.length > 0
+        ? filtered[Math.floor(Math.random() * filtered.length)]
+        : alphabet[(targetIdx + 3) % 26];
     }
 
     const posIdx = activeTargets.length + i;
@@ -361,8 +441,6 @@ function CaesarCheatSheet({
   plaintext,
   fullMask,
   activeIdx,
-  solvedCount,
-  totalCount,
 }) {
   const isEasy = tier === 'easy';
 
@@ -379,14 +457,11 @@ function CaesarCheatSheet({
     return pairs.slice(0, 3);
   }, [plaintext, ciphertext, fullMask]);
 
-  /* Active blank worked example */
-  const activeExample = useMemo(() => {
-    if (activeIdx == null || activeIdx < 0) return null;
-    const cipherCh = ciphertext[activeIdx] || '';
-    const plainCh = plaintext[activeIdx] || '';
-    if (!cipherCh || !plainCh) return null;
-    return { cipherCh, plainCh };
-  }, [activeIdx, ciphertext, plaintext]);
+  /* Highlight cipher character for the active solving slot */
+  const activeCipherCh = useMemo(() => {
+    if (activeIdx == null || activeIdx < 0) return '';
+    return ciphertext[activeIdx] || '';
+  }, [activeIdx, ciphertext]);
 
   /* EASY: A-Z strip columns — PLAIN on top, CIPHER below, numeric VALUE (1-26) */
   const stripCols = useMemo(() => {
@@ -415,43 +490,25 @@ function CaesarCheatSheet({
       </div>
 
       {isEasy ? (
-        <>
-          {activeExample && (
-            <div className="cqs-worked-example" title="Live decryption of the active blank">
-              <span className="cqs-we-stack">
-                <span className="cqs-we-cipher">{activeExample.cipherCh}</span>
-                <span className="cqs-we-sub">{charValue(activeExample.cipherCh)}</span>
-              </span>
-              <span className="cqs-we-op">−</span>
-              <span className="cqs-we-shift">{targetShift}</span>
-              <span className="cqs-we-op">=</span>
-              <span className="cqs-we-stack">
-                <span className="cqs-we-plain">{activeExample.plainCh}</span>
-                <span className="cqs-we-sub">{charValue(activeExample.plainCh)}</span>
-              </span>
-            </div>
-          )}
-
-          <div className="caesar-cheat-body">
-            <div className="caesar-cheat-labels cqs-labels-three">
-              <span className="caesar-cheat-label-plain">PLAIN</span>
-              <span className="caesar-cheat-label-shift">CIPHER</span>
-              <span className="cqs-label-value">VALUE</span>
-            </div>
-            <div className="caesar-cheat-columns">
-              {stripCols.map((c) => {
-                const isActive = activeExample && c.cipher === activeExample.cipherCh;
-                return (
-                  <div key={c.plain} className={`caesar-cheat-col cqs-col-three ${isActive ? 'highlighted' : ''}`}>
-                    <span className="caesar-cheat-plain">{c.plain}</span>
-                    <span className="caesar-cheat-shifted">{c.cipher}</span>
-                    <span className="cqs-cheat-value">{c.value}</span>
-                  </div>
-                );
-              })}
-            </div>
+        <div className="caesar-cheat-body">
+          <div className="caesar-cheat-labels cqs-labels-three">
+            <span className="caesar-cheat-label-plain">PLAIN</span>
+            <span className="caesar-cheat-label-shift">CIPHER</span>
+            <span className="cqs-label-value">VALUE</span>
           </div>
-        </>
+          <div className="caesar-cheat-columns">
+            {stripCols.map((c) => {
+              const isActive = activeCipherCh && c.cipher === activeCipherCh;
+              return (
+                <div key={c.plain} className={`caesar-cheat-col cqs-col-three ${isActive ? 'highlighted' : ''}`}>
+                  <span className="caesar-cheat-plain">{c.plain}</span>
+                  <span className="caesar-cheat-shifted">{c.cipher}</span>
+                  <span className="cqs-cheat-value">{c.value}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       ) : (
         <div className="cqs-derive-body">
           <div className="cqs-derive-hint">
@@ -499,15 +556,10 @@ function CaesarCheatSheet({
           <div className="cqs-derive-steps">
             <span className={revealedPairs.length >= 1 ? 'done' : ''}>① Derive from a pair</span>
             <span className={revealedPairs.length >= 2 ? 'done' : ''}>② Verify on a 2nd</span>
-            <span className={solvedCount > 0 ? 'done' : ''}>③ Hunt the −shift ghost</span>
+            <span>③ Hunt the shift goblin</span>
           </div>
         </div>
       )}
-
-      <div className="cqs-progress-footer">
-        <span className="cqs-progress-label">Blanks solved</span>
-        <span className="cqs-progress-value">{solvedCount}/{totalCount}</span>
-      </div>
     </div>
   );
 }
@@ -561,6 +613,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const [flashError, setFlashError] = useState(false);
   const [ruleViolation, setRuleViolation] = useState(null);
   const [levelSolved, setLevelSolved] = useState(false);
+  const [activeShiftValue, setActiveShiftValue] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [isScreenShaking, setIsScreenShaking] = useState(false);
   const [isInvulnerable, setIsInvulnerable] = useState(false);
@@ -604,6 +657,9 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   useEffect(() => { knightAttackingRef.current = knightAttacking; }, [knightAttacking]);
 
   const activeSolvingIndex = React.useMemo(() => {
+    if (isCaesar) {
+      return maskedIndices[0] ?? 0;
+    }
     if (!levelData || !levelData.plaintext) return -1;
     for (let i = 0; i < levelData.plaintext.length; i++) {
       const ch = levelData.plaintext[i];
@@ -612,7 +668,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       }
     }
     return -1;
-  }, [levelData, eatenGhosts]);
+  }, [levelData, eatenGhosts, isCaesar, maskedIndices]);
 
   const vigenereAlignmentItems = React.useMemo(() => {
     if (!isVigenere || !levelData.plaintext) return [];
@@ -665,6 +721,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setFlashError(false);
     setRuleViolation(null);
     setLevelSolved(false);
+    setActiveShiftValue(0);
     setGameOver(false);
     setHasSkillCharge(false);
     setSkillActive(false);
@@ -689,6 +746,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   useEffect(() => {
     if (phase === 'ready' || gameOver || levelSolved) return;
     if (!levelData) return;
+    if (isCaesar) return;
 
     const requiredTargets = getRequiredTargetItems(levelData);
     const unsolvedTargets = requiredTargets.filter(item => !eatenGhosts.includes(item.index));
@@ -946,11 +1004,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
         const currentGhosts = ghostsRef.current;
         const targetGhostAhead = currentGhosts.find(
-          (g) => !g.eaten && !g.dying && g.row === nextRow && g.col === nextCol && g.index !== -1
+          (g) => !g.eaten && !g.dying && g.row === nextRow && g.col === nextCol && (isCaesar ? true : g.index !== -1)
         );
 
         if (targetGhostAhead && currentSkillActive) {
-          // Freeze skill active & approaching correct ghost: Stop 1 tile short and execute attack animation!
+          // Freeze skill active & approaching goblin: Stop 1 tile short and execute attack animation!
           setPacmanDir('NONE');
           setBufferedDir('NONE');
           setSkillActive(false);
@@ -959,46 +1017,77 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           setKnightAttacking(true);
           knightAttackingRef.current = true;
 
+          const isCorrect = isCaesar ? targetGhostAhead.isCorrect : true;
+
           // Ghost disappears on hit frame (~240ms)
           setTimeout(() => {
-            pacmanSound.playSfx('gold');
+            if (isCorrect) {
+              pacmanSound.playSfx('gold');
+            } else {
+              pacmanSound.playSfx('hit');
+            }
             setGhosts((prev) => prev.map((g) => (g.id === targetGhostAhead.id ? { ...g, dying: true } : g)));
           }, 240);
 
-          // Complete swing at ~480ms: remove ghost, credit decryption, grant grace period, resume
+          // Complete swing at ~480ms: remove ghost, credit decryption / damage, grant grace period, resume
           setTimeout(() => {
-            setGhosts((prev) => {
-              const nextG = prev.map((g) => (g.id === targetGhostAhead.id ? { ...g, eaten: true } : g));
-              if (targetQueueRef.current && targetQueueRef.current.length > 0) {
-                const nextTarget = targetQueueRef.current.shift();
-                const spawnPositions = getGhostStartPositions(currentTier);
-                const pos = spawnPositions[Math.floor(Math.random() * spawnPositions.length)];
-                nextG.push({
-                  id: `ghost-queued-${Date.now()}-${Math.random()}`,
-                  char: isCaesar ? `−${targetShift}` : nextTarget.char,
-                  shiftValue: isCaesar ? targetShift : undefined,
-                  index: nextTarget.index,
-                  row: pos.row,
-                  col: pos.col,
-                  eaten: false,
-                  dir: pos.dir,
-                });
-              }
-              return nextG;
-            });
-
-            setEatenGhosts((prevEaten) => {
-              const nextEaten = prevEaten.includes(targetGhostAhead.index)
-                ? prevEaten
-                : [...prevEaten, targetGhostAhead.index];
-              const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
-              if (nextEaten.length === totalTargets) {
+            if (isCaesar) {
+              if (isCorrect) {
+                setActiveShiftValue(targetGhostAhead.signedVal ?? targetShift);
                 setLevelSolved(true);
+                setEatenGhosts(maskedIndices);
                 pacmanSound.stopBgm();
                 pacmanSound.playSfx('win');
+                setGhosts((prev) => prev.map((g) => ({ ...g, eaten: true })));
+              } else {
+                // Wrong candidate goblin! Despawn it, lose a life, explain why, continue hunt
+                setGhosts((prev) => prev.map((g) => (g.id === targetGhostAhead.id ? { ...g, eaten: true } : g)));
+                const testIdx = maskedIndices[0] ?? 0;
+                const cipherCh = levelData.ciphertext?.[testIdx] ?? '';
+                const correctPlainCh = levelData.plaintext?.[testIdx] ?? '';
+                const testShift = targetGhostAhead.signedVal ?? -targetGhostAhead.shiftValue;
+                const wrongPlainCh = cipherCh ? caesarShiftChar(cipherCh, -testShift) : '?';
+                setIsScreenShaking(true);
+                setTimeout(() => setIsScreenShaking(false), 450);
+                const opStr = targetGhostAhead.char?.startsWith('+') ? `+ ${targetGhostAhead.char.slice(1)}` : `− ${targetGhostAhead.char?.replace(/^[−-]/, '')}`;
+                handleLoseHeart(
+                  `Wrong shift! '${cipherCh}' ${opStr} = '${wrongPlainCh}', which does not match '${correctPlainCh}'. Check the Decryption Guide!`
+                );
               }
-              return nextEaten;
-            });
+            } else {
+              setGhosts((prev) => {
+                const nextG = prev.map((g) => (g.id === targetGhostAhead.id ? { ...g, eaten: true } : g));
+                if (targetQueueRef.current && targetQueueRef.current.length > 0) {
+                  const nextTarget = targetQueueRef.current.shift();
+                  const spawnPositions = getGhostStartPositions(currentTier);
+                  const pos = spawnPositions[Math.floor(Math.random() * spawnPositions.length)];
+                  nextG.push({
+                    id: `ghost-queued-${Date.now()}-${Math.random()}`,
+                    char: nextTarget.char,
+                    shiftValue: undefined,
+                    index: nextTarget.index,
+                    row: pos.row,
+                    col: pos.col,
+                    eaten: false,
+                    dir: pos.dir,
+                  });
+                }
+                return nextG;
+              });
+
+              setEatenGhosts((prevEaten) => {
+                const nextEaten = prevEaten.includes(targetGhostAhead.index)
+                  ? prevEaten
+                  : [...prevEaten, targetGhostAhead.index];
+                const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
+                if (nextEaten.length === totalTargets) {
+                  setLevelSolved(true);
+                  pacmanSound.stopBgm();
+                  pacmanSound.playSfx('win');
+                }
+                return nextEaten;
+              });
+            }
 
             setKnightAttacking(false);
             knightAttackingRef.current = false;
@@ -1134,6 +1223,46 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                 skillActiveRef.current = false;
               }
 
+              if (isCaesar) {
+                const isCorrect = ghost.isCorrect;
+                if (isCorrect) {
+                  correctGhostEatenThisTick = true;
+                  pacmanSound.playSfx('gold');
+                  setActiveShiftValue(ghost.signedVal ?? targetShift);
+                  setLevelSolved(true);
+                  setEatenGhosts(maskedIndices);
+                  pacmanSound.stopBgm();
+                  pacmanSound.playSfx('win');
+                  setKnightAttacking(true);
+                  setTimeout(() => {
+                    setGhosts((prev) => prev.map((g) => ({ ...g, eaten: true })));
+                    setKnightAttacking(false);
+                  }, 520);
+                  return { ...ghost, dying: true };
+                } else {
+                  // Decoy / wrong candidate goblin!
+                  if (!currentIsInvulnerable && !hurtTriggered) {
+                    hurtTriggered = true;
+                    setIsScreenShaking(true);
+                    setTimeout(() => setIsScreenShaking(false), 450);
+                    const testIdx = maskedIndices[0] ?? 0;
+                    const cipherCh = levelData.ciphertext?.[testIdx] ?? '';
+                    const correctPlainCh = levelData.plaintext?.[testIdx] ?? '';
+                    const testShift = ghost.signedVal ?? -ghost.shiftValue;
+                    const wrongPlainCh = cipherCh ? caesarShiftChar(cipherCh, -testShift) : '?';
+                    const opStr = ghost.char?.startsWith('+') ? `+ ${ghost.char.slice(1)}` : `− ${ghost.char?.replace(/^[−-]/, '')}`;
+                    handleLoseHeart(
+                      `Wrong shift! '${cipherCh}' ${opStr} = '${wrongPlainCh}', which does not match '${correctPlainCh}'. Check the Decryption Guide!`
+                    );
+                  }
+                  // Despawn this wrong ghost
+                  setTimeout(() => {
+                    setGhosts((prev) => prev.map((g) => g.id === ghost.id ? { ...g, eaten: true } : g));
+                  }, 520);
+                  return { ...ghost, dying: true };
+                }
+              }
+
               if (ghost.index !== -1) {
                 // Correct ghost letter: trigger death animation then remove
                 correctGhostEatenThisTick = true;
@@ -1185,9 +1314,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   handleLoseHeart(
                     isPlayfair
                       ? `Ouch! You ate Decoy Ghost '${ghost.char}' which is not part of the correct plaintext pairs. Use the Playfair matrix!`
-                      : (isCaesar
-                        ? `Wrong shift! '${ghost.char}' does not decrypt the cipher letter '${levelData.ciphertext?.[activeSolvingIndex] ?? ''}' into a letter that fits. Compare revealed letters against their cipher letters to find the true shift!`
-                        : `Ouch! You ate Decoy Ghost '${ghost.char}' which does not belong to the target blanks. Use the Shift Clue!`)
+                      : `Ouch! You ate Decoy Ghost '${ghost.char}' which does not belong to the target blanks. Use the Shift Clue!`
                   );
                 }
 
@@ -1321,6 +1448,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     setLives(5);
     setGameOver(false);
     setLevelSolved(false);
+    setActiveShiftValue(0);
     setHasSkillCharge(false);
     setSkillActive(false);
     setSkillTimeLeft(0);
@@ -1647,7 +1775,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     <>
                       <span className="caesar-pacman-shift-label">Active Shift:</span>
                       <span className="caesar-pacman-shift-badge">
-                        {(isCaesar && currentTier !== 'easy') ? '??' : `+${targetShift}`}
+                        {activeShiftValue === 0 ? '0' : (activeShiftValue > 0 ? `+${activeShiftValue}` : `${activeShiftValue}`)}
                       </span>
                     </>
                   )}
@@ -1692,14 +1820,14 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     {(levelData.plaintext || '').split('').map((char, idx) => {
                       const mask = getMask(levelData, idx);
                       const isGhostIndex = !mask;
-                      const isEaten = eatenGhosts.includes(idx);
-                      const displayChar = mask ? char : (isGhostIndex && isEaten ? char : '_');
+                      const isSolved = isCaesar ? (levelSolved && activeShiftValue !== 0) : eatenGhosts.includes(idx);
+                      const displayChar = mask ? char : (isSolved ? char : '_');
 
                       let cellClass = "fg-letter-cell";
                       if (mask) {
                         cellClass += " correct-plain";
                       } else if (isGhostIndex) {
-                        cellClass += isEaten ? " correct-plain" : " masked";
+                        cellClass += isSolved ? " correct-plain" : " masked";
                       }
 
                       return (
@@ -1735,8 +1863,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               plaintext={levelData.plaintext || ''}
               fullMask={levelData.fullMask}
               activeIdx={activeSolvingIndex}
-              solvedCount={eatenGhosts.length}
-              totalCount={maskedIndices.length}
             />
           ) : isVigenere ? (
             <div className="vg-floating-ref-panel vg-pacman-ref-panel">

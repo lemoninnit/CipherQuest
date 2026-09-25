@@ -29,16 +29,56 @@ const RESOLVED_MS = 1600;
 const PAD5 = (n) => String(n).padStart(5, '0');
 
 const makeDecoyPairs = (correctPair, count, matrix) => {
-  const letters = matrix.flat();
-  const decoys = new Set();
+  if (!matrix || !correctPair || correctPair.length < 2) {
+    return ['AB', 'CD'].slice(0, count);
+  }
+  const [a, b] = correctPair;
+  let posA = { r: 0, c: 0 }, posB = { r: 0, c: 0 };
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (matrix[r]?.[c] === a) posA = { r, c };
+      if (matrix[r]?.[c] === b) posB = { r, c };
+    }
+  }
 
-  while (decoys.size < count) {
+  const decoys = new Set();
+  
+  // 1. Inverted pair
+  if (b !== a) decoys.add(`${b}${a}`);
+  
+  // 2. Offsets around position A and B in 5x5 grid (±1, ±2)
+  const offsets = [
+    [0, 1], [0, -1], [1, 0], [-1, 0],
+    [1, 1], [1, -1], [-1, 1], [-1, -1],
+    [0, 2], [0, -2], [2, 0], [-2, 0]
+  ];
+  
+  for (const [dr, dc] of offsets) {
+    const nearA = matrix[(posA.r + dr + 5) % 5]?.[(posA.c + dc + 5) % 5];
+    const nearB = matrix[(posB.r + dr + 5) % 5]?.[(posB.c + dc + 5) % 5];
+    if (nearA && nearB) {
+      if (nearA !== b) decoys.add(`${nearA}${b}`);
+      if (nearB !== a) decoys.add(`${a}${nearB}`);
+      if (nearA !== nearB) decoys.add(`${nearA}${nearB}`);
+    }
+    if (decoys.size >= count + 6) break;
+  }
+  
+  decoys.delete(correctPair);
+  const candidateArray = Array.from(decoys).filter(p => p !== correctPair);
+  if (candidateArray.length >= count) {
+    return candidateArray.sort(() => Math.random() - 0.5).slice(0, count);
+  }
+  
+  // Fallback if needed
+  const letters = matrix.flat();
+  while (decoys.size < count + 5) {
     const first = letters[Math.floor(Math.random() * letters.length)];
     const second = letters[Math.floor(Math.random() * letters.length)];
     if (first !== second) decoys.add(`${first}${second}`);
   }
   decoys.delete(correctPair);
-  return [...decoys].slice(0, count);
+  return Array.from(decoys).filter(p => p !== correctPair).sort(() => Math.random() - 0.5).slice(0, count);
 };
 
 export default function PlayfairSprint({
@@ -1456,8 +1496,9 @@ function CrashPanel({ message, onContinue }) {
 function useMemoLevelMeta(pairData, tier) {
   return React.useMemo(() => {
     const hintIndices = new Set();
-    if (tier === 'easy' || tier === 'medium') {
-      const numHints = tier === 'easy' ? 2 : 1;
+    const normTier = String(tier || 'easy').toLowerCase();
+    if (normTier === 'easy' || normTier === 'medium') {
+      const numHints = normTier === 'easy' ? 2 : 1;
       if (pairData.length > numHints) {
         for (let i = 0; i < numHints; i++) {
           hintIndices.add(i);

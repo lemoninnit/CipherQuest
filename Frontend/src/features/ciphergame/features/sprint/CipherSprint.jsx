@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import './CipherSprint.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
@@ -12,19 +12,16 @@ import VictoryConfetti from '../../ui/VictoryConfetti';
 import { sprintSound } from './sprintSound';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-import { buildShiftCandidates, SHIFT_CANDIDATE_COUNT } from '../../core/engine/caesar';
 const BASE_SPEED = 0.22;
 const BOOST_MULT = 1.6;
 const RUNNER_X = 14;
-const DIAMOND_HITBOX_HALF = 2.2;
+const DIAMOND_HITBOX_HALF = 3.8;
 const SLIME_HITBOX_HALF = 4.2;
-const COIN_START_X = 112;
+const SPAWN_X = 112;
 
-const ROUND_PHASES = ['briefing', 'choosing', 'locking', 'resolved'];
-void ROUND_PHASES;
-const BRIEFING_MS = 2200;
-const LOCKING_MS = 1200;
-const RESOLVED_MS = 1600;
+// Minimum horizontal gaps to prevent overlap at any speed
+const MIN_SAME_LANE_GAP = 30; // % of track width between entities in the same lane
+const MIN_ANY_LANE_GAP = 12;  // % of track width stagger across any lane
 
 const PAD5 = (n) => String(n).padStart(5, '0');
 
@@ -36,27 +33,115 @@ const caesarShiftChar = (char, shift) => {
   return char;
 };
 
-const getRandomDecoys = (correctChar, count) => {
-  const pool = ALPHABET.filter((c) => c !== correctChar);
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+const normalizeShift = (shift = 0) => ((shift % 26) + 26) % 26;
+const formatShift = (shift) => (normalizeShift(shift) === 0 ? '0' : `+${normalizeShift(shift)}`);
+
+const getMask = (levelData, idx) => {
+  if (!levelData) return true;
+  if (levelData.fullMask && levelData.fullMask[idx] !== undefined) {
+    return levelData.fullMask[idx];
+  }
+  let wordStart = 0;
+  const words = (levelData.plaintext || '').split(' ');
+  for (let w = 0; w < words.length; w++) {
+    const word = words[w];
+    if (idx >= wordStart && idx < wordStart + word.length) {
+      return levelData.masks?.[w]?.[idx - wordStart] ?? true;
+    }
+    wordStart += word.length + 1;
+  }
+  return true;
 };
-void getRandomDecoys; // retained for potential non-shift modes
 
 /**
- * Shift Gate check: a picked gate label like "−5" is correct if decrypting the
- * cipher letter with shift 5 yields the target plaintext letter.
+ * Returns lanes where the nearest existing entity is at least minGap behind spawnX.
  */
-const pickedCharMatchesShift = (pickedLabel, cipherCh, targetChar) => {
-  if (!pickedLabel || !cipherCh || !targetChar) return false;
-  const match = String(pickedLabel).match(/-?\s*−?\s*(\d+)/);
-  if (!match) return false;
-  const shift = parseInt(match[1], 10);
-  if (!Number.isFinite(shift) || shift <= 0 || shift > 25) return false;
-  const code = (cipherCh || '').charCodeAt(0);
-  if (code < 65 || code > 90) return false;
-  const decrypted = String.fromCharCode((((code - 65 - shift) % 26) + 26) % 26 + 65);
-  return decrypted === targetChar;
+const getAvailableLanes = (existingCoins, existingSlimes, minGap = MIN_SAME_LANE_GAP, spawnX = SPAWN_X) => {
+  const all = [...existingCoins, ...existingSlimes];
+  const lanes = [0, 1, 2];
+  return lanes.filter((lane) => {
+    const laneEntities = all.filter((e) => e.lane === lane);
+    if (laneEntities.length === 0) return true;
+    const maxLaneX = Math.max(...laneEntities.map((e) => e.x));
+    return spawnX - maxLaneX >= minGap;
+  });
+};
+
+/**
+ * Creates a diamond with a modifier value clustered around the remaining distance.
+ */
+const createRandomDiamond = (currentShift, target, existingCoins, lane = 0, startX = SPAWN_X, tier = 'easy') => {
+  const normTier = String(tier || 'easy').toLowerCase();
+  const diffNorm = normalizeShift(target - currentShift);
+  const signedDist = diffNorm > 13 ? diffNorm - 26 : diffNorm;
+  
+  const maxLimit = normTier === 'easy' ? 7 : normTier === 'medium' ? 14 : 24;
+  const radius = normTier === 'easy' ? 4 : normTier === 'medium' ? 5 : 6;
+  
+  const activeValues = existingCoins.map((c) => c.value);
+  const pool = new Set();
+  
+  // 1. Direct solver if within limit and non-zero
+  if (signedDist !== 0 && Math.abs(signedDist) <= maxLimit) {
+    pool.add(signedDist);
+  }
+  
+  // 2. Two-step decomposition
+  if (signedDist !== 0) {
+    const p1 = Math.trunc(signedDist / 2);
+    const p2 = signedDist - p1;
+    if (p1 !== 0 && Math.abs(p1) <= maxLimit) pool.add(p1);
+    if (p2 !== 0 && Math.abs(p2) <= maxLimit) pool.add(p2);
+  }
+  
+  // 3. Offset window around signedDist (or 1 if 0)
+  const center = signedDist === 0 ? 1 : signedDist;
+  const minVal = Math.max(-maxLimit, center - radius);
+  const maxVal = Math.min(maxLimit, center + radius);
+  for (let v = minVal; v <= maxVal; v++) {
+    if (v !== 0) pool.add(v);
+  }
+  
+  // 4. Ensure mixed signs
+  const hasPos = Array.from(pool).some(v => v > 0);
+  const hasNeg = Array.from(pool).some(v => v < 0);
+  if (!hasPos) {
+    for (let v = 1; v <= Math.min(3, maxLimit); v++) pool.add(v);
+  }
+  if (!hasNeg) {
+    for (let v = -1; v >= Math.max(-3, -maxLimit); v--) pool.add(v);
+  }
+
+  const allCandidates = Array.from(pool);
+  const availableCandidates = allCandidates.filter(v => !activeValues.includes(v));
+  
+  let val;
+  if (signedDist !== 0 && Math.abs(signedDist) <= maxLimit && !activeValues.includes(signedDist) && Math.random() < 0.6) {
+    val = signedDist;
+  } else if (availableCandidates.length > 0) {
+    val = availableCandidates[Math.floor(Math.random() * availableCandidates.length)];
+  } else if (allCandidates.length > 0) {
+    val = allCandidates[Math.floor(Math.random() * allCandidates.length)];
+  } else {
+    val = signedDist !== 0 ? Math.sign(signedDist) : 1;
+  }
+
+  return {
+    id: `d-${Date.now()}-${Math.random()}`,
+    lane,
+    value: val,
+    char: val > 0 ? `+${val}` : `−${Math.abs(val)}`,
+    x: startX,
+  };
+};
+
+const createRandomSlime = (lane = 0, startX = SPAWN_X) => {
+  return {
+    id: `slime-${Date.now()}-${Math.random()}`,
+    lane,
+    x: startX,
+    hit: false,
+  };
 };
 
 export default function CipherSprint({
@@ -73,29 +158,69 @@ export default function CipherSprint({
     toggleFullscreen,
   } = useFullscreen();
 
-  /* ───────────────────────────────────────────────
-     Static / memoised level data
-     ─────────────────────────────────────────────── */
-  const { hintIndices, maskedIndices, words } = useMemoLevelMeta(levelData, tier);
+  const targetShift = normalizeShift(
+    levelData.targetShifts?.[0] ?? levelData.shift ?? levelData.targetShift ?? 0
+  );
 
   /* ───────────────────────────────────────────────
-     Game state (visual — allowed to trigger renders)
+     Pre-revealed letter hints (scale with word length)
      ─────────────────────────────────────────────── */
-  const [sprintStep, setSprintStep] = useState('ready');
-  const [roundPhase, setRoundPhase] = useState('briefing');
-  const [currentMaskIndex, setCurrentMaskIndex] = useState(0);
+  const hintIndices = useMemo(() => {
+    const hints = new Set();
+    const normTier = String(tier || levelData?.difficulty || 'easy').toLowerCase();
+    if (normTier === 'hard') {
+      return hints; // Hard: reveal nothing
+    }
+    const plain = levelData?.plaintext || '';
+    const nonSpaceIndices = [];
+    for (let i = 0; i < plain.length; i++) {
+      if (plain[i] !== ' ') nonSpaceIndices.push(i);
+    }
+    if (nonSpaceIndices.length === 0) return hints;
+
+    // Check masks from levelData
+    for (const idx of nonSpaceIndices) {
+      if (getMask(levelData, idx)) {
+        hints.add(idx);
+      }
+    }
+
+    const minHints = 1;
+    const maxHints = Math.max(1, Math.floor(nonSpaceIndices.length / 2));
+
+    if (hints.size > maxHints) {
+      const trimmed = Array.from(hints).slice(0, maxHints);
+      return new Set(trimmed);
+    }
+
+    if (hints.size < minHints) {
+      const seed = (levelData?.level || 1) % nonSpaceIndices.length;
+      hints.add(nonSpaceIndices[seed]);
+    }
+
+    return hints;
+  }, [levelData, tier]);
+
+  /* Ciphertext letters set for highlighting in Decryption Guide */
+  const cipherLettersSet = useMemo(() => {
+    const set = new Set();
+    const cipher = levelData?.ciphertext || '';
+    for (let i = 0; i < cipher.length; i++) {
+      if (cipher[i] >= 'A' && cipher[i] <= 'Z') {
+        set.add(cipher[i]);
+      }
+    }
+    return set;
+  }, [levelData]);
+
+  /* ───────────────────────────────────────────────
+     Game state (visual)
+     ─────────────────────────────────────────────── */
+  const [sprintStep, setSprintStep] = useState('ready'); // 'ready' | 'running' | 'finished' | 'gameover'
+  const [activeShift, setActiveShift] = useState(0);
   const [runnerLane, setRunnerLane] = useState(1);
   const [coins, setCoins] = useState([]);
   const [slimes, setSlimes] = useState([]);
-  const [pickedChar, setPickedChar] = useState(null);
-  const [pickedLane, setPickedLane] = useState(null);
-  const [correctLane, setCorrectLane] = useState(1);
-  const [attempts, setAttempts] = useState([]);
-  const [crashMessage] = useState('');
-  const [resolvedStatus, setResolvedStatus] = useState(null); // 'correct' | 'wrong' | 'missed'
-  const [resolvedBannerText, setResolvedBannerText] = useState('');
-  const [solvedLetters, setSolvedLetters] = useState({});
-  const [isCrashing, setIsCrashing] = useState(false);
   const [lives, setLives] = useState(5);
   const [laneChangeEffect, setLaneChangeEffect] = useState(null);
   const [speedLines, setSpeedLines] = useState(() => {
@@ -111,7 +236,6 @@ export default function CipherSprint({
     }
     return list;
   });
-  const [firstTryForCurrent, setFirstTryForCurrent] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isOperationLoading, setIsOperationLoading] = useState(false);
@@ -127,25 +251,26 @@ export default function CipherSprint({
   const [isMuted, setIsMuted] = useState(false);
 
   /* ───────────────────────────────────────────────
-     Refs — game truth inside RAF loop, timeout tracking
+     Refs — game truth inside RAF loop
      ─────────────────────────────────────────────── */
   const rafRef = useRef(0);
   const prevLaneRef = useRef(1);
   const isBoostingRef = useRef(false);
   const runnerLaneRef = useRef(1);
   const isPausedRef = useRef(false);
-  const isCrashingRef = useRef(false);
   const isMenuOpenRef = useRef(false);
   const sprintStepRef = useRef('ready');
-  const roundPhaseRef = useRef('briefing');
-  const currentMaskIndexRef = useRef(0);
-  const pickedCharRef = useRef(null);
-  const pickedLaneRef = useRef(null);
-  const correctLaneRef = useRef(1);
+  const activeShiftRef = useRef(0);
+  const targetShiftRef = useRef(targetShift);
+  const coinsRef = useRef([]);
   const slimesRef = useRef([]);
-  const attemptsRef = useRef([]);
-  const hasPickedRef = useRef(false);
   const prevLevelIdRef = useRef(null);
+
+  /* Spawner timers */
+  const lastDiamondSpawnTimeRef = useRef(0);
+  const lastSlimeSpawnTimeRef = useRef(0);
+  const nextDiamondDelayRef = useRef(1500);
+  const nextSlimeDelayRef = useRef(2500);
 
   /* Timer tracking refs */
   const feedbackTimeoutRef = useRef(0);
@@ -156,109 +281,21 @@ export default function CipherSprint({
   const slimeIntervalRef = useRef(0);
   const badgePopTimeoutRef = useRef(0);
 
-  /* Pausable phase timer refs */
-  const phaseTimeoutRef = useRef(null);
-  const phaseStartTimeRef = useRef(0);
-  const phaseRemainingMsRef = useRef(0);
-  const phaseDurationRef = useRef(BRIEFING_MS);
-  const phaseCallbackRef = useRef(null);
-
-  /* Forward refs for phase transition functions & physics callbacks */
-  const startBriefingPhaseRef = useRef(null);
-  const startChoosingPhaseRef = useRef(null);
-  const resolveChoiceRef = useRef(null);
-  const triggerShakeRef = useRef(null);
-  const showFeedbackRef = useRef(null);
-
-  /* Sync refs whenever state changes — RAF loop reads refs only */
+  /* Sync refs whenever state changes */
   useEffect(() => { isBoostingRef.current = isBoosting; }, [isBoosting]);
   useEffect(() => { runnerLaneRef.current = runnerLane; }, [runnerLane]);
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
-  useEffect(() => { isCrashingRef.current = isCrashing; }, [isCrashing]);
   useEffect(() => { isMenuOpenRef.current = isMenuOpen; }, [isMenuOpen]);
   useEffect(() => { sprintStepRef.current = sprintStep; }, [sprintStep]);
-  useEffect(() => { roundPhaseRef.current = roundPhase; }, [roundPhase]);
-  useEffect(() => { currentMaskIndexRef.current = currentMaskIndex; }, [currentMaskIndex]);
-  useEffect(() => { pickedCharRef.current = pickedChar; }, [pickedChar]);
-  useEffect(() => { pickedLaneRef.current = pickedLane; }, [pickedLane]);
-  useEffect(() => { correctLaneRef.current = correctLane; }, [correctLane]);
-  useEffect(() => { attemptsRef.current = attempts; }, [attempts]);
+  useEffect(() => { activeShiftRef.current = activeShift; }, [activeShift]);
+  useEffect(() => { targetShiftRef.current = targetShift; }, [targetShift]);
+  useEffect(() => { coinsRef.current = coins; }, [coins]);
   useEffect(() => { slimesRef.current = slimes; }, [slimes]);
-
-  /* ───────────────────────────────────────────────
-     Derived (re-compute each render, cheap)
-     ─────────────────────────────────────────────── */
-  const currentIdx = maskedIndices[currentMaskIndex] ?? 0;
-  const currentBatonLetter = levelData.ciphertext[currentIdx] ?? '';
-  const currentTargetChar = levelData.plaintext[currentIdx] ?? '';
-
-  let segmentIdx = 0;
-  let accumulated = 0;
-  for (let i = 0; i < words.length; i++) {
-    const segEnd = accumulated + words[i].length + (i > 0 ? 1 : 0);
-    if (currentIdx < segEnd) { segmentIdx = i; break; }
-    accumulated = segEnd;
-  }
-  const currentShiftKey = (levelData.targetShifts && levelData.targetShifts[segmentIdx % levelData.targetShifts.length]) ?? 0;
 
   const orangeSlimeSrc = `/assets/sprint/obstacle/obstacle1/SlimeOrange_${PAD5(slimeFrame)}.png`;
   const basicSlimeSrc = `/assets/sprint/obstacle/obstacle2/SlimeBasic_${PAD5(slimeFrame)}.png`;
 
-  /* ───────────────────────────────────────────────
-     Pausable Phase Timer Helpers
-     ─────────────────────────────────────────────── */
-  const clearPhaseTimer = useCallback(() => {
-    if (phaseTimeoutRef.current) window.clearTimeout(phaseTimeoutRef.current);
-    phaseTimeoutRef.current = null;
-    phaseCallbackRef.current = null;
-    phaseRemainingMsRef.current = 0;
-    phaseStartTimeRef.current = 0;
-  }, []);
-
-  const startPhaseTimer = useCallback((callback, durationMs) => {
-    if (phaseTimeoutRef.current) window.clearTimeout(phaseTimeoutRef.current);
-    phaseStartTimeRef.current = Date.now();
-    phaseRemainingMsRef.current = durationMs;
-    phaseDurationRef.current = durationMs;
-    phaseCallbackRef.current = callback;
-    phaseTimeoutRef.current = window.setTimeout(() => {
-      phaseTimeoutRef.current = null;
-      callback();
-    }, durationMs);
-  }, []);
-
-  const pausePhaseTimer = useCallback(() => {
-    if (phaseTimeoutRef.current) {
-      window.clearTimeout(phaseTimeoutRef.current);
-      phaseTimeoutRef.current = null;
-      const elapsed = Date.now() - phaseStartTimeRef.current;
-      phaseRemainingMsRef.current = Math.max(0, phaseRemainingMsRef.current - elapsed);
-    }
-  }, []);
-
-  const resumePhaseTimer = useCallback(() => {
-    if (phaseRemainingMsRef.current > 0 && phaseCallbackRef.current) {
-      phaseStartTimeRef.current = Date.now();
-      const remaining = phaseRemainingMsRef.current;
-      phaseTimeoutRef.current = window.setTimeout(() => {
-        phaseTimeoutRef.current = null;
-        if (phaseCallbackRef.current) phaseCallbackRef.current();
-      }, remaining);
-    }
-  }, []);
-
-  /* Freeze/resume phase timers on pause */
-  useEffect(() => {
-    if (isPaused || isMenuOpen) {
-      pausePhaseTimer();
-    } else if (sprintStep === 'running') {
-      resumePhaseTimer();
-    }
-  }, [isPaused, isMenuOpen, sprintStep, pausePhaseTimer, resumePhaseTimer]);
-
-  /* ───────────────────────────────────────────────
-     Animation frame intervals (slime / plants)
-     ─────────────────────────────────────────────── */
+  /* Animation frame intervals (slime) */
   useEffect(() => {
     if (isPausedRef.current || sprintStepRef.current !== 'running') return;
     slimeIntervalRef.current = window.setInterval(() => {
@@ -267,11 +304,7 @@ export default function CipherSprint({
     return () => window.clearInterval(slimeIntervalRef.current);
   }, [isPaused, sprintStep]);
 
-
-
-  /* ───────────────────────────────────────────────
-     Init speed lines once
-     ─────────────────────────────────────────────── */
+  /* Init speed lines once */
   useEffect(() => {
     const list = [];
     for (let i = 0; i < 22; i++) {
@@ -286,23 +319,17 @@ export default function CipherSprint({
     setSpeedLines(list);
   }, []);
 
-  /* ───────────────────────────────────────────────
-     FX helpers with proper cleanup tracking
-     ─────────────────────────────────────────────── */
+  /* FX helpers */
   function clearAllFXTimeouts() {
     if (feedbackTimeoutRef.current) window.clearTimeout(feedbackTimeoutRef.current);
-    if (spinTimeoutRef.current)     window.clearTimeout(spinTimeoutRef.current);
-    if (boostTimeoutRef.current)    window.clearTimeout(boostTimeoutRef.current);
-    if (shakeTimeoutRef.current)    window.clearTimeout(shakeTimeoutRef.current);
+    if (spinTimeoutRef.current) window.clearTimeout(spinTimeoutRef.current);
+    if (boostTimeoutRef.current) window.clearTimeout(boostTimeoutRef.current);
+    if (shakeTimeoutRef.current) window.clearTimeout(shakeTimeoutRef.current);
     if (laneTiltTimeoutRef.current) window.clearTimeout(laneTiltTimeoutRef.current);
-    if (phaseTimeoutRef.current)    window.clearTimeout(phaseTimeoutRef.current);
     if (badgePopTimeoutRef.current) window.clearTimeout(badgePopTimeoutRef.current);
     feedbackTimeoutRef.current = spinTimeoutRef.current = boostTimeoutRef.current = 0;
     shakeTimeoutRef.current = laneTiltTimeoutRef.current = badgePopTimeoutRef.current = 0;
     setIsBadgePopping(false);
-    phaseTimeoutRef.current = null;
-    phaseCallbackRef.current = null;
-    phaseRemainingMsRef.current = 0;
   }
 
   const showFeedback = useCallback((text, color, y, ms = 900) => {
@@ -336,245 +363,69 @@ export default function CipherSprint({
   }, []);
 
   /* ───────────────────────────────────────────────
-     Phase 1: Briefing
-     ─────────────────────────────────────────────── */
-  const startBriefingPhase = useCallback(() => {
-    clearPhaseTimer();
-    setRoundPhase('briefing');
-    roundPhaseRef.current = 'briefing';
-    hasPickedRef.current = false;
-    setPickedChar(null);
-    pickedCharRef.current = null;
-    setPickedLane(null);
-    pickedLaneRef.current = null;
-    setResolvedStatus(null);
-    setResolvedBannerText('');
-    // Existing coins and slimes keep scrolling uninterrupted and exit off-screen left naturally
-
-    startPhaseTimer(() => {
-      if (startChoosingPhaseRef.current) startChoosingPhaseRef.current();
-    }, BRIEFING_MS);
-  }, [clearPhaseTimer, startPhaseTimer]);
-
-  /* ───────────────────────────────────────────────
-     Phase 2: Choosing
-     ─────────────────────────────────────────────── */
-  const startChoosingPhase = useCallback(() => {
-    clearPhaseTimer();
-    setRoundPhase('choosing');
-    roundPhaseRef.current = 'choosing';
-    hasPickedRef.current = false;
-
-    // Randomize correct lane per round
-    const randLane = Math.floor(Math.random() * 3);
-    correctLaneRef.current = randLane;
-    setCorrectLane(randLane);
-
-    const tempIdx = maskedIndices[currentMaskIndexRef.current] ?? 0;
-    const targetChar = currentTargetChar || (levelData.plaintext[tempIdx] ?? '');
-
-    // ── Caesar Shift Gates ──
-    // Gates carry CANDIDATE SHIFT VALUES instead of plaintext letters. The gate
-    // whose shift correctly decrypts the current cipher letter is the correct one;
-    // near-miss shifts (±1/±2 on med/hard) act as decoys. The player must derive
-    // the shift themselves from the revealed letters, then steer into the gate.
-    // Only 3 lanes exist, so never spawn more than 3 gates.
-    const candidateCount = Math.min(SHIFT_CANDIDATE_COUNT[tier] || 3, 3);
-    const candidates = buildShiftCandidates(currentShiftKey, tier, candidateCount);
-    const otherLanes = [0, 1, 2].filter((l) => l !== randLane);
-
-    const startX = COIN_START_X;
-    const newCoins = candidates.map((cand, ci) => ({
-      id: `c${ci + 1}-${Date.now()}`,
-      lane: cand.isCorrect ? randLane : otherLanes[ci % otherLanes.length],
-      char: `−${cand.shiftValue}`,
-      shiftValue: cand.shiftValue,
-      x: startX,
-      isCorrect: cand.isCorrect,
-      picked: false,
-    }));
-    setCoins((prev) => [...prev.filter((c) => c.x > -15), ...newCoins]);
-
-    // Spawn obstacle slimes off-screen right, staggered
-    const slimeBaseX = 118;
-    const newSlimes = [
-      { id: `slime-1-${Date.now()}`, lane: otherLanes[0], x: slimeBaseX + 28, hit: false },
-      { id: `slime-2-${Date.now()}`, lane: otherLanes[1], x: slimeBaseX + 58, hit: false },
-    ];
-    setSlimes((prev) => {
-      const combined = [...prev.filter((s) => s.x > -12), ...newSlimes];
-      slimesRef.current = combined;
-      return combined;
-    });
-  }, [clearPhaseTimer, currentShiftKey, currentTargetChar, maskedIndices, levelData.plaintext, tier]);
-
-  /* ───────────────────────────────────────────────
-     Phase 3: Resolved (immediate on diamond pick or miss)
-     ─────────────────────────────────────────────── */
-  const resolveChoice = useCallback((picked, lane, isCoinCorrect) => {
-    clearPhaseTimer();
-    setRoundPhase('resolved');
-    roundPhaseRef.current = 'resolved';
-    hasPickedRef.current = true;
-    setPickedChar(picked);
-    pickedCharRef.current = picked;
-    setPickedLane(lane);
-    pickedLaneRef.current = lane;
-
-    const tempIdx = maskedIndices[currentMaskIndexRef.current] ?? 0;
-    const cipherCh = levelData.ciphertext[tempIdx] ?? '';
-    const targetChar = currentTargetChar || (levelData.plaintext[tempIdx] ?? '');
-    // Shift Gates: correctness = the picked gate's shift decrypts the cipher
-    // letter into the target plaintext letter (coin.isCorrect already encodes
-    // this, but re-verify against the letters for safety).
-    const isCorrect = isCoinCorrect === true || (picked !== null && pickedCharMatchesShift(picked, cipherCh, targetChar));
-
-    setAttempts((prev) => [
-      ...prev,
-      {
-        index: tempIdx,
-        cipherChar: cipherCh,
-        keyCollected: picked || 'Missed',
-        correct: isCorrect,
-        firstTry: firstTryForCurrent,
-      },
-    ]);
-
-    if (isCorrect) {
-      setResolvedStatus('correct');
-      sprintSound.playSfx('collect');
-      triggerSpin();
-      triggerBoost(1200);
-      showFeedback('⚡ Correct Letter! BOOST!', '#22c55e', 10, 1100);
-      // Fill into top word panel visibly in green
-      setSolvedLetters((prev) => ({ ...prev, [tempIdx]: targetChar }));
-
-      const nextMaskIdx = currentMaskIndexRef.current + 1;
-      const nextIdx = maskedIndices[nextMaskIdx];
-      const nextCipher = nextIdx !== undefined ? levelData.ciphertext[nextIdx] : null;
-      const bannerMsg = nextCipher
-        ? `Direct hit! Now decode '${nextCipher}'!`
-        : `Direct hit! Word Decrypted!`;
-      setResolvedBannerText(bannerMsg);
-
-      startPhaseTimer(() => {
-        const nextIndex = currentMaskIndexRef.current + 1;
-        if (nextIndex < maskedIndices.length) {
-          setCurrentMaskIndex(nextIndex);
-          currentMaskIndexRef.current = nextIndex;
-          setFirstTryForCurrent(true);
-          if (startBriefingPhaseRef.current) startBriefingPhaseRef.current();
-        } else {
-          setSprintStep('finished');
-          sprintSound.stopBgm();
-          sprintSound.playSfx('win');
-        }
-      }, RESOLVED_MS);
-    } else {
-      setResolvedStatus(picked ? 'wrong' : 'missed');
-      sprintSound.playSfx('collision');
-      triggerShake();
-      setFirstTryForCurrent(false);
-
-      // Worked answer banner (decryption direction): C − shift = P
-      const workedAnswer = `${cipherCh} − ${currentShiftKey} = ${targetChar}`;
-      setResolvedBannerText(workedAnswer);
-
-      setLives((prevLives) => {
-        const nextLives = prevLives - 1;
-        if (nextLives <= 0) {
-          startPhaseTimer(() => {
-            setSprintStep('gameover');
-            sprintSound.stopBgm();
-            sprintSound.playSfx('lose');
-          }, RESOLVED_MS);
-        } else {
-          startPhaseTimer(() => {
-            // Re-ask the same letter from briefing
-            if (startBriefingPhaseRef.current) startBriefingPhaseRef.current();
-          }, RESOLVED_MS);
-        }
-        return nextLives;
-      });
-    }
-  }, [
-    clearPhaseTimer,
-    currentShiftKey,
-    currentTargetChar,
-    firstTryForCurrent,
-    levelData.ciphertext,
-    levelData.plaintext,
-    maskedIndices,
-    startPhaseTimer,
-    triggerBoost,
-    showFeedback,
-    triggerShake,
-    triggerSpin,
-  ]);
-
-  /* Link forward refs */
-  useEffect(() => {
-    startBriefingPhaseRef.current = startBriefingPhase;
-    startChoosingPhaseRef.current = startChoosingPhase;
-    resolveChoiceRef.current = resolveChoice;
-    triggerShakeRef.current = triggerShake;
-    showFeedbackRef.current = showFeedback;
-  }, [startBriefingPhase, startChoosingPhase, resolveChoice, triggerShake, showFeedback]);
-
-  /* ───────────────────────────────────────────────
      Game flow actions
      ─────────────────────────────────────────────── */
   const handleStartSprint = () => {
     sprintSound.unlockAudio();
     sprintSound.playBgm();
     clearAllFXTimeouts();
-    setCurrentMaskIndex(0);
-    currentMaskIndexRef.current = 0;
-    hasPickedRef.current = false;
-    setAttempts([]);
+    setActiveShift(0);
+    activeShiftRef.current = 0;
     setLives(5);
-    setFirstTryForCurrent(true);
     setIsPaused(false);
     setIsMenuOpen(false);
     setSprintStep('running');
-    setCoins([]);
-    setSlimes([]);
-    slimesRef.current = [];
+    sprintStepRef.current = 'running';
 
-    // Initialize pre-revealed hints
-    const initialSolved = {};
-    hintIndices.forEach((idx) => {
-      initialSolved[idx] = levelData.plaintext[idx];
-    });
-    setSolvedLetters(initialSolved);
+    // Staggered initial placements with guaranteed spacing
+    const initialCoins = [];
+    const d1 = createRandomDiamond(0, targetShiftRef.current, initialCoins, 0, 75);
+    initialCoins.push(d1);
+    const d2 = createRandomDiamond(0, targetShiftRef.current, initialCoins, 1, 105);
+    initialCoins.push(d2);
 
-    startBriefingPhase();
+    const initialSlimes = [createRandomSlime(2, 135)];
+
+    setCoins(initialCoins);
+    coinsRef.current = initialCoins;
+    setSlimes(initialSlimes);
+    slimesRef.current = initialSlimes;
+
+    lastDiamondSpawnTimeRef.current = performance.now();
+    lastSlimeSpawnTimeRef.current = performance.now();
+    nextDiamondDelayRef.current = 1500 + Math.random() * 800;
+    nextSlimeDelayRef.current = 2600 + Math.random() * 1200;
   };
 
   const handleRetryFromCheckpoint = () => {
     sprintSound.unlockAudio();
     sprintSound.playBgm();
     clearAllFXTimeouts();
+    setActiveShift(0);
+    activeShiftRef.current = 0;
     setLives(5);
-    setFirstTryForCurrent(true);
-    setIsCrashing(false);
     setIsPaused(false);
     setIsMenuOpen(false);
-    hasPickedRef.current = false;
-    setCoins([]);
-    setSlimes([]);
-    slimesRef.current = [];
     setSprintStep('running');
-    startBriefingPhase();
-  };
+    sprintStepRef.current = 'running';
 
-  const handleContinueAfterCrash = () => {
-    clearAllFXTimeouts();
-    setIsCrashing(false);
-    setSprintStep('running');
-    setRoundPhase('briefing');
-    roundPhaseRef.current = 'briefing';
-    startBriefingPhase();
+    const initialCoins = [];
+    const d1 = createRandomDiamond(0, targetShiftRef.current, initialCoins, 0, 75, tier);
+    initialCoins.push(d1);
+    const d2 = createRandomDiamond(0, targetShiftRef.current, initialCoins, 1, 105, tier);
+    initialCoins.push(d2);
+
+    const initialSlimes = [createRandomSlime(2, 135)];
+
+    setCoins(initialCoins);
+    coinsRef.current = initialCoins;
+    setSlimes(initialSlimes);
+    slimesRef.current = initialSlimes;
+
+    lastDiamondSpawnTimeRef.current = performance.now();
+    lastSlimeSpawnTimeRef.current = performance.now();
+    nextDiamondDelayRef.current = 1500 + Math.random() * 800;
+    nextSlimeDelayRef.current = 2600 + Math.random() * 1200;
   };
 
   /* ───────────────────────────────────────────────
@@ -582,9 +433,13 @@ export default function CipherSprint({
      ─────────────────────────────────────────────── */
   useEffect(() => {
     const handleFsKey = (e) => {
-      if ((e.key === 'f' || e.key === 'F') &&
-          !e.ctrlKey && !e.metaKey && !e.altKey &&
-          !(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'))) {
+      if (
+        (e.key === 'f' || e.key === 'F') &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'))
+      ) {
         toggleFullscreen();
       }
     };
@@ -593,10 +448,10 @@ export default function CipherSprint({
   }, [toggleFullscreen]);
 
   /* ───────────────────────────────────────────────
-     Keyboard steering (free across all round phases)
+     Keyboard steering
      ─────────────────────────────────────────────── */
   useEffect(() => {
-    if (sprintStep !== 'running' || isCrashing) return undefined;
+    if (sprintStep !== 'running') return undefined;
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' || e.code === 'Escape') {
@@ -620,10 +475,10 @@ export default function CipherSprint({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sprintStep, isCrashing, isMenuOpen]);
+  }, [sprintStep, isMenuOpen]);
 
   /* ───────────────────────────────────────────────
-     Lane-change tilt visual (tracks runnerLane)
+     Lane-change tilt visual
      ─────────────────────────────────────────────── */
   useEffect(() => {
     if (runnerLane === prevLaneRef.current) return undefined;
@@ -635,7 +490,7 @@ export default function CipherSprint({
     prevLaneRef.current = runnerLane;
     if (laneTiltTimeoutRef.current) window.clearTimeout(laneTiltTimeoutRef.current);
     laneTiltTimeoutRef.current = window.setTimeout(() => setLaneChangeEffect(null), 180);
-    return () => { /* timer handled above */ };
+    return () => {};
   }, [runnerLane]);
 
   /* ───────────────────────────────────────────────
@@ -643,16 +498,21 @@ export default function CipherSprint({
      ─────────────────────────────────────────────── */
   useEffect(() => {
     if (sprintStep !== 'running') return undefined;
-    if (isCrashing || isPaused || isMenuOpen || showExplanation) return undefined;
+    if (isPaused || isMenuOpen || showExplanation) return undefined;
 
     const updatePhysics = () => {
-      if (isPausedRef.current || isCrashingRef.current || isMenuOpenRef.current || sprintStepRef.current !== 'running') {
+      if (
+        isPausedRef.current ||
+        isMenuOpenRef.current ||
+        sprintStepRef.current !== 'running'
+      ) {
         return;
       }
 
       const speed = isBoostingRef.current ? BASE_SPEED * BOOST_MULT : BASE_SPEED;
       const lane = runnerLaneRef.current;
-      const phase = roundPhaseRef.current;
+      const target = targetShiftRef.current;
+      const now = performance.now();
 
       /* Speed lines */
       setSpeedLines((prevLines) =>
@@ -664,118 +524,153 @@ export default function CipherSprint({
         })
       );
 
-      /* Diamonds continuous movement + collision in choosing phase */
-      setCoins((prevCoins) => {
-        if (prevCoins.length === 0) return prevCoins;
+      /* 1. Diamonds movement & immediate consumption on collision */
+      let collectedDiamond = null;
+      const currentCoins = coinsRef.current;
+      const nextCoins = [];
 
-        let changed = false;
-        let pickedInFrame = null;
-        let allExited = true;
+      for (let i = 0; i < currentCoins.length; i++) {
+        const coin = currentCoins[i];
+        const nextX = coin.x - speed;
 
-        const updated = [];
-        for (let i = 0; i < prevCoins.length; i++) {
-          const coin = prevCoins[i];
-          const nextX = coin.x - speed;
-
-          // Despawn diamonds that scroll off-screen left (below x < -15)
-          if (nextX < -15) {
-            changed = true;
-            continue;
-          }
-
-          if (nextX >= -10) {
-            allExited = false;
-          }
-
-          // Check symmetric collision ONLY in 'choosing' phase and if not picked yet
-          if (
-            phase === 'choosing' &&
-            !pickedInFrame &&
-            !hasPickedRef.current &&
-            Math.abs(nextX - RUNNER_X) <= DIAMOND_HITBOX_HALF &&
-            coin.lane === lane
-          ) {
-            hasPickedRef.current = true;
-            pickedInFrame = coin;
-            changed = true;
-            // Picked diamond stays on track, turns green/red via coin.picked; does NOT vanish
-            updated.push({ ...coin, x: nextX, picked: true });
-            continue;
-          }
-
-          if (nextX !== coin.x) changed = true;
-          updated.push({ ...coin, x: nextX });
+        if (nextX < -15) {
+          continue; // Despawn off-screen left
         }
 
-        if (pickedInFrame) {
-          // Trigger badge pickup pop FX
-          if (badgePopTimeoutRef.current) window.clearTimeout(badgePopTimeoutRef.current);
-          setIsBadgePopping(true);
-          badgePopTimeoutRef.current = window.setTimeout(() => setIsBadgePopping(false), 350);
-
-          if (resolveChoiceRef.current) {
-            resolveChoiceRef.current(pickedInFrame.char, pickedInFrame.lane, pickedInFrame.isCorrect);
-          }
-          return updated;
+        if (
+          !collectedDiamond &&
+          Math.abs(nextX - RUNNER_X) <= DIAMOND_HITBOX_HALF &&
+          coin.lane === lane
+        ) {
+          collectedDiamond = coin;
+          // Consumed immediately: not pushed into nextCoins
+          continue;
         }
 
-        // If all three exited off-screen left with nothing picked in choosing phase -> miss
-        if (allExited && prevCoins.length > 0 && phase === 'choosing' && !hasPickedRef.current) {
-          hasPickedRef.current = true;
-          if (resolveChoiceRef.current) {
-            resolveChoiceRef.current(null, null, false);
-          }
-          return updated;
+        nextCoins.push({ ...coin, x: nextX });
+      }
+
+      coinsRef.current = nextCoins;
+      setCoins(nextCoins);
+
+      if (collectedDiamond) {
+        if (badgePopTimeoutRef.current) window.clearTimeout(badgePopTimeoutRef.current);
+        setIsBadgePopping(true);
+        badgePopTimeoutRef.current = window.setTimeout(() => setIsBadgePopping(false), 350);
+        triggerSpin();
+        sprintSound.playSfx('collect');
+
+        const nextShift = normalizeShift(activeShiftRef.current + collectedDiamond.value);
+        activeShiftRef.current = nextShift;
+        setActiveShift(nextShift);
+
+        if (nextShift === target) {
+          sprintStepRef.current = 'finished';
+          setSprintStep('finished');
+          sprintSound.stopBgm();
+          sprintSound.playSfx('win');
+          triggerBoost(2000);
+          showFeedback('✨ Shift Matched! Target Decrypted!', '#22c55e', 15, 1500);
+          return;
+        } else {
+          showFeedback(
+            `${collectedDiamond.char} Shift → Active: ${formatShift(nextShift)}`,
+            '#00e5ff',
+            20 + collectedDiamond.lane * 30 - 8,
+            900
+          );
+        }
+      }
+
+      /* 2. Obstacle Slimes movement & collision */
+      const currentSlimes = slimesRef.current;
+      const nextSlimes = [];
+
+      for (let i = 0; i < currentSlimes.length; i++) {
+        const slime = currentSlimes[i];
+        const nextX = slime.x - speed;
+
+        if (nextX < -15) {
+          continue;
         }
 
-        return changed ? updated : prevCoins;
-      });
-
-      /* Obstacle Slimes movement & collision */
-      if (sprintStepRef.current === 'running' && slimesRef.current.length > 0) {
-        setSlimes((prevSlimes) => {
-          let changed = false;
-          const updated = [];
-          for (let i = 0; i < prevSlimes.length; i++) {
-            const slime = prevSlimes[i];
-            const nextX = slime.x - speed;
-
-            // Despawn below about x < -12
-            if (nextX < -12) {
-              changed = true;
-              continue;
+        if (
+          !slime.hit &&
+          Math.abs(nextX - RUNNER_X) <= SLIME_HITBOX_HALF &&
+          slime.lane === lane
+        ) {
+          triggerShake();
+          sprintSound.playSfx('collision');
+          showFeedback('-1 Life! Slime Collision!', '#ef4444', 20 + slime.lane * 30 - 8, 900);
+          setLives((l) => {
+            const next = l - 1;
+            if (next <= 0) {
+              sprintStepRef.current = 'gameover';
+              setSprintStep('gameover');
+              sprintSound.stopBgm();
+              sprintSound.playSfx('lose');
             }
+            return next;
+          });
+          nextSlimes.push({ ...slime, x: nextX, hit: true });
+          continue;
+        }
 
-            if (
-              !slime.hit &&
-              Math.abs(nextX - RUNNER_X) <= SLIME_HITBOX_HALF &&
-              slime.lane === lane
-            ) {
-              changed = true;
-              if (triggerShakeRef.current) triggerShakeRef.current();
-              sprintSound.playSfx('collision');
-              setLives((l) => {
-                const next = l - 1;
-                if (next <= 0) {
-                  setSprintStep('gameover');
-                  sprintSound.stopBgm();
-                  sprintSound.playSfx('lose');
-                }
-                return next;
-              });
-              if (showFeedbackRef.current) {
-                showFeedbackRef.current('-1 Life! Slime Collision!', '#ef4444', 20 + slime.lane * 30 - 8, 900);
-              }
-              updated.push({ ...slime, x: nextX, hit: true });
-              continue;
-            }
+        nextSlimes.push({ ...slime, x: nextX });
+      }
 
-            if (nextX !== slime.x) changed = true;
-            updated.push({ ...slime, x: nextX });
+      slimesRef.current = nextSlimes;
+      setSlimes(nextSlimes);
+
+      /* 3. Enforced Gap & Staggered Spawning */
+      const allActive = [...coinsRef.current, ...slimesRef.current];
+      const maxOverallX = allActive.length > 0 ? Math.max(...allActive.map((e) => e.x)) : -999;
+
+      // Spawn diamond if interval elapsed and global stagger condition is satisfied
+      if (now - lastDiamondSpawnTimeRef.current >= nextDiamondDelayRef.current) {
+        if (SPAWN_X - maxOverallX >= MIN_ANY_LANE_GAP) {
+          const availableLanes = getAvailableLanes(
+            coinsRef.current,
+            slimesRef.current,
+            MIN_SAME_LANE_GAP,
+            SPAWN_X
+          );
+          if (availableLanes.length > 0) {
+            lastDiamondSpawnTimeRef.current = now;
+            nextDiamondDelayRef.current = 1400 + Math.random() * 1000;
+            const chosenLane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
+            const newDiamond = createRandomDiamond(
+              activeShiftRef.current,
+              targetShiftRef.current,
+              coinsRef.current,
+              chosenLane,
+              SPAWN_X,
+              tier
+            );
+            coinsRef.current = [...coinsRef.current, newDiamond];
+            setCoins(coinsRef.current);
           }
-          slimesRef.current = updated;
-          return changed ? updated : prevSlimes;
-        });
+        }
+      }
+
+      // Spawn slime if interval elapsed and global stagger condition is satisfied
+      if (now - lastSlimeSpawnTimeRef.current >= nextSlimeDelayRef.current) {
+        if (SPAWN_X - maxOverallX >= MIN_ANY_LANE_GAP) {
+          const availableLanes = getAvailableLanes(
+            coinsRef.current,
+            slimesRef.current,
+            MIN_SAME_LANE_GAP,
+            SPAWN_X
+          );
+          if (availableLanes.length > 0) {
+            lastSlimeSpawnTimeRef.current = now;
+            nextSlimeDelayRef.current = 2400 + Math.random() * 1600;
+            const chosenLane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
+            const newSlime = createRandomSlime(chosenLane, SPAWN_X);
+            slimesRef.current = [...slimesRef.current, newSlime];
+            setSlimes(slimesRef.current);
+          }
+        }
       }
 
       rafRef.current = requestAnimationFrame(updatePhysics);
@@ -787,10 +682,14 @@ export default function CipherSprint({
     };
   }, [
     sprintStep,
-    isCrashing,
     isPaused,
     isMenuOpen,
     showExplanation,
+    showFeedback,
+    triggerBoost,
+    triggerShake,
+    triggerSpin,
+    tier,
   ]);
 
   /* ───────────────────────────────────────────────
@@ -805,15 +704,12 @@ export default function CipherSprint({
 
     clearAllFXTimeouts();
     setSprintStep('ready');
-    setCurrentMaskIndex(0);
-    currentMaskIndexRef.current = 0;
-    setRoundPhase('briefing');
-    roundPhaseRef.current = 'briefing';
-    hasPickedRef.current = false;
-    setAttempts([]);
+    sprintStepRef.current = 'ready';
+    setActiveShift(0);
+    activeShiftRef.current = 0;
     setLives(5);
-    setFirstTryForCurrent(true);
     setCoins([]);
+    coinsRef.current = [];
     setSlimes([]);
     slimesRef.current = [];
     setShowExplanation(false);
@@ -821,18 +717,8 @@ export default function CipherSprint({
     setRunnerLane(1);
     prevLaneRef.current = 1;
     runnerLaneRef.current = 1;
-    setPickedChar(null);
-    pickedCharRef.current = null;
-    setPickedLane(null);
-    pickedLaneRef.current = null;
     setFeedbackText('');
-
-    const initialSolved = {};
-    hintIndices.forEach((idx) => {
-      initialSolved[idx] = levelData.plaintext[idx];
-    });
-    setSolvedLetters(initialSolved);
-  }, [levelData, hintIndices]);
+  }, [levelData]);
 
   /* ───────────────────────────────────────────────
      Audio — BGM follows the run state
@@ -845,12 +731,12 @@ export default function CipherSprint({
     }
   }, [sprintStep, isPaused, isMenuOpen, showExplanation]);
 
-  /* Unmount — hard cleanup of every tracked timer/interval */
+  /* Unmount — hard cleanup */
   useEffect(() => {
     return () => {
       clearAllFXTimeouts();
-      if (slimeIntervalRef.current)         window.clearInterval(slimeIntervalRef.current);
-      if (rafRef.current)                   window.cancelAnimationFrame(rafRef.current);
+      if (slimeIntervalRef.current) window.clearInterval(slimeIntervalRef.current);
+      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
       sprintSound.stopBgm();
     };
   }, []);
@@ -901,10 +787,12 @@ export default function CipherSprint({
      Runner animation state
      ─────────────────────────────────────────────── */
   let runnerAnim = 'idle';
-  if (sprintStep === 'gameover' || isCrashing) runnerAnim = 'death';
+  if (sprintStep === 'gameover') runnerAnim = 'death';
   else if (isPaused) runnerAnim = 'idle';
   else if (laneChangeEffect !== null || isBoosting) runnerAnim = 'jump';
   else if (sprintStep === 'running') runnerAnim = 'run';
+
+  const isSolved = sprintStep === 'finished' || normalizeShift(activeShift) === targetShift;
 
   /* ═══════════════════════════════════════════════
      RENDER
@@ -979,7 +867,7 @@ export default function CipherSprint({
                 <div className="cq-dossier-tag">MISSION BRIEF</div>
                 <h2 className="cq-dossier-title">Cipher Sprint Relay</h2>
                 <p className="cq-dossier-subtitle">
-                  Shift Gate relay! Derive the Caesar shift, then steer the runner through the gate carrying the correct shift value to decrypt each letter.
+                  Collect signed shift modifiers (+N / −N) to find the Caesar shift key and decrypt the word.
                 </p>
                 <hr className="cq-dossier-divider" />
                 <div className="cq-dossier-data">
@@ -993,10 +881,15 @@ export default function CipherSprint({
                   </div>
                 </div>
                 <p className="cq-dossier-how-it-works">
-                  <strong>How it works:</strong>{' '}
-                  Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Gates carry shift values — enter the gate whose shift correctly decrypts the cipher letter (cipher − shift = plain). Dodge the obstacle slimes! Wrong shift gates will cause a crash! Press <strong>F</strong> to toggle fullscreen.
+                  <strong>How it works:</strong> Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys (or click lanes) to switch lanes. Collect diamonds carrying <strong>+</strong> and <strong>−</strong> shift modifiers to adjust your Active Shift. Watch the word decrypt live! Dodge obstacle slimes — slime contact costs a life. Press <strong>F</strong> to toggle fullscreen.
                 </p>
-                <button className="cq-dossier-action-btn" onClick={() => { sprintSound.unlockAudio(); setIsOperationLoading(true); }}>
+                <button
+                  className="cq-dossier-action-btn"
+                  onClick={() => {
+                    sprintSound.unlockAudio();
+                    setIsOperationLoading(true);
+                  }}
+                >
                   Begin operation
                 </button>
               </div>
@@ -1039,7 +932,7 @@ export default function CipherSprint({
             <div
               className={`sprint-lane lane-0 ${runnerLane === 0 ? 'highlighted' : ''}`}
               onClick={() => {
-                if (sprintStep === 'running' && !isPausedRef.current && (roundPhaseRef.current === 'choosing' || roundPhaseRef.current === 'resolved')) {
+                if (sprintStep === 'running' && !isPausedRef.current) {
                   setRunnerLane(0);
                 }
               }}
@@ -1050,7 +943,7 @@ export default function CipherSprint({
             <div
               className={`sprint-lane lane-1 ${runnerLane === 1 ? 'highlighted' : ''}`}
               onClick={() => {
-                if (sprintStep === 'running' && !isPausedRef.current && (roundPhaseRef.current === 'choosing' || roundPhaseRef.current === 'resolved')) {
+                if (sprintStep === 'running' && !isPausedRef.current) {
                   setRunnerLane(1);
                 }
               }}
@@ -1061,7 +954,7 @@ export default function CipherSprint({
             <div
               className={`sprint-lane lane-2 ${runnerLane === 2 ? 'highlighted' : ''}`}
               onClick={() => {
-                if (sprintStep === 'running' && !isPausedRef.current && (roundPhaseRef.current === 'choosing' || roundPhaseRef.current === 'resolved')) {
+                if (sprintStep === 'running' && !isPausedRef.current) {
                   setRunnerLane(2);
                 }
               }}
@@ -1081,7 +974,6 @@ export default function CipherSprint({
               className={[
                 'sprint-runner-sprite',
                 `lane-${runnerLane}`,
-                isCrashing ? 'crash' : '',
                 isSpinning ? 'spin-effect' : '',
                 isBoosting ? 'boost-trail' : '',
                 laneChangeEffect || '',
@@ -1094,44 +986,35 @@ export default function CipherSprint({
                 className={[
                   'runner-baton-glow',
                   isBadgePopping ? 'badge-pickup' : '',
-                  roundPhase === 'resolved' && resolvedStatus === 'correct' ? 'badge-correct' : '',
-                  roundPhase === 'resolved' && (resolvedStatus === 'wrong' || resolvedStatus === 'missed') ? 'badge-wrong' : '',
+                  sprintStep === 'finished' ? 'badge-correct' : '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
               >
-                {sprintStep === 'finished'
-                  ? '✓'
-                  : pickedChar
-                  ? pickedChar
-                  : currentBatonLetter}
+                {sprintStep === 'finished' ? '✓' : formatShift(activeShift)}
               </div>
             </div>
 
-            {/* Answer Diamonds */}
+            {/* Modifier Diamonds */}
             {sprintStep === 'running' &&
-              coins.map((coin) => {
-                let stateClass = '';
-                // Strict rules: Only the picked diamond turns green (correct) or red (wrong).
-                // The two unpicked diamonds stay the default blue/cyan for their whole life, including after the result.
-                if (coin.picked) {
-                  stateClass = coin.isCorrect ? 'correct' : 'wrong';
-                }
-
-                return (
-                  <div
-                    key={coin.id}
-                    className={`sprint-r2-diamond-sprite lane-${coin.lane} ${stateClass}`}
-                    style={{ left: `${coin.x}%` }}
-                  >
-                    <div className="sprint-r2-diamond-inner">
-                      <span className="sprint-r2-diamond-char" style={{ fontSize: '0.92rem', letterSpacing: '0.5px' }}>{coin.char}</span>
-                    </div>
+              coins.map((coin) => (
+                <div
+                  key={coin.id}
+                  className={`sprint-r2-diamond-sprite lane-${coin.lane}`}
+                  style={{ left: `${coin.x}%` }}
+                >
+                  <div className="sprint-r2-diamond-inner">
+                    <span
+                      className="sprint-r2-diamond-char"
+                      style={{ fontSize: '0.92rem', letterSpacing: '0.5px' }}
+                    >
+                      {coin.char}
+                    </span>
                   </div>
-                );
-              })}
+                </div>
+              ))}
 
-            {/* Obstacle Slimes (pure obstacles, no letters) */}
+            {/* Obstacle Slimes */}
             {sprintStep === 'running' &&
               slimes.map((slime) => {
                 if (slime.hit) return null;
@@ -1150,115 +1033,6 @@ export default function CipherSprint({
                 );
               })}
 
-            {/* Centre-track Phase Banner & Filling Progress Bar */}
-            {sprintStep === 'running' &&
-              (roundPhase === 'briefing' ||
-                roundPhase === 'locking' ||
-                roundPhase === 'resolved') && (
-                <div
-                  key={`banner-${roundPhase}-${currentMaskIndex}-${firstTryForCurrent}`}
-                  className={[
-                    'sprint-r2-center-banner',
-                    roundPhase === 'resolved'
-                      ? resolvedStatus === 'correct'
-                        ? 'state-correct'
-                        : 'state-wrong'
-                      : roundPhase === 'locking'
-                      ? 'state-locking'
-                      : 'state-briefing',
-                  ].join(' ')}
-                >
-                  {roundPhase === 'briefing' && (
-                    <>
-                      <span className="sprint-r2-panel-tag">DECRYPTION BRIEF</span>
-                      <div className="sprint-r2-banner-title">
-                        Decode Letter '<strong>{currentBatonLetter}</strong>'
-                      </div>
-                      <div className="sprint-r2-math-equation">
-                        <span className="sprint-r2-math-chip cipher">{currentBatonLetter}</span>
-                        <span className="sprint-r2-math-op">−</span>
-                        <span className="sprint-r2-math-chip shift">{tier === 'easy' ? currentShiftKey : '?'}</span>
-                        <span className="sprint-r2-math-op">→</span>
-                        <span className="sprint-r2-math-chip target mystery">?</span>
-                      </div>
-                    </>
-                  )}
-
-                  {roundPhase === 'locking' && (
-                    <>
-                      <span className="sprint-r2-panel-tag">SELECTION LOCKED</span>
-                      <div className="sprint-r2-banner-title">
-                        Analyzing Cipher Math
-                      </div>
-                      <div className="sprint-r2-math-equation">
-                        <span className="sprint-r2-math-chip cipher">{currentBatonLetter}</span>
-                        <span className="sprint-r2-math-op">−</span>
-                        <span className="sprint-r2-math-chip shift">{pickedChar || '?'}</span>
-                        <span className="sprint-r2-math-op">=</span>
-                        <span className="sprint-r2-math-chip target locked">{currentTargetChar || '?'}</span>
-                      </div>
-                    </>
-                  )}
-
-                  {roundPhase === 'resolved' && (
-                    <>
-                      <span
-                        className={`sprint-r2-panel-tag ${
-                          resolvedStatus === 'correct' ? 'correct' : 'wrong'
-                        }`}
-                      >
-                        {resolvedStatus === 'correct'
-                          ? 'CIPHER SOLVED'
-                          : resolvedStatus === 'missed'
-                          ? 'TARGET MISSED'
-                          : 'DECRYPTION ERROR'}
-                      </span>
-                      <div className="sprint-r2-math-equation">
-                        <span className="sprint-r2-math-chip cipher">{currentBatonLetter}</span>
-                        <span className="sprint-r2-math-op">−</span>
-                        <span className="sprint-r2-math-chip shift">{currentShiftKey}</span>
-                        <span className="sprint-r2-math-op">=</span>
-                        <span
-                          className={`sprint-r2-math-chip target ${
-                            resolvedStatus === 'correct' ? 'correct' : 'answer'
-                          }`}
-                        >
-                          {currentTargetChar}
-                        </span>
-                      </div>
-                      <div
-                        className={`sprint-r2-banner-msg ${
-                          resolvedStatus === 'correct' ? 'correct' : 'wrong'
-                        }`}
-                      >
-                        {resolvedBannerText ||
-                          (resolvedStatus === 'correct'
-                            ? 'Direct Hit! Letter Decrypted!'
-                            : pickedChar
-                            ? `Gate '${pickedChar}' was the wrong shift — '${currentBatonLetter} − ${currentShiftKey} = '${currentTargetChar}'`
-                            : `Missed Gate — '${currentBatonLetter} − ${currentShiftKey} = '${currentTargetChar}'`)}
-                      </div>
-                    </>
-                  )}
-
-                  <div className="sprint-r2-progress-bar-container">
-                    <div
-                      key={`fill-${roundPhase}-${currentMaskIndex}-${firstTryForCurrent}`}
-                      className="sprint-r2-progress-fill"
-                      style={{
-                        animation: `sprintR2Progress ${
-                          roundPhase === 'briefing'
-                            ? BRIEFING_MS
-                            : roundPhase === 'locking'
-                            ? LOCKING_MS
-                            : RESOLVED_MS
-                        }ms linear forwards`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
             {/* Floating feedback */}
             {feedbackText && (
               <div
@@ -1272,89 +1046,97 @@ export default function CipherSprint({
 
           {/* ───── Floating Overlays ───── */}
 
-          {/* 1. Top-Center Floating Word Panel */}
-          <div className="sprint-r2-word-panel">
-            <div className="sprint-r2-word-title">Decrypt the word "{levelData.ciphertext}"</div>
-            <div className="sprint-r2-letters-row">
-              {levelData.plaintext.split('').map((char, idx) => {
-                const isSpace = char === ' ';
-                if (isSpace) {
-                  return <div key={idx} style={{ width: 14 }} />;
-                }
-                const isMasked = !hintIndices.has(idx);
-                const isCurrentActive = isMasked && idx === currentIdx && sprintStep === 'running';
-                const cipherCh = levelData.ciphertext[idx];
-                const isSolved = solvedLetters[idx] !== undefined;
-                const plainCh = isSolved ? solvedLetters[idx] : '_';
+          {/* 1. Top-Center Floating Word Panel (Matching Pac-Man Image 2 layout) */}
+          <div className="caesar-pacman-floating-word-panel sprint-floating-word-panel">
+            <div className="caesar-pacman-word-card">
+              <div className="caesar-pacman-word-top-row">
+                <span className="caesar-pacman-shift-label">Active Shift:</span>
+                <span className={`caesar-pacman-shift-badge ${isBadgePopping ? 'pop' : ''}`}>
+                  {formatShift(activeShift)}
+                </span>
+              </div>
 
-                return (
-                  <div
-                    key={idx}
-                    className={`sprint-r2-letter-box ${isSolved ? 'solved' : ''} ${isCurrentActive ? 'active' : ''}`}
-                  >
-                    <span className="sprint-r2-box-cipher">{cipherCh}</span>
-                    <span className="sprint-r2-box-plain">{plainCh}</span>
-                  </div>
-                );
-              })}
+              <div className="fg-letter-cells">
+                {(levelData.plaintext || '').split('').map((char, idx) => {
+                  if (char === ' ') {
+                    return <div key={idx} style={{ width: 14 }} />;
+                  }
+                  const isHint = hintIndices.has(idx);
+                  const cipherCh = levelData.ciphertext ? levelData.ciphertext[idx] : '';
+                  const isCorrect = isSolved;
+
+                  const displayChar = isHint
+                    ? char
+                    : isCorrect
+                    ? char
+                    : activeShift === 0
+                    ? '_'
+                    : caesarShiftChar(cipherCh, -activeShift);
+
+                  let cellClass = 'fg-letter-cell';
+                  if (isHint || (isCorrect && activeShift !== 0)) {
+                    cellClass += ' correct-plain';
+                  } else if (activeShift === 0) {
+                    cellClass += ' masked';
+                  } else {
+                    cellClass += ' unmatched-plain';
+                  }
+
+                  return (
+                    <div key={idx} className={cellClass}>
+                      <span className="fg-cell-ciphertext">{cipherCh}</span>
+                      <span className="fg-cell-plaintext">{displayChar}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+
             {levelData.hint && (
-              <div className="sprint-r2-word-hint">Hint "{levelData.hint}"</div>
+              <div className="caesar-pacman-clue-banner">
+                💡 Clue Context: "{levelData.hint}"
+              </div>
             )}
           </div>
 
-          {/* 2. Bottom-Left Floating Cipher Cheat Sheet (Caesar Fishing / Caesar Pac-Man) */}
-          {tier === 'easy' ? (
-            <div className="caesar-floating-cheat-sheet sprint-cheat-sheet">
-              <div className="caesar-cheat-header">
-                <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
-                <span className="caesar-cheat-badge">Shift +{currentShiftKey}</span>
+          {/* 2. Bottom-Left Floating Cipher Cheat Sheet (Matching Pac-Man Image 2 Decryption Guide) */}
+          <div className="caesar-floating-cheat-sheet sprint-cheat-sheet cqs-cheat-sheet">
+            <div className="caesar-cheat-header">
+              <span className="caesar-cheat-title">🔐 Decryption Guide</span>
+              <span className="caesar-cheat-badge">
+                Shift {formatShift(activeShift)}
+              </span>
+            </div>
+            <div className="caesar-cheat-body">
+              <div className="caesar-cheat-labels cqs-labels-three">
+                <span className="caesar-cheat-label-plain">PLAIN</span>
+                <span className="caesar-cheat-label-shift">CIPHER</span>
+                <span className="cqs-label-value">VALUE</span>
               </div>
-              <div className="caesar-cheat-body">
-                <div className="caesar-cheat-labels">
-                  <span className="caesar-cheat-label-plain">CIPHER</span>
-                  <span className="caesar-cheat-label-shift">PLAIN</span>
-                </div>
-                <div className="caesar-cheat-columns">
-                  {ALPHABET.map((ch) => {
-                    const isCurrent = ch === currentBatonLetter;
-                    return (
-                      <div
-                        key={ch}
-                        className={`caesar-cheat-col ${isCurrent ? 'highlighted' : ''}`}
-                      >
-                        <span className="caesar-cheat-plain">{ch}</span>
-                        <span className="caesar-cheat-shifted">{caesarShiftChar(ch, currentShiftKey)}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="caesar-cheat-columns">
+                {ALPHABET.map((plain, i) => {
+                  const cipher = caesarShiftChar(plain, activeShift);
+                  const isHighlighted = cipherLettersSet.has(cipher);
+                  return (
+                    <div
+                      key={plain}
+                      className={`caesar-cheat-col cqs-col-three ${isHighlighted ? 'highlighted' : ''}`}
+                    >
+                      <span className="caesar-cheat-plain">{plain}</span>
+                      <span className="caesar-cheat-shifted">{cipher}</span>
+                      <span className="cqs-cheat-value">{i + 1}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          ) : (
-            /* Med+Hard: no free cheat sheet — derive the shift from revealed letters */
-            <div className="caesar-floating-cheat-sheet sprint-cheat-sheet">
-              <div className="caesar-cheat-header">
-                <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
-                <span className="caesar-cheat-badge">Shift: ??</span>
-              </div>
-              <div className="caesar-cheat-body" style={{ padding: '10px 14px' }}>
-                <div style={{ fontSize: '0.72rem', lineHeight: 1.5, color: '#cbd5e1' }}>
-                  No shift clue on this tier. Derive it: compare a revealed letter with its
-                  cipher letter — <strong style={{ color: 'var(--neon-yellow)' }}>shift = cipher − plain</strong> (mod 26).
-                  Then steer into the gate carrying that shift!
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
 
-          {/* 3. Bottom-Right Floating Shift Key Clue Card (Caesar Pac-Man) */}
+          {/* 3. Bottom-Right Floating Shift Key Clue Card */}
           <div className="caesar-floating-basket-card sprint-clue-card">
             <div className="caesar-basket-icon">🔑</div>
-            <div className="caesar-basket-badge">{tier === 'easy' ? `+${currentShiftKey}` : '??'}</div>
-            <span className="caesar-basket-label">
-              {tier === 'easy' ? 'Caesar Shift Key Clue' : 'Shift Unknown — Derive It!'}
-            </span>
+            <div className="caesar-basket-badge">{formatShift(activeShift)}</div>
+            <span className="caesar-basket-label">Active Shift Key</span>
           </div>
 
           {/* 4. Floating Action / Outcome Panels */}
@@ -1371,12 +1153,6 @@ export default function CipherSprint({
           {sprintStep === 'gameover' && (
             <div className="caesar-floating-rule-violation sprint-floating-action-modal">
               <GameOverPanel onRetry={handleRetryFromCheckpoint} />
-            </div>
-          )}
-
-          {sprintStep === 'explanation' && (
-            <div className="caesar-floating-rule-violation sprint-floating-action-modal">
-              <CrashPanel message={crashMessage} onContinue={handleContinueAfterCrash} />
             </div>
           )}
         </div>
@@ -1397,25 +1173,19 @@ export default function CipherSprint({
 }
 
 /* ═══════════════════════════════════════════════
-   Small extracted UI components (kept pure, no logic)
+   Extracted UI components
    ═══════════════════════════════════════════════ */
 
 function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
     <div className="fg-success-panel">
       <h3 className="caesar-victory-title">STAGE SECURED!</h3>
-      <p className="caesar-victory-desc">All letters decrypted successfully.</p>
-      <button
-        className="fg-btn fg-btn-primary"
-        onClick={onVerifySubmit}
-      >
+      <p className="caesar-victory-desc">Shift key identified and word decrypted successfully.</p>
+      <button className="fg-btn fg-btn-primary" onClick={onVerifySubmit}>
         Verify & Submit
       </button>
       {onReplayNewQuestion && (
-        <button
-          className="fg-btn fg-btn-secondary"
-          onClick={onReplayNewQuestion}
-        >
+        <button className="fg-btn fg-btn-secondary" onClick={onReplayNewQuestion}>
           Play Again
         </button>
       )}
@@ -1435,7 +1205,7 @@ function GameOverPanel({ onRetry }) {
     >
       <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>SYSTEM FAILURE!</strong>
       <p style={{ fontSize: '0.88rem', lineHeight: '1.5', color: '#fda4af', margin: '12px 0' }}>
-        Runner crashed too many times and ran out of lives.
+        Runner collided with too many obstacles and ran out of lives.
       </p>
       <button
         className="fg-btn"
@@ -1454,89 +1224,4 @@ function GameOverPanel({ onRetry }) {
       </button>
     </div>
   );
-}
-
-function CrashPanel({ message, onContinue }) {
-  return (
-    <div
-      className="fg-alert-panel"
-      style={{
-        borderColor: 'var(--neon-red)',
-        background: 'rgba(255, 0, 127, 0.05)',
-        textAlign: 'center',
-      }}
-    >
-      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>CRASH! GATE STAYED SHUT</strong>
-      <p
-        style={{
-          fontSize: '0.88rem',
-          lineHeight: '1.5',
-          color: '#cbd5e1',
-          marginTop: '12px',
-          marginBottom: '12px',
-        }}
-      >
-        {message}
-      </p>
-      <button
-        className="fg-btn fg-btn-secondary"
-        onClick={onContinue}
-        style={{
-          width: '100%',
-          marginTop: '10%',
-          background: 'rgba(255,255,255,0.1)',
-          color: '#fff',
-          fontSize: '0.9rem',
-          padding: '12px',
-        }}
-      >
-        Try Checkpoint Again
-      </button>
-    </div>
-  );
-}
-
-/* ───────────────────────────────────────────────
-   Level metadata hook (memoised)
-   ─────────────────────────────────────────────── */
-function useMemoLevelMeta(levelData, tier) {
-  return React.useMemo(() => {
-    const hintIndices = new Set();
-    if (tier === 'easy' || tier === 'medium') {
-      const numHints = tier === 'easy' ? 2 : 1;
-      let hintsFound = 0;
-      for (let i = 0; i < levelData.plaintext.length; i++) {
-        if (
-          levelData.plaintext[i] !== ' ' &&
-          levelData.masks &&
-          levelData.masks[0] &&
-          levelData.masks[0][i]
-        ) {
-          hintIndices.add(i);
-          hintsFound++;
-          if (hintsFound >= numHints) break;
-        }
-      }
-      if (hintsFound < numHints) {
-        for (let i = 0; i < levelData.plaintext.length; i++) {
-          if (levelData.plaintext[i] !== ' ' && !hintIndices.has(i)) {
-            hintIndices.add(i);
-            hintsFound++;
-            if (hintsFound >= numHints) break;
-          }
-        }
-      }
-    }
-
-    const maskedIndices = [];
-    for (let i = 0; i < levelData.plaintext.length; i++) {
-      if (levelData.plaintext[i] !== ' ' && !hintIndices.has(i)) {
-        maskedIndices.push(i);
-      }
-    }
-
-    const words = levelData.plaintext.split(' ');
-
-    return { hintIndices, maskedIndices, words };
-  }, [levelData, tier]);
 }

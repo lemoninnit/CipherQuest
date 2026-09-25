@@ -25,22 +25,39 @@ const makeBubbles = () => Array.from({ length: 16 }, (_, index) => ({
 }));
 
 function makeDecoyPairs(correctPair, matrix, count) {
-  const letters = matrix.flat();
-  const decoys = new Set();
   const [a, b] = correctPair;
-
-  decoys.add(`${b}${a}`);
-  decoys.add(`${a}${letters[(letters.indexOf(b) + 1) % letters.length]}`);
-  decoys.add(`${letters[(letters.indexOf(a) + 4) % letters.length]}${b}`);
-
-  while (decoys.size < count) {
-    const first = letters[Math.floor(Math.random() * letters.length)];
-    const second = letters[Math.floor(Math.random() * letters.length)];
-    if (first !== second) decoys.add(`${first}${second}`);
+  let posA = { r: 0, c: 0 }, posB = { r: 0, c: 0 };
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      if (matrix[r][c] === a) posA = { r, c };
+      if (matrix[r][c] === b) posB = { r, c };
+    }
   }
 
+  const decoys = new Set();
+  
+  // 1. Inverted pair
+  if (b !== a) decoys.add(`${b}${a}`);
+  
+  // 2. Offsets around position A and B in 5x5 grid (±1, ±2)
+  const offsets = [
+    [0, 1], [0, -1], [1, 0], [-1, 0],
+    [1, 1], [1, -1], [-1, 1], [-1, -1],
+    [0, 2], [0, -2], [2, 0], [-2, 0]
+  ];
+  
+  for (const [dr, dc] of offsets) {
+    const nearA = matrix[(posA.r + dr + 5) % 5][(posA.c + dc + 5) % 5];
+    const nearB = matrix[(posB.r + dr + 5) % 5][(posB.c + dc + 5) % 5];
+    if (nearA !== b) decoys.add(`${nearA}${b}`);
+    if (nearB !== a) decoys.add(`${a}${nearB}`);
+    if (nearA !== nearB) decoys.add(`${nearA}${nearB}`);
+    if (decoys.size >= count + 5) break;
+  }
+  
   decoys.delete(correctPair);
-  return [...decoys].slice(0, count);
+  const candidateArray = Array.from(decoys).filter(p => p !== correctPair);
+  return candidateArray.sort(() => Math.random() - 0.5).slice(0, count);
 }
 
 function makeFishForPair(pair, matrix, tier) {

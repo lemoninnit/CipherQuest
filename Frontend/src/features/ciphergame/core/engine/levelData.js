@@ -5,12 +5,30 @@ import {
   playfairEncrypt,
 } from "./playfair";
 
-/* ─────────────────── helpers ─────────────────── */
+/* ─────────────────── shift ranges & helpers ─────────────────── */
+export const SHIFT_RANGES_BY_DIFFICULTY = {
+  easy: { min: 1, max: 7 },
+  medium: { min: 1, max: 14 },
+  hard: { min: 1, max: 24, negMin: -5, negMax: -1 },
+};
+
+export function getRandomShiftForDifficulty(difficulty = 'easy') {
+  const range = SHIFT_RANGES_BY_DIFFICULTY[difficulty] || SHIFT_RANGES_BY_DIFFICULTY.easy;
+  if (difficulty === 'hard' && range.negMin !== undefined) {
+    const isNegative = Math.random() < (5 / 29);
+    if (isNegative) {
+      return Math.floor(Math.random() * (range.negMax - range.negMin + 1)) + range.negMin;
+    }
+    return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+  }
+  return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+}
+
 function caesarEnc(text, shift) {
   return text.toUpperCase().split('').map(c => {
     const code = c.charCodeAt(0);
     if (code < 65 || code > 90) return c;
-    return String.fromCharCode(((code - 65 + shift) % 26) + 65);
+    return String.fromCharCode((((code - 65 + shift) % 26 + 26) % 26) + 65);
   }).join('');
 }
 
@@ -21,7 +39,7 @@ function vigEnc(text, key) {
     const code = c.charCodeAt(0);
     if (code < 65 || code > 90) { out += c; continue; }
     const sh = key.charCodeAt(j % key.length) - 65;
-    out += String.fromCharCode(((code - 65 + sh) % 26) + 65);
+    out += String.fromCharCode((((code - 65 + sh) % 26 + 26) % 26) + 65);
     j++;
   }
   return out;
@@ -32,6 +50,18 @@ function makeMask(plainOrLen, revealFraction = 0.5, minRevealedPerWord = 1) {
   const isStr = typeof plainOrLen === 'string';
   const len = isStr ? plainOrLen.length : plainOrLen;
   const mask = Array(len).fill(true);
+
+  if (revealFraction <= 0 && minRevealedPerWord <= 0) {
+    for (let i = 0; i < len; i++) {
+      if (isStr) {
+        const code = plainOrLen.charCodeAt(i);
+        if (code >= 65 && code <= 90) mask[i] = false;
+      } else {
+        mask[i] = false;
+      }
+    }
+    return mask;
+  }
 
   const eligibleIndices = [];
   for (let i = 0; i < len; i++) {
@@ -56,9 +86,7 @@ function makeMask(plainOrLen, revealFraction = 0.5, minRevealedPerWord = 1) {
 
   hiddenIndices.forEach(i => { mask[i] = false; });
 
-  // Guarantee solvability: every word must keep at least `minRevealedPerWord`
-  // revealed letters, otherwise the first blank of a hidden word is pure
-  // guesswork when the shift clue is hidden (Caesar Pac-Man / Sprint med+hard).
+  // Guarantee solvability on easy and medium
   if (isStr && minRevealedPerWord > 0) {
     const words = isStr ? plainOrLen.split(' ') : [];
     let wordStart = 0;
@@ -86,410 +114,500 @@ function makeMask(plainOrLen, revealFraction = 0.5, minRevealedPerWord = 1) {
 }
 
 /* ─────────────────── Caesar levels ─────────────────── */
-// Stage cycling: stage 0→FISHING, stage 1→PACMAN, stage 2→SPRINT, 3→FISHING, 4→PACMAN
 const caesarWords = {
   easy: [
-    { plain: 'HELLO', hint: 'A common greeting' },
-    { plain: 'WORLD', hint: 'The planet we live on' },
-    { plain: 'APPLE', hint: 'A fruit that keeps the doctor away' },
-    { plain: 'BEACH', hint: 'Sandy shores by the sea' },
-    { plain: 'CLOUD', hint: 'Floats in the sky' },
-    { plain: 'WATER', hint: 'Essential liquid for all living things' },
-    { plain: 'SHARK', hint: 'A fearsome ocean predator' },
-    { plain: 'CIPHER', hint: 'A secret way of writing' },
-    { plain: 'OCEAN', hint: 'A very large expanse of sea' },
-    { plain: 'SALMON', hint: 'Pink-fleshed fish that swims upstream' },
-      {
-      plain: "CORAL",
-      hint: "Hard rocky structure built by tiny sea animals called polyps",
-    },
-    {
-      plain: "SHELL",
-      hint: "Hard protective outer covering of a sea creature",
-    },
-    {
-      plain: "RIVER",
-      hint: "A large natural stream of fresh water flowing to the sea",
-    },
-    {
-      plain: "WAVES",
-      hint: "Rolling ridges of water that move across the surface",
-    },
-    {
-      plain: "BOAT",
-      hint: "A small vessel that travels on water",
-    },
-    {
-      plain: "SAND",
-      hint: "Tiny loose grains of worn-down rock covering beaches",
-    },
-    {
-      plain: "COAST",
-      hint: "The land next to the sea",
-    },
-    {
-      plain: "REEF",
-      hint: "An underwater ridge of rock or coral near the surface",
-    },
-    {
-      plain: "TIDE",
-      hint: "The regular rise and fall of the sea level",
-    },
-    {
-      plain: "GULL",
-      hint: "A common white seabird often seen near harbors",
-    },
-    {
-      plain: "PIER",
-      hint: "A wooden structure built out over the water",
-    },
-    {
-      plain: "CLIFF",
-      hint: "A steep high rock face, often beside the sea",
-    },
-    {
-      plain: "DUNE",
-      hint: "A hill of sand shaped by the wind",
-    },
-    {
-      plain: "CAVE",
-      hint: "A natural hollow chamber in rock or a hillside",
-    },
-    {
-      plain: "PORT",
-      hint: "A town or harbor where ships load and unload",
-    },
-    {
-      plain: "DOCK",
-      hint: "A platform where ships are moored for loading",
-    },
-    {
-      plain: "KNOT",
-      hint: "A fastening tied in rope, also a unit of ship speed",
-    },
-    {
-      plain: "SAIL",
-      hint: "A canvas sheet that catches wind to move a boat",
-    },
-    {
-      plain: "MAST",
-      hint: "The tall vertical pole that holds up a ship’s sail",
-    },
-    {
-      plain: "DECK",
-      hint: "The flat floor surface of a ship",
-    },
-    {
-      plain: "FISH",
-      hint: "An animal with gills and fins that lives in water",
-    },
-    {
-      plain: "SWIM",
-      hint: "To move through water using your body",
-    },
-    {
-      plain: "DIVE",
-      hint: "To plunge headfirst into deep water",
-    },
-    {
-      plain: "WIND",
-      hint: "Moving air that fills a ship’s sails",
-    },
-    {
-      plain: "SUN",
-      hint: "The star that lights and warms our days",
-    },
-    {
-      plain: "STAR",
-      hint: "A distant burning sphere of gas seen at night",
-    },
-    {
-      plain: "MOON",
-      hint: "The bright body that circles the Earth and rules the tides",
-    },
-    {
-      plain: "RAIN",
-      hint: "Water droplets that fall from clouds",
-    },
-    {
-      plain: "STORM",
-      hint: "Violent weather with strong winds and rain",
-    },
-    {
-      plain: "CALM",
-      hint: "Completely still water with no wind or waves",
-    },
-  ],
+  {
+    "plain": "HELLO",
+    "hint": "A common greeting"
+  },
+  {
+    "plain": "WORLD",
+    "hint": "The planet we live on"
+  },
+  {
+    "plain": "APPLE",
+    "hint": "A fruit that keeps the doctor away"
+  },
+  {
+    "plain": "BEACH",
+    "hint": "Sandy shores by the sea"
+  },
+  {
+    "plain": "CLOUD",
+    "hint": "Floats in the sky"
+  },
+  {
+    "plain": "WATER",
+    "hint": "Essential liquid for all living things"
+  },
+  {
+    "plain": "SHARK",
+    "hint": "A fearsome ocean predator"
+  },
+  {
+    "plain": "OCEAN",
+    "hint": "A very large expanse of sea"
+  },
+  {
+    "plain": "CORAL",
+    "hint": "Hard rocky structure built by tiny sea animals called polyps"
+  },
+  {
+    "plain": "SHELL",
+    "hint": "Hard protective outer covering of a sea creature"
+  },
+  {
+    "plain": "RIVER",
+    "hint": "A large natural stream of fresh water flowing to the sea"
+  },
+  {
+    "plain": "WAVES",
+    "hint": "Rolling ridges of water that move across the surface"
+  },
+  {
+    "plain": "BOAT",
+    "hint": "A small vessel that travels on water"
+  },
+  {
+    "plain": "SAND",
+    "hint": "Tiny loose grains of worn-down rock covering beaches"
+  },
+  {
+    "plain": "COAST",
+    "hint": "The land next to the sea"
+  },
+  {
+    "plain": "REEF",
+    "hint": "An underwater ridge of rock or coral near the surface"
+  },
+  {
+    "plain": "TIDE",
+    "hint": "The regular rise and fall of the sea level"
+  },
+  {
+    "plain": "GULL",
+    "hint": "A common white seabird often seen near harbors"
+  },
+  {
+    "plain": "PIER",
+    "hint": "A wooden structure built out over the water"
+  },
+  {
+    "plain": "CLIFF",
+    "hint": "A steep high rock face, often beside the sea"
+  },
+  {
+    "plain": "DUNE",
+    "hint": "A hill of sand shaped by the wind"
+  },
+  {
+    "plain": "CAVE",
+    "hint": "A natural hollow chamber in rock or a hillside"
+  },
+  {
+    "plain": "PORT",
+    "hint": "A town or harbor where ships load and unload"
+  },
+  {
+    "plain": "DOCK",
+    "hint": "A platform where ships are moored for loading"
+  },
+  {
+    "plain": "KNOT",
+    "hint": "A fastening tied in rope, also a unit of ship speed"
+  },
+  {
+    "plain": "SAIL",
+    "hint": "A canvas sheet that catches wind to move a boat"
+  },
+  {
+    "plain": "MAST",
+    "hint": "The tall vertical pole that holds up a ship’s sail"
+  },
+  {
+    "plain": "DECK",
+    "hint": "The flat floor surface of a ship"
+  },
+  {
+    "plain": "FISH",
+    "hint": "An animal with gills and fins that lives in water"
+  },
+  {
+    "plain": "SWIM",
+    "hint": "To move through water using your body"
+  },
+  {
+    "plain": "DIVE",
+    "hint": "To plunge headfirst into deep water"
+  },
+  {
+    "plain": "WIND",
+    "hint": "Moving air that fills a ship’s sails"
+  },
+  {
+    "plain": "STAR",
+    "hint": "A distant burning sphere of gas seen at night"
+  },
+  {
+    "plain": "MOON",
+    "hint": "The bright body that circles the Earth and rules the tides"
+  },
+  {
+    "plain": "RAIN",
+    "hint": "Water droplets that fall from clouds"
+  },
+  {
+    "plain": "STORM",
+    "hint": "Violent weather with strong winds and rain"
+  },
+  {
+    "plain": "CALM",
+    "hint": "Completely still water with no wind or waves"
+  },
+  {
+    "plain": "CABIN",
+    "hint": "A private room or living quarters on a ship"
+  },
+  {
+    "plain": "WHALE",
+    "hint": "The largest mammal living in the ocean"
+  },
+  {
+    "plain": "SQUID",
+    "hint": "A fast ten-armed creature of the deep ocean"
+  }
+],
   medium: [
-    { plain: 'PUZZLE', hint: 'A problem designed to test ingenuity' },
-    { plain: 'MYSTERY', hint: 'Something that remains difficult to explain or understand' },
-    { plain: 'LANTERN', hint: 'A portable lighting device with a protective case' },
-    { plain: 'VOYAGE', hint: 'A long journey, especially by water or through space' },
-    { plain: 'TREASURE', hint: 'A quantity of precious gems, metals, or valuables' },
-    { plain: 'COMPASS', hint: 'A navigational instrument showing magnetic directions' },
-    { plain: 'FORTRESS', hint: 'A strongly fortified military stronghold or citadel' },
-    { plain: 'SHADOW', hint: 'A dark area produced by an object blocking light' },
-    { plain: 'CRYSTAL', hint: 'A clear transparent mineral with faceted surfaces' },
-    { plain: 'HARBOR', hint: 'A sheltered body of water where ships anchor safely' },
-      {
-      plain: "COMPASS",
-      hint: "A navigational instrument with a needle pointing north",
-    },
-    {
-      plain: "LANTERN",
-      hint: "A portable lamp with a protective case for carrying light",
-    },
-    {
-      plain: "ANCHOR",
-      hint: "A heavy iron device dropped overboard to hold a ship in place",
-    },
-    {
-      plain: "VOYAGE",
-      hint: "A long journey taken across the sea or through space",
-    },
-    {
-      plain: "ISLAND",
-      hint: "A tract of land completely surrounded by water",
-    },
-    {
-      plain: "PIRATE",
-      hint: "A sea raider who attacks ships under a black flag",
-    },
-    {
-      plain: "SAILOR",
-      hint: "A person who works or travels on a ship",
-    },
-    {
-      plain: "HARBOR",
-      hint: "A sheltered stretch of water where ships anchor safely",
-    },
-    {
-      plain: "VESSEL",
-      hint: "A large ship or seagoing craft",
-    },
-    {
-      plain: "MARINE",
-      hint: "Relating to the sea and the life within it",
-    },
-    {
-      plain: "BEACON",
-      hint: "A guiding light or signal fire set on a shore",
-    },
-    {
-      plain: "CURRENT",
-      hint: "A steady flow of water moving in one direction",
-    },
-    {
-      plain: "SEAGULL",
-      hint: "A loud white seabird that scavenges along coasts",
-    },
-    {
-      plain: "HORIZON",
-      hint: "The distant line where the sea appears to meet the sky",
-    },
-    {
-      plain: "BREEZE",
-      hint: "A light gentle wind",
-    },
-    {
-      plain: "RUDDER",
-      hint: "The flat movable blade steered to turn a ship",
-    },
-    {
-      plain: "GALLEY",
-      hint: "A ship’s kitchen where meals are cooked",
-    },
-    {
-      plain: "CABIN",
-      hint: "A private room aboard a ship",
-    },
-    {
-      plain: "TACKLE",
-      hint: "The rigging and gear fitted on a fishing boat",
-    },
-    {
-      plain: "BALLAST",
-      hint: "Heavy weight placed in a ship’s hull to keep it stable",
-    },
-    {
-      plain: "FATHOM",
-      hint: "A nautical depth unit equal to six feet",
-    },
-    {
-      plain: "LAGOON",
-      hint: "A shallow body of water separated from the sea by a reef",
-    },
-    {
-      plain: "TRENCH",
-      hint: "A long deep chasm on the ocean floor",
-    },
-    {
-      plain: "PELICAN",
-      hint: "A large coastal bird with a pouch under its beak",
-    },
-    {
-      plain: "DOLPHIN",
-      hint: "A clever marine mammal that leaps beside ships",
-    },
-    {
-      plain: "TURTLE",
-      hint: "A slow shelled reptile that swims the open sea",
-    },
-    {
-      plain: "WHALE",
-      hint: "The largest marine mammal, a giant of the deep",
-    },
-    {
-      plain: "SHARK",
-      hint: "A powerful predatory fish with rows of sharp teeth",
-    },
-    {
-      plain: "OCTOPUS",
-      hint: "An eight-armed sea creature that squirts ink",
-    },
-    {
-      plain: "SQUID",
-      hint: "A fast-swimming cephalopod with ten arms and ink",
-    },
-  ],
+  {
+    "plain": "CIPHER",
+    "hint": "A secret way of writing"
+  },
+  {
+    "plain": "SALMON",
+    "hint": "Pink-fleshed fish that swims upstream"
+  },
+  {
+    "plain": "PUZZLE",
+    "hint": "A game or problem designed to test ingenuity"
+  },
+  {
+    "plain": "VOYAGE",
+    "hint": "A long journey across the sea or space"
+  },
+  {
+    "plain": "SHADOW",
+    "hint": "A dark area where light is blocked"
+  },
+  {
+    "plain": "HARBOR",
+    "hint": "A sheltered body of water where ships dock"
+  },
+  {
+    "plain": "ANCHOR",
+    "hint": "A heavy iron device dropped to hold a ship"
+  },
+  {
+    "plain": "ISLAND",
+    "hint": "A tract of land surrounded by water"
+  },
+  {
+    "plain": "PIRATE",
+    "hint": "A sea raider who attacks ships under a black flag"
+  },
+  {
+    "plain": "SAILOR",
+    "hint": "A person who works or travels on a ship"
+  },
+  {
+    "plain": "VESSEL",
+    "hint": "A large ship or seagoing craft"
+  },
+  {
+    "plain": "MARINE",
+    "hint": "Relating to or found in the sea"
+  },
+  {
+    "plain": "BEACON",
+    "hint": "A light or fire set up as a warning signal"
+  },
+  {
+    "plain": "BREEZE",
+    "hint": "A gentle, light wind"
+  },
+  {
+    "plain": "RUDDER",
+    "hint": "A flat piece used for steering a boat"
+  },
+  {
+    "plain": "GALLEY",
+    "hint": "The kitchen area on a ship"
+  },
+  {
+    "plain": "TACKLE",
+    "hint": "Equipment and ropes used on a sailing vessel"
+  },
+  {
+    "plain": "FATHOM",
+    "hint": "A unit of depth equal to six feet in water"
+  },
+  {
+    "plain": "LAGOON",
+    "hint": "A shallow body of water separated from sea by reefs"
+  },
+  {
+    "plain": "TRENCH",
+    "hint": "A deep, steep-sided depression in the ocean floor"
+  },
+  {
+    "plain": "TURTLE",
+    "hint": "A sea reptile with a hard shell and flippers"
+  },
+  {
+    "plain": "MARBLE",
+    "hint": "A smooth patterned stone often sculpted"
+  },
+  {
+    "plain": "JUNGLE",
+    "hint": "A dense tropical forest thick with wild growth"
+  },
+  {
+    "plain": "BRIDGE",
+    "hint": "A structure spanning across water or a chasm"
+  },
+  {
+    "plain": "FROZEN",
+    "hint": "Turned into ice or hardened by extreme cold"
+  },
+  {
+    "plain": "SUNSET",
+    "hint": "The daily descent of the sun below the horizon"
+  },
+  {
+    "plain": "PALACE",
+    "hint": "A grand residence of royalty or rulers"
+  },
+  {
+    "plain": "DESERT",
+    "hint": "A dry, barren expanse with little water"
+  },
+  {
+    "plain": "GALAXY",
+    "hint": "A vast gravitational system of stars and cosmic dust"
+  },
+  {
+    "plain": "CAVERN",
+    "hint": "A vast natural hollow chamber underground"
+  },
+  {
+    "plain": "FALCON",
+    "hint": "A swift raptor bird renowned for high-speed dives"
+  },
+  {
+    "plain": "KEEPER",
+    "hint": "A guardian or caretaker watching over a post"
+  },
+  {
+    "plain": "MIRAGE",
+    "hint": "An optical illusion caused by atmospheric conditions"
+  },
+  {
+    "plain": "SILVER",
+    "hint": "A precious lustrous white metallic element"
+  },
+  {
+    "plain": "TIMBER",
+    "hint": "Wood prepared for building ships and structures"
+  },
+  {
+    "plain": "ZEPHYR",
+    "hint": "A soft, gentle western breeze"
+  },
+  {
+    "plain": "CORAL",
+    "hint": "Hard rocky structure built by tiny sea animals"
+  },
+  {
+    "plain": "COAST",
+    "hint": "The land bordering along the sea"
+  },
+  {
+    "plain": "OCEAN",
+    "hint": "A vast continuous body of salt water"
+  },
+  {
+    "plain": "STORM",
+    "hint": "Violent weather with heavy winds and rain"
+  }
+],
   hard: [
-    { plain: 'DARK NIGHT', hint: 'The hours of darkness before sunrise' },
-    { plain: 'LOST KEY', hint: 'A misplaced tool used to unlock doorways' },
-    { plain: 'SILENT CODE', hint: 'A quiet cipher transmitted without sound' },
-    { plain: 'HIDDEN MAP', hint: 'A secret chart pointing toward concealed locations' },
-    { plain: 'GOLDEN VAULT', hint: 'A secure underground chamber holding valuables' },
-    { plain: 'IRON SHIELD', hint: 'A heavy piece of defensive armor held in battle' },
-    { plain: 'SECRET CAVE', hint: 'An uncharted hollow chamber beneath the rocks' },
-    { plain: 'ANCIENT TOWER', hint: 'A tall stone spire standing from centuries ago' },
-    { plain: 'MIDNIGHT SUN', hint: 'A natural phenomenon where daylight persists all night' },
-    { plain: 'FROZEN SHORE', hint: 'An icy coastal boundary beside freezing waters' },
-      {
-      plain: "SHIPWRECK",
-      hint: "The remains of a destroyed vessel on the seabed",
-    },
-    {
-      plain: "NAVIGATION",
-      hint: "The science of plotting a ship’s course and position",
-    },
-    {
-      plain: "SUBMARINE",
-      hint: "A vessel that travels and fights beneath the surface",
-    },
-    {
-      plain: "HURRICANE",
-      hint: "A massive rotating tropical storm born over warm seas",
-    },
-    {
-      plain: "WHIRLPOOL",
-      hint: "A powerful spinning vortex of water that sucks objects down",
-    },
-    {
-      plain: "PENINSULA",
-      hint: "Land almost surrounded by water but joined to the mainland",
-    },
-    {
-      plain: "ARCHIPELAGO",
-      hint: "A chain or cluster of scattered islands",
-    },
-    {
-      plain: "MERIDIAN",
-      hint: "A line of longitude running pole to pole on a chart",
-    },
-    {
-      plain: "LATITUDE",
-      hint: "Distance north or south of the equator, measured in degrees",
-    },
-    {
-      plain: "LONGITUDE",
-      hint: "Distance east or west of the prime meridian, in degrees",
-    },
-    {
-      plain: "EQUATOR",
-      hint: "The imaginary line circling Earth at zero degrees latitude",
-    },
-    {
-      plain: "TIDESWELL",
-      hint: "A sudden surge of seawater driven by rising tides",
-    },
-    {
-      plain: "BATHYSCAPHE",
-      hint: "A deep-diving submersible built to explore ocean trenches",
-    },
-    {
-      plain: "OCEANOGRAPHY",
-      hint: "The scientific study of the sea’s waters, currents, and life",
-    },
-    {
-      plain: "BARNACLE",
-      hint: "A small crustacean that cements itself to hulls and rocks",
-    },
-    {
-      plain: "CRUSTACEAN",
-      hint: "A hard-shelled sea animal such as a crab or lobster",
-    },
-    {
-      plain: "PLANKTON",
-      hint: "Tiny drifting organisms that feed nearly all ocean life",
-    },
-    {
-      plain: "ALBATROSS",
-      hint: "A giant seabird that glides over oceans for days",
-    },
-    {
-      plain: "CORSAIR",
-      hint: "A private ship authorized to raid enemy merchant vessels",
-    },
-    {
-      plain: "BUCCANEER",
-      hint: "A 17th-century pirate who hunted Spanish treasure ships",
-    },
-    {
-      plain: "PRIVATEER",
-      hint: "A privately armed ship licensed by a government to raid",
-    },
-    {
-      plain: "GALLEON",
-      hint: "A large Spanish sailing ship built to carry treasure",
-    },
-    {
-      plain: "SCHOONER",
-      hint: "A swift sailing ship with fore-and-aft sails on two masts",
-    },
-    {
-      plain: "FRIGATE",
-      hint: "A fast warship built for escort and patrol duty",
-    },
-    {
-      plain: "CORVETTE",
-      hint: "A small lightly armed escort warship",
-    },
-    {
-      plain: "IRONCLAD",
-      hint: "A 19th-century warship protected by iron armor plates",
-    },
-    {
-      plain: "DREADNOUGHT",
-      hint: "An early 20th-century battleship with all-big-gun armament",
-    },
-    {
-      plain: "BATTLESHIP",
-      hint: "The heaviest armored warship, built for line of battle",
-    },
-    {
-      plain: "DESTROYER",
-      hint: "A fast maneuverable warship armed with torpedoes",
-    },
-    {
-      plain: "CRUISER",
-      hint: "A fast mid-sized warship built for long-range patrols",
-    },
-  ],
+  {
+    "plain": "MYSTERY",
+    "hint": "Something that is difficult or impossible to explain"
+  },
+  {
+    "plain": "LANTERN",
+    "hint": "A portable light with protective transparent casing"
+  },
+  {
+    "plain": "COMPASS",
+    "hint": "A navigation tool with a needle pointing north"
+  },
+  {
+    "plain": "CRYSTAL",
+    "hint": "A clear mineral with a regular geometric pattern"
+  },
+  {
+    "plain": "CURRENT",
+    "hint": "A continuous directed movement of seawater"
+  },
+  {
+    "plain": "SEAGULL",
+    "hint": "A coastal bird that swoops over ocean waves"
+  },
+  {
+    "plain": "HORIZON",
+    "hint": "The line where the earth or sea meets the sky"
+  },
+  {
+    "plain": "BALLAST",
+    "hint": "Heavy material placed in a ship to ensure stability"
+  },
+  {
+    "plain": "PELICAN",
+    "hint": "A large water bird with a pouch under its beak"
+  },
+  {
+    "plain": "DOLPHIN",
+    "hint": "An intelligent marine mammal known for acrobatics"
+  },
+  {
+    "plain": "OCTOPUS",
+    "hint": "An eight-armed creature that squirts ink in defense"
+  },
+  {
+    "plain": "EQUATOR",
+    "hint": "The imaginary circle around the middle of Earth"
+  },
+  {
+    "plain": "CORSAIR",
+    "hint": "A fast pirate ship authorized to raid enemy vessels"
+  },
+  {
+    "plain": "GALLEON",
+    "hint": "A large multi-decked Spanish sailing warship"
+  },
+  {
+    "plain": "FRIGATE",
+    "hint": "A swift warship built for patrol and escort duty"
+  },
+  {
+    "plain": "CRUISER",
+    "hint": "A fast warship designed for long-range oceanic patrols"
+  },
+  {
+    "plain": "PHANTOM",
+    "hint": "An apparition or ghostly shadow seen in the mist"
+  },
+  {
+    "plain": "TEMPEST",
+    "hint": "A violent and turbulent storm upon the sea"
+  },
+  {
+    "plain": "CAPTAIN",
+    "hint": "The officer in command of a ship at sea"
+  },
+  {
+    "plain": "KRAKEN",
+    "hint": "A legendary giant sea monster of terrifying size"
+  },
+  {
+    "plain": "SEAMARK",
+    "hint": "A conspicuous landmark aiding sailors at sea"
+  },
+  {
+    "plain": "TRIDENT",
+    "hint": "A three-pronged spear carried by sea deities"
+  },
+  {
+    "plain": "ICEBERG",
+    "hint": "A massive piece of freshwater ice floating in open sea"
+  },
+  {
+    "plain": "BARRIER",
+    "hint": "A natural offshore reef guarding the coastline"
+  },
+  {
+    "plain": "MONSOON",
+    "hint": "A seasonal prevailing wind bringing ocean torrents"
+  },
+  {
+    "plain": "MARINER",
+    "hint": "A sailor who navigates the vast oceans"
+  },
+  {
+    "plain": "CLIPPER",
+    "hint": "A fast sailing ship with multiple masts and large sails"
+  },
+  {
+    "plain": "CUTTER",
+    "hint": "A fast single-masted vessel used for patrols"
+  },
+  {
+    "plain": "BRIGADE",
+    "hint": "A squadron or organized naval force"
+  },
+  {
+    "plain": "CIPHER",
+    "hint": "A secret code or cryptographic system"
+  },
+  {
+    "plain": "FATHOM",
+    "hint": "A maritime unit of underwater depth"
+  },
+  {
+    "plain": "RUDDER",
+    "hint": "A submerged blade used for steering vessels"
+  },
+  {
+    "plain": "LAGOON",
+    "hint": "A quiet saltwater basin shielded by barrier reefs"
+  },
+  {
+    "plain": "TRENCH",
+    "hint": "An immense abyss plunging into ocean depths"
+  },
+  {
+    "plain": "BEACON",
+    "hint": "A blazing coastal signal guiding night navigators"
+  },
+  {
+    "plain": "ANCHOR",
+    "hint": "A heavy forged iron hook that moors ships"
+  },
+  {
+    "plain": "ISLAND",
+    "hint": "An isolated landmass encircled by open waters"
+  },
+  {
+    "plain": "PIRATE",
+    "hint": "A rogue corsair sailing under the Jolly Roger"
+  },
+  {
+    "plain": "SAILOR",
+    "hint": "A seasoned hand working the rigging and decks"
+  },
+  {
+    "plain": "VESSEL",
+    "hint": "A sturdy seagoing craft traversing treacherous waters"
+  }
+],
 };
 
 function buildCaesarLevel(plain, shift, stageIndex, difficulty, hint) {
   const ciphertext = caesarEnc(plain, shift);
-  const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0.35;
-  const mask = makeMask(plain, reveal);
+  const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0;
+  const minRevealed = difficulty === 'hard' ? 0 : 1;
+  const mask = makeMask(plain, reveal, minRevealed);
   // Starting shift must not equal the target shift
   let startShift;
   do { startShift = Math.floor(Math.random() * 5); } while (startShift === shift);
@@ -517,11 +635,10 @@ function buildCaesarLevel(plain, shift, stageIndex, difficulty, hint) {
 const GAME_CYCLE_CAESAR = ['FISHING', 'PACMAN', 'SPRINT', 'FISHING', 'PACMAN'];
 
 export function getCaesarLevelData(difficulty, stageIndex) {
-  const pool = caesarWords[difficulty];
+  const pool = caesarWords[difficulty] || caesarWords.easy;
   const randIndex = Math.floor(Math.random() * pool.length);
   const w = pool[randIndex];
-  // Randomize shift between 1 and 25
-  const shift = Math.floor(Math.random() * 25) + 1;
+  const shift = getRandomShiftForDifficulty(difficulty);
   return buildCaesarLevel(w.plain, shift, stageIndex, difficulty, w.hint);
 }
 
@@ -532,857 +649,858 @@ export function getCaesarGameType(stageIndex) {
 /* ─────────────────── Vigenere levels ─────────────────── */
 const vigenereData = {
   easy: [
-    {
-      plain: 'MARBLE',
-      key: 'GO',
-      hint: 'A small glass sphere used in playground games',
-      keyClue: 'Key hint: what you say to start a race',
-      keyInfo: 'G=6, O=14 — this 2-letter key alternates between two different Caesar shifts across the letters.',
-    },
-    {
-      plain: 'JUNGLE',
-      key: 'AX',
-      hint: 'A dense tropical forest',
-      keyClue: 'Key hint: the tool a lumberjack swings to fell trees',
-      keyInfo: 'A=0, X=23 — notice A causes no shift while X shifts almost a full alphabet backward.',
-    },
-    {
-      plain: 'BRIDGE',
-      key: 'UP',
-      hint: 'A structure that crosses a river or gap',
-      keyClue: 'Key hint: the opposite of down',
-      keyInfo: 'U=20, P=15 — both letters apply large forward shifts, making the ciphertext drift far from the original.',
-    },
-    {
-      plain: 'FROZEN',
-      key: 'MW',
-      hint: 'Turned solid by extreme cold',
-      keyClue: 'Key hint: the 13th and 23rd letters of the alphabet',
-      keyInfo: 'M=12, W=22 — mid-alphabet and near-end shifts give very different offsets to alternating letters.',
-    },
-    {
-      plain: 'PIRATE',
-      key: 'XO',
-      hint: 'A sea bandit who sails under a skull-and-crossbones flag',
-      keyClue: 'Key hint: a hugs-and-kisses sign-off in a letter',
-      keyInfo: 'X=23, O=14 — X is only 3 away from Z, so it produces a near-reverse shift; O shifts by 14.',
-    },
-    {
-      plain: 'SUNSET',
-      key: 'RED',
-      hint: 'The daily disappearance of the sun below the horizon',
-      keyClue: 'Key hint: the color of fire or blood',
-      keyInfo: 'R=17, E=4, D=3 — simple 3-letter keyword to practice short cyclic shifting.'
-    },
-    {
-      plain: 'PALACE',
-      key: 'ROYAL',
-      hint: 'The official residence of a sovereign or president',
-      keyClue: 'Key hint: relating to a king or queen',
-      keyInfo: 'R=17, O=14, Y=24, A=0, L=11 — 5-letter key alternates shifts across letters.'
-    },
-    {
-      plain: 'DESERT',
-      key: 'SAND',
-      hint: 'A barren area of landscape where little precipitation occurs',
-      keyClue: 'Key hint: tiny loose grains of rock on a beach',
-      keyInfo: 'S=18, A=0, N=13, D=3 — A at position 2 leaves that letter completely unshifted.'
-    },
-    {
-      plain: 'GALAXY',
-      key: 'STAR',
-      hint: 'A system of millions or billions of stars, together with gas and dust',
-      keyClue: 'Key hint: a luminous point in the night sky',
-      keyInfo: 'S=18, T=19, A=0, R=17 — notice how A does not shift the letter under it.'
-    },
-    {
-      plain: 'CAVERN',
-      key: 'DEEP',
-      hint: 'A cave, especially a large one that is dark',
-      keyClue: 'Key hint: extending far down from the top or surface',
-      keyInfo: 'D=3, E=4, E=4, P=15 — repeating E shifts give two adjacent letters the same offset.'
-    },
-      {
-      plain: "CORAL",
-      key: "SEA",
-      hint: "Hard rocky structure built by tiny sea animals called polyps",
-      keyClue: "Key hint: The vast salt water covering most of the Earth",
-      keyInfo: "S=18, E=4, A=0 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "SHELL",
-      key: "WAVE",
-      hint: "Hard protective outer covering of a sea creature",
-      keyClue: "Key hint: A rolling ridge of moving water",
-      keyInfo: "W=22, A=0, V=21, E=4 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "RIVER",
-      key: "TIDE",
-      hint: "A large natural stream of fresh water flowing to the sea",
-      keyClue: "Key hint: The twice-daily rise and fall of the sea",
-      keyInfo: "T=19, I=8, D=3, E=4 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "WAVES",
-      key: "FISH",
-      hint: "Rolling ridges of water that move across the surface",
-      keyClue: "Key hint: A gilled animal that swims with fins",
-      keyInfo: "F=5, I=8, S=18, H=7 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "BOAT",
-      key: "GULL",
-      hint: "A small vessel that travels on water",
-      keyClue: "Key hint: A white seabird that cries near the shore",
-      keyInfo: "G=6, U=20, L=11, L=11 — repeated L gives identical shifts at both positions.",
-    },
-    {
-      plain: "SAND",
-      key: "SALT",
-      hint: "Tiny loose grains of worn-down rock covering beaches",
-      keyClue: "Key hint: White crystals that season food and flavor the sea",
-      keyInfo: "S=18, A=0, L=11, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "COAST",
-      key: "ROCK",
-      hint: "The land next to the sea",
-      keyClue: "Key hint: A hard solid mass of stone",
-      keyInfo: "R=17, O=14, C=2, K=10 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "REEF",
-      key: "SAND",
-      hint: "An underwater ridge of rock or coral near the surface",
-      keyClue: "Key hint: Tiny loose grains of worn-down rock",
-      keyInfo: "S=18, A=0, N=13, D=3 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "TIDE",
-      key: "SHIP",
-      hint: "The regular rise and fall of the sea level",
-      keyClue: "Key hint: A large seagoing vessel",
-      keyInfo: "S=18, H=7, I=8, P=15 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "GULL",
-      key: "BOAT",
-      hint: "A common white seabird often seen near harbors",
-      keyClue: "Key hint: A small watercraft paddled, sailed, or motored",
-      keyInfo: "B=1, O=14, A=0, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "PIER",
-      key: "SEA",
-      hint: "A wooden structure built out over the water",
-      keyClue: "Key hint: The vast salt water covering most of the Earth",
-      keyInfo: "S=18, E=4, A=0 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "CLIFF",
-      key: "WAVE",
-      hint: "A steep high rock face, often beside the sea",
-      keyClue: "Key hint: A rolling ridge of moving water",
-      keyInfo: "W=22, A=0, V=21, E=4 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "DUNE",
-      key: "TIDE",
-      hint: "A hill of sand shaped by the wind",
-      keyClue: "Key hint: The twice-daily rise and fall of the sea",
-      keyInfo: "T=19, I=8, D=3, E=4 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "CAVE",
-      key: "FISH",
-      hint: "A natural hollow chamber in rock or a hillside",
-      keyClue: "Key hint: A gilled animal that swims with fins",
-      keyInfo: "F=5, I=8, S=18, H=7 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "PORT",
-      key: "GULL",
-      hint: "A town or harbor where ships load and unload",
-      keyClue: "Key hint: A white seabird that cries near the shore",
-      keyInfo: "G=6, U=20, L=11, L=11 — repeated L gives identical shifts at both positions.",
-    },
-    {
-      plain: "DOCK",
-      key: "SALT",
-      hint: "A platform where ships are moored for loading",
-      keyClue: "Key hint: White crystals that season food and flavor the sea",
-      keyInfo: "S=18, A=0, L=11, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "KNOT",
-      key: "ROCK",
-      hint: "A fastening tied in rope, also a unit of ship speed",
-      keyClue: "Key hint: A hard solid mass of stone",
-      keyInfo: "R=17, O=14, C=2, K=10 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "SAIL",
-      key: "SAND",
-      hint: "A canvas sheet that catches wind to move a boat",
-      keyClue: "Key hint: Tiny loose grains of worn-down rock",
-      keyInfo: "S=18, A=0, N=13, D=3 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "MAST",
-      key: "SHIP",
-      hint: "The tall vertical pole that holds up a ship’s sail",
-      keyClue: "Key hint: A large seagoing vessel",
-      keyInfo: "S=18, H=7, I=8, P=15 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "DECK",
-      key: "BOAT",
-      hint: "The flat floor surface of a ship",
-      keyClue: "Key hint: A small watercraft paddled, sailed, or motored",
-      keyInfo: "B=1, O=14, A=0, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "FISH",
-      key: "SEA",
-      hint: "An animal with gills and fins that lives in water",
-      keyClue: "Key hint: The vast salt water covering most of the Earth",
-      keyInfo: "S=18, E=4, A=0 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "SWIM",
-      key: "WAVE",
-      hint: "To move through water using your body",
-      keyClue: "Key hint: A rolling ridge of moving water",
-      keyInfo: "W=22, A=0, V=21, E=4 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "DIVE",
-      key: "TIDE",
-      hint: "To plunge headfirst into deep water",
-      keyClue: "Key hint: The twice-daily rise and fall of the sea",
-      keyInfo: "T=19, I=8, D=3, E=4 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "WIND",
-      key: "FISH",
-      hint: "Moving air that fills a ship’s sails",
-      keyClue: "Key hint: A gilled animal that swims with fins",
-      keyInfo: "F=5, I=8, S=18, H=7 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "SUN",
-      key: "GULL",
-      hint: "The star that lights and warms our days",
-      keyClue: "Key hint: A white seabird that cries near the shore",
-      keyInfo: "G=6, U=20, L=11, L=11 — repeated L gives identical shifts at both positions.",
-    },
-    {
-      plain: "STAR",
-      key: "SALT",
-      hint: "A distant burning sphere of gas seen at night",
-      keyClue: "Key hint: White crystals that season food and flavor the sea",
-      keyInfo: "S=18, A=0, L=11, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "MOON",
-      key: "ROCK",
-      hint: "The bright body that circles the Earth and rules the tides",
-      keyClue: "Key hint: A hard solid mass of stone",
-      keyInfo: "R=17, O=14, C=2, K=10 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "RAIN",
-      key: "SAND",
-      hint: "Water droplets that fall from clouds",
-      keyClue: "Key hint: Tiny loose grains of worn-down rock",
-      keyInfo: "S=18, A=0, N=13, D=3 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "STORM",
-      key: "SHIP",
-      hint: "Violent weather with strong winds and rain",
-      keyClue: "Key hint: A large seagoing vessel",
-      keyInfo: "S=18, H=7, I=8, P=15 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "CALM",
-      key: "BOAT",
-      hint: "Completely still water with no wind or waves",
-      keyClue: "Key hint: A small watercraft paddled, sailed, or motored",
-      keyInfo: "B=1, O=14, A=0, T=19 — A=0 leaves its letter unshifted.",
-    },
-  ],
+  {
+    "plain": "HELLO",
+    "key": "BED",
+    "hint": "A common greeting",
+    "keyClue": "Key hint: A piece of furniture for sleeping",
+    "keyInfo": "B=1, E=4, D=3 — gentle shift offsets cycle across the word."
+  },
+  {
+    "plain": "WORLD",
+    "key": "BEE",
+    "hint": "The planet we live on",
+    "keyClue": "Key hint: A buzzing insect that makes honey",
+    "keyInfo": "B=1, E=4, E=4 — repeating E gives two adjacent positions the same shift."
+  },
+  {
+    "plain": "APPLE",
+    "key": "CHEF",
+    "hint": "A fruit that keeps the doctor away",
+    "keyClue": "Key hint: A master cook in a ship’s galley",
+    "keyInfo": "C=2, H=7, E=4, F=5 — four balanced shifts in the 1–7 range."
+  },
+  {
+    "plain": "BEACH",
+    "key": "EDGE",
+    "hint": "Sandy shores by the sea",
+    "keyClue": "Key hint: The border or rim of an area",
+    "keyInfo": "E=4, D=3, G=6, E=4 — cycling low shifts keep letters close to plaintext."
+  },
+  {
+    "plain": "CLOUD",
+    "key": "FEED",
+    "hint": "Floats in the sky",
+    "keyClue": "Key hint: To supply food to animals or crew",
+    "keyInfo": "F=5, E=4, E=4, D=3 — repeating E provides consistent shifting."
+  },
+  {
+    "plain": "WATER",
+    "key": "DEED",
+    "hint": "Essential liquid for all living things",
+    "keyClue": "Key hint: An action performed intentionally",
+    "keyInfo": "D=3, E=4, E=4, D=3 — symmetrical shifts across the word."
+  },
+  {
+    "plain": "SHARK",
+    "key": "BEEF",
+    "hint": "A fearsome ocean predator",
+    "keyClue": "Key hint: Meat from cattle stored for voyages",
+    "keyInfo": "B=1, E=4, E=4, F=5 — shifts stay strictly between 1 and 5."
+  },
+  {
+    "plain": "OCEAN",
+    "key": "FED",
+    "hint": "A very large expanse of sea",
+    "keyClue": "Key hint: Given food and sustenance",
+    "keyInfo": "F=5, E=4, D=3 — simple 3-letter keyword with shifts in 1–5."
+  },
+  {
+    "plain": "CORAL",
+    "key": "BEG",
+    "hint": "Hard rocky structure built by tiny sea animals called polyps",
+    "keyClue": "Key hint: To ask earnestly or plead for help",
+    "keyInfo": "B=1, E=4, G=6 — three distinct low-tier shifts."
+  },
+  {
+    "plain": "SHELL",
+    "key": "EGG",
+    "hint": "Hard protective outer covering of a sea creature",
+    "keyClue": "Key hint: An oval shell laid by seabirds and reptiles",
+    "keyInfo": "E=4, G=6, G=6 — repeated G applies identical shift 6."
+  },
+  {
+    "plain": "RIVER",
+    "key": "FEE",
+    "hint": "A large natural stream of fresh water flowing to the sea",
+    "keyClue": "Key hint: A toll or charge paid for passage",
+    "keyInfo": "F=5, E=4, E=4 — easy low shifts cycle through the word."
+  },
+  {
+    "plain": "WAVES",
+    "key": "BED",
+    "hint": "Rolling ridges of water that move across the surface",
+    "keyClue": "Key hint: A berth or bunk where sailors rest",
+    "keyInfo": "B=1, E=4, D=3 — gentle shift offsets cycle across the word."
+  },
+  {
+    "plain": "BOAT",
+    "key": "BEE",
+    "hint": "A small vessel that travels on water",
+    "keyClue": "Key hint: A stinging insect that gathers nectar",
+    "keyInfo": "B=1, E=4, E=4 — repeating E gives two adjacent positions the same shift."
+  },
+  {
+    "plain": "SAND",
+    "key": "CHEF",
+    "hint": "Tiny loose grains of worn-down rock covering beaches",
+    "keyClue": "Key hint: A professional cook who prepares meals",
+    "keyInfo": "C=2, H=7, E=4, F=5 — four balanced shifts in the 1–7 range."
+  },
+  {
+    "plain": "COAST",
+    "key": "EDGE",
+    "hint": "The land next to the sea",
+    "keyClue": "Key hint: The perimeter or boundary of the land",
+    "keyInfo": "E=4, D=3, G=6, E=4 — cycling low shifts keep letters close to plaintext."
+  },
+  {
+    "plain": "REEF",
+    "key": "FEED",
+    "hint": "An underwater ridge of rock or coral near the surface",
+    "keyClue": "Key hint: To provide provisions to hungry sailors",
+    "keyInfo": "F=5, E=4, E=4, D=3 — repeating E provides consistent shifting."
+  },
+  {
+    "plain": "TIDE",
+    "key": "DEED",
+    "hint": "The regular rise and fall of the sea level",
+    "keyClue": "Key hint: A noteworthy act of courage at sea",
+    "keyInfo": "D=3, E=4, E=4, D=3 — symmetrical shifts across the word."
+  },
+  {
+    "plain": "GULL",
+    "key": "BEEF",
+    "hint": "A common white seabird often seen near harbors",
+    "keyClue": "Key hint: Salted meat stored in barrels on sailing ships",
+    "keyInfo": "B=1, E=4, E=4, F=5 — shifts stay strictly between 1 and 5."
+  },
+  {
+    "plain": "PIER",
+    "key": "FED",
+    "hint": "A wooden structure built out over the water",
+    "keyClue": "Key hint: Nourished with ship rations",
+    "keyInfo": "F=5, E=4, D=3 — simple 3-letter keyword with shifts in 1–5."
+  },
+  {
+    "plain": "CLIFF",
+    "key": "BEG",
+    "hint": "A steep high rock face, often beside the sea",
+    "keyClue": "Key hint: To plead or implore for quarter",
+    "keyInfo": "B=1, E=4, G=6 — three distinct low-tier shifts."
+  },
+  {
+    "plain": "DUNE",
+    "key": "EGG",
+    "hint": "A hill of sand shaped by the wind",
+    "keyClue": "Key hint: An oval egg laid in a coastal nest",
+    "keyInfo": "E=4, G=6, G=6 — repeated G applies identical shift 6."
+  },
+  {
+    "plain": "CAVE",
+    "key": "FEE",
+    "hint": "A natural hollow chamber in rock or a hillside",
+    "keyClue": "Key hint: A harbour duty paid at port",
+    "keyInfo": "F=5, E=4, E=4 — easy low shifts cycle through the word."
+  },
+  {
+    "plain": "PORT",
+    "key": "BED",
+    "hint": "A town or harbor where ships load and unload",
+    "keyClue": "Key hint: A berth where crew members sleep",
+    "keyInfo": "B=1, E=4, D=3 — gentle shift offsets cycle across the word."
+  },
+  {
+    "plain": "DOCK",
+    "key": "BEE",
+    "hint": "A platform where ships are moored for loading",
+    "keyClue": "Key hint: An insect worker in a hive",
+    "keyInfo": "B=1, E=4, E=4 — repeating E gives two adjacent positions the same shift."
+  },
+  {
+    "plain": "KNOT",
+    "key": "CHEF",
+    "hint": "A fastening tied in rope, also a unit of ship speed",
+    "keyClue": "Key hint: The ship’s cook preparing hot stew",
+    "keyInfo": "C=2, H=7, E=4, F=5 — four balanced shifts in the 1–7 range."
+  },
+  {
+    "plain": "SAIL",
+    "key": "EDGE",
+    "hint": "A canvas sheet that catches wind to move a boat",
+    "keyClue": "Key hint: The margin or hem of a canvas sail",
+    "keyInfo": "E=4, D=3, G=6, E=4 — cycling low shifts keep letters close to plaintext."
+  },
+  {
+    "plain": "MAST",
+    "key": "FEED",
+    "hint": "The tall vertical pole that holds up a ship’s sail",
+    "keyClue": "Key hint: To supply provisions to the lookout",
+    "keyInfo": "F=5, E=4, E=4, D=3 — repeating E provides consistent shifting."
+  },
+  {
+    "plain": "DECK",
+    "key": "DEED",
+    "hint": "The flat floor surface of a ship",
+    "keyClue": "Key hint: A signed title of ship ownership",
+    "keyInfo": "D=3, E=4, E=4, D=3 — symmetrical shifts across the word."
+  },
+  {
+    "plain": "FISH",
+    "key": "BEEF",
+    "hint": "An animal with gills and fins that lives in water",
+    "keyClue": "Key hint: Salt provisions carried in ship holds",
+    "keyInfo": "B=1, E=4, E=4, F=5 — shifts stay strictly between 1 and 5."
+  },
+  {
+    "plain": "SWIM",
+    "key": "FED",
+    "hint": "To move through water using your body",
+    "keyClue": "Key hint: Provided with energy and food",
+    "keyInfo": "F=5, E=4, D=3 — simple 3-letter keyword with shifts in 1–5."
+  },
+  {
+    "plain": "DIVE",
+    "key": "BEG",
+    "hint": "To plunge headfirst into deep water",
+    "keyClue": "Key hint: To ask earnestly for assistance",
+    "keyInfo": "B=1, E=4, G=6 — three distinct low-tier shifts."
+  },
+  {
+    "plain": "WIND",
+    "key": "EGG",
+    "hint": "Moving air that fills a ship’s sails",
+    "keyClue": "Key hint: A delicate oval shell holding new life",
+    "keyInfo": "E=4, G=6, G=6 — repeated G applies identical shift 6."
+  },
+  {
+    "plain": "STAR",
+    "key": "FEE",
+    "hint": "A distant burning sphere of gas seen at night",
+    "keyClue": "Key hint: A navigator’s fee for celestial charts",
+    "keyInfo": "F=5, E=4, E=4 — easy low shifts cycle through the word."
+  },
+  {
+    "plain": "MOON",
+    "key": "BED",
+    "hint": "The bright body that circles the Earth and rules the tides",
+    "keyClue": "Key hint: A cozy bunk after a night watch",
+    "keyInfo": "B=1, E=4, D=3 — gentle shift offsets cycle across the word."
+  },
+  {
+    "plain": "RAIN",
+    "key": "BEE",
+    "hint": "Water droplets that fall from clouds",
+    "keyClue": "Key hint: A worker gathering nectar before the storm",
+    "keyInfo": "B=1, E=4, E=4 — repeating E gives two adjacent positions the same shift."
+  },
+  {
+    "plain": "STORM",
+    "key": "CHEF",
+    "hint": "Violent weather with strong winds and rain",
+    "keyClue": "Key hint: The cook securing pots in a squall",
+    "keyInfo": "C=2, H=7, E=4, F=5 — four balanced shifts in the 1–7 range."
+  },
+  {
+    "plain": "CALM",
+    "key": "EDGE",
+    "hint": "Completely still water with no wind or waves",
+    "keyClue": "Key hint: The smooth rim of the glass sea",
+    "keyInfo": "E=4, D=3, G=6, E=4 — cycling low shifts keep letters close to plaintext."
+  },
+  {
+    "plain": "CABIN",
+    "key": "FEED",
+    "hint": "A private room or living quarters on a ship",
+    "keyClue": "Key hint: To supply mess meals to officers",
+    "keyInfo": "F=5, E=4, E=4, D=3 — repeating E provides consistent shifting."
+  },
+  {
+    "plain": "WHALE",
+    "key": "DEED",
+    "hint": "The largest mammal living in the ocean",
+    "keyClue": "Key hint: A brave feat recorded in ship logs",
+    "keyInfo": "D=3, E=4, E=4, D=3 — symmetrical shifts across the word."
+  },
+  {
+    "plain": "SQUID",
+    "key": "BEEF",
+    "hint": "A fast ten-armed creature of the deep ocean",
+    "keyClue": "Key hint: Salted barrels of provisions",
+    "keyInfo": "B=1, E=4, E=4, F=5 — shifts stay strictly between 1 and 5."
+  }
+],
   medium: [
-    {
-      plain: 'PHANTOM',
-      key: 'GHOST',
-      hint: 'An apparition or specter seen in the shadows',
-      keyClue: 'Key hint: a wandering spirit from beyond',
-      keyInfo: 'G=6, H=7, O=14, S=18, T=19 — five distinct shifts cycle across the word.',
-    },
-    {
-      plain: 'BEACON',
-      key: 'LIGHT',
-      hint: 'A visible guiding signal or coastal fire',
-      keyClue: 'Key hint: electromagnetic radiation that illuminates',
-      keyInfo: 'L=11, I=8, G=6, H=7, T=19 — each letter of the key advances the plaintext accordingly.',
-    },
-    {
-      plain: 'HORIZON',
-      key: 'OCEAN',
-      hint: 'The distant line where earth or water meets the sky',
-      keyClue: 'Key hint: a vast continuous body of salt water',
-      keyInfo: 'O=14, C=2, E=4, A=0, N=13 — A produces a shift of zero, leaving that letter unchanged.',
-    },
-    {
-      plain: 'FALCON',
-      key: 'BIRD',
-      hint: 'A swift bird of prey known for high-speed dives',
-      keyClue: 'Key hint: a feathered animal with wings',
-      keyInfo: 'B=1, I=8, R=17, D=3 — a compact 4-letter key repeating over the word.',
-    },
-    {
-      plain: 'CORSAIR',
-      key: 'PIRATE',
-      hint: 'A privateer or sea raider of historic waters',
-      keyClue: 'Key hint: a buccaneer sailing under the Jolly Roger',
-      keyInfo: 'P=15, I=8, R=17, A=0, T=19, E=4 — A provides an unshifted anchor letter.',
-    },
-    {
-      plain: 'TEMPEST',
-      key: 'STORM',
-      hint: 'A violent and windy rainstorm at sea',
-      keyClue: 'Key hint: severe turbulent atmospheric weather',
-      keyInfo: 'S=18, T=19, O=14, R=17, M=12 — strong high-value shifts throughout.',
-    },
-    {
-      plain: 'GALAXY',
-      key: 'STAR',
-      hint: 'A gravitationally bound system of stars and cosmic dust',
-      keyClue: 'Key hint: a glowing celestial body of plasma',
-      keyInfo: 'S=18, T=19, A=0, R=17 — A=0 exposes the underlying character directly.',
-    },
-    {
-      plain: 'KEEPER',
-      key: 'LOCK',
-      hint: 'A guardian or caretaker watching over a domain',
-      keyClue: 'Key hint: a fastening mechanism opened by a key',
-      keyInfo: 'L=11, O=14, C=2, K=10 — four key values cycling through the positions.',
-    },
-    {
-      plain: 'HARBOR',
-      key: 'PORT',
-      hint: 'A sheltered port where boats find refuge',
-      keyClue: 'Key hint: a maritime harbor town where ships dock',
-      keyInfo: 'P=15, O=14, R=17, T=19 — high shifts clustered between 14 and 19.',
-    },
-    {
-      plain: 'MIRAGE',
-      key: 'SAND',
-      hint: 'An optical illusion caused by atmospheric conditions',
-      keyClue: 'Key hint: granular mineral particles found in deserts',
-      keyInfo: 'S=18, A=0, N=13, D=3 — A=0 gives away a plaintext position.',
-    },
-      {
-      plain: "COMPASS",
-      key: "SEA",
-      hint: "A navigational instrument with a needle pointing north",
-      keyClue: "Key hint: The vast salt water covering most of the Earth",
-      keyInfo: "S=18, E=4, A=0 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "LANTERN",
-      key: "WAVE",
-      hint: "A portable lamp with a protective case for carrying light",
-      keyClue: "Key hint: A rolling ridge of moving water",
-      keyInfo: "W=22, A=0, V=21, E=4 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "ANCHOR",
-      key: "TIDE",
-      hint: "A heavy iron device dropped overboard to hold a ship in place",
-      keyClue: "Key hint: The twice-daily rise and fall of the sea",
-      keyInfo: "T=19, I=8, D=3, E=4 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "VOYAGE",
-      key: "FISH",
-      hint: "A long journey taken across the sea or through space",
-      keyClue: "Key hint: A gilled animal that swims with fins",
-      keyInfo: "F=5, I=8, S=18, H=7 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "ISLAND",
-      key: "GULL",
-      hint: "A tract of land completely surrounded by water",
-      keyClue: "Key hint: A white seabird that cries near the shore",
-      keyInfo: "G=6, U=20, L=11, L=11 — repeated L gives identical shifts at both positions.",
-    },
-    {
-      plain: "PIRATE",
-      key: "SALT",
-      hint: "A sea raider who attacks ships under a black flag",
-      keyClue: "Key hint: White crystals that season food and flavor the sea",
-      keyInfo: "S=18, A=0, L=11, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "SAILOR",
-      key: "ROCK",
-      hint: "A person who works or travels on a ship",
-      keyClue: "Key hint: A hard solid mass of stone",
-      keyInfo: "R=17, O=14, C=2, K=10 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "HARBOR",
-      key: "SAND",
-      hint: "A sheltered stretch of water where ships anchor safely",
-      keyClue: "Key hint: Tiny loose grains of worn-down rock",
-      keyInfo: "S=18, A=0, N=13, D=3 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "VESSEL",
-      key: "SHIP",
-      hint: "A large ship or seagoing craft",
-      keyClue: "Key hint: A large seagoing vessel",
-      keyInfo: "S=18, H=7, I=8, P=15 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "MARINE",
-      key: "BOAT",
-      hint: "Relating to the sea and the life within it",
-      keyClue: "Key hint: A small watercraft paddled, sailed, or motored",
-      keyInfo: "B=1, O=14, A=0, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "BEACON",
-      key: "SEA",
-      hint: "A guiding light or signal fire set on a shore",
-      keyClue: "Key hint: The vast salt water covering most of the Earth",
-      keyInfo: "S=18, E=4, A=0 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "CURRENT",
-      key: "WAVE",
-      hint: "A steady flow of water moving in one direction",
-      keyClue: "Key hint: A rolling ridge of moving water",
-      keyInfo: "W=22, A=0, V=21, E=4 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "SEAGULL",
-      key: "TIDE",
-      hint: "A loud white seabird that scavenges along coasts",
-      keyClue: "Key hint: The twice-daily rise and fall of the sea",
-      keyInfo: "T=19, I=8, D=3, E=4 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "HORIZON",
-      key: "FISH",
-      hint: "The distant line where the sea appears to meet the sky",
-      keyClue: "Key hint: A gilled animal that swims with fins",
-      keyInfo: "F=5, I=8, S=18, H=7 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "BREEZE",
-      key: "GULL",
-      hint: "A light gentle wind",
-      keyClue: "Key hint: A white seabird that cries near the shore",
-      keyInfo: "G=6, U=20, L=11, L=11 — repeated L gives identical shifts at both positions.",
-    },
-    {
-      plain: "RUDDER",
-      key: "SALT",
-      hint: "The flat movable blade steered to turn a ship",
-      keyClue: "Key hint: White crystals that season food and flavor the sea",
-      keyInfo: "S=18, A=0, L=11, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "GALLEY",
-      key: "ROCK",
-      hint: "A ship’s kitchen where meals are cooked",
-      keyClue: "Key hint: A hard solid mass of stone",
-      keyInfo: "R=17, O=14, C=2, K=10 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "CABIN",
-      key: "SAND",
-      hint: "A private room aboard a ship",
-      keyClue: "Key hint: Tiny loose grains of worn-down rock",
-      keyInfo: "S=18, A=0, N=13, D=3 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "TACKLE",
-      key: "SHIP",
-      hint: "The rigging and gear fitted on a fishing boat",
-      keyClue: "Key hint: A large seagoing vessel",
-      keyInfo: "S=18, H=7, I=8, P=15 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "BALLAST",
-      key: "BOAT",
-      hint: "Heavy weight placed in a ship’s hull to keep it stable",
-      keyClue: "Key hint: A small watercraft paddled, sailed, or motored",
-      keyInfo: "B=1, O=14, A=0, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "FATHOM",
-      key: "SEA",
-      hint: "A nautical depth unit equal to six feet",
-      keyClue: "Key hint: The vast salt water covering most of the Earth",
-      keyInfo: "S=18, E=4, A=0 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "LAGOON",
-      key: "WAVE",
-      hint: "A shallow body of water separated from the sea by a reef",
-      keyClue: "Key hint: A rolling ridge of moving water",
-      keyInfo: "W=22, A=0, V=21, E=4 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "TRENCH",
-      key: "TIDE",
-      hint: "A long deep chasm on the ocean floor",
-      keyClue: "Key hint: The twice-daily rise and fall of the sea",
-      keyInfo: "T=19, I=8, D=3, E=4 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "PELICAN",
-      key: "FISH",
-      hint: "A large coastal bird with a pouch under its beak",
-      keyClue: "Key hint: A gilled animal that swims with fins",
-      keyInfo: "F=5, I=8, S=18, H=7 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "DOLPHIN",
-      key: "GULL",
-      hint: "A clever marine mammal that leaps beside ships",
-      keyClue: "Key hint: A white seabird that cries near the shore",
-      keyInfo: "G=6, U=20, L=11, L=11 — repeated L gives identical shifts at both positions.",
-    },
-    {
-      plain: "TURTLE",
-      key: "SALT",
-      hint: "A slow shelled reptile that swims the open sea",
-      keyClue: "Key hint: White crystals that season food and flavor the sea",
-      keyInfo: "S=18, A=0, L=11, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "WHALE",
-      key: "ROCK",
-      hint: "The largest marine mammal, a giant of the deep",
-      keyClue: "Key hint: A hard solid mass of stone",
-      keyInfo: "R=17, O=14, C=2, K=10 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "SHARK",
-      key: "SAND",
-      hint: "A powerful predatory fish with rows of sharp teeth",
-      keyClue: "Key hint: Tiny loose grains of worn-down rock",
-      keyInfo: "S=18, A=0, N=13, D=3 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "OCTOPUS",
-      key: "SHIP",
-      hint: "An eight-armed sea creature that squirts ink",
-      keyClue: "Key hint: A large seagoing vessel",
-      keyInfo: "S=18, H=7, I=8, P=15 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "SQUID",
-      key: "BOAT",
-      hint: "A fast-swimming cephalopod with ten arms and ink",
-      keyClue: "Key hint: A small watercraft paddled, sailed, or motored",
-      keyInfo: "B=1, O=14, A=0, T=19 — A=0 leaves its letter unshifted.",
-    },
-  ],
+  {
+    "plain": "CIPHER",
+    "key": "LOCK",
+    "hint": "A secret way of writing",
+    "keyClue": "Key hint: A fastening mechanism opened by a key",
+    "keyInfo": "L=11, O=14, C=2, K=10 — four key values cycling through the positions."
+  },
+  {
+    "plain": "SALMON",
+    "key": "HOOK",
+    "hint": "Pink-fleshed fish that swims upstream",
+    "keyClue": "Key hint: A curved barb used by fishermen",
+    "keyInfo": "H=7, O=14, O=14, K=10 — double O applies identical 14 shift."
+  },
+  {
+    "plain": "PUZZLE",
+    "key": "COIN",
+    "hint": "A game or problem designed to test ingenuity",
+    "keyClue": "Key hint: A stamped piece of metal used as currency",
+    "keyInfo": "C=2, O=14, I=8, N=13 — varied medium-tier shifts."
+  },
+  {
+    "plain": "VOYAGE",
+    "key": "HELM",
+    "hint": "A long journey across the sea or space",
+    "keyClue": "Key hint: The tiller or wheel steering the vessel",
+    "keyInfo": "H=7, E=4, L=11, M=12 — nautical key with shifts between 4 and 12."
+  },
+  {
+    "plain": "SHADOW",
+    "key": "LION",
+    "hint": "A dark area where light is blocked",
+    "keyClue": "Key hint: A proud golden predator with a great mane",
+    "keyInfo": "L=11, I=8, O=14, N=13 — moderate shifts spanning up to 14."
+  },
+  {
+    "plain": "HARBOR",
+    "key": "DECK",
+    "hint": "A sheltered body of water where ships dock",
+    "keyClue": "Key hint: The flat wooden walking surface of a ship",
+    "keyInfo": "D=3, E=4, C=2, K=10 — compact maritime keyword."
+  },
+  {
+    "plain": "ANCHOR",
+    "key": "GOLD",
+    "hint": "A heavy iron device dropped to hold a ship",
+    "keyClue": "Key hint: A precious yellow treasure metal",
+    "keyInfo": "G=6, O=14, L=11, D=3 — shifts reaching up to 14."
+  },
+  {
+    "plain": "ISLAND",
+    "key": "KING",
+    "hint": "A tract of land surrounded by water",
+    "keyClue": "Key hint: A sovereign ruler wearing a crown",
+    "keyInfo": "K=10, I=8, N=13, G=6 — strong balanced shifts cycling across."
+  },
+  {
+    "plain": "PIRATE",
+    "key": "BELL",
+    "hint": "A sea raider who attacks ships under a black flag",
+    "keyClue": "Key hint: A ship instrument that chimes watch hours",
+    "keyInfo": "B=1, E=4, L=11, L=11 — double L applies identical 11 shift."
+  },
+  {
+    "plain": "SAILOR",
+    "key": "MINE",
+    "hint": "A person who works or travels on a ship",
+    "keyClue": "Key hint: An underground excavation for ore",
+    "keyInfo": "M=12, I=8, N=13, E=4 — cycling medium shifts."
+  },
+  {
+    "plain": "VESSEL",
+    "key": "LOG",
+    "hint": "A large ship or seagoing craft",
+    "keyClue": "Key hint: An official record of voyages and speed",
+    "keyInfo": "L=11, O=14, G=6 — nautical logbook keyword."
+  },
+  {
+    "plain": "MARINE",
+    "key": "FOG",
+    "hint": "Relating to or found in the sea",
+    "keyClue": "Key hint: A thick mist hovering over the water",
+    "keyInfo": "F=5, O=14, G=6 — 3-letter keyword with shifts up to 14."
+  },
+  {
+    "plain": "BEACON",
+    "key": "FOIL",
+    "hint": "A light or fire set up as a warning signal",
+    "keyClue": "Key hint: A shiny metallic sheet reflector",
+    "keyInfo": "F=5, O=14, I=8, L=11 — shifts 5, 14, 8, 11."
+  },
+  {
+    "plain": "BREEZE",
+    "key": "LOCK",
+    "hint": "A gentle, light wind",
+    "keyClue": "Key hint: A mechanism securing treasure chests",
+    "keyInfo": "L=11, O=14, C=2, K=10 — four key values cycling through positions."
+  },
+  {
+    "plain": "RUDDER",
+    "key": "HOOK",
+    "hint": "A flat piece used for steering a boat",
+    "keyClue": "Key hint: A curved iron gaff or anchor hook",
+    "keyInfo": "H=7, O=14, O=14, K=10 — double O applies identical 14 shift."
+  },
+  {
+    "plain": "GALLEY",
+    "key": "COIN",
+    "hint": "The kitchen area on a ship",
+    "keyClue": "Key hint: A shiny doubloon paid to cooks",
+    "keyInfo": "C=2, O=14, I=8, N=13 — varied medium-tier shifts."
+  },
+  {
+    "plain": "TACKLE",
+    "key": "HELM",
+    "hint": "Equipment and ropes used on a sailing vessel",
+    "keyClue": "Key hint: The steering control station on the bridge",
+    "keyInfo": "H=7, E=4, L=11, M=12 — nautical key with shifts between 4 and 12."
+  },
+  {
+    "plain": "FATHOM",
+    "key": "LION",
+    "hint": "A unit of depth equal to six feet in water",
+    "keyClue": "Key hint: The figurehead beast carved on the bow",
+    "keyInfo": "L=11, I=8, O=14, N=13 — moderate shifts spanning up to 14."
+  },
+  {
+    "plain": "LAGOON",
+    "key": "DECK",
+    "hint": "A shallow body of water separated from sea by reefs",
+    "keyClue": "Key hint: The teak deck overlooking emerald waters",
+    "keyInfo": "D=3, E=4, C=2, K=10 — compact maritime keyword."
+  },
+  {
+    "plain": "TRENCH",
+    "key": "GOLD",
+    "hint": "A deep, steep-sided depression in the ocean floor",
+    "keyClue": "Key hint: Sunken doubloons buried in the abyss",
+    "keyInfo": "G=6, O=14, L=11, D=3 — shifts reaching up to 14."
+  },
+  {
+    "plain": "TURTLE",
+    "key": "KING",
+    "hint": "A sea reptile with a hard shell and flippers",
+    "keyClue": "Key hint: The monarch of the ocean depths",
+    "keyInfo": "K=10, I=8, N=13, G=6 — strong balanced shifts cycling across."
+  },
+  {
+    "plain": "MARBLE",
+    "key": "BELL",
+    "hint": "A smooth patterned stone often sculpted",
+    "keyClue": "Key hint: A bronze bell polished like marble",
+    "keyInfo": "B=1, E=4, L=11, L=11 — double L applies identical 11 shift."
+  },
+  {
+    "plain": "JUNGLE",
+    "key": "MINE",
+    "hint": "A dense tropical forest thick with wild growth",
+    "keyClue": "Key hint: An old mineral dig hidden in dense canopy",
+    "keyInfo": "M=12, I=8, N=13, E=4 — cycling medium shifts."
+  },
+  {
+    "plain": "BRIDGE",
+    "key": "LOG",
+    "hint": "A structure spanning across water or a chasm",
+    "keyClue": "Key hint: The captain’s log kept on the bridge",
+    "keyInfo": "L=11, O=14, G=6 — nautical logbook keyword."
+  },
+  {
+    "plain": "FROZEN",
+    "key": "FOG",
+    "hint": "Turned into ice or hardened by extreme cold",
+    "keyClue": "Key hint: Freezing mist blanketing the ice shelf",
+    "keyInfo": "F=5, O=14, G=6 — 3-letter keyword with shifts up to 14."
+  },
+  {
+    "plain": "SUNSET",
+    "key": "FOIL",
+    "hint": "The daily descent of the sun below the horizon",
+    "keyClue": "Key hint: Golden reflections like metallic foil",
+    "keyInfo": "F=5, O=14, I=8, L=11 — shifts 5, 14, 8, 11."
+  },
+  {
+    "plain": "PALACE",
+    "key": "LOCK",
+    "hint": "A grand residence of royalty or rulers",
+    "keyClue": "Key hint: Heavy brass locks on castle gates",
+    "keyInfo": "L=11, O=14, C=2, K=10 — four key values cycling through positions."
+  },
+  {
+    "plain": "DESERT",
+    "key": "HOOK",
+    "hint": "A dry, barren expanse with little water",
+    "keyClue": "Key hint: A caravan trail hooked around the dunes",
+    "keyInfo": "H=7, O=14, O=14, K=10 — double O applies identical 14 shift."
+  },
+  {
+    "plain": "GALAXY",
+    "key": "COIN",
+    "hint": "A vast gravitational system of stars and cosmic dust",
+    "keyClue": "Key hint: Stars scattered like gleaming coins",
+    "keyInfo": "C=2, O=14, I=8, N=13 — varied medium-tier shifts."
+  },
+  {
+    "plain": "CAVERN",
+    "key": "HELM",
+    "hint": "A vast natural hollow chamber underground",
+    "keyClue": "Key hint: Steering into the cavern with steady hands",
+    "keyInfo": "H=7, E=4, L=11, M=12 — nautical key with shifts between 4 and 12."
+  },
+  {
+    "plain": "FALCON",
+    "key": "LION",
+    "hint": "A swift raptor bird renowned for high-speed dives",
+    "keyClue": "Key hint: A regal predator painted on the herald",
+    "keyInfo": "L=11, I=8, O=14, N=13 — moderate shifts spanning up to 14."
+  },
+  {
+    "plain": "KEEPER",
+    "key": "DECK",
+    "hint": "A guardian or caretaker watching over a post",
+    "keyClue": "Key hint: The watchkeeper standing on the quarterdeck",
+    "keyInfo": "D=3, E=4, C=2, K=10 — compact maritime keyword."
+  },
+  {
+    "plain": "MIRAGE",
+    "key": "GOLD",
+    "hint": "An optical illusion caused by atmospheric conditions",
+    "keyClue": "Key hint: The shimmering promise of golden riches",
+    "keyInfo": "G=6, O=14, L=11, D=3 — shifts reaching up to 14."
+  },
+  {
+    "plain": "SILVER",
+    "key": "KING",
+    "hint": "A precious lustrous white metallic element",
+    "keyClue": "Key hint: Royal silver tribute for the monarch",
+    "keyInfo": "K=10, I=8, N=13, G=6 — strong balanced shifts cycling across."
+  },
+  {
+    "plain": "TIMBER",
+    "key": "BELL",
+    "hint": "Wood prepared for building ships and structures",
+    "keyClue": "Key hint: The ship’s bell mounted on the main mast",
+    "keyInfo": "B=1, E=4, L=11, L=11 — double L applies identical 11 shift."
+  },
+  {
+    "plain": "ZEPHYR",
+    "key": "MINE",
+    "hint": "A soft, gentle western breeze",
+    "keyClue": "Key hint: Fresh airflow circulating through deep shafts",
+    "keyInfo": "M=12, I=8, N=13, E=4 — cycling medium shifts."
+  },
+  {
+    "plain": "CORAL",
+    "key": "LOG",
+    "hint": "Hard rocky structure built by tiny sea animals",
+    "keyClue": "Key hint: Dangerous reefs noted in the captain’s log",
+    "keyInfo": "L=11, O=14, G=6 — nautical logbook keyword."
+  },
+  {
+    "plain": "COAST",
+    "key": "FOG",
+    "hint": "The land bordering along the sea",
+    "keyClue": "Key hint: Shrouded shores hidden behind grey vapor",
+    "keyInfo": "F=5, O=14, G=6 — 3-letter keyword with shifts up to 14."
+  },
+  {
+    "plain": "OCEAN",
+    "key": "FOIL",
+    "hint": "A vast continuous body of salt water",
+    "keyClue": "Key hint: Glittering waves shimmering like metal foil",
+    "keyInfo": "F=5, O=14, I=8, L=11 — shifts 5, 14, 8, 11."
+  },
+  {
+    "plain": "STORM",
+    "key": "LOCK",
+    "hint": "Violent weather with heavy winds and rain",
+    "keyClue": "Key hint: Batten down hatches and lock the cargo doors",
+    "keyInfo": "L=11, O=14, C=2, K=10 — four key values cycling through positions."
+  }
+],
   hard: [
-    {
-      plain: 'SILENT CIPHER',
-      key: 'SECRET',
-      hint: 'An encoded message transmitted without making noise',
-      keyClue: 'Key hint: kept hidden from the knowledge of others',
-      keyInfo: 'S=18, E=4, C=2, R=17, E=4, T=19 — repeating E shifts give two key positions identical offsets.',
-    },
-    {
-      plain: 'DARK FORTRESS',
-      key: 'CASTLE',
-      hint: 'A formidable black stronghold rising above the crags',
-      keyClue: 'Key hint: a large fortified building of medieval stone',
-      keyInfo: 'C=2, A=0, S=18, T=19, L=11, E=4 — A at position 2 leaves its letter unshifted.',
-    },
-    {
-      plain: 'GOLDEN FALCON',
-      key: 'SHIELD',
-      hint: 'A gilded sculpture of a predatory hunting bird',
-      keyClue: 'Key hint: a piece of defensive armor held to block strikes',
-      keyInfo: 'S=18, H=7, I=8, E=4, L=11, D=3 — a balanced 6-letter keyword.',
-    },
-    {
-      plain: 'MYSTIC RUNES',
-      key: 'ENIGMA',
-      hint: 'Ancient carved symbols endowed with magical meaning',
-      keyClue: 'Key hint: a mysterious or puzzling riddle or machine',
-      keyInfo: 'E=4, N=13, I=8, G=6, M=12, A=0 — A=0 reveals its corresponding character.',
-    },
-    {
-      plain: 'STEALTH AGENT',
-      key: 'SHADOW',
-      hint: 'An undercover operative trained in silent movement',
-      keyClue: 'Key hint: darkness cast by an obstructed light source',
-      keyInfo: 'S=18, H=7, A=0, D=3, O=14, W=22 — contains wide shifts from 0 to 22.',
-    },
-    {
-      plain: 'ANCIENT SCROLL',
-      key: 'TEMPLE',
-      hint: 'A brittle parchment roll preserving historic knowledge',
-      keyClue: 'Key hint: a sacred building devoted to worship',
-      keyInfo: 'T=19, E=4, M=12, P=15, L=11, E=4 — duplicate E shifts at indices 1 and 5.',
-    },
-    {
-      plain: 'MIDNIGHT SIGNAL',
-      key: 'BEACON',
-      hint: 'A beacon transmission dispatched in the dead of night',
-      keyClue: 'Key hint: a guiding light tower on a rocky cape',
-      keyInfo: 'B=1, E=4, A=0, C=2, O=14, N=13 — A=0 gives an exact match at that cycle slot.',
-    },
-    {
-      plain: 'HIDDEN COMPASS',
-      key: 'VOYAGE',
-      hint: 'A concealed navigational gauge showing magnetic north',
-      keyClue: 'Key hint: a long journey across the open seas',
-      keyInfo: 'V=21, O=14, Y=24, A=0, G=6, E=4 — high shifts V and Y with a zero shift at A.',
-    },
-    {
-      plain: 'FROZEN TRENCH',
-      key: 'ARCTIC',
-      hint: 'A deep undersea chasm surrounded by polar ice',
-      keyClue: 'Key hint: the polar region surrounding the North Pole',
-      keyInfo: 'A=0, R=17, C=2, T=19, I=8, C=2 — double C provides repeated shift offsets.',
-    },
-    {
-      plain: 'SILVER LANTERN',
-      key: 'LUNAR',
-      hint: 'A gleaming metal lamp holding an illuminating flame',
-      keyClue: 'Key hint: relating to the moon and its phases',
-      keyInfo: 'L=11, U=20, N=13, A=0, R=17 — 5-letter key cycling across both words.',
-    },
-      {
-      plain: "SHIPWRECK",
-      key: "SEA",
-      hint: "The remains of a destroyed vessel on the seabed",
-      keyClue: "Key hint: The vast salt water covering most of the Earth",
-      keyInfo: "S=18, E=4, A=0 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "NAVIGATION",
-      key: "WAVE",
-      hint: "The science of plotting a ship’s course and position",
-      keyClue: "Key hint: A rolling ridge of moving water",
-      keyInfo: "W=22, A=0, V=21, E=4 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "SUBMARINE",
-      key: "TIDE",
-      hint: "A vessel that travels and fights beneath the surface",
-      keyClue: "Key hint: The twice-daily rise and fall of the sea",
-      keyInfo: "T=19, I=8, D=3, E=4 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "HURRICANE",
-      key: "FISH",
-      hint: "A massive rotating tropical storm born over warm seas",
-      keyClue: "Key hint: A gilled animal that swims with fins",
-      keyInfo: "F=5, I=8, S=18, H=7 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "WHIRLPOOL",
-      key: "GULL",
-      hint: "A powerful spinning vortex of water that sucks objects down",
-      keyClue: "Key hint: A white seabird that cries near the shore",
-      keyInfo: "G=6, U=20, L=11, L=11 — repeated L gives identical shifts at both positions.",
-    },
-    {
-      plain: "PENINSULA",
-      key: "SALT",
-      hint: "Land almost surrounded by water but joined to the mainland",
-      keyClue: "Key hint: White crystals that season food and flavor the sea",
-      keyInfo: "S=18, A=0, L=11, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "ARCHIPELAGO",
-      key: "ROCK",
-      hint: "A chain or cluster of scattered islands",
-      keyClue: "Key hint: A hard solid mass of stone",
-      keyInfo: "R=17, O=14, C=2, K=10 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "MERIDIAN",
-      key: "SAND",
-      hint: "A line of longitude running pole to pole on a chart",
-      keyClue: "Key hint: Tiny loose grains of worn-down rock",
-      keyInfo: "S=18, A=0, N=13, D=3 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "LATITUDE",
-      key: "SHIP",
-      hint: "Distance north or south of the equator, measured in degrees",
-      keyClue: "Key hint: A large seagoing vessel",
-      keyInfo: "S=18, H=7, I=8, P=15 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "LONGITUDE",
-      key: "BOAT",
-      hint: "Distance east or west of the prime meridian, in degrees",
-      keyClue: "Key hint: A small watercraft paddled, sailed, or motored",
-      keyInfo: "B=1, O=14, A=0, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "EQUATOR",
-      key: "SEA",
-      hint: "The imaginary line circling Earth at zero degrees latitude",
-      keyClue: "Key hint: The vast salt water covering most of the Earth",
-      keyInfo: "S=18, E=4, A=0 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "TIDESWELL",
-      key: "WAVE",
-      hint: "A sudden surge of seawater driven by rising tides",
-      keyClue: "Key hint: A rolling ridge of moving water",
-      keyInfo: "W=22, A=0, V=21, E=4 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "BATHYSCAPHE",
-      key: "TIDE",
-      hint: "A deep-diving submersible built to explore ocean trenches",
-      keyClue: "Key hint: The twice-daily rise and fall of the sea",
-      keyInfo: "T=19, I=8, D=3, E=4 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "OCEANOGRAPHY",
-      key: "FISH",
-      hint: "The scientific study of the sea’s waters, currents, and life",
-      keyClue: "Key hint: A gilled animal that swims with fins",
-      keyInfo: "F=5, I=8, S=18, H=7 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "BARNACLE",
-      key: "GULL",
-      hint: "A small crustacean that cements itself to hulls and rocks",
-      keyClue: "Key hint: A white seabird that cries near the shore",
-      keyInfo: "G=6, U=20, L=11, L=11 — repeated L gives identical shifts at both positions.",
-    },
-    {
-      plain: "CRUSTACEAN",
-      key: "SALT",
-      hint: "A hard-shelled sea animal such as a crab or lobster",
-      keyClue: "Key hint: White crystals that season food and flavor the sea",
-      keyInfo: "S=18, A=0, L=11, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "PLANKTON",
-      key: "ROCK",
-      hint: "Tiny drifting organisms that feed nearly all ocean life",
-      keyClue: "Key hint: A hard solid mass of stone",
-      keyInfo: "R=17, O=14, C=2, K=10 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "ALBATROSS",
-      key: "SAND",
-      hint: "A giant seabird that glides over oceans for days",
-      keyClue: "Key hint: Tiny loose grains of worn-down rock",
-      keyInfo: "S=18, A=0, N=13, D=3 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "CORSAIR",
-      key: "SHIP",
-      hint: "A private ship authorized to raid enemy merchant vessels",
-      keyClue: "Key hint: A large seagoing vessel",
-      keyInfo: "S=18, H=7, I=8, P=15 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "BUCCANEER",
-      key: "BOAT",
-      hint: "A 17th-century pirate who hunted Spanish treasure ships",
-      keyClue: "Key hint: A small watercraft paddled, sailed, or motored",
-      keyInfo: "B=1, O=14, A=0, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "PRIVATEER",
-      key: "SEA",
-      hint: "A privately armed ship licensed by a government to raid",
-      keyClue: "Key hint: The vast salt water covering most of the Earth",
-      keyInfo: "S=18, E=4, A=0 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "GALLEON",
-      key: "WAVE",
-      hint: "A large Spanish sailing ship built to carry treasure",
-      keyClue: "Key hint: A rolling ridge of moving water",
-      keyInfo: "W=22, A=0, V=21, E=4 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "SCHOONER",
-      key: "TIDE",
-      hint: "A swift sailing ship with fore-and-aft sails on two masts",
-      keyClue: "Key hint: The twice-daily rise and fall of the sea",
-      keyInfo: "T=19, I=8, D=3, E=4 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "FRIGATE",
-      key: "FISH",
-      hint: "A fast warship built for escort and patrol duty",
-      keyClue: "Key hint: A gilled animal that swims with fins",
-      keyInfo: "F=5, I=8, S=18, H=7 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "CORVETTE",
-      key: "GULL",
-      hint: "A small lightly armed escort warship",
-      keyClue: "Key hint: A white seabird that cries near the shore",
-      keyInfo: "G=6, U=20, L=11, L=11 — repeated L gives identical shifts at both positions.",
-    },
-    {
-      plain: "IRONCLAD",
-      key: "SALT",
-      hint: "A 19th-century warship protected by iron armor plates",
-      keyClue: "Key hint: White crystals that season food and flavor the sea",
-      keyInfo: "S=18, A=0, L=11, T=19 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "DREADNOUGHT",
-      key: "ROCK",
-      hint: "An early 20th-century battleship with all-big-gun armament",
-      keyClue: "Key hint: A hard solid mass of stone",
-      keyInfo: "R=17, O=14, C=2, K=10 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "BATTLESHIP",
-      key: "SAND",
-      hint: "The heaviest armored warship, built for line of battle",
-      keyClue: "Key hint: Tiny loose grains of worn-down rock",
-      keyInfo: "S=18, A=0, N=13, D=3 — A=0 leaves its letter unshifted.",
-    },
-    {
-      plain: "DESTROYER",
-      key: "SHIP",
-      hint: "A fast maneuverable warship armed with torpedoes",
-      keyClue: "Key hint: A large seagoing vessel",
-      keyInfo: "S=18, H=7, I=8, P=15 — distinct shifts cycle across the word.",
-    },
-    {
-      plain: "CRUISER",
-      key: "BOAT",
-      hint: "A fast mid-sized warship built for long-range patrols",
-      keyClue: "Key hint: A small watercraft paddled, sailed, or motored",
-      keyInfo: "B=1, O=14, A=0, T=19 — A=0 leaves its letter unshifted.",
-    },
-  ],
+  {
+    "plain": "MYSTERY",
+    "key": "STORM",
+    "hint": "Something that is difficult or impossible to explain",
+    "keyClue": "Key hint: Violent turbulent squall weather",
+    "keyInfo": "S=18, T=19, O=14, R=17, M=12 — strong high-value shifts throughout."
+  },
+  {
+    "plain": "LANTERN",
+    "key": "GHOST",
+    "hint": "A portable light with protective transparent casing",
+    "keyClue": "Key hint: An ethereal spirit wandering in the night",
+    "keyInfo": "G=6, H=7, O=14, S=18, T=19 — five distinct shifts cycle across the word."
+  },
+  {
+    "plain": "COMPASS",
+    "key": "LIGHT",
+    "hint": "A navigation tool with a needle pointing north",
+    "keyClue": "Key hint: Electromagnetic illumination piercing darkness",
+    "keyInfo": "L=11, I=8, G=6, H=7, T=19 — each letter advances the plaintext accordingly."
+  },
+  {
+    "plain": "CRYSTAL",
+    "key": "DEPTH",
+    "hint": "A clear mineral with a regular geometric pattern",
+    "keyClue": "Key hint: Distance measuring far down into the abyss",
+    "keyInfo": "D=3, E=4, P=15, T=19, H=7 — broad shifts across the alphabet."
+  },
+  {
+    "plain": "CURRENT",
+    "key": "CREST",
+    "hint": "A continuous directed movement of seawater",
+    "keyClue": "Key hint: The foaming top of an ocean surge",
+    "keyInfo": "C=2, R=17, E=4, S=18, T=19 — high shifts challenging decryption."
+  },
+  {
+    "plain": "SEAGULL",
+    "key": "WIND",
+    "hint": "A coastal bird that swoops over ocean waves",
+    "keyClue": "Key hint: Powerful air currents filling topgallants",
+    "keyInfo": "W=22, I=8, N=13, D=3 — W creates a large shift of 22."
+  },
+  {
+    "plain": "HORIZON",
+    "key": "CORNER",
+    "hint": "The line where the earth or sea meets the sky",
+    "keyClue": "Key hint: A junction where two bearings intersect",
+    "keyInfo": "C=2, O=14, R=17, N=13, E=4, R=17 — 6-letter rotating key."
+  },
+  {
+    "plain": "BALLAST",
+    "key": "SILVER",
+    "hint": "Heavy material placed in a ship to ensure stability",
+    "keyClue": "Key hint: A precious lustrous white metallic element",
+    "keyInfo": "S=18, I=8, L=11, V=21, E=4, R=17 — six varied shifts across the word."
+  },
+  {
+    "plain": "PELICAN",
+    "key": "SQUID",
+    "hint": "A large water bird with a pouch under its beak",
+    "keyClue": "Key hint: A deep-sea cephalopod that squirts dark ink",
+    "keyInfo": "S=18, Q=16, U=20, I=8, D=3 — high shifts with U=20 and S=18."
+  },
+  {
+    "plain": "DOLPHIN",
+    "key": "STORM",
+    "hint": "An intelligent marine mammal known for acrobatics",
+    "keyClue": "Key hint: A tempest of gales and driving rain",
+    "keyInfo": "S=18, T=19, O=14, R=17, M=12 — strong high-value shifts throughout."
+  },
+  {
+    "plain": "OCTOPUS",
+    "key": "GHOST",
+    "hint": "An eight-armed creature that squirts ink in defense",
+    "keyClue": "Key hint: A spectral apparition of lost sailors",
+    "keyInfo": "G=6, H=7, O=14, S=18, T=19 — five distinct shifts cycle across the word."
+  },
+  {
+    "plain": "EQUATOR",
+    "key": "LIGHT",
+    "hint": "The imaginary circle around the middle of Earth",
+    "keyClue": "Key hint: Blazing tropical sunshine",
+    "keyInfo": "L=11, I=8, G=6, H=7, T=19 — each letter advances the plaintext accordingly."
+  },
+  {
+    "plain": "CORSAIR",
+    "key": "DEPTH",
+    "hint": "A fast pirate ship authorized to raid enemy vessels",
+    "keyClue": "Key hint: The deep oceanic trench where wrecks lie",
+    "keyInfo": "D=3, E=4, P=15, T=19, H=7 — broad shifts across the alphabet."
+  },
+  {
+    "plain": "GALLEON",
+    "key": "CREST",
+    "hint": "A large multi-decked Spanish sailing warship",
+    "keyClue": "Key hint: The royal crest stamped upon treasure bars",
+    "keyInfo": "C=2, R=17, E=4, S=18, T=19 — high shifts challenging decryption."
+  },
+  {
+    "plain": "FRIGATE",
+    "key": "WIND",
+    "hint": "A swift warship built for patrol and escort duty",
+    "keyClue": "Key hint: Swift offshore gales carrying sails",
+    "keyInfo": "W=22, I=8, N=13, D=3 — W creates a large shift of 22."
+  },
+  {
+    "plain": "CRUISER",
+    "key": "CORNER",
+    "hint": "A fast warship designed for long-range oceanic patrols",
+    "keyClue": "Key hint: Patrolling every corner of the charted sea",
+    "keyInfo": "C=2, O=14, R=17, N=13, E=4, R=17 — 6-letter rotating key."
+  },
+  {
+    "plain": "PHANTOM",
+    "key": "SILVER",
+    "hint": "An apparition or ghostly shadow seen in the mist",
+    "keyClue": "Key hint: A gleaming silver mist in twilight",
+    "keyInfo": "S=18, I=8, L=11, V=21, E=4, R=17 — six varied shifts across the word."
+  },
+  {
+    "plain": "TEMPEST",
+    "key": "SQUID",
+    "hint": "A violent and turbulent storm upon the sea",
+    "keyClue": "Key hint: A sea monster thriving in stormy depths",
+    "keyInfo": "S=18, Q=16, U=20, I=8, D=3 — high shifts with U=20 and S=18."
+  },
+  {
+    "plain": "CAPTAIN",
+    "key": "STORM",
+    "hint": "The officer in command of a ship at sea",
+    "keyClue": "Key hint: Weathering a ferocious squall at the helm",
+    "keyInfo": "S=18, T=19, O=14, R=17, M=12 — strong high-value shifts throughout."
+  },
+  {
+    "plain": "KRAKEN",
+    "key": "GHOST",
+    "hint": "A legendary giant sea monster of terrifying size",
+    "keyClue": "Key hint: Phantom legends whispered by whalers",
+    "keyInfo": "G=6, H=7, O=14, S=18, T=19 — five distinct shifts cycle across the word."
+  },
+  {
+    "plain": "SEAMARK",
+    "key": "LIGHT",
+    "hint": "A conspicuous landmark aiding sailors at sea",
+    "keyClue": "Key hint: A lighthouse beam guiding through shoals",
+    "keyInfo": "L=11, I=8, G=6, H=7, T=19 — each letter advances the plaintext accordingly."
+  },
+  {
+    "plain": "TRIDENT",
+    "key": "DEPTH",
+    "hint": "A three-pronged spear carried by sea deities",
+    "keyClue": "Key hint: Forged in the abyssal ocean floor",
+    "keyInfo": "D=3, E=4, P=15, T=19, H=7 — broad shifts across the alphabet."
+  },
+  {
+    "plain": "ICEBERG",
+    "key": "CREST",
+    "hint": "A massive piece of freshwater ice floating in open sea",
+    "keyClue": "Key hint: Glacial ridges towering above frosty waves",
+    "keyInfo": "C=2, R=17, E=4, S=18, T=19 — high shifts challenging decryption."
+  },
+  {
+    "plain": "BARRIER",
+    "key": "WIND",
+    "hint": "A natural offshore reef guarding the coastline",
+    "keyClue": "Key hint: Windward breakers crashing on the shoals",
+    "keyInfo": "W=22, I=8, N=13, D=3 — W creates a large shift of 22."
+  },
+  {
+    "plain": "MONSOON",
+    "key": "CORNER",
+    "hint": "A seasonal prevailing wind bringing ocean torrents",
+    "keyClue": "Key hint: Sweeping round every cape and island corner",
+    "keyInfo": "C=2, O=14, R=17, N=13, E=4, R=17 — 6-letter rotating key."
+  },
+  {
+    "plain": "MARINER",
+    "key": "SILVER",
+    "hint": "A sailor who navigates the vast oceans",
+    "keyClue": "Key hint: Navigating by the silvery moonlight",
+    "keyInfo": "S=18, I=8, L=11, V=21, E=4, R=17 — six varied shifts across the word."
+  },
+  {
+    "plain": "CLIPPER",
+    "key": "SQUID",
+    "hint": "A fast sailing ship with multiple masts and large sails",
+    "keyClue": "Key hint: Outrunning deep-sea beasts across trade winds",
+    "keyInfo": "S=18, Q=16, U=20, I=8, D=3 — high shifts with U=20 and S=18."
+  },
+  {
+    "plain": "CUTTER",
+    "key": "STORM",
+    "hint": "A fast single-masted vessel used for patrols",
+    "keyClue": "Key hint: Swift cutter slicing through heavy seas",
+    "keyInfo": "S=18, T=19, O=14, R=17, M=12 — strong high-value shifts throughout."
+  },
+  {
+    "plain": "BRIGADE",
+    "key": "GHOST",
+    "hint": "A squadron or organized naval force",
+    "keyClue": "Key hint: A ghostly armada sailing in formation",
+    "keyInfo": "G=6, H=7, O=14, S=18, T=19 — five distinct shifts cycle across the word."
+  },
+  {
+    "plain": "CIPHER",
+    "key": "LIGHT",
+    "hint": "A secret code or cryptographic system",
+    "keyClue": "Key hint: Shining light upon hidden messages",
+    "keyInfo": "L=11, I=8, G=6, H=7, T=19 — each letter advances the plaintext accordingly."
+  },
+  {
+    "plain": "FATHOM",
+    "key": "DEPTH",
+    "hint": "A maritime unit of underwater depth",
+    "keyClue": "Key hint: Sounding lead plunged into the abyss",
+    "keyInfo": "D=3, E=4, P=15, T=19, H=7 — broad shifts across the alphabet."
+  },
+  {
+    "plain": "RUDDER",
+    "key": "CREST",
+    "hint": "A submerged blade used for steering vessels",
+    "keyClue": "Key hint: Riding the highest crest of rolling breakers",
+    "keyInfo": "C=2, R=17, E=4, S=18, T=19 — high shifts challenging decryption."
+  },
+  {
+    "plain": "LAGOON",
+    "key": "WIND",
+    "hint": "A quiet saltwater basin shielded by barrier reefs",
+    "keyClue": "Key hint: Gentle trade winds rustling palm trees",
+    "keyInfo": "W=22, I=8, N=13, D=3 — W creates a large shift of 22."
+  },
+  {
+    "plain": "TRENCH",
+    "key": "CORNER",
+    "hint": "An immense abyss plunging into ocean depths",
+    "keyClue": "Key hint: Uncharted corners of the midnight ocean",
+    "keyInfo": "C=2, O=14, R=17, N=13, E=4, R=17 — 6-letter rotating key."
+  },
+  {
+    "plain": "BEACON",
+    "key": "SILVER",
+    "hint": "A blazing coastal signal guiding night navigators",
+    "keyClue": "Key hint: Shining like a polished silver mirror",
+    "keyInfo": "S=18, I=8, L=11, V=21, E=4, R=17 — six varied shifts across the word."
+  },
+  {
+    "plain": "ANCHOR",
+    "key": "SQUID",
+    "hint": "A heavy forged iron hook that moors ships",
+    "keyClue": "Key hint: Entangled with tentacles on the sea bed",
+    "keyInfo": "S=18, Q=16, U=20, I=8, D=3 — high shifts with U=20 and S=18."
+  },
+  {
+    "plain": "ISLAND",
+    "key": "STORM",
+    "hint": "An isolated landmass encircled by open waters",
+    "keyClue": "Key hint: Buffeted by ocean squalls and heavy gales",
+    "keyInfo": "S=18, T=19, O=14, R=17, M=12 — strong high-value shifts throughout."
+  },
+  {
+    "plain": "PIRATE",
+    "key": "GHOST",
+    "hint": "A rogue corsair sailing under the Jolly Roger",
+    "keyClue": "Key hint: Legendary ghost ship flying ragged sails",
+    "keyInfo": "G=6, H=7, O=14, S=18, T=19 — five distinct shifts cycle across the word."
+  },
+  {
+    "plain": "SAILOR",
+    "key": "LIGHT",
+    "hint": "A seasoned hand working the rigging and decks",
+    "keyClue": "Key hint: Watching for dawn light on morning watch",
+    "keyInfo": "L=11, I=8, G=6, H=7, T=19 — each letter advances the plaintext accordingly."
+  },
+  {
+    "plain": "VESSEL",
+    "key": "DEPTH",
+    "hint": "A sturdy seagoing craft traversing treacherous waters",
+    "keyClue": "Key hint: Slicing through deep sapphire ocean waters",
+    "keyInfo": "D=3, E=4, P=15, T=19, H=7 — broad shifts across the alphabet."
+  }
+],
 };
 
 function buildVigenereLevel(plain, key, stageIndex, difficulty, hint, keyClue, keyInfo) {
   const ciphertext = vigEnc(plain, key);
-  const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0.35;
-  const mask = makeMask(plain, reveal);
+  const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0;
+  const minRevealed = difficulty === 'hard' ? 0 : 1;
+  const mask = makeMask(plain, reveal, minRevealed);
   const targetShifts = [];
   const startShifts = [];
   const masks = [];
@@ -1417,7 +1535,7 @@ function buildVigenereLevel(plain, key, stageIndex, difficulty, hint, keyClue, k
 }
 
 export function getVigenereLevelData(difficulty, stageIndex) {
-  const pool = vigenereData[difficulty];
+  const pool = vigenereData[difficulty] || vigenereData.easy;
   const randIndex = Math.floor(Math.random() * pool.length);
   const d = pool[randIndex];
   return buildVigenereLevel(d.plain, d.key, stageIndex, difficulty, d.hint, d.keyClue, d.keyInfo);
@@ -1432,855 +1550,855 @@ export function getVigenereGameType(stageIndex = 0) {
 /* ─────────────────── Playfair levels ─────────────────── */
 const playfairData = {
   easy: [
-    {
-      plain: 'HIDDEN MAP',
-      key: 'LAGOON',
-      hint: 'A secret chart that points toward buried treasure',
-      keyClue: 'A calm pool separated from the open sea',
-      lesson: 'Playfair reads two letters at a time. Repeated letters are split with filler X.',
-    },
-    {
-      plain: 'SAFE HARBOR',
-      key: 'ANCHOR',
-      hint: 'A protected place where ships can rest',
-      keyClue: 'Heavy metal gear that keeps a ship from drifting',
-      lesson: 'Same-row digraphs move left when decrypting.',
-    },
-    {
-      plain: 'SILVER KEY',
-      key: 'COMPASS',
-      hint: 'A bright object that can unlock a hidden door',
-      keyClue: 'A navigator uses it to find north',
-      lesson: 'Same-column digraphs move upward when decrypting.',
-    },
-    {
-      plain: 'TIDAL CAVE',
-      key: 'CURRENT',
-      hint: 'A sea-carved chamber that opens at low water',
-      keyClue: 'A moving stream of ocean water',
-      lesson: 'Rectangle pairs swap columns while staying on their own rows.',
-    },
-    {
-      plain: 'MOONLIT BAY',
-      key: 'BEACON',
-      hint: 'A quiet inlet brightened by night light',
-      keyClue: 'A signal light that guides sailors home',
-      lesson: 'The letter J shares I in the 5 by 5 matrix.',
-    },
-    {
-      plain: 'PIRATE GOLD',
-      key: 'ISLAND',
-      hint: 'Sunken loot hidden by ocean outlaws',
-      keyClue: 'A piece of land surrounded by water',
-      lesson: 'Digraph pairs are mapped onto a 5x5 key matrix.'
-    },
-    {
-      plain: 'DEEP WATER',
-      key: 'OCEAN',
-      hint: 'Vast blue sea depths',
-      keyClue: 'A very large expanse of sea',
-      lesson: 'Same-row digraphs shift to the left for decryption.'
-    },
-    {
-      plain: 'SHIP WRECK',
-      key: 'STORM',
-      hint: 'A sunken vessel on the ocean floor',
-      keyClue: 'Violent disturbance of the atmosphere with strong winds',
-      lesson: 'Same-column digraphs shift upward for decryption.'
-    },
-    {
-      plain: 'LOST MAPS',
-      key: 'CHART',
-      hint: 'Forgotten navigator guides',
-      keyClue: 'A sheet map for sea navigation',
-      lesson: 'Rectangle pairs swap columns while maintaining their row coordinates.'
-    },
-    {
-      plain: 'SAND DUNES',
-      key: 'BEACH',
-      hint: 'Windblown ridges by the shoreline',
-      keyClue: 'Sandy shore by the ocean',
-      lesson: 'Remember that I and J share a single slot in the Playfair matrix.'
-    },
-      {
-      plain: "CORAL",
-      key: "CORAL",
-      hint: "Hard rocky structure built by tiny sea animals called polyps",
-      keyClue: "A rocky reef built by tiny sea animals",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "SHELL",
-      key: "OCEAN",
-      hint: "Hard protective outer covering of a sea creature",
-      keyClue: "An enormous body of salt water",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "RIVER",
-      key: "WATER",
-      hint: "A large natural stream of fresh water flowing to the sea",
-      keyClue: "The clear liquid of rivers, rain, and seas",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "WAVES",
-      key: "BEACH",
-      hint: "Rolling ridges of water that move across the surface",
-      keyClue: "A sandy or pebbly shore beside the water",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "BOAT",
-      key: "SHORE",
-      hint: "A small vessel that travels on water",
-      keyClue: "The land along the edge of the sea",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "SAND",
-      key: "SHELL",
-      hint: "Tiny loose grains of worn-down rock covering beaches",
-      keyClue: "A hard outer covering of a sea creature",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "COAST",
-      key: "STORM",
-      hint: "The land next to the sea",
-      keyClue: "Violent weather of wind and rain",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "REEF",
-      key: "WINDS",
-      hint: "An underwater ridge of rock or coral near the surface",
-      keyClue: "Moving currents of air that fill sails",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "TIDE",
-      key: "SQUID",
-      hint: "The regular rise and fall of the sea level",
-      keyClue: "A ten-armed sea creature that squirts ink",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "GULL",
-      key: "WHALE",
-      hint: "A common white seabird often seen near harbors",
-      keyClue: "The giant of the sea, a huge marine mammal",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "PIER",
-      key: "CORAL",
-      hint: "A wooden structure built out over the water",
-      keyClue: "A rocky reef built by tiny sea animals",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "CLIFF",
-      key: "OCEAN",
-      hint: "A steep high rock face, often beside the sea",
-      keyClue: "An enormous body of salt water",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "DUNE",
-      key: "WATER",
-      hint: "A hill of sand shaped by the wind",
-      keyClue: "The clear liquid of rivers, rain, and seas",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "CAVE",
-      key: "BEACH",
-      hint: "A natural hollow chamber in rock or a hillside",
-      keyClue: "A sandy or pebbly shore beside the water",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "PORT",
-      key: "SHORE",
-      hint: "A town or harbor where ships load and unload",
-      keyClue: "The land along the edge of the sea",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "DOCK",
-      key: "SHELL",
-      hint: "A platform where ships are moored for loading",
-      keyClue: "A hard outer covering of a sea creature",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "KNOT",
-      key: "STORM",
-      hint: "A fastening tied in rope, also a unit of ship speed",
-      keyClue: "Violent weather of wind and rain",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "SAIL",
-      key: "WINDS",
-      hint: "A canvas sheet that catches wind to move a boat",
-      keyClue: "Moving currents of air that fill sails",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "MAST",
-      key: "SQUID",
-      hint: "The tall vertical pole that holds up a ship’s sail",
-      keyClue: "A ten-armed sea creature that squirts ink",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "DECK",
-      key: "WHALE",
-      hint: "The flat floor surface of a ship",
-      keyClue: "The giant of the sea, a huge marine mammal",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "FISH",
-      key: "CORAL",
-      hint: "An animal with gills and fins that lives in water",
-      keyClue: "A rocky reef built by tiny sea animals",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "SWIM",
-      key: "OCEAN",
-      hint: "To move through water using your body",
-      keyClue: "An enormous body of salt water",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "DIVE",
-      key: "WATER",
-      hint: "To plunge headfirst into deep water",
-      keyClue: "The clear liquid of rivers, rain, and seas",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "WIND",
-      key: "BEACH",
-      hint: "Moving air that fills a ship’s sails",
-      keyClue: "A sandy or pebbly shore beside the water",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "SUN",
-      key: "SHORE",
-      hint: "The star that lights and warms our days",
-      keyClue: "The land along the edge of the sea",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "STAR",
-      key: "SHELL",
-      hint: "A distant burning sphere of gas seen at night",
-      keyClue: "A hard outer covering of a sea creature",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "MOON",
-      key: "STORM",
-      hint: "The bright body that circles the Earth and rules the tides",
-      keyClue: "Violent weather of wind and rain",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "RAIN",
-      key: "WINDS",
-      hint: "Water droplets that fall from clouds",
-      keyClue: "Moving currents of air that fill sails",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "STORM",
-      key: "SQUID",
-      hint: "Violent weather with strong winds and rain",
-      keyClue: "A ten-armed sea creature that squirts ink",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "CALM",
-      key: "WHALE",
-      hint: "Completely still water with no wind or waves",
-      keyClue: "The giant of the sea, a huge marine mammal",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-  ],
+  {
+    "plain": "BOAT",
+    "key": "WAVE",
+    "hint": "A small vessel that travels on water",
+    "keyClue": "A rolling ridge of moving water",
+    "lesson": "Playfair reads letters in pairs (digraphs). Same-row letters shift left to decrypt."
+  },
+  {
+    "plain": "SAND",
+    "key": "TIDE",
+    "hint": "Tiny loose grains of worn-down rock covering beaches",
+    "keyClue": "The regular rise and fall of the sea",
+    "lesson": "Same-column digraph pairs shift upward by one letter when decrypting."
+  },
+  {
+    "plain": "REEF",
+    "key": "FISH",
+    "hint": "An underwater ridge of rock or coral near the surface",
+    "keyClue": "A gilled creature swimming the currents",
+    "lesson": "Rectangle pairs swap columns while staying on their original rows."
+  },
+  {
+    "plain": "TIDE",
+    "key": "BOAT",
+    "hint": "The regular rise and fall of the sea level",
+    "keyClue": "A small craft navigating coastal waters",
+    "lesson": "The letters I and J share a single square in the 5x5 Playfair matrix."
+  },
+  {
+    "plain": "GULL",
+    "key": "SAND",
+    "hint": "A common white seabird often seen near harbors",
+    "keyClue": "Fine coastal sediment along the shoreline",
+    "lesson": "Identical letter pairs are separated with the filler letter X."
+  },
+  {
+    "plain": "PIER",
+    "key": "REEF",
+    "hint": "A wooden structure built out over the water",
+    "keyClue": "A submerged coral ledge near the shore",
+    "lesson": "Same-row digraphs shift left with wrap-around at the row border."
+  },
+  {
+    "plain": "DUNE",
+    "key": "DOCK",
+    "hint": "A hill of sand shaped by the wind",
+    "keyClue": "A wooden landing platform for mooring boats",
+    "lesson": "Same-column digraphs shift upward with wrap-around at the top."
+  },
+  {
+    "plain": "CAVE",
+    "key": "MAST",
+    "hint": "A natural hollow chamber in rock or a hillside",
+    "keyClue": "The vertical wooden spar holding the sails",
+    "lesson": "In a rectangle rule, pick the letters at the opposite column corners."
+  },
+  {
+    "plain": "PORT",
+    "key": "SAIL",
+    "hint": "A town or harbor where ships load and unload",
+    "keyClue": "A canvas sheet catching oceanic breezes",
+    "lesson": "Playfair encrypts digraph pairs rather than individual single letters."
+  },
+  {
+    "plain": "DOCK",
+    "key": "PORT",
+    "hint": "A platform where ships are moored for loading",
+    "keyClue": "A bustling haven for merchant vessels",
+    "lesson": "Same-row digraphs move one space to the left when deciphering."
+  },
+  {
+    "plain": "KNOT",
+    "key": "GULL",
+    "hint": "A fastening tied in rope, also a unit of ship speed",
+    "keyClue": "A white seafaring bird soaring over waves",
+    "lesson": "Same-column digraphs move one space up when deciphering."
+  },
+  {
+    "plain": "SAIL",
+    "key": "DECK",
+    "hint": "A canvas sheet that catches wind to move a boat",
+    "keyClue": "The main outdoor planked surface of a ship",
+    "lesson": "Matrix coordinates (row, col) define digraph transformations."
+  },
+  {
+    "plain": "MAST",
+    "key": "WIND",
+    "hint": "The tall vertical pole that holds up a ship’s sail",
+    "keyClue": "Air currents powering sailing ships",
+    "lesson": "Remember: I and J occupy the exact same cell in the grid."
+  },
+  {
+    "plain": "DECK",
+    "key": "STAR",
+    "hint": "The flat floor surface of a ship",
+    "keyClue": "A celestial navigational beacon at night",
+    "lesson": "Rectangle pairs swap columns while retaining their row coordinates."
+  },
+  {
+    "plain": "FISH",
+    "key": "MOON",
+    "hint": "An animal with gills and fins that lives in water",
+    "keyClue": "The silver orb governing oceanic tides",
+    "lesson": "Decryption reverses the encryption shifts along rows and columns."
+  },
+  {
+    "plain": "SWIM",
+    "key": "RAIN",
+    "hint": "To move through water using your body",
+    "keyClue": "Precipitation falling over the open seas",
+    "lesson": "Same-row pairs step left; same-column pairs step up."
+  },
+  {
+    "plain": "DIVE",
+    "key": "CALM",
+    "hint": "To plunge headfirst into deep water",
+    "keyClue": "Tranquil sea waters devoid of squalls",
+    "lesson": "Two letters in a digraph cannot be identical without a filler."
+  },
+  {
+    "plain": "WIND",
+    "key": "BEACH",
+    "hint": "Moving air that fills a ship’s sails",
+    "keyClue": "A warm sandy shoreline touching the sea",
+    "lesson": "Keyword letters fill the matrix first, followed by the remaining alphabet."
+  },
+  {
+    "plain": "STAR",
+    "key": "CORAL",
+    "hint": "A distant burning sphere of gas seen at night",
+    "keyClue": "Marine polyps forming vast underwater structures",
+    "lesson": "Same-row digraphs wrap around to the rightmost column when moving left."
+  },
+  {
+    "plain": "MOON",
+    "key": "SHELL",
+    "hint": "The bright body that circles the Earth and rules the tides",
+    "keyClue": "A hard calcified shield of a molluscan creature",
+    "lesson": "Same-column digraphs wrap around to the bottom row when moving up."
+  },
+  {
+    "plain": "RAIN",
+    "key": "WAVE",
+    "hint": "Water droplets that fall from clouds",
+    "keyClue": "A cresting swell of moving water",
+    "lesson": "Rectangle pairs maintain their respective row levels."
+  },
+  {
+    "plain": "CALM",
+    "key": "TIDE",
+    "hint": "Completely still water with no wind or waves",
+    "keyClue": "The gravitational ebb and flood of the ocean",
+    "lesson": "Playfair was invented by Charles Wheatstone in 1854."
+  },
+  {
+    "plain": "HELLO",
+    "key": "FISH",
+    "hint": "A common friendly greeting",
+    "keyClue": "A swimming gilled sea creature",
+    "lesson": "Double letters like LL in HELLO are split with filler X."
+  },
+  {
+    "plain": "WORLD",
+    "key": "BOAT",
+    "hint": "The planet we live on",
+    "keyClue": "A vessel sailing across waterways",
+    "lesson": "Five-by-five key squares house 25 unique cipher letters."
+  },
+  {
+    "plain": "APPLE",
+    "key": "SAND",
+    "hint": "A fruit that keeps the doctor away",
+    "keyClue": "Finely crushed mineral shore grains",
+    "lesson": "Same-row pairs slide leftward during decryption."
+  },
+  {
+    "plain": "BEACH",
+    "key": "REEF",
+    "hint": "Sandy shores by the sea",
+    "keyClue": "A rocky ridge near the surface",
+    "lesson": "Same-column pairs slide upward during decryption."
+  },
+  {
+    "plain": "CLOUD",
+    "key": "DOCK",
+    "hint": "Floats in the sky",
+    "keyClue": "A mooring pier for seagoing vessels",
+    "lesson": "Corner letters in a rectangle rule form the decrypted pair."
+  },
+  {
+    "plain": "WATER",
+    "key": "MAST",
+    "hint": "Essential liquid for all living things",
+    "keyClue": "The upright timber supporting sails",
+    "lesson": "Playfair encrypts text in digraph pairs."
+  },
+  {
+    "plain": "SHARK",
+    "key": "SAIL",
+    "hint": "A fearsome ocean predator",
+    "keyClue": "Canvas sheets catching coastal breezes",
+    "lesson": "Keep track of the row and column of each letter."
+  },
+  {
+    "plain": "OCEAN",
+    "key": "PORT",
+    "hint": "A very large expanse of sea",
+    "keyClue": "A sheltered coastal harbor",
+    "lesson": "Duplicate keyword letters are skipped when building the grid."
+  },
+  {
+    "plain": "CORAL",
+    "key": "GULL",
+    "hint": "Hard rocky structure built by tiny sea animals called polyps",
+    "keyClue": "A white coastal scavenger bird",
+    "lesson": "Same-row letters shift left; same-column letters shift up."
+  },
+  {
+    "plain": "SHELL",
+    "key": "DECK",
+    "hint": "Hard protective outer covering of a sea creature",
+    "keyClue": "The flat upper timber floor of a vessel",
+    "lesson": "Deciphering reverses the direction of encryption shifts."
+  },
+  {
+    "plain": "RIVER",
+    "key": "WIND",
+    "hint": "A large natural stream of fresh water flowing to the sea",
+    "keyClue": "Moving atmospheric currents filling sails",
+    "lesson": "Rectangle digraph pairs swap horizontal coordinates."
+  },
+  {
+    "plain": "WAVES",
+    "key": "STAR",
+    "hint": "Rolling ridges of water that move across the surface",
+    "keyClue": "A night-sky celestial landmark",
+    "lesson": "The matrix grid has 5 rows and 5 columns."
+  },
+  {
+    "plain": "COAST",
+    "key": "MOON",
+    "hint": "The land next to the sea",
+    "keyClue": "The celestial sphere that governs tides",
+    "lesson": "Same-column pairs shift up one cell during decryption."
+  },
+  {
+    "plain": "CLIFF",
+    "key": "RAIN",
+    "hint": "A steep high rock face, often beside the sea",
+    "keyClue": "Fresh precipitation over coastal bluffs",
+    "lesson": "Same-row pairs shift left one cell during decryption."
+  },
+  {
+    "plain": "STORM",
+    "key": "CALM",
+    "hint": "Violent weather with strong winds and rain",
+    "keyClue": "Quiet seas following a tempest",
+    "lesson": "Rectangle transformations preserve the original rows."
+  },
+  {
+    "plain": "CABIN",
+    "key": "BEACH",
+    "hint": "A private room or living quarters on a ship",
+    "keyClue": "The sandy edge of an island",
+    "lesson": "Keyword letters appear first in the matrix without duplicates."
+  },
+  {
+    "plain": "WHALE",
+    "key": "CORAL",
+    "hint": "The largest mammal living in the ocean",
+    "keyClue": "Reef formations created by polyps",
+    "lesson": "Pair letters in the same row step leftward to decrypt."
+  },
+  {
+    "plain": "SQUID",
+    "key": "SHELL",
+    "hint": "A fast ten-armed creature of the deep ocean",
+    "keyClue": "A hard armor covering sea life",
+    "lesson": "Pair letters in the same column step upward to decrypt."
+  }
+],
   medium: [
-    {
-      plain: 'ANCHOR',
-      key: 'VOYAGER',
-      hint: 'A heavy metal device cast overboard to moor a ship',
-      keyClue: 'Someone who travels far across water or space',
-      lesson: 'Longer keys reshape the matrix and change every digraph decision.',
-    },
-    {
-      plain: 'BEACON',
-      key: 'HORIZON',
-      hint: 'A guiding light signal set along the shore',
-      keyClue: 'The line where sky appears to meet sea',
-      lesson: 'Use the matrix positions first, then choose row, column, or rectangle.',
-    },
-    {
-      plain: 'FALCON',
-      key: 'MARINER',
-      hint: 'A raptor with keen sight and swift flight',
-      keyClue: 'A person skilled at navigating the sea',
-      lesson: 'Letter pairs are located in the 5x5 grid before rule selection.',
-    },
-    {
-      plain: 'HARBOR',
-      key: 'SEASHELL',
-      hint: 'A calm coastal shelter where ships anchor safely',
-      keyClue: 'A beach object washed ashore by ocean waves',
-      lesson: 'Playfair hides single-letter frequency by encrypting pairs.',
-    },
-    {
-      plain: 'ISLAND',
-      key: 'ASTROLABE',
-      hint: 'A tract of land completely surrounded by water',
-      keyClue: 'An old instrument used to read stars for navigation',
-      lesson: 'Every solved pair gives evidence for how the matrix is constructed.',
-    },
-    {
-      plain: 'PIRATE',
-      key: 'LOCKBOX',
-      hint: 'A swashbuckling mariner seeking treasure',
-      keyClue: 'A metal chest with a sturdy lock',
-      lesson: 'The key phrase dictates the layout of the 5x5 matrix.',
-    },
-    {
-      plain: 'SILVER',
-      key: 'DRIFTING',
-      hint: 'A precious lustrous white metallic element',
-      keyClue: 'Floating along with the tidal flow',
-      lesson: 'Every letter pair acts as coordinates in the 5x5 grid.',
-    },
-    {
-      plain: 'TIMBER',
-      key: 'SPANISH',
-      hint: 'Strong wood beams used in shipbuilding',
-      keyClue: 'Relating to historic fleets and explorers',
-      lesson: 'Playfair resists frequency analysis because letters encrypt in pairs.',
-    },
-    {
-      plain: 'VOYAGE',
-      key: 'NAVIGATOR',
-      hint: 'An adventurous journey across vast oceans',
-      keyClue: 'The officer responsible for steering the ship',
-      lesson: 'Digraph encryption preserves letter coordinates in structured shapes.',
-    },
-    {
-      plain: 'ZEPHYR',
-      key: 'COMPASS',
-      hint: 'A gentle and pleasant westerly breeze',
-      keyClue: 'A magnetic navigation dial',
-      lesson: 'Two letters in the same row wrap horizontally during encryption.',
-    },
-      {
-      plain: "COMPASS",
-      key: "CORAL",
-      hint: "A navigational instrument with a needle pointing north",
-      keyClue: "A rocky reef built by tiny sea animals",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "LANTERN",
-      key: "OCEAN",
-      hint: "A portable lamp with a protective case for carrying light",
-      keyClue: "An enormous body of salt water",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "ANCHOR",
-      key: "WATER",
-      hint: "A heavy iron device dropped overboard to hold a ship in place",
-      keyClue: "The clear liquid of rivers, rain, and seas",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "VOYAGE",
-      key: "BEACH",
-      hint: "A long journey taken across the sea or through space",
-      keyClue: "A sandy or pebbly shore beside the water",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "ISLAND",
-      key: "SHORE",
-      hint: "A tract of land completely surrounded by water",
-      keyClue: "The land along the edge of the sea",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "PIRATE",
-      key: "SHELL",
-      hint: "A sea raider who attacks ships under a black flag",
-      keyClue: "A hard outer covering of a sea creature",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "SAILOR",
-      key: "STORM",
-      hint: "A person who works or travels on a ship",
-      keyClue: "Violent weather of wind and rain",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "HARBOR",
-      key: "WINDS",
-      hint: "A sheltered stretch of water where ships anchor safely",
-      keyClue: "Moving currents of air that fill sails",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "VESSEL",
-      key: "SQUID",
-      hint: "A large ship or seagoing craft",
-      keyClue: "A ten-armed sea creature that squirts ink",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "MARINE",
-      key: "WHALE",
-      hint: "Relating to the sea and the life within it",
-      keyClue: "The giant of the sea, a huge marine mammal",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "BEACON",
-      key: "CORAL",
-      hint: "A guiding light or signal fire set on a shore",
-      keyClue: "A rocky reef built by tiny sea animals",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "CURRENT",
-      key: "OCEAN",
-      hint: "A steady flow of water moving in one direction",
-      keyClue: "An enormous body of salt water",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "SEAGULL",
-      key: "WATER",
-      hint: "A loud white seabird that scavenges along coasts",
-      keyClue: "The clear liquid of rivers, rain, and seas",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "HORIZON",
-      key: "BEACH",
-      hint: "The distant line where the sea appears to meet the sky",
-      keyClue: "A sandy or pebbly shore beside the water",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "BREEZE",
-      key: "SHORE",
-      hint: "A light gentle wind",
-      keyClue: "The land along the edge of the sea",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "RUDDER",
-      key: "SHELL",
-      hint: "The flat movable blade steered to turn a ship",
-      keyClue: "A hard outer covering of a sea creature",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "GALLEY",
-      key: "STORM",
-      hint: "A ship’s kitchen where meals are cooked",
-      keyClue: "Violent weather of wind and rain",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "CABIN",
-      key: "WINDS",
-      hint: "A private room aboard a ship",
-      keyClue: "Moving currents of air that fill sails",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "TACKLE",
-      key: "SQUID",
-      hint: "The rigging and gear fitted on a fishing boat",
-      keyClue: "A ten-armed sea creature that squirts ink",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "BALLAST",
-      key: "WHALE",
-      hint: "Heavy weight placed in a ship’s hull to keep it stable",
-      keyClue: "The giant of the sea, a huge marine mammal",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "FATHOM",
-      key: "CORAL",
-      hint: "A nautical depth unit equal to six feet",
-      keyClue: "A rocky reef built by tiny sea animals",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "LAGOON",
-      key: "OCEAN",
-      hint: "A shallow body of water separated from the sea by a reef",
-      keyClue: "An enormous body of salt water",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "TRENCH",
-      key: "WATER",
-      hint: "A long deep chasm on the ocean floor",
-      keyClue: "The clear liquid of rivers, rain, and seas",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "PELICAN",
-      key: "BEACH",
-      hint: "A large coastal bird with a pouch under its beak",
-      keyClue: "A sandy or pebbly shore beside the water",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "DOLPHIN",
-      key: "SHORE",
-      hint: "A clever marine mammal that leaps beside ships",
-      keyClue: "The land along the edge of the sea",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "TURTLE",
-      key: "SHELL",
-      hint: "A slow shelled reptile that swims the open sea",
-      keyClue: "A hard outer covering of a sea creature",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "WHALE",
-      key: "STORM",
-      hint: "The largest marine mammal, a giant of the deep",
-      keyClue: "Violent weather of wind and rain",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "SHARK",
-      key: "WINDS",
-      hint: "A powerful predatory fish with rows of sharp teeth",
-      keyClue: "Moving currents of air that fill sails",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "OCTOPUS",
-      key: "SQUID",
-      hint: "An eight-armed sea creature that squirts ink",
-      keyClue: "A ten-armed sea creature that squirts ink",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "SQUID",
-      key: "WHALE",
-      hint: "A fast-swimming cephalopod with ten arms and ink",
-      keyClue: "The giant of the sea, a huge marine mammal",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-  ],
+  {
+    "plain": "CIPHER",
+    "key": "ANCHOR",
+    "hint": "A secret way of writing",
+    "keyClue": "A heavy forged iron hook holding a ship in harbor",
+    "lesson": "Rectangle pairs swap columns while maintaining their row coordinates."
+  },
+  {
+    "plain": "SALMON",
+    "key": "BEACON",
+    "hint": "Pink-fleshed fish that swims upstream",
+    "keyClue": "A bright guiding coastal fire on the bluffs",
+    "lesson": "Same-column digraphs move upward with top-to-bottom wrap-around."
+  },
+  {
+    "plain": "PUZZLE",
+    "key": "FALCON",
+    "hint": "A game or problem designed to test ingenuity",
+    "keyClue": "A swift raptor renowned for high-speed dives",
+    "lesson": "Same-row digraphs move left with left-to-right wrap-around."
+  },
+  {
+    "plain": "VOYAGE",
+    "key": "HARBOR",
+    "hint": "A long journey across the sea or space",
+    "keyClue": "A sheltered coastal basin where vessels dock",
+    "lesson": "Rectangle swapping forms the core of Playfair deciphering."
+  },
+  {
+    "plain": "SHADOW",
+    "key": "ISLAND",
+    "hint": "A dark area where light is blocked",
+    "keyClue": "A tract of land encircled by open water",
+    "lesson": "Playfair was favored for tactical battlefield communications."
+  },
+  {
+    "plain": "HARBOR",
+    "key": "PIRATE",
+    "hint": "A sheltered body of water where ships dock",
+    "keyClue": "A privateer sailing under the skull and crossbones",
+    "lesson": "Check matrix coordinates: row, col for both letters in the pair."
+  },
+  {
+    "plain": "ANCHOR",
+    "key": "SILVER",
+    "hint": "A heavy iron device dropped to hold a ship",
+    "keyClue": "A lustrous metallic element prized for coins",
+    "lesson": "Same-column digraphs shift upward for decryption."
+  },
+  {
+    "plain": "ISLAND",
+    "key": "TIMBER",
+    "hint": "A tract of land surrounded by water",
+    "keyClue": "Sturdy seasoned wood used to frame ship hulls",
+    "lesson": "Same-row digraphs shift to the left for decryption."
+  },
+  {
+    "plain": "PIRATE",
+    "key": "VOYAGE",
+    "hint": "A sea raider who attacks ships under a black flag",
+    "keyClue": "A long expedition over uncharted waters",
+    "lesson": "Rectangle pairs exchange column indices cleanly."
+  },
+  {
+    "plain": "SAILOR",
+    "key": "LAGOON",
+    "hint": "A person who works or travels on a ship",
+    "keyClue": "A quiet saltwater basin protected by barrier reefs",
+    "lesson": "I and J share a single grid position in the 5x5 matrix."
+  },
+  {
+    "plain": "VESSEL",
+    "key": "COMPASS",
+    "hint": "A large ship or seagoing craft",
+    "keyClue": "A magnetic needle instrument pointing true north",
+    "lesson": "Repeated letters in a pair are separated with filler letter X."
+  },
+  {
+    "plain": "MARINE",
+    "key": "LANTERN",
+    "hint": "Relating to or found in the sea",
+    "keyClue": "A glass-cased lamp providing maritime illumination",
+    "lesson": "Same-row pairs step one unit to the left."
+  },
+  {
+    "plain": "BEACON",
+    "key": "CURRENT",
+    "hint": "A light or fire set up as a warning signal",
+    "keyClue": "A continuous flowing stream of seawater",
+    "lesson": "Same-column pairs step one unit upward."
+  },
+  {
+    "plain": "BREEZE",
+    "key": "SEAGULL",
+    "hint": "A gentle, light wind",
+    "keyClue": "A coastal bird that cries near harbors and shores",
+    "lesson": "Rectangle rule: swap horizontal column positions."
+  },
+  {
+    "plain": "RUDDER",
+    "key": "HORIZON",
+    "hint": "A flat piece used for steering a boat",
+    "keyClue": "The distant dividing line between sea and sky",
+    "lesson": "Playfair encryption is symmetrical; decryption reverses shifts."
+  },
+  {
+    "plain": "GALLEY",
+    "key": "DOLPHIN",
+    "hint": "The kitchen area on a ship",
+    "keyClue": "An agile intelligent marine mammal riding bow waves",
+    "lesson": "Mastering Playfair requires rapid matrix grid scanning."
+  },
+  {
+    "plain": "TACKLE",
+    "key": "OCTOPUS",
+    "hint": "Equipment and ropes used on a sailing vessel",
+    "keyClue": "An eight-armed creature that squirts concealing ink",
+    "lesson": "Same-row digraphs shift leftward along the matrix grid."
+  },
+  {
+    "plain": "FATHOM",
+    "key": "ANCHOR",
+    "hint": "A unit of depth equal to six feet in water",
+    "keyClue": "A heavy iron anchor securing a ship in harbor",
+    "lesson": "Same-column digraphs shift upward along the matrix grid."
+  },
+  {
+    "plain": "LAGOON",
+    "key": "BEACON",
+    "hint": "A shallow body of water separated from sea by reefs",
+    "keyClue": "A coastal guiding beacon light on high bluffs",
+    "lesson": "Rectangle digraph pairs swap horizontal columns."
+  },
+  {
+    "plain": "TRENCH",
+    "key": "FALCON",
+    "hint": "A deep, steep-sided depression in the ocean floor",
+    "keyClue": "A fast raptor diving swiftly through coastal winds",
+    "lesson": "Playfair handles digraphs to resist frequency analysis."
+  },
+  {
+    "plain": "TURTLE",
+    "key": "HARBOR",
+    "hint": "A sea reptile with a hard shell and flippers",
+    "keyClue": "A safe haven where vessels shelter from rough seas",
+    "lesson": "Same-row digraphs shift left; same-column digraphs shift up."
+  },
+  {
+    "plain": "MARBLE",
+    "key": "ISLAND",
+    "hint": "A smooth patterned stone often sculpted",
+    "keyClue": "An isolated landmass surrounded by ocean waves",
+    "lesson": "Rectangle pairs maintain their respective row coordinates."
+  },
+  {
+    "plain": "JUNGLE",
+    "key": "PIRATE",
+    "hint": "A dense tropical forest thick with wild growth",
+    "keyClue": "A buccaneer hunting Spanish treasure ships",
+    "lesson": "The letter J shares its matrix slot with I."
+  },
+  {
+    "plain": "BRIDGE",
+    "key": "SILVER",
+    "hint": "A structure spanning across water or a chasm",
+    "keyClue": "A bright metal used for minting valuable coins",
+    "lesson": "Double letters in a digraph are split with an X filler."
+  },
+  {
+    "plain": "FROZEN",
+    "key": "TIMBER",
+    "hint": "Turned into ice or hardened by extreme cold",
+    "keyClue": "Heavy wooden logs used in ship construction",
+    "lesson": "Same-row digraphs step leftward upon decryption."
+  },
+  {
+    "plain": "SUNSET",
+    "key": "VOYAGE",
+    "hint": "The daily descent of the sun below the horizon",
+    "keyClue": "An expedition across the vast open ocean",
+    "lesson": "Same-column digraphs step upward upon decryption."
+  },
+  {
+    "plain": "PALACE",
+    "key": "LAGOON",
+    "hint": "A grand residence of royalty or rulers",
+    "keyClue": "A tropical basin shielded by coral barrier reefs",
+    "lesson": "Rectangle pairs swap column corners across rows."
+  },
+  {
+    "plain": "DESERT",
+    "key": "COMPASS",
+    "hint": "A dry, barren expanse with little water",
+    "keyClue": "A navigational compass with a needle pointing north",
+    "lesson": "Playfair was invented by Charles Wheatstone in 1854."
+  },
+  {
+    "plain": "GALAXY",
+    "key": "LANTERN",
+    "hint": "A vast gravitational system of stars and cosmic dust",
+    "keyClue": "A brass lantern lighting dark decks in twilight",
+    "lesson": "Keyword letters are inserted into the grid first."
+  },
+  {
+    "plain": "CAVERN",
+    "key": "CURRENT",
+    "hint": "A vast natural hollow chamber underground",
+    "keyClue": "A swift ocean current carrying watercraft along",
+    "lesson": "Same-row digraphs wrap around leftward at grid borders."
+  },
+  {
+    "plain": "FALCON",
+    "key": "SEAGULL",
+    "hint": "A swift raptor bird renowned for high-speed dives",
+    "keyClue": "A coastal seabird gliding above harbor waters",
+    "lesson": "Same-column digraphs wrap around upward at grid borders."
+  },
+  {
+    "plain": "KEEPER",
+    "key": "HORIZON",
+    "hint": "A guardian or caretaker watching over a post",
+    "keyClue": "The boundary line where ocean meets the sky",
+    "lesson": "Rectangle pairs preserve their original row heights."
+  },
+  {
+    "plain": "MIRAGE",
+    "key": "DOLPHIN",
+    "hint": "An optical illusion caused by atmospheric conditions",
+    "keyClue": "A playful marine mammal surfacing near boats",
+    "lesson": "Playfair cipher replaces digraph pairs systematically."
+  },
+  {
+    "plain": "SILVER",
+    "key": "OCTOPUS",
+    "hint": "A precious lustrous white metallic element",
+    "keyClue": "A clever eight-legged invertebrate of the deep",
+    "lesson": "Check same-row, same-column, and rectangle rules."
+  },
+  {
+    "plain": "TIMBER",
+    "key": "ANCHOR",
+    "hint": "Wood prepared for building ships and structures",
+    "keyClue": "An iron anchor dropped into the ocean seabed",
+    "lesson": "Same-row digraphs shift left; same-column shift up."
+  },
+  {
+    "plain": "ZEPHYR",
+    "key": "BEACON",
+    "hint": "A soft, gentle western breeze",
+    "keyClue": "A coastal warning light beaming from a tower",
+    "lesson": "Rectangle digraph pairs swap horizontal column positions."
+  },
+  {
+    "plain": "CORAL",
+    "key": "FALCON",
+    "hint": "Hard rocky structure built by tiny sea animals",
+    "keyClue": "A swift hunting falcon scanning coastal waters",
+    "lesson": "Same-row letters move leftward for decryption."
+  },
+  {
+    "plain": "COAST",
+    "key": "HARBOR",
+    "hint": "The land bordering along the sea",
+    "keyClue": "A sheltered haven protecting moored wooden ships",
+    "lesson": "Same-column letters move upward for decryption."
+  },
+  {
+    "plain": "OCEAN",
+    "key": "ISLAND",
+    "hint": "A vast continuous body of salt water",
+    "keyClue": "A tropical island fringed with coconut palms",
+    "lesson": "Rectangle pairs swap column corners accurately."
+  },
+  {
+    "plain": "STORM",
+    "key": "PIRATE",
+    "hint": "Violent weather with heavy winds and rain",
+    "keyClue": "A fearless pirate navigating rough ocean waves",
+    "lesson": "Playfair was widely used for tactical military communications."
+  }
+],
   hard: [
-    {
-      plain: 'DARK CAVE',
-      key: 'CARTOGRAPHER',
-      hint: 'An unlit cavern beneath rocky cliffs',
-      keyClue: 'A skilled maker of nautical maps',
-      lesson: 'Rectangle pairs swap columns while maintaining their row coordinates.',
-    },
-    {
-      plain: 'LOST COIN',
-      key: 'LIGHTHOUSE',
-      hint: 'A misplaced metallic piece of currency',
-      keyClue: 'A coastal beacon tower warning mariners',
-      lesson: 'Hard Playfair solving is pattern work: inspect matrix geometry.',
-    },
-    {
-      plain: 'IRON HELM',
-      key: 'CONSTELLATION',
-      hint: 'A sturdy piece of armor shielding the head',
-      keyClue: 'A recognizable celestial grouping of stars',
-      lesson: 'A strong keyword spreads common letters across the square.',
-    },
-    {
-      plain: 'GOLD MINE',
-      key: 'MONSOON',
-      hint: 'An underground excavation yielding precious ore',
-      keyClue: 'A seasonal prevailing wind bringing ocean rains',
-      lesson: 'Playfair was stronger than simple substitution because it encrypts pairs.',
-    },
-    {
-      plain: 'SILENT SHIP',
-      key: 'ABYSSAL',
-      hint: 'A phantom vessel gliding through fog without a sound',
-      keyClue: 'Belonging to the immense depths of the ocean',
-      lesson: 'Mastery means recognizing row, column, and rectangle rules quickly.',
-    },
-    {
-      plain: 'SECRET CAVE',
-      key: 'DECIPHERABLE',
-      hint: 'A hidden grotto tucked away from prying eyes',
-      keyClue: 'Able to be decoded or understood',
-      lesson: 'Playfair was widely used in WWII because it could be computed by hand.',
-    },
-    {
-      plain: 'COLD WIND',
-      key: 'CHART',
-      hint: 'A brisk icy gust sweeping across the deck',
-      keyClue: 'A sheet map for marine navigation',
-      lesson: 'Remember that I and J share a single slot in the Playfair matrix.',
-    },
-    {
-      plain: 'ANCIENT MAP',
-      key: 'OCTOPUS',
-      hint: 'An aged parchment indicating forgotten trails',
-      keyClue: 'An eight-armed ocean creature of the deep',
-      lesson: 'Same-column digraphs shift upward for decryption.',
-    },
-    {
-      plain: 'BLUE SHADOW',
-      key: 'HYDROPHONE',
-      hint: 'A cool twilight outline cast upon the water',
-      keyClue: 'An instrument for detecting underwater sound',
-      lesson: 'A wider keyword matrix layout makes rectangle patterns less obvious.',
-    },
-    {
-      plain: 'STORM WATCH',
-      key: 'CORSAIR',
-      hint: 'A vigilant lookout for squalls and turbulent seas',
-      keyClue: 'A historic privateer of the open sea',
-      lesson: 'Playfair is a symmetric cipher, meaning decryption reverses encryption.',
-    },
-      {
-      plain: "SHIPWRECK",
-      key: "CORAL",
-      hint: "The remains of a destroyed vessel on the seabed",
-      keyClue: "A rocky reef built by tiny sea animals",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "NAVIGATION",
-      key: "OCEAN",
-      hint: "The science of plotting a ship’s course and position",
-      keyClue: "An enormous body of salt water",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "SUBMARINE",
-      key: "WATER",
-      hint: "A vessel that travels and fights beneath the surface",
-      keyClue: "The clear liquid of rivers, rain, and seas",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "HURRICANE",
-      key: "BEACH",
-      hint: "A massive rotating tropical storm born over warm seas",
-      keyClue: "A sandy or pebbly shore beside the water",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "WHIRLPOOL",
-      key: "SHORE",
-      hint: "A powerful spinning vortex of water that sucks objects down",
-      keyClue: "The land along the edge of the sea",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "PENINSULA",
-      key: "SHELL",
-      hint: "Land almost surrounded by water but joined to the mainland",
-      keyClue: "A hard outer covering of a sea creature",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "ARCHIPELAGO",
-      key: "STORM",
-      hint: "A chain or cluster of scattered islands",
-      keyClue: "Violent weather of wind and rain",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "MERIDIAN",
-      key: "WINDS",
-      hint: "A line of longitude running pole to pole on a chart",
-      keyClue: "Moving currents of air that fill sails",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "LATITUDE",
-      key: "SQUID",
-      hint: "Distance north or south of the equator, measured in degrees",
-      keyClue: "A ten-armed sea creature that squirts ink",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "LONGITUDE",
-      key: "WHALE",
-      hint: "Distance east or west of the prime meridian, in degrees",
-      keyClue: "The giant of the sea, a huge marine mammal",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "EQUATOR",
-      key: "CORAL",
-      hint: "The imaginary line circling Earth at zero degrees latitude",
-      keyClue: "A rocky reef built by tiny sea animals",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "TIDESWELL",
-      key: "OCEAN",
-      hint: "A sudden surge of seawater driven by rising tides",
-      keyClue: "An enormous body of salt water",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "BATHYSCAPHE",
-      key: "WATER",
-      hint: "A deep-diving submersible built to explore ocean trenches",
-      keyClue: "The clear liquid of rivers, rain, and seas",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "OCEANOGRAPHY",
-      key: "BEACH",
-      hint: "The scientific study of the sea’s waters, currents, and life",
-      keyClue: "A sandy or pebbly shore beside the water",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "BARNACLE",
-      key: "SHORE",
-      hint: "A small crustacean that cements itself to hulls and rocks",
-      keyClue: "The land along the edge of the sea",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "CRUSTACEAN",
-      key: "SHELL",
-      hint: "A hard-shelled sea animal such as a crab or lobster",
-      keyClue: "A hard outer covering of a sea creature",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "PLANKTON",
-      key: "STORM",
-      hint: "Tiny drifting organisms that feed nearly all ocean life",
-      keyClue: "Violent weather of wind and rain",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "ALBATROSS",
-      key: "WINDS",
-      hint: "A giant seabird that glides over oceans for days",
-      keyClue: "Moving currents of air that fill sails",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "CORSAIR",
-      key: "SQUID",
-      hint: "A private ship authorized to raid enemy merchant vessels",
-      keyClue: "A ten-armed sea creature that squirts ink",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "BUCCANEER",
-      key: "WHALE",
-      hint: "A 17th-century pirate who hunted Spanish treasure ships",
-      keyClue: "The giant of the sea, a huge marine mammal",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "PRIVATEER",
-      key: "CORAL",
-      hint: "A privately armed ship licensed by a government to raid",
-      keyClue: "A rocky reef built by tiny sea animals",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "GALLEON",
-      key: "OCEAN",
-      hint: "A large Spanish sailing ship built to carry treasure",
-      keyClue: "An enormous body of salt water",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "SCHOONER",
-      key: "WATER",
-      hint: "A swift sailing ship with fore-and-aft sails on two masts",
-      keyClue: "The clear liquid of rivers, rain, and seas",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "FRIGATE",
-      key: "BEACH",
-      hint: "A fast warship built for escort and patrol duty",
-      keyClue: "A sandy or pebbly shore beside the water",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "CORVETTE",
-      key: "SHORE",
-      hint: "A small lightly armed escort warship",
-      keyClue: "The land along the edge of the sea",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-    {
-      plain: "IRONCLAD",
-      key: "SHELL",
-      hint: "A 19th-century warship protected by iron armor plates",
-      keyClue: "A hard outer covering of a sea creature",
-      lesson: "Same-row digraph pairs each shift one letter left when decrypting.",
-    },
-    {
-      plain: "DREADNOUGHT",
-      key: "STORM",
-      hint: "An early 20th-century battleship with all-big-gun armament",
-      keyClue: "Violent weather of wind and rain",
-      lesson: "Same-column digraph pairs each shift one letter up when decrypting.",
-    },
-    {
-      plain: "BATTLESHIP",
-      key: "WINDS",
-      hint: "The heaviest armored warship, built for line of battle",
-      keyClue: "Moving currents of air that fill sails",
-      lesson: "Rectangle digraph pairs swap columns while keeping their rows.",
-    },
-    {
-      plain: "DESTROYER",
-      key: "SQUID",
-      hint: "A fast maneuverable warship armed with torpedoes",
-      keyClue: "A ten-armed sea creature that squirts ink",
-      lesson: "I and J share a single slot in the 5x5 Playfair matrix.",
-    },
-    {
-      plain: "CRUISER",
-      key: "WHALE",
-      hint: "A fast mid-sized warship built for long-range patrols",
-      keyClue: "The giant of the sea, a huge marine mammal",
-      lesson: "Doubled letters in a pair are split apart with an X filler.",
-    },
-  ],
+  {
+    "plain": "MYSTERY",
+    "key": "LIGHTHOUSE",
+    "hint": "Something that is difficult or impossible to explain",
+    "keyClue": "A coastal beacon tower warning mariners",
+    "lesson": "Hard Playfair solving is pattern work: inspect matrix geometry."
+  },
+  {
+    "plain": "LANTERN",
+    "key": "CARTOGRAPHER",
+    "hint": "A portable light with protective transparent casing",
+    "keyClue": "A skilled maker of nautical charts and maps",
+    "lesson": "Rectangle pairs swap columns while maintaining their row coordinates."
+  },
+  {
+    "plain": "COMPASS",
+    "key": "CONSTELLATION",
+    "hint": "A navigation tool with a needle pointing north",
+    "keyClue": "A recognizable celestial grouping of stars",
+    "lesson": "A strong keyword spreads common letters across the square."
+  },
+  {
+    "plain": "CRYSTAL",
+    "key": "DECIPHERABLE",
+    "hint": "A clear mineral with a regular geometric pattern",
+    "keyClue": "Able to be decoded or understood by a cryptanalyst",
+    "lesson": "Playfair was widely used in WWII because it could be computed by hand."
+  },
+  {
+    "plain": "CURRENT",
+    "key": "HYDROPHONE",
+    "hint": "A continuous directed movement of seawater",
+    "keyClue": "An instrument for detecting underwater acoustic sounds",
+    "lesson": "A wider keyword matrix layout makes rectangle patterns less obvious."
+  },
+  {
+    "plain": "SEAGULL",
+    "key": "CORSAIR",
+    "hint": "A coastal bird that swoops over ocean waves",
+    "keyClue": "A historic privateer raiding on the open sea",
+    "lesson": "Playfair is a symmetric cipher, meaning decryption reverses encryption."
+  },
+  {
+    "plain": "HORIZON",
+    "key": "BATTLESHIP",
+    "hint": "The line where the earth or sea meets the sky",
+    "keyClue": "A heavily armored warship built for line of battle",
+    "lesson": "Same-column digraphs shift upward for decryption."
+  },
+  {
+    "plain": "BALLAST",
+    "key": "ARCHIPELAGO",
+    "hint": "Heavy material placed in a ship to ensure stability",
+    "keyClue": "A chain or cluster of scattered oceanic islands",
+    "lesson": "Same-row digraphs shift leftward for decryption."
+  },
+  {
+    "plain": "PELICAN",
+    "key": "SUBMARINE",
+    "hint": "A large water bird with a pouch under its beak",
+    "keyClue": "A vessel that travels and fights beneath the surface",
+    "lesson": "Rectangle digraph pairs swap columns while keeping their rows."
+  },
+  {
+    "plain": "DOLPHIN",
+    "key": "HURRICANE",
+    "hint": "An intelligent marine mammal known for acrobatics",
+    "keyClue": "A massive rotating tropical storm born over warm seas",
+    "lesson": "I and J share a single slot in the 5x5 Playfair matrix."
+  },
+  {
+    "plain": "OCTOPUS",
+    "key": "WHIRLPOOL",
+    "hint": "An eight-armed creature that squirts ink in defense",
+    "keyClue": "A powerful spinning vortex of water sucking objects down",
+    "lesson": "Doubled letters in a pair are split apart with an X filler."
+  },
+  {
+    "plain": "EQUATOR",
+    "key": "PENINSULA",
+    "hint": "The imaginary circle around the middle of Earth",
+    "keyClue": "Land almost surrounded by water but joined to mainland",
+    "lesson": "Same-row digraph pairs each shift one letter left when decrypting."
+  },
+  {
+    "plain": "CORSAIR",
+    "key": "BATHYSCAPHE",
+    "hint": "A fast pirate ship authorized to raid enemy vessels",
+    "keyClue": "A deep-diving submersible exploring ocean trenches",
+    "lesson": "Same-column digraph pairs each shift one letter up when decrypting."
+  },
+  {
+    "plain": "GALLEON",
+    "key": "OCEANOGRAPHY",
+    "hint": "A large multi-decked Spanish sailing warship",
+    "keyClue": "The scientific study of the sea’s waters and life",
+    "lesson": "Rectangle digraph pairs swap columns while keeping their rows."
+  },
+  {
+    "plain": "FRIGATE",
+    "key": "LIGHTHOUSE",
+    "hint": "A swift warship built for patrol and escort duty",
+    "keyClue": "A coastal beacon tower warning mariners of shoals",
+    "lesson": "Mastery means recognizing row, column, and rectangle rules quickly."
+  },
+  {
+    "plain": "CRUISER",
+    "key": "CARTOGRAPHER",
+    "hint": "A fast warship designed for long-range oceanic patrols",
+    "keyClue": "A skilled maker of nautical maps and sea charts",
+    "lesson": "Playfair was stronger than simple substitution because it encrypts pairs."
+  },
+  {
+    "plain": "PHANTOM",
+    "key": "CONSTELLATION",
+    "hint": "An apparition or ghostly shadow seen in the mist",
+    "keyClue": "A recognizable celestial grouping of night stars",
+    "lesson": "A strong keyword spreads common letters across the matrix."
+  },
+  {
+    "plain": "TEMPEST",
+    "key": "DECIPHERABLE",
+    "hint": "A violent and turbulent storm upon the sea",
+    "keyClue": "Able to be decoded or understood by cryptanalysts",
+    "lesson": "Playfair was widely used in WWII because it could be computed by hand."
+  },
+  {
+    "plain": "CAPTAIN",
+    "key": "HYDROPHONE",
+    "hint": "The officer in command of a ship at sea",
+    "keyClue": "An instrument for detecting underwater sound signals",
+    "lesson": "Remember that I and J share a single slot in the Playfair matrix."
+  },
+  {
+    "plain": "KRAKEN",
+    "key": "CORSAIR",
+    "hint": "A legendary giant sea monster of terrifying size",
+    "keyClue": "A historic privateer vessel of the open sea",
+    "lesson": "Same-column digraphs shift upward for decryption."
+  },
+  {
+    "plain": "SEAMARK",
+    "key": "BATTLESHIP",
+    "hint": "A conspicuous landmark aiding sailors at sea",
+    "keyClue": "The heaviest armored warship built for battle lines",
+    "lesson": "Same-row digraphs shift leftward for decryption."
+  },
+  {
+    "plain": "TRIDENT",
+    "key": "ARCHIPELAGO",
+    "hint": "A three-pronged spear carried by sea deities",
+    "keyClue": "A chain or cluster of scattered tropical islands",
+    "lesson": "Rectangle digraph pairs swap columns while keeping their rows."
+  },
+  {
+    "plain": "ICEBERG",
+    "key": "SUBMARINE",
+    "hint": "A massive piece of freshwater ice floating in open sea",
+    "keyClue": "A naval vessel navigating deep beneath ocean waves",
+    "lesson": "Same-column digraphs shift upward for decryption."
+  },
+  {
+    "plain": "BARRIER",
+    "key": "HURRICANE",
+    "hint": "A natural offshore reef guarding the coastline",
+    "keyClue": "A severe tropical storm with fierce howling winds",
+    "lesson": "Same-row digraphs shift leftward for decryption."
+  },
+  {
+    "plain": "MONSOON",
+    "key": "WHIRLPOOL",
+    "hint": "A seasonal prevailing wind bringing ocean torrents",
+    "keyClue": "A swirling vortex dragging debris down into the depths",
+    "lesson": "Double letters in a digraph are split with an X filler."
+  },
+  {
+    "plain": "MARINER",
+    "key": "PENINSULA",
+    "hint": "A sailor who navigates the vast oceans",
+    "keyClue": "A landform reaching far out into oceanic waters",
+    "lesson": "Same-row digraph pairs each shift one letter left when decrypting."
+  },
+  {
+    "plain": "CLIPPER",
+    "key": "BATHYSCAPHE",
+    "hint": "A fast sailing ship with multiple masts and large sails",
+    "keyClue": "A deep-diving pressure hull exploring the sea floor",
+    "lesson": "Same-column digraph pairs each shift one letter up when decrypting."
+  },
+  {
+    "plain": "CUTTER",
+    "key": "OCEANOGRAPHY",
+    "hint": "A fast single-masted vessel used for patrols",
+    "keyClue": "The marine science of ocean currents and topography",
+    "lesson": "Rectangle pairs swap columns while maintaining their row coordinates."
+  },
+  {
+    "plain": "BRIGADE",
+    "key": "LIGHTHOUSE",
+    "hint": "A squadron or organized naval force",
+    "keyClue": "A warning light guiding fleets safely through rocks",
+    "lesson": "Playfair encryption is symmetric and easily decoded with the matrix."
+  },
+  {
+    "plain": "CIPHER",
+    "key": "CARTOGRAPHER",
+    "hint": "A secret code or cryptographic system",
+    "keyClue": "A master draftsman charting coastal shoals and channels",
+    "lesson": "Hard Playfair solving is pattern work: inspect matrix geometry."
+  },
+  {
+    "plain": "FATHOM",
+    "key": "CONSTELLATION",
+    "hint": "A maritime unit of underwater depth",
+    "keyClue": "A celestial star cluster guiding deep-sea voyagers",
+    "lesson": "A strong keyword spreads common letters across the square."
+  },
+  {
+    "plain": "RUDDER",
+    "key": "DECIPHERABLE",
+    "hint": "A submerged blade used for steering vessels",
+    "keyClue": "Able to be decoded or understood through cipher analysis",
+    "lesson": "Playfair was widely used in WWII because it could be computed by hand."
+  },
+  {
+    "plain": "LAGOON",
+    "key": "HYDROPHONE",
+    "hint": "A quiet saltwater basin shielded by barrier reefs",
+    "keyClue": "An acoustic sensor detecting sounds in the deep sea",
+    "lesson": "Remember that I and J share a single slot in the Playfair matrix."
+  },
+  {
+    "plain": "TRENCH",
+    "key": "CORSAIR",
+    "hint": "An immense abyss plunging into ocean depths",
+    "keyClue": "A private raider authorized to seize enemy merchant ships",
+    "lesson": "Same-column digraphs shift upward for decryption."
+  },
+  {
+    "plain": "BEACON",
+    "key": "BATTLESHIP",
+    "hint": "A blazing coastal signal guiding night navigators",
+    "keyClue": "A steel armored battleship carrying heavy naval guns",
+    "lesson": "Same-row digraphs shift leftward for decryption."
+  },
+  {
+    "plain": "ANCHOR",
+    "key": "ARCHIPELAGO",
+    "hint": "A heavy forged iron hook that moors ships",
+    "keyClue": "A chain of volcanic islands rising from the seabed",
+    "lesson": "Rectangle digraph pairs swap columns while keeping their rows."
+  },
+  {
+    "plain": "ISLAND",
+    "key": "SUBMARINE",
+    "hint": "An isolated landmass encircled by open waters",
+    "keyClue": "An undersea warship equipped with ballast tanks",
+    "lesson": "Same-column digraphs shift upward for decryption."
+  },
+  {
+    "plain": "PIRATE",
+    "key": "HURRICANE",
+    "hint": "A rogue corsair sailing under the Jolly Roger",
+    "keyClue": "A violent oceanic storm system with hurricane-force winds",
+    "lesson": "Same-row digraphs shift leftward for decryption."
+  },
+  {
+    "plain": "SAILOR",
+    "key": "WHIRLPOOL",
+    "hint": "A seasoned hand working the rigging and decks",
+    "keyClue": "A dangerous marine vortex spinning in coastal narrows",
+    "lesson": "Doubled letters in a pair are split apart with an X filler."
+  },
+  {
+    "plain": "VESSEL",
+    "key": "PENINSULA",
+    "hint": "A sturdy seagoing craft traversing treacherous waters",
+    "keyClue": "A coastal peninsula jutting into oceanic currents",
+    "lesson": "Playfair cipher requires recognizing matrix rules quickly."
+  }
+],
 };
 
 export function getPlayfairLevelData(difficulty, stageIndex) {
-  const pool = playfairData[difficulty];
+  const pool = playfairData[difficulty] || playfairData.easy;
   const randIndex = Math.floor(Math.random() * pool.length);
   const data = pool[randIndex];
   return buildPlayfairLevel(data.plain, data.key, stageIndex, difficulty, data.hint, data.keyClue, data.lesson);
@@ -2300,9 +2418,6 @@ function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, l
   // Get actual Playfair ciphertext
   const playfairCiphertext = playfairEncrypt(plain, key);
   
-  // Now, we need to map the original plaintext characters to the Playfair ciphertext.
-  // But Playfair processes pairs and may add X's, so let's create a version of ciphertext
-  // that preserves spaces and non-letters from the original plaintext, with Playfair-encrypted letters.
   let ciphertext = '';
   let pfIdx = 0;
   for (let i = 0; i < plain.length; i++) {
@@ -2319,9 +2434,9 @@ function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, l
     }
   }
   
-  const len = plain.length;
-  const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0.35;
-  const mask = makeMask(len, reveal);
+  const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0;
+  const minRevealed = difficulty === 'hard' ? 0 : 1;
+  const mask = makeMask(plain, reveal, minRevealed);
   const words = plain.split(' ');
   const masks = [];
   let currentMaskIdx = 0;
@@ -2331,8 +2446,6 @@ function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, l
     currentMaskIdx += word.length + 1; // +1 for space
   });
   
-  // For Playfair sprint, we won't use targetShifts (since it's not a shift cipher). 
-  // But let's keep the structure for compatibility, we'll just use dummy values.
   const targetShifts = [];
   const startShifts = [];
   words.forEach(() => {
