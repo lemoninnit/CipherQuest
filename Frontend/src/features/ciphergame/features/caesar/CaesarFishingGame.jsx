@@ -8,6 +8,7 @@ import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingTransform, makeSwimProps, tickFish, visualsForValue } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
+import { caesarDecryptChar } from '../../core/engine/caesar';
 
 /* ─── Caesar math ─── */
 const caesarShiftChar = (char, shift) => {
@@ -17,8 +18,6 @@ const caesarShiftChar = (char, shift) => {
   }
   return char;
 };
-const caesarShiftWord = (word, shift) =>
-  word.split('').map(ch => caesarShiftChar(ch, shift)).join('');
 
 const normalizeShift = (shift = 0) => ((shift % 26) + 26) % 26;
 
@@ -179,10 +178,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   /* ── derived ── */
   const basketShift = normalizeShift(activeShifts[0] ?? getInitialShift(0));
   const decryptedSegs = cipherSegs.map((seg, i) =>
-    caesarShiftWord(seg, activeShifts[i] ?? 0)
+    seg.split('').map(ch => caesarDecryptChar(ch, activeShifts[i] ?? 0)).join('')
   );
 
-  const allCorrect = basketShift !== 0 && decryptedSegs.every((dec, i) => dec === words[i]);
+  const targetShift = normalizeShift(levelData.targetShifts?.[0] ?? 0);
+  const allCorrect = basketShift === targetShift && decryptedSegs.every((dec, i) => dec === words[i]);
 
   /* ── start game ── */
   const startGame = () => {
@@ -219,7 +219,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   /* ── fish physics ── */
   const spawnFish = () => {
     const list = [];
-    const targetShift = normalizeShift(26 - (levelData.targetShifts?.[0] ?? 0));
+    const targetShift = normalizeShift(levelData.targetShifts?.[0] ?? 0);
     const currentShift = basketShift;
     const valuePool = generateCaesarFishValues(targetShift, currentShift, tier, 9);
 
@@ -349,7 +349,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           
           setTimeout(() => {
             setFishList(prev => {
-              const targetShift = normalizeShift(26 - (levelData.targetShifts?.[0] ?? 0));
+              const targetShift = normalizeShift(levelData.targetShifts?.[0] ?? 0);
               const currentShift = nextShift;
               const newPool = generateCaesarFishValues(targetShift, currentShift, tier, 5);
               const value = newPool[Math.floor(Math.random() * newPool.length)];
@@ -463,7 +463,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                 <strong>How it works:</strong>{' '}
                 Click fish carrying shift modifiers (<strong>+1, -1, +2, -2, +3, -3, +5, -5</strong>) to adjust the active shift key.
                 When the decrypted text matches the plaintext, submit! Formula:{' '}
-                <code>Plain = (Cipher + Basket Shift) mod 26</code>
+                <code>Plain = (Cipher - Basket Shift) mod 26</code>
               </p>
               <button
                 className="cq-dossier-action-btn"
@@ -648,7 +648,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         <div className="caesar-floating-guide">
           <h3 className="caesar-guide-title">Ceasar Guide</h3>
           <p className="caesar-guide-desc">
-            The Caesar cipher shifts each letter forward. To decrypt, we must shift it further to complete the 26-letter rotation
+            The Caesar cipher shifts each letter forward. To decrypt, we reverse the shift to reveal the plaintext.
           </p>
           <p className="caesar-guide-tip">
             Catch fish with + / - modifiers to adjust the Basket Shift until words look readable!
