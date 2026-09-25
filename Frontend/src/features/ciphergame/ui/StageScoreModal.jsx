@@ -1,7 +1,7 @@
 import { formatCompletionTime, formatMultiplier } from '../core/engine/scoring';
 import './StageScoreModal.css';
 
-export default function StageScoreModal({ result, onContinue, onReplay, onViewLeaderboard }) {
+export default function StageScoreModal({ result, onContinue, onReplay, onViewLeaderboard, onBack }) {
   if (!result) return null;
 
   const {
@@ -21,6 +21,20 @@ export default function StageScoreModal({ result, onContinue, onReplay, onViewLe
     <div className="ssm-overlay" onClick={onContinue}>
       <div className="ssm-card" onClick={(e) => e.stopPropagation()}>
         
+        {/* Top-Left Back to Roadmap Control */}
+        {onBack && (
+          <button
+            type="button"
+            className="ssm-top-back-btn"
+            onClick={onBack}
+            title="Return to Stage Roadmap"
+            aria-label="Return to Stage Roadmap"
+          >
+            <span className="material-symbols-outlined ssm-top-back-icon">arrow_back</span>
+            <span className="ssm-top-back-text">Roadmap</span>
+          </button>
+        )}
+
         {/* Top Glowing Ambient Accent */}
         <div className="ssm-top-accent" />
 

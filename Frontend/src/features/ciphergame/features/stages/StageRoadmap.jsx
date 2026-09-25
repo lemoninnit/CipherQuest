@@ -1,6 +1,4 @@
-import React from "react";
-
-export default function StageRoadmap({ game }) {
+export default function StageRoadmap({ game, onOpenTutorial }) {
   const { category, difficulty, progress, startStage, backToDifficulty } = game;
   const catProg = progress[category] || { easy: [], medium: [], hard: [] };
   const completed = catProg[difficulty] || [];
@@ -33,6 +31,18 @@ export default function StageRoadmap({ game }) {
             </span>
             <span>Back to Difficulty</span>
           </button>
+          {(game.onOpenTutorial || onOpenTutorial) && (
+            <button
+              className="cq-field-manual-nav-btn"
+              onClick={game.onOpenTutorial || onOpenTutorial}
+              title="Open Field Manual"
+            >
+              <span className="cq-manual-icon-circle">
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>menu_book</span>
+              </span>
+              <span>Field Manual</span>
+            </button>
+          )}
         </div>
 
         <div className="cq-screen-header">

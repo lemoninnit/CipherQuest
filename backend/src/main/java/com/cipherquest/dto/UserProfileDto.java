@@ -28,5 +28,7 @@ public record UserProfileDto(
         java.util.Map<String, java.util.Map<String, java.util.List<Integer>>> progress,
         // Scoring System additions
         int totalScore,
-        int gameStreak
+        int gameStreak,
+        // Tutorial preferences
+        java.util.Map<String, Boolean> tutorialDismissed
 ) {}

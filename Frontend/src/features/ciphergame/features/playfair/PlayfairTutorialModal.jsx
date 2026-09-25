@@ -1,5 +1,8 @@
+/* eslint-disable react-hooks/set-state-in-effect, no-unused-vars, react-hooks/immutability, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import './PlayfairTutorialModal.css';
+import { useAuth } from '../../../../context/AuthContext';
+import { userApi } from '../../../../api/cipherQuestApi';
 
 /**
  * PLAYFAIR MATRIX CIPHER TUTORIAL STEPS METADATA
@@ -153,9 +156,11 @@ const DIGRAPH_PRESETS = [
 ];
 
 export default function PlayfairTutorialModal({ isOpen, onClose, onComplete, skipButtonText = 'Skip Tutorial' }) {
+  const { user, refreshProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   // Step 2 state: Selected digraph preset
   const [selectedPresetIdx, setSelectedPresetIdx] = useState(0);
@@ -168,6 +173,48 @@ export default function PlayfairTutorialModal({ isOpen, onClose, onComplete, ski
   const [scannerFound, setScannerFound] = useState(false);
 
   const sampleDigraphScans = ['TH', 'HE', 'IN', 'ER', 'AN', 'RE', 'ND', 'AT', 'ON', 'NT'];
+
+  // Sync preference on open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let isCancelled = false;
+
+    if (user?.tutorialDismissed && typeof user.tutorialDismissed.playfair === 'boolean') {
+      setDontShowAgain(user.tutorialDismissed.playfair);
+    } else {
+      userApi.getTutorialPreferences()
+        .then((prefs) => {
+          if (!isCancelled && prefs && typeof prefs.playfair === 'boolean') {
+            setDontShowAgain(prefs.playfair);
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not fetch tutorial preferences on open:", err);
+        });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, user?.tutorialDismissed?.playfair]);
+
+  const handleToggleDontShow = async (e) => {
+    const nextVal = Boolean(e.target.checked);
+    setDontShowAgain(nextVal);
+    try {
+      const res = await userApi.saveTutorialPreference('playfair', nextVal);
+      if (res && typeof res.playfair === 'boolean') {
+        setDontShowAgain(res.playfair);
+      }
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+    } catch (err) {
+      console.error("Failed to save Playfair tutorial preference:", err);
+      setDontShowAgain(!nextVal);
+    }
+  };
 
   // Reset states when changing step or reopening
   useEffect(() => {
@@ -510,9 +557,20 @@ export default function PlayfairTutorialModal({ isOpen, onClose, onComplete, ski
             </div>
           </div>
 
-          <button className="cq-tut-skip-btn" onClick={triggerClose} title={skipButtonText}>
-            <span>{skipButtonText}</span>
-          </button>
+          <div className="cq-tut-header-actions">
+            <label className="cq-tut-dont-show-checkbox">
+              <input
+                type="checkbox"
+                checked={dontShowAgain}
+                onChange={handleToggleDontShow}
+              />
+              <span className="cq-tut-custom-checkbox" />
+              <span className="cq-tut-dont-show-text">Don't show this again</span>
+            </label>
+            <button className="cq-tut-skip-btn" onClick={triggerClose} title={skipButtonText}>
+              <span>{skipButtonText}</span>
+            </button>
+          </div>
         </div>
 
         {/* MAIN BODY */}
@@ -559,14 +617,16 @@ export default function PlayfairTutorialModal({ isOpen, onClose, onComplete, ski
 
         {/* FOOTER */}
         <div className="cq-tut-footer">
-          <button
-            className="cq-tut-nav-btn prev-btn"
-            onClick={handlePrev}
-            disabled={currentStep === 0}
-          >
-            <span className="material-symbols-outlined">chevron_left</span>
-            <span>Back</span>
-          </button>
+          <div className="cq-tut-footer-left">
+            <button
+              className="cq-tut-nav-btn prev-btn"
+              onClick={handlePrev}
+              disabled={currentStep === 0}
+            >
+              <span className="material-symbols-outlined">chevron_left</span>
+              <span>Back</span>
+            </button>
+          </div>
 
           {/* PROGRESS PILLS */}
           <div className="cq-tut-progress-pills">

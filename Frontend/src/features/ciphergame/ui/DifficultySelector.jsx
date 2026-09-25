@@ -171,7 +171,7 @@ const categoryMetadata = {
   }
 };
 
-const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caesar', completedLevels = {} }) => {
+const DifficultySelector = ({ onSelectDifficulty, onBack, onOpenTutorial, activeCategory = 'caesar', completedLevels = {} }) => {
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -263,6 +263,14 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, activeCategory = 'caes
             </span>
             <span>Back to Dashboard</span>
           </button>
+          {onOpenTutorial && (
+            <button className="cq-field-manual-nav-btn" onClick={onOpenTutorial} title="Open Field Manual">
+              <span className="cq-manual-icon-circle">
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>menu_book</span>
+              </span>
+              <span>Field Manual</span>
+            </button>
+          )}
         </div>
 
         <div className="cq-screen-header">

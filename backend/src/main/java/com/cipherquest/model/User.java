@@ -124,6 +124,19 @@ public class User {
     @Column(name = "cooldown_end_time")
     private LocalDateTime cooldownEndTime;
 
+    // ── Tutorial Preferences ──────────────────────────────────────────
+    @Column(name = "tutorial_dismissed_caesar", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean tutorialDismissedCaesar = false;
+
+    @Column(name = "tutorial_dismissed_vigenere", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean tutorialDismissedVigenere = false;
+
+    @Column(name = "tutorial_dismissed_playfair", nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean tutorialDismissedPlayfair = false;
+
     // ── Timestamps ────────────────────────────────────────────────────
 
     @Column(nullable = false, updatable = false)

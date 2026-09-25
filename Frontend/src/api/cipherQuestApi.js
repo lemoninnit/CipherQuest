@@ -34,9 +34,9 @@ async function request(method, path, body) {
     }
     return data;
   } catch (err) {
-    if (err.name === 'AbortError') throw new Error('Network timeout: backend did not respond');
+    if (err.name === 'AbortError') throw new Error('Network timeout: backend did not respond', { cause: err });
     // map typical network failure into a friendlier message
-    throw new Error(err.message || 'Network error: could not reach backend');
+    throw new Error(err.message || 'Network error: could not reach backend', { cause: err });
   }
 }
 
@@ -58,6 +58,9 @@ export const userApi = {
     request('POST', '/users/progress', { cipherType, difficultyTier, levelIndex }),
   deductAttempt:  ()                      => request('POST', '/users/attempts/deduct'),
   getBadges:      ()                      => request('GET',    '/users/badges'),
+  getTutorialPreferences: ()              => request('GET',    '/users/preferences/tutorial'),
+  saveTutorialPreference: (cipherType, dismissed) =>
+    request('POST', '/users/preferences/tutorial', { cipherType, dismissed }),
 };
 
 export const fishingApi = {

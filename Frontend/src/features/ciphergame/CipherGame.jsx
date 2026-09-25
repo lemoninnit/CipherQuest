@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+/* eslint-disable react-hooks/exhaustive-deps */
+import { useState, useEffect, useRef } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import "./CipherGame.css";
 
 import { useAuth } from "../../context/AuthContext";
+import { userApi } from "../../api/cipherQuestApi";
 import { useGameFlow } from "./core/hooks/useGameFlow";
 import { ScoringProvider } from "./core/hooks/ScoringContext";
 
@@ -39,35 +41,76 @@ export default function CipherGame() {
   const [showCaesarTutorial, setShowCaesarTutorial] = useState(false);
   const [showVigenereTutorial, setShowVigenereTutorial] = useState(false);
   const [showPlayfairTutorial, setShowPlayfairTutorial] = useState(false);
-  const [isTutorialPreparing, setIsTutorialPreparing] = useState(false);
+  const handledCategorySelectionRef = useRef(null);
 
+  // Auto-open strictly on category selection from Dashboard
   useEffect(() => {
     if (location.state?.showTutorial) {
-      const activeCat = game.category || location.state?.category;
-      if (activeCat === 'caesar') {
-        setIsTutorialPreparing(true);
-        const timer = setTimeout(() => {
-          setIsTutorialPreparing(false);
-          setShowCaesarTutorial(true);
-        }, 400);
-        return () => clearTimeout(timer);
-      } else if (activeCat === 'vigenere') {
-        setIsTutorialPreparing(true);
-        const timer = setTimeout(() => {
-          setIsTutorialPreparing(false);
-          setShowVigenereTutorial(true);
-        }, 400);
-        return () => clearTimeout(timer);
-      } else if (activeCat === 'playfair') {
-        setIsTutorialPreparing(true);
-        const timer = setTimeout(() => {
-          setIsTutorialPreparing(false);
-          setShowPlayfairTutorial(true);
-        }, 400);
-        return () => clearTimeout(timer);
+      const activeCat = location.state?.category || game.category;
+      if (!activeCat) return;
+
+      const navKey = `${activeCat}-${location.key || location.search || 'entry'}`;
+      if (handledCategorySelectionRef.current === navKey) {
+        return;
       }
+      handledCategorySelectionRef.current = navKey;
+
+      // Clear the showTutorial flag from history state so it cannot re-trigger during in-cipher actions
+      try {
+        if (window.history?.replaceState) {
+          const currentState = window.history.state || {};
+          window.history.replaceState(
+            {
+              ...currentState,
+              usr: { ...(currentState.usr || {}), category: activeCat, showTutorial: false },
+            },
+            ''
+          );
+        }
+      } catch {
+        // ignore history state write errors
+      }
+
+      let isCancelled = false;
+
+      const checkAndTriggerTutorial = async () => {
+        let isDismissed;
+        try {
+          if (user?.tutorialDismissed && typeof user.tutorialDismissed[activeCat] === 'boolean') {
+            isDismissed = user.tutorialDismissed[activeCat];
+          } else {
+            const prefs = await userApi.getTutorialPreferences();
+            isDismissed = Boolean(prefs?.[activeCat]);
+          }
+        } catch (err) {
+          console.warn("Failed to fetch tutorial preference, falling back to showing tutorial:", err);
+          isDismissed = false;
+        }
+
+        if (isCancelled) return;
+
+        if (!isDismissed) {
+          if (activeCat === 'caesar') setShowCaesarTutorial(true);
+          else if (activeCat === 'vigenere') setShowVigenereTutorial(true);
+          else if (activeCat === 'playfair') setShowPlayfairTutorial(true);
+        }
+      };
+
+      checkAndTriggerTutorial();
+
+      return () => {
+        isCancelled = true;
+      };
     }
-  }, [location.state, game.category]);
+  }, [location.key, location.state?.showTutorial, location.state?.category]);
+
+  const handleOpenManual = (cat) => {
+    const targetCat = cat || game.category;
+    if (targetCat === 'caesar') setShowCaesarTutorial(true);
+    else if (targetCat === 'vigenere') setShowVigenereTutorial(true);
+    else if (targetCat === 'playfair') setShowPlayfairTutorial(true);
+  };
+
   const {
     category, difficulty, currentStage,
     progress, completionModalData,
@@ -89,18 +132,16 @@ export default function CipherGame() {
 
     dismissStageResult();
 
-    // If completion modal data is pending (e.g. tier finished), let CompletionModal show next
-    if (!completionModalData) {
-      if (typeof stageIdx === 'number' && stageIdx >= 0 && stageIdx < 4) {
-        // Auto-advance directly to the next stage (Stage 1 -> 2 -> 3 -> 4 -> 5)
-        startStage(cat, diff, stageIdx + 1);
-      } else if (returnToRoadmap) {
-        returnToRoadmap(cat, diff);
-      } else {
-        if (cat) game.selectCategory?.(cat);
-        if (diff) selectDifficulty(diff);
-        backToStages();
-      }
+    if (typeof stageIdx === 'number' && stageIdx >= 0 && stageIdx < 4) {
+      // Auto-advance directly to the next stage (Stage 1 -> 2 -> 3 -> 4 -> 5)
+      startStage(cat, diff, stageIdx + 1);
+    } else if (returnToRoadmap) {
+      // Last stage of tier (stageIndex >= 4): route to roadmap with tier complete
+      returnToRoadmap(cat, diff);
+    } else {
+      if (cat) game.selectCategory?.(cat);
+      if (diff) selectDifficulty(diff);
+      backToStages();
     }
   };
 
@@ -169,6 +210,7 @@ export default function CipherGame() {
           <StageScoreModal
             result={stageResult}
             onContinue={handleContinueFromScore}
+            onBack={() => returnToRoadmap(stageResult.category || category, stageResult.difficulty || difficulty)}
             onViewLeaderboard={() => openStageLeaderboard(
               stageResult.category, stageResult.difficulty, stageResult.stageIndex)}
             onReplay={() => {
@@ -209,13 +251,14 @@ export default function CipherGame() {
         />
 
         {difficulty ? (
-          <StageRoadmap game={game} />
+          <StageRoadmap game={game} onOpenTutorial={() => handleOpenManual(category)} />
         ) : (
           <DifficultySelector
             activeCategory={category}
             completedLevels={progress}
             onSelectDifficulty={selectDifficulty}
             onBack={goToCategories}
+            onOpenTutorial={() => handleOpenManual(category)}
           />
         )}
 
@@ -224,6 +267,7 @@ export default function CipherGame() {
           <StageScoreModal
             result={stageResult}
             onContinue={handleContinueFromScore}
+            onBack={() => returnToRoadmap(stageResult.category || category, stageResult.difficulty || difficulty)}
             onViewLeaderboard={() => openStageLeaderboard(
               stageResult.category, stageResult.difficulty, stageResult.stageIndex)}
             onReplay={() => {
@@ -243,11 +287,6 @@ export default function CipherGame() {
         {/* SCORING SYSTEM: per-stage HIGHEST SCORE / FASTEST TIME rankings */}
         {leaderboardStage && (
           <StageLeaderboard stage={leaderboardStage} onClose={closeStageLeaderboard} />
-        )}
-
-        {/* Click blocking & immediate background blur overlay during 1.2s preparation */}
-        {isTutorialPreparing && (
-          <div className="cq-tutorial-preparing-overlay" />
         )}
 
         {/* Caesar Tutorial Modal */}

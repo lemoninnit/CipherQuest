@@ -277,6 +277,34 @@ public class UserProgressService {
         }
     }
 
+    @Transactional
+    public Map<String, Boolean> getTutorialPreferences(Long userId) {
+        User user = findUser(userId);
+        return Map.of(
+            "caesar", user.isTutorialDismissedCaesar(),
+            "vigenere", user.isTutorialDismissedVigenere(),
+            "playfair", user.isTutorialDismissedPlayfair()
+        );
+    }
+
+    @Transactional
+    public Map<String, Boolean> saveTutorialPreference(Long userId, String cipherType, boolean dismissed) {
+        User user = findUser(userId);
+        if (cipherType != null) {
+            switch (cipherType.toLowerCase()) {
+                case "caesar" -> user.setTutorialDismissedCaesar(dismissed);
+                case "vigenere" -> user.setTutorialDismissedVigenere(dismissed);
+                case "playfair" -> user.setTutorialDismissedPlayfair(dismissed);
+            }
+            userRepository.save(user);
+        }
+        return Map.of(
+            "caesar", user.isTutorialDismissedCaesar(),
+            "vigenere", user.isTutorialDismissedVigenere(),
+            "playfair", user.isTutorialDismissedPlayfair()
+        );
+    }
+
     private UserProfileDto buildProfileDto(User user) {
         Long userId = user.getId();
         List<String> badges = badgeRepository.findByUserId(userId)
@@ -284,6 +312,11 @@ public class UserProgressService {
         Map<String, Map<String, List<Integer>>> progressMap = buildProgressMap(userId);
         boolean onCooldown = user.getCooldownEndTime() != null
                 && LocalDateTime.now().isBefore(user.getCooldownEndTime());
+        Map<String, Boolean> tutorialDismissed = Map.of(
+            "caesar", user.isTutorialDismissedCaesar(),
+            "vigenere", user.isTutorialDismissedVigenere(),
+            "playfair", user.isTutorialDismissedPlayfair()
+        );
 
         return new UserProfileDto(
             user.getId(),
@@ -303,7 +336,8 @@ public class UserProgressService {
             badges,
             progressMap,
             user.getTotalScore(),
-            user.getGameStreak()
+            user.getGameStreak(),
+            tutorialDismissed
         );
     }
 }

@@ -1,5 +1,8 @@
+/* eslint-disable react-hooks/set-state-in-effect, no-unused-vars, react-hooks/immutability, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import './CaesarTutorialModal.css';
+import { useAuth } from '../../../../context/AuthContext';
+import { userApi } from '../../../../api/cipherQuestApi';
 
 /**
  * CAESAR SHIFT TUTORIAL STEPS METADATA
@@ -139,10 +142,12 @@ const PLAIN_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const STEP5_CIPHER_WORD = ['D', 'S', 'S', 'O', 'H'];
 
 export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipButtonText = 'Skip Tutorial' }) {
+  const { user, refreshProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [shiftKey, setShiftKey] = useState(3);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   // Step 3 animation state (Word encryption stepper)
   const [encryptCharIdx, setEncryptCharIdx] = useState(0);
@@ -151,6 +156,48 @@ export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipB
   // Step 5 animation state (Brute force scanner)
   const [scanKey, setScanKey] = useState(1);
   const [scannerFound, setScannerFound] = useState(false);
+
+  // Sync preference on open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let isCancelled = false;
+
+    if (user?.tutorialDismissed && typeof user.tutorialDismissed.caesar === 'boolean') {
+      setDontShowAgain(user.tutorialDismissed.caesar);
+    } else {
+      userApi.getTutorialPreferences()
+        .then((prefs) => {
+          if (!isCancelled && prefs && typeof prefs.caesar === 'boolean') {
+            setDontShowAgain(prefs.caesar);
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not fetch tutorial preferences on open:", err);
+        });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, user?.tutorialDismissed?.caesar]);
+
+  const handleToggleDontShow = async (e) => {
+    const nextVal = Boolean(e.target.checked);
+    setDontShowAgain(nextVal);
+    try {
+      const res = await userApi.saveTutorialPreference('caesar', nextVal);
+      if (res && typeof res.caesar === 'boolean') {
+        setDontShowAgain(res.caesar);
+      }
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+    } catch (err) {
+      console.error("Failed to save Caesar tutorial preference:", err);
+      setDontShowAgain(!nextVal);
+    }
+  };
 
   // Reset states when changing step or reopening
   useEffect(() => {
@@ -451,9 +498,20 @@ export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipB
             </div>
           </div>
 
-          <button className="cq-tut-skip-btn" onClick={triggerClose} title={skipButtonText}>
-            <span>{skipButtonText}</span>
-          </button>
+          <div className="cq-tut-header-actions">
+            <label className="cq-tut-dont-show-checkbox">
+              <input
+                type="checkbox"
+                checked={dontShowAgain}
+                onChange={handleToggleDontShow}
+              />
+              <span className="cq-tut-custom-checkbox" />
+              <span className="cq-tut-dont-show-text">Don't show this again</span>
+            </label>
+            <button className="cq-tut-skip-btn" onClick={triggerClose} title={skipButtonText}>
+              <span>{skipButtonText}</span>
+            </button>
+          </div>
         </div>
 
         {/* MAIN BODY */}
@@ -500,14 +558,16 @@ export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipB
 
         {/* FOOTER */}
         <div className="cq-tut-footer">
-          <button
-            className="cq-tut-nav-btn prev-btn"
-            onClick={handlePrev}
-            disabled={currentStep === 0}
-          >
-            <span className="material-symbols-outlined">chevron_left</span>
-            <span>Back</span>
-          </button>
+          <div className="cq-tut-footer-left">
+            <button
+              className="cq-tut-nav-btn prev-btn"
+              onClick={handlePrev}
+              disabled={currentStep === 0}
+            >
+              <span className="material-symbols-outlined">chevron_left</span>
+              <span>Back</span>
+            </button>
+          </div>
 
           {/* PROGRESS PILLS */}
           <div className="cq-tut-progress-pills">

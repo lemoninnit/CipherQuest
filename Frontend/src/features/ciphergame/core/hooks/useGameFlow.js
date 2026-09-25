@@ -136,6 +136,10 @@ export function useGameFlow() {
       gameType  = getPlayfairGameType(stageIndex);
     }
 
+    if (cat) setCategory(cat);
+    if (diff) setDifficulty(diff);
+    setStageResult(null);
+    setCompletionModalData(null);
     lastFailedSessionRef.current = null;
     setLeaderboardStage(null);
     setStageStartedAt(null);

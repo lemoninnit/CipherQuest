@@ -1,5 +1,8 @@
+/* eslint-disable react-hooks/set-state-in-effect, no-unused-vars, react-hooks/immutability, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
 import './VigenereTutorialModal.css';
+import { useAuth } from '../../../../context/AuthContext';
+import { userApi } from '../../../../api/cipherQuestApi';
 
 /**
  * VIGENÈRE CIPHER TUTORIAL STEPS METADATA
@@ -146,9 +149,11 @@ const DECRYPT_KEY = ['L', 'E', 'M', 'O', 'N', 'L'];
 const DECRYPT_PLAIN = ['A', 'T', 'T', 'A', 'C', 'K'];
 
 export default function VigenereTutorialModal({ isOpen, onClose, onComplete, skipButtonText = 'Skip Tutorial' }) {
+  const { user, refreshProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   // Step 2 state: Keyword selector
   const [keywordPreset, setKeywordPreset] = useState('LEMON');
@@ -159,6 +164,48 @@ export default function VigenereTutorialModal({ isOpen, onClose, onComplete, ski
   // Step 5 animation state (Kasiski scanner)
   const [scanInterval, setScanInterval] = useState(2);
   const [scannerFound, setScannerFound] = useState(false);
+
+  // Sync preference on open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let isCancelled = false;
+
+    if (user?.tutorialDismissed && typeof user.tutorialDismissed.vigenere === 'boolean') {
+      setDontShowAgain(user.tutorialDismissed.vigenere);
+    } else {
+      userApi.getTutorialPreferences()
+        .then((prefs) => {
+          if (!isCancelled && prefs && typeof prefs.vigenere === 'boolean') {
+            setDontShowAgain(prefs.vigenere);
+          }
+        })
+        .catch((err) => {
+          console.warn("Could not fetch tutorial preferences on open:", err);
+        });
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, user?.tutorialDismissed?.vigenere]);
+
+  const handleToggleDontShow = async (e) => {
+    const nextVal = Boolean(e.target.checked);
+    setDontShowAgain(nextVal);
+    try {
+      const res = await userApi.saveTutorialPreference('vigenere', nextVal);
+      if (res && typeof res.vigenere === 'boolean') {
+        setDontShowAgain(res.vigenere);
+      }
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+    } catch (err) {
+      console.error("Failed to save Vigenere tutorial preference:", err);
+      setDontShowAgain(!nextVal);
+    }
+  };
 
   // Reset states when changing step or reopening
   useEffect(() => {
@@ -510,9 +557,20 @@ export default function VigenereTutorialModal({ isOpen, onClose, onComplete, ski
             </div>
           </div>
 
-          <button className="cq-tut-skip-btn" onClick={triggerClose} title={skipButtonText}>
-            <span>{skipButtonText}</span>
-          </button>
+          <div className="cq-tut-header-actions">
+            <label className="cq-tut-dont-show-checkbox">
+              <input
+                type="checkbox"
+                checked={dontShowAgain}
+                onChange={handleToggleDontShow}
+              />
+              <span className="cq-tut-custom-checkbox" />
+              <span className="cq-tut-dont-show-text">Don't show this again</span>
+            </label>
+            <button className="cq-tut-skip-btn" onClick={triggerClose} title={skipButtonText}>
+              <span>{skipButtonText}</span>
+            </button>
+          </div>
         </div>
 
         {/* MAIN BODY */}
@@ -559,14 +617,16 @@ export default function VigenereTutorialModal({ isOpen, onClose, onComplete, ski
 
         {/* FOOTER */}
         <div className="cq-tut-footer">
-          <button
-            className="cq-tut-nav-btn prev-btn"
-            onClick={handlePrev}
-            disabled={currentStep === 0}
-          >
-            <span className="material-symbols-outlined">chevron_left</span>
-            <span>Back</span>
-          </button>
+          <div className="cq-tut-footer-left">
+            <button
+              className="cq-tut-nav-btn prev-btn"
+              onClick={handlePrev}
+              disabled={currentStep === 0}
+            >
+              <span className="material-symbols-outlined">chevron_left</span>
+              <span>Back</span>
+            </button>
+          </div>
 
           {/* PROGRESS PILLS */}
           <div className="cq-tut-progress-pills">

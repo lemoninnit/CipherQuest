@@ -98,4 +98,29 @@ public class UserController {
         UserProfileDto profile = progressService.getFullProfile(user.getId());
         return ResponseEntity.ok(profile.earnedBadges());
     }
+
+    // ── Tutorial Preferences ──────────────────────────────────────────
+
+    /**
+     * Returns tutorial dismissed preferences for the current user.
+     * { "caesar": false, "vigenere": false, "playfair": false }
+     */
+    @GetMapping("/preferences/tutorial")
+    public ResponseEntity<Map<String, Boolean>> getTutorialPreferences(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User user = userService.findByUsername(userDetails.getUsername());
+        return ResponseEntity.ok(progressService.getTutorialPreferences(user.getId()));
+    }
+
+    /**
+     * Update tutorial dismissed preference for a specific cipher category.
+     * Body: { "cipherType": "caesar", "dismissed": true }
+     */
+    @PostMapping("/preferences/tutorial")
+    public ResponseEntity<Map<String, Boolean>> saveTutorialPreference(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody SaveTutorialPreferenceRequest req) {
+        User user = userService.findByUsername(userDetails.getUsername());
+        return ResponseEntity.ok(progressService.saveTutorialPreference(user.getId(), req.cipherType(), req.dismissed()));
+    }
 }

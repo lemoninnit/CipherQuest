@@ -1786,6 +1786,53 @@
   box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
 }
 
+.cq-field-manual-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: #00e5ff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 5px 14px 5px 8px;
+  border-radius: 20px;
+  transition: all 0.22s ease;
+  outline: none;
+  margin-left: auto;
+}
+
+.cq-field-manual-nav-btn:hover,
+.cq-field-manual-nav-btn:focus-visible {
+  background: rgba(0, 229, 255, 0.18);
+  border-color: #00e5ff;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.cq-manual-icon-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.2);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #00e5ff;
+  transition: all 0.22s ease;
+  flex-shrink: 0;
+}
+
+.cq-field-manual-nav-btn:hover .cq-manual-icon-circle {
+  background: #00e5ff;
+  color: #030914;
+  box-shadow: 0 0 10px #00e5ff;
+}
+
 /* ── Standardized Left-Aligned Screen Header ── */
 .cq-screen-header-block {
   width: 100% !important;

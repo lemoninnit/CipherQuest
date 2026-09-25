@@ -43,6 +43,42 @@
   to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
+/* Top-Left Back to Roadmap Button */
+.ssm-top-back-btn {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0, 229, 255, 0.06);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 8px;
+  color: #7dd3fc;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.ssm-top-back-btn:hover {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: rgba(0, 229, 255, 0.5);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
+  transform: translateX(-1px);
+}
+
+.ssm-top-back-icon {
+  font-size: 14px !important;
+  color: #00e5ff;
+}
+
 /* Top Accent Line */
 .ssm-top-accent {
   position: absolute;
