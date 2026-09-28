@@ -5,7 +5,7 @@ import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
-import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
+import { facingTransform, makeSwimProps, randomVisualFrames, tickFish, DEFAULT_FISH_IMG } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
@@ -236,40 +236,6 @@ export default function VigenereFishingGame({
     p => revealedMasks[p.wordIdx]?.[p.charIdx]
   );
 
-  const alignmentItems = useMemo(() => {
-    const items = [];
-    cipherSegs.forEach((cWord, wIdx) => {
-      if (wIdx > 0) {
-        items.push({ isSpace: true, id: `space-${wIdx}` });
-      }
-      cWord.split('').forEach((cipherCh, cIdx) => {
-        const slot = slotMap[wIdx]?.[cIdx] ?? 0;
-        const keyCh = targetKey[slot] || 'A';
-        const shiftVal = targetShifts[slot] ?? 0;
-        const plainCh = words[wIdx]?.[cIdx] ?? '';
-        const globalPos = flatLetterPositions.find(
-          p => p.wordIdx === wIdx && p.charIdx === cIdx
-        );
-        const globalIdx = globalPos ? globalPos.globalIdx : 0;
-        const isSolved = revealedMasks[wIdx]?.[cIdx] === true;
-        const isActive = globalIdx === currentTarget.globalIdx;
-
-        items.push({
-          id: `${wIdx}-${cIdx}`,
-          cipherCh,
-          keyCh,
-          shiftVal,
-          plainCh,
-          wordIdx: wIdx,
-          charIdx: cIdx,
-          globalIdx,
-          isSolved,
-          isActive,
-        });
-      });
-    });
-    return items;
-  }, [cipherSegs, slotMap, targetKey, targetShifts, words, flatLetterPositions, revealedMasks, currentTarget.globalIdx]);
 
   const spawnFish = useCallback(() => {
     const letters = generateVigenereCandidateLetters(currentTargetPlain, tier, 9);
@@ -677,7 +643,11 @@ export default function VigenereFishingGame({
                   <img
                     className="fg-fish-sprite-img"
                     src={fish.imgSrc}
-                    alt="fish"
+                    alt=""
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = DEFAULT_FISH_IMG;
+                    }}
                     draggable={false}
                   />
                 </div>
@@ -693,7 +663,11 @@ export default function VigenereFishingGame({
                 <img
                   className="fg-fish-sprite-img"
                   src={caughtFish.imgSrc}
-                  alt="fish"
+                  alt=""
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = DEFAULT_FISH_IMG;
+                  }}
                   draggable={false}
                 />
               </div>
@@ -766,89 +740,27 @@ export default function VigenereFishingGame({
           )}
         </div>
 
-        {/* 2. Floating Reference Panel 1: Alignment (Bottom-Left) */}
-        <div className="vg-floating-ref-panel">
-          <div className="vg-floating-ref-title">Vigenère Alignment</div>
-          <div className="vg-formula-badge">Plain = (Cipher − Key + 26) mod 26</div>
-          <button
-            type="button"
-            className="vg-tabula-modal-btn vg-tabula-btn-compact"
-            onClick={() => setShowTabula(true)}
-            title="Open Interactive Tabula Recta"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '0.8rem' }}>grid_on</span>
-            <span>Tabula Recta</span>
-          </button>
-
-          <div className="vg-alignment-body">
-            <div className="vg-alignment-labels">
-              <div>CIPHER</div>
-              <div>KEY</div>
-              <div style={{ color: 'var(--neon-green)' }}>PLAIN</div>
-            </div>
-            <div className="vg-alignment-container">
-              {alignmentItems.map(item => {
-                if (item.isSpace) {
-                  return <div key={item.id} className="vg-alignment-space" />;
-                }
-                const isRevealed = revealedMasks[item.wordIdx]?.[item.charIdx];
-                const isActive = item.globalIdx === currentTarget.globalIdx;
-
-                return (
-                  <div
-                    key={item.id}
-                    className={`vg-alignment-col ${isActive ? 'active-slot' : ''}`}
-                    onClick={() => { if (!isCasting) setActiveTargetIdx(item.globalIdx); }}
-                    title={`Pos #${item.globalIdx + 1}: ${item.cipherCh} (${charToIdx(item.cipherCh)}) − ${item.keyCh} (${charToIdx(item.keyCh)}) = ${isRevealed ? item.plainCh : '?'}`}
-                  >
-                    <span className="vg-align-cipher">{item.cipherCh}</span>
-                    <span className="vg-align-key">{item.keyCh}</span>
-                    <span
-                      className="vg-align-plain"
-                      style={{ color: isRevealed ? 'var(--neon-green)' : (isActive && hoveredFish ? 'var(--neon-cyan)' : 'var(--neon-yellow)') }}
-                    >
-                      {isRevealed ? item.plainCh : (isActive && hoveredFish ? hoveredFish.letter : '_')}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* 3. Bottom-Center Floating Keyword Pill */}
-        <div className="vg-fishing-bottom-keyword" title={`Repeating Keyword: ${targetKey}`}>
-          <span className="vg-pill-lbl">KEYWORD</span>
-          <span className="vg-pill-val">{targetKey}</span>
-        </div>
-
-        {/* 4. Floating Chum the Waters Button (Bottom-Right, above A-Z Panel) */}
-        <button
-          className="vigenere-floating-chum-btn"
-          onClick={handleChumWaters}
-          disabled={chumCount <= 0 || isCasting}
-          aria-label={`Chum the Waters, ${chumCount} left`}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>waves</span>
-          Chum the Waters ({chumCount} left)
-        </button>
-
-        {/* 5. Floating Reference Panel 2: A-Z Value Table & Decryption Helper (Bottom-Right) */}
+        {/* 2. Floating Reference Panel: Decryption Arithmetic & A-Z Reference (Bottom-Left) */}
         <div className={`vg-floating-key-panel vg-fishing-az-panel ${basketShake ? 'shake' : ''}`}>
           <div className="vg-floating-current-slot">
             <div className="vg-arithmetic-title">
               Decryption Arithmetic
             </div>
-            <div className="vg-slot-badge-lg" style={{ fontSize: '0.82rem', padding: '2px 8px' }}>
-              {solvedBlanks}/{totalBlanks} Solved
-            </div>
+            <button
+              type="button"
+              className="vg-tabula-modal-btn vg-tabula-btn-compact"
+              onClick={() => setShowTabula(true)}
+              title="Open Interactive Tabula Recta"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>grid_on</span>
+              <span>Tabula Recta</span>
+            </button>
           </div>
 
           {/* Active calculation card */}
           <div className="vg-fishing-calc-card">
             <div className="vg-calc-top-row">
-              <span className="vg-calc-label">Active Letter Decryption:</span>
-              <span className="vg-calc-badge">Pos #{currentTarget.globalIdx + 1}</span>
+              <span className="vg-calc-label">Active Letter Decryption</span>
             </div>
             <div className="vg-calc-formula-row">
               <div className="vg-calc-item cipher">
@@ -863,18 +775,44 @@ export default function VigenereFishingGame({
                 <span className="val">{currentKeyShift}</span>
               </div>
               <span className="vg-calc-op">=</span>
-              <div className="vg-calc-item plain">
+              <div className={`vg-calc-item plain ${revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? 'is-solved' : ''}`}>
                 <span className="lbl">Target</span>
-                <strong style={{ color: 'var(--neon-green)' }}>
-                  {revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? currentTargetPlain : '?'}
+                <strong style={{ color: revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? 'var(--neon-green)' : (hoveredFish ? 'var(--neon-cyan)' : '#ffffff') }}>
+                  {revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx]
+                    ? currentTargetPlain
+                    : (hoveredFish ? hoveredFish.letter : '?')}
                 </strong>
                 <span
                   className="val"
-                  style={{ visibility: revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? 'visible' : 'hidden' }}
+                  style={{
+                    visibility: (revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] || hoveredFish) ? 'visible' : 'hidden',
+                    color: revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? 'var(--neon-green)' : 'var(--neon-cyan)'
+                  }}
                 >
-                  {(charToIdx(currentCipherChar) - currentKeyShift + 26) % 26}
+                  {revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx]
+                    ? (charToIdx(currentCipherChar) - currentKeyShift + 26) % 26
+                    : (hoveredFish ? charToIdx(hoveredFish.letter) : '?')}
                 </span>
               </div>
+            </div>
+
+            {/* Smart Calculation Guidance (Challenge without spoiling answers) */}
+            <div className="vg-calc-help-row">
+              {!revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? (
+                (charToIdx(currentCipherChar) - currentKeyShift < 0) ? (
+                  <span className="vg-calc-help-text wrap-around">
+                    ⚠️ Wrap-Around: Calculate ({charToIdx(currentCipherChar)} − {currentKeyShift} + 26) = <strong>?</strong>
+                  </span>
+                ) : (
+                  <span className="vg-calc-help-text normal">
+                    💡 Calculate: {charToIdx(currentCipherChar)} − {currentKeyShift} = <strong>?</strong>
+                  </span>
+                )
+              ) : (
+                <span className="vg-calc-help-text solved">
+                  ✅ Solved: {currentCipherChar} ({charToIdx(currentCipherChar)}) − {currentKeyChar} ({currentKeyShift}) {charToIdx(currentCipherChar) - currentKeyShift < 0 ? '+ 26 ' : ''}= {currentTargetPlain} ({(charToIdx(currentCipherChar) - currentKeyShift + 26) % 26})
+                </span>
+              )}
             </div>
           </div>
 
@@ -884,9 +822,11 @@ export default function VigenereFishingGame({
               {ALPHABET.slice(0, 13).map((ch, i) => {
                 const isCipher = ch === currentCipherChar;
                 const isKey = ch === currentKeyChar;
+                const isTarget = revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] && ch === currentTargetPlain;
                 let cellClass = "vg-alphabet-cell";
                 if (isCipher) cellClass += " is-cipher";
                 if (isKey) cellClass += " is-key";
+                if (isTarget) cellClass += " is-target";
                 return (
                   <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
                     <span className="vg-alpha-char">{ch}</span>
@@ -900,9 +840,11 @@ export default function VigenereFishingGame({
                 const val = i + 13;
                 const isCipher = ch === currentCipherChar;
                 const isKey = ch === currentKeyChar;
+                const isTarget = revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] && ch === currentTargetPlain;
                 let cellClass = "vg-alphabet-cell";
                 if (isCipher) cellClass += " is-cipher";
                 if (isKey) cellClass += " is-key";
+                if (isTarget) cellClass += " is-target";
                 return (
                   <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
                     <span className="vg-alpha-char">{ch}</span>
@@ -918,6 +860,39 @@ export default function VigenereFishingGame({
               +{floatingXp.amount} XP
             </div>
           )}
+        </div>
+
+        {/* 3. Floating Actions & Keyword Dock (Bottom-Right) */}
+        <div className="vg-fishing-right-dock">
+          {/* Keyword Card */}
+          <div className="vg-right-card vg-keyword-card" title={`Repeating Keyword: ${targetKey}`}>
+            <div className="vg-right-card-header">
+              <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', color: '#ffd700' }}>vpn_key</span>
+              <span className="vg-right-card-title">KEYWORD</span>
+            </div>
+            <div className="vg-right-card-value vg-keyword-val">
+              {targetKey}
+            </div>
+          </div>
+
+          {/* Chum the Waters Button */}
+          <button
+            type="button"
+            className="vg-right-card vg-chum-card-btn"
+            onClick={handleChumWaters}
+            disabled={chumCount <= 0 || isCasting}
+            aria-label={`Chum the Waters, ${chumCount} left`}
+            title="Chum the waters to attract letters for the active blank"
+          >
+            <div className="vg-right-card-header">
+              <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', color: 'var(--neon-cyan)' }}>waves</span>
+              <span className="vg-right-card-title">CHUM WATERS</span>
+            </div>
+            <div className="vg-right-card-value vg-chum-val">
+              <span className="vg-chum-count-num">{chumCount}</span>
+              <span className="vg-chum-sublabel">Bait Left</span>
+            </div>
+          </button>
         </div>
 
         {/* 5. Floating Secured Victory Panel when level solved */}

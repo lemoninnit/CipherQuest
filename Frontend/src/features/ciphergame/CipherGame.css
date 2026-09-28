@@ -6125,7 +6125,7 @@
 /* Floating Chum Button in Vigenere Fishing */
 .vigenere-floating-chum-btn {
   position: absolute;
-  bottom: 185px;
+  bottom: 24px;
   right: 28px;
   z-index: 20;
   background: rgba(0, 229, 255, 0.12);
@@ -6180,7 +6180,7 @@
     min-width: 220px;
   }
   .vigenere-floating-chum-btn {
-    bottom: 170px;
+    bottom: 16px;
     right: 16px;
     padding: 8px 14px;
     font-size: 0.82rem;
@@ -6719,7 +6719,17 @@
 }
 
 /* Tightened Decryption Arithmetic Panel */
-.vigenere-fishing-fullscreen .vg-fishing-az-panel,
+.vigenere-fishing-fullscreen .vg-fishing-az-panel {
+  width: fit-content !important;
+  min-width: 380px !important;
+  max-width: 460px !important;
+  padding: 10px 14px !important;
+  bottom: 18px !important;
+  left: 24px !important;
+  right: auto !important;
+  gap: 6px !important;
+}
+
 .vigenere-sprint-fullscreen .vg-fishing-az-panel,
 .vg-pacman-fullscreen .vg-fishing-az-panel {
   width: fit-content !important;
@@ -6729,6 +6739,182 @@
   bottom: 18px !important;
   right: 22px !important;
   gap: 6px !important;
+}
+
+.vigenere-fishing-fullscreen .vg-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vg-calc-help-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.vg-calc-help-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.vg-calc-help-text.normal {
+  color: var(--neon-cyan);
+}
+
+.vg-calc-help-text.wrap-around {
+  color: #ffd700;
+}
+
+.vg-calc-help-text.solved {
+  color: var(--neon-green);
+  font-weight: 700;
+}
+
+.vg-calc-help-text strong {
+  font-size: 0.85rem;
+  color: #ffffff;
+}
+
+.vg-calc-item.is-solved {
+  border-color: var(--neon-green) !important;
+  background: rgba(57, 255, 20, 0.08) !important;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.25) !important;
+}
+
+.vg-alphabet-cell.is-target {
+  border-color: var(--neon-green) !important;
+  background: rgba(57, 255, 20, 0.2) !important;
+  box-shadow: 0 0 8px rgba(57, 255, 20, 0.5) !important;
+}
+
+/* Vigenère Fishing Right-Side Dock (Keyword & Chum Waters Twin Cards) */
+.vg-fishing-right-dock {
+  position: absolute;
+  bottom: 18px;
+  right: 24px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.vg-right-card {
+  width: 175px;
+  background: rgba(3, 14, 28, 0.88);
+  border: 1.5px solid rgba(0, 229, 255, 0.35);
+  border-radius: 12px;
+  padding: 8px 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 0 14px rgba(0, 229, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  box-sizing: border-box;
+}
+
+.vg-right-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.vg-right-card-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.vg-right-card-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.vg-keyword-card {
+  border-color: rgba(255, 215, 0, 0.4);
+}
+
+.vg-keyword-val {
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+  letter-spacing: 0.12em;
+}
+
+.vg-chum-card-btn {
+  border-color: rgba(0, 229, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vg-chum-card-btn:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.16);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.45);
+  transform: translateY(-2px);
+}
+
+.vg-chum-card-btn:focus-visible {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: 3px;
+}
+
+.vg-chum-card-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.vg-chum-val {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.vg-chum-count-num {
+  color: var(--neon-cyan);
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+.vg-chum-sublabel {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1390px), (max-height: 820px) {
+  .vg-fishing-right-dock {
+    bottom: 16px;
+    right: 16px;
+    gap: 6px;
+  }
+  .vg-right-card {
+    width: 155px;
+    padding: 6px 10px;
+  }
+  .vg-right-card-value {
+    font-size: 1.05rem;
+  }
 }
 
 .caesar-fishing-fullscreen .caesar-floating-cheat-sheet {

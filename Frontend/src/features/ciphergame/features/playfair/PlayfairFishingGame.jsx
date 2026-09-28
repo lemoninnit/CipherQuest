@@ -10,7 +10,7 @@ import {
   describePlayfairRule,
   transformPlayfairPair,
 } from './PlayfairHelpers';
-import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
+import { facingTransform, makeSwimProps, randomVisualFrames, tickFish, DEFAULT_FISH_IMG } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
@@ -445,7 +445,16 @@ export default function PlayfairFishingGame({
           {fishList.map((fish) => (
             <div key={fish.id} className="fg-fish-entity" style={{ left: `${fish.x}%`, top: `${fish.y}px` }} onClick={() => castAt(fish)}>
               <div className="fg-fish-facing" style={{ transform: facingTransform(fish.facing) }}>
-                <img className="fg-fish-sprite-img pf-fish-img" src={fish.imgSrc} alt="fish" draggable={false} />
+                <img
+                  className="fg-fish-sprite-img pf-fish-img"
+                  src={fish.imgSrc}
+                  alt=""
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = DEFAULT_FISH_IMG;
+                  }}
+                  draggable={false}
+                />
               </div>
               <div className="pf-fish-badge" title={`${fish.pair} - ${currentRuleHint}`}>{fish.pair}</div>
             </div>
@@ -453,7 +462,16 @@ export default function PlayfairFishingGame({
           {caughtFish && (
             <div className="fg-fish-entity" style={{ left: `${(hookX / pondWidth) * 100}%`, top: `${(hookY / 260) * pondHeight - 20}px`, transform: 'scale(1.2)', pointerEvents: 'none' }}>
               <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
-                <img className="fg-fish-sprite-img pf-fish-img" src={caughtFish.imgSrc} alt="fish" draggable={false} />
+                <img
+                  className="fg-fish-sprite-img pf-fish-img"
+                  src={caughtFish.imgSrc}
+                  alt=""
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = DEFAULT_FISH_IMG;
+                  }}
+                  draggable={false}
+                />
               </div>
               <div className="pf-fish-badge">{caughtFish.pair}</div>
             </div>
