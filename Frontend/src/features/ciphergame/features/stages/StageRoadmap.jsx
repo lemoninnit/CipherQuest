@@ -100,11 +100,13 @@ export default function StageRoadmap({ game, onOpenTutorial }) {
                         ? "locked"
                         : "available"
                     }`}
-                    onClick={() => startStage(category, difficulty, i)}
+                    onClick={() => {
+                      if (!isLocked) startStage(category, difficulty, i);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        startStage(category, difficulty, i);
+                        if (!isLocked) startStage(category, difficulty, i);
                       }
                     }}
                   >

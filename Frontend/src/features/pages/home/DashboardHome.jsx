@@ -21,7 +21,7 @@ const DashboardHome = () => {
     if (window.location.pathname !== '/dashboard') {
       navigate('/dashboard');
     } else if (activeCardId) {
-      navigate('/dashboard/ciphergame', { state: { category: activeCardId } });
+      navigate(`/dashboard/ciphergame?category=${activeCardId}`, { state: { category: activeCardId } });
     }
   };
 
@@ -389,13 +389,13 @@ const DashboardHome = () => {
                   onFocus={() => setActiveCardId(card.id)}
                   onClick={() => {
                     setActiveCardId(card.id);
-                    navigate('/dashboard/ciphergame', { state: { category: card.id, showTutorial: true } });
+                    navigate(`/dashboard/ciphergame?category=${card.id}`, { state: { category: card.id, showTutorial: true } });
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       setActiveCardId(card.id);
-                      navigate('/dashboard/ciphergame', { state: { category: card.id, showTutorial: true } });
+                      navigate(`/dashboard/ciphergame?category=${card.id}`, { state: { category: card.id, showTutorial: true } });
                     }
                   }}
                 >

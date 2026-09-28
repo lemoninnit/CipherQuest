@@ -1,5 +1,4 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
@@ -11,6 +10,7 @@ import { facingTransform, isLargeFish, makeSwimProps, onFishImgError, randomFish
 import { fishingSound } from '../../core/engine/fishingSound';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
+import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 import { useFishingStageFail } from '../../core/hooks/useFishingStageFail';
 import FishingGameOverOverlay from '../../ui/FishingGameOverOverlay';
 
@@ -77,11 +77,14 @@ const buildSlotMap = (segments, keyLen) => {
 export default function VigenereFishingGame({
   levelData,
   tier,
+  snapshot,
   onVerifySubmit,
   onBackToStages,
   onReplayNewQuestion,
   onStartStageTimer,
-  onStageFail
+  onSaveSnapshot,
+  onClearSnapshot,
+  onStageFail,
 }) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -133,11 +136,13 @@ export default function VigenereFishingGame({
     return words.map(w => Array(w.length).fill(false));
   }, [levelData.masks, levelData.difficulty, tier, words]);
 
-  const [phase, setPhase] = useState('ready');
+  const hasSnapshot = Boolean(snapshot?.gameState && snapshot.gameState.phase === 'playing');
+
+  const [phase, setPhase] = useState(() => (hasSnapshot ? 'playing' : 'ready'));
   const [isOperationLoading, setIsOperationLoading] = useState(false);
-  const [revealedMasks, setRevealedMasks] = useState(getInitialRevealed);
-  const [activeTargetIdx, setActiveTargetIdx] = useState(0);
-  const [attemptsLeft, setAttemptsLeft] = useState(25);
+  const [revealedMasks, setRevealedMasks] = useState(() => (hasSnapshot && Array.isArray(snapshot.gameState.revealedMasks) ? snapshot.gameState.revealedMasks : getInitialRevealed()));
+  const [activeTargetIdx, setActiveTargetIdx] = useState(() => (hasSnapshot && typeof snapshot.gameState.activeTargetIdx === 'number' ? snapshot.gameState.activeTargetIdx : 0));
+  const [attemptsLeft, setAttemptsLeft] = useState(() => (hasSnapshot && typeof snapshot.gameState.attemptsLeft === 'number' ? snapshot.gameState.attemptsLeft : 25));
   const [levelSolved, setLevelSolved] = useState(false);
   const [basketShake, setBasketShake] = useState(false);
   const [floatingXp, setFloatingXp] = useState(null);
@@ -149,19 +154,110 @@ export default function VigenereFishingGame({
   const [caughtFish, setCaughtFish] = useState(null);
   const [splash, setSplash] = useState({ show: false, x: 0, y: 0 });
   const [showExplanation, setShowExplanation] = useState(false);
-  const [chumCount, setChumCount] = useState(3);
+  const [chumCount, setChumCount] = useState(() => (hasSnapshot && typeof snapshot.gameState.chumCount === 'number' ? snapshot.gameState.chumCount : 3));
   const [hoveredFish, setHoveredFish] = useState(null);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
   const [showTabula, setShowTabula] = useState(false);
-  const [isMuted, setIsMuted]       = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const animationRef = useRef(null);
+  const prevLevelIdRef = useRef(levelData.id || `${levelData.plaintext}-${levelData.ciphertext}`);
+
+  const currentTarget = flatLetterPositions[activeTargetIdx] || flatLetterPositions[0] || {
+    wordIdx: 0,
+    charIdx: 0,
+    globalIdx: 0,
+    plainChar: 'A',
+    cipherChar: 'A',
+    slot: 0,
+    keyChar: 'A',
+    keyShift: 0,
+  };
+  const currentTargetPlain = currentTarget.plainChar;
+  const currentCipherChar = currentTarget.cipherChar;
+  const currentKeyChar = currentTarget.keyChar;
+  const currentKeyShift = currentTarget.keyShift;
 
   // Running out of attempts loses the stage and costs one session heart.
+  // Declared BEFORE the snapshot saver so `gameOver` is in scope there.
   const { gameOver, resetStageFail } = useFishingStageFail({
     attemptsLeft,
     isSolved: levelSolved,
     onStageFail,
   });
+
+  const isRunning = phase === 'playing' && !levelSolved;
+  useStageSnapshotAutoSaver(
+    onSaveSnapshot,
+    useCallback(() => ({
+      phase: 'playing',
+      revealedMasks,
+      activeTargetIdx,
+      attemptsLeft,
+      chumCount,
+    }), [revealedMasks, activeTargetIdx, attemptsLeft, chumCount]),
+    // A lost stage must not be resurrected from a stale snapshot, so stop
+    // persisting as soon as the failure overlay is up.
+    isRunning && !gameOver
+  );
+
+  const spawnFish = useCallback(() => {
+    const letters = generateVigenereCandidateLetters(currentTargetPlain, tier, 9);
+    const usedY = [];
+    const list = letters.map((letter, i) => {
+      let y;
+      let attempts = 0;
+      do {
+        y = 30 + Math.random() * 200;
+        attempts++;
+      } while (usedY.some(uy => Math.abs(uy - y) < 26) && attempts < 20);
+      usedY.push(y);
+      return {
+        id: i,
+        letter,
+        value: charToIdx(letter),
+        x: 2 + Math.random() * 94,
+        y,
+        speed: 0.3 + Math.random() * 0.5,
+        ...randomFishSprite(),
+        ...makeSwimProps(),
+      };
+    });
+    setFishList(list);
+  }, [currentTargetPlain, tier]);
+
+  const spawnBubbles = useCallback(() => {
+    const list = [];
+    for (let i = 0; i < 15; i++) {
+      list.push({
+        id: i,
+        x: Math.random() * 100,
+        size: 3 + Math.random() * 8,
+        delay: Math.random() * 6,
+        duration: 5 + Math.random() * 5
+      });
+    }
+    setBubbles(list);
+  }, []);
+
+  /* ── reset on levelData change ── */
+  useEffect(() => {
+    const curId = levelData.id || `${levelData.plaintext}-${levelData.ciphertext}`;
+    if (prevLevelIdRef.current !== curId) {
+      prevLevelIdRef.current = curId;
+      setPhase('ready');
+      setIsMenuOpen(false);
+      setRevealedMasks(getInitialRevealed());
+      setActiveTargetIdx(0);
+    }
+  }, [levelData, getInitialRevealed]);
+
+  /* ── spawn fish when resuming or starting ── */
+  useEffect(() => {
+    if (phase === 'playing' && !isMenuOpen && fishList.length === 0) {
+      spawnFish();
+      spawnBubbles();
+    }
+  }, [phase, isMenuOpen, fishList.length, spawnFish, spawnBubbles]);
 
   useEffect(() => {
     return () => {
@@ -201,65 +297,9 @@ export default function VigenereFishingGame({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [phase, showExplanation, levelSolved, attemptsLeft]);
 
-  const currentTarget = flatLetterPositions[activeTargetIdx] || flatLetterPositions[0] || {
-    wordIdx: 0,
-    charIdx: 0,
-    globalIdx: 0,
-    plainChar: 'A',
-    cipherChar: 'A',
-    slot: 0,
-    keyChar: 'A',
-    keyShift: 0,
-  };
-  const currentTargetPlain = currentTarget.plainChar;
-  const currentCipherChar = currentTarget.cipherChar;
-  const currentKeyChar = currentTarget.keyChar;
-  const currentKeyShift = currentTarget.keyShift;
-
   const allCorrect = flatLetterPositions.length > 0 && flatLetterPositions.every(
     p => revealedMasks[p.wordIdx]?.[p.charIdx]
   );
-
-
-  const spawnFish = useCallback(() => {
-    const letters = generateVigenereCandidateLetters(currentTargetPlain, tier, 9);
-    const usedY = [];
-    const list = letters.map((letter, i) => {
-      let y;
-      let attempts = 0;
-      do {
-        y = 30 + Math.random() * 200;
-        attempts++;
-      } while (usedY.some(uy => Math.abs(uy - y) < 26) && attempts < 20);
-      usedY.push(y);
-      return {
-        id: i,
-        letter,
-        value: charToIdx(letter),
-        x: 2 + Math.random() * 94,
-        y,
-        speed: 0.3 + Math.random() * 0.5,
-        ...randomFishSprite(),
-        ...makeSwimProps(),
-      };
-    });
-    setFishList(list);
-  }, [currentTargetPlain, tier]);
-
-  const spawnBubbles = () => {
-    const list = [];
-    for (let i = 0; i < 15; i++) {
-      list.push({
-        id: i,
-        x: Math.random() * 100,
-        size: 3 + Math.random() * 8,
-        delay: Math.random() * 6,
-        duration: 5 + Math.random() * 5
-      });
-    }
-    setBubbles(list);
-  };
-
   const resetRound = useCallback(() => {
     const initialRevealed = getInitialRevealed();
     setRevealedMasks(initialRevealed);
@@ -281,6 +321,7 @@ export default function VigenereFishingGame({
   }, [getInitialRevealed, flatLetterPositions]);
 
   const startGame = () => {
+    onClearSnapshot?.();
     fishingSound.unlockAudio();
     fishingSound.playBgm();
     resetRound();
@@ -291,20 +332,15 @@ export default function VigenereFishingGame({
   };
 
   useEffect(() => {
-    setPhase('ready');
-    setIsMenuOpen(false);
-    resetRound();
-  }, [levelData, resetRound]);
-
-  useEffect(() => {
     if (phase !== 'playing') return;
     if (allCorrect && !levelSolved) {
+      onClearSnapshot?.();
       setLevelSolved(true);
       fishingSound.stopBgm();
       fishingSound.playSfx('win');
     }
     if (!allCorrect && levelSolved) setLevelSolved(false);
-  }, [phase, allCorrect, levelSolved]);
+  }, [phase, allCorrect, levelSolved, onClearSnapshot]);
 
   useEffect(() => {
     if (phase !== 'playing' || isMenuOpen || levelSolved || gameOver) return;
@@ -965,10 +1001,14 @@ export default function VigenereFishingGame({
         open={isMenuOpen}
         onResume={() => setIsMenuOpen(false)}
         onTutorial={() => {
+          onClearSnapshot?.();
           setIsMenuOpen(false);
           setPhase('ready');
         }}
-        onExit={onBackToStages}
+        onExit={() => {
+          onClearSnapshot?.();
+          onBackToStages();
+        }}
       />
     </div>
   );

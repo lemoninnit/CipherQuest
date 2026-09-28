@@ -305,14 +305,11 @@ export default function BadgesPage() {
 
   const handleBadgeClick = (badge) => {
     if (badge.cipherKey) {
-      navigate('/dashboard/ciphergame', {
-        state: {
-          category: badge.cipherKey,
-          difficulty: badge.difficultyKey || 'easy'
-        }
-      });
+      const cat = badge.cipherKey;
+      const diff = badge.difficultyKey || 'easy';
+      navigate(`/dashboard/ciphergame?category=${cat}&difficulty=${diff}`);
     } else {
-      navigate('/dashboard/ciphergame');
+      navigate('/dashboard');
     }
   };
 

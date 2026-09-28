@@ -6,11 +6,11 @@ import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
-import FullscreenButton from '../../ui/FullscreenButton';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { sprintSound } from './sprintSound';
+import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const charToIdx = (char) => (char && char.charCodeAt(0) >= 65 && char.charCodeAt(0) <= 90 ? char.charCodeAt(0) - 65 : 0);
@@ -149,10 +149,13 @@ const createRandomSlime = (lane = 0, startX = SPAWN_X) => {
 export default function CipherSprint({
   levelData,
   tier,
+  snapshot,
   onVerifySubmit,
   onBackToStages,
   onReplayNewQuestion,
   onStartStageTimer,
+  onSaveSnapshot,
+  onClearSnapshot,
 }) {
   const {
     containerRef: fsContainerRef,
@@ -210,15 +213,17 @@ export default function CipherSprint({
     return list;
   }, [levelData]);
 
+  const hasSnapshot = Boolean(snapshot?.gameState && (snapshot.gameState.sprintStep === 'running' || snapshot.gameState.phase === 'playing'));
+
   /* ───────────────────────────────────────────────
      Game state (visual)
      ─────────────────────────────────────────────── */
-  const [sprintStep, setSprintStep] = useState('ready'); // 'ready' | 'running' | 'finished' | 'gameover'
-  const [activeShift, setActiveShift] = useState(0);
-  const [runnerLane, setRunnerLane] = useState(1);
+  const [sprintStep, setSprintStep] = useState(() => (hasSnapshot ? 'running' : 'ready')); // 'ready' | 'running' | 'finished' | 'gameover'
+  const [activeShift, setActiveShift] = useState(() => (hasSnapshot && typeof snapshot.gameState.activeShift === 'number' ? snapshot.gameState.activeShift : 0));
+  const [runnerLane, setRunnerLane] = useState(() => (hasSnapshot && typeof snapshot.gameState.runnerLane === 'number' ? snapshot.gameState.runnerLane : 1));
   const [coins, setCoins] = useState([]);
   const [slimes, setSlimes] = useState([]);
-  const [lives, setLives] = useState(5);
+  const [lives, setLives] = useState(() => (hasSnapshot && typeof snapshot.gameState.lives === 'number' ? snapshot.gameState.lives : 5));
   const [laneChangeEffect, setLaneChangeEffect] = useState(null);
   const [speedLines, setSpeedLines] = useState(() => {
     const list = [];
@@ -233,8 +238,8 @@ export default function CipherSprint({
     }
     return list;
   });
-  const [isPaused, setIsPaused] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPaused, setIsPaused] = useState(() => (hasSnapshot ? true : false));
+  const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
@@ -247,6 +252,17 @@ export default function CipherSprint({
   const [slimeFrame, setSlimeFrame] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
 
+  const isRunning = sprintStep === 'running';
+  useStageSnapshotAutoSaver(
+    onSaveSnapshot,
+    useCallback(() => ({
+      sprintStep: 'running',
+      activeShift,
+      lives,
+      runnerLane,
+    }), [activeShift, lives, runnerLane]),
+    isRunning
+  );
   const toggleSound = useCallback(() => {
     const muted = sprintSound.toggleMute();
     setIsMuted(muted);
@@ -373,6 +389,7 @@ export default function CipherSprint({
      Game flow actions
      ─────────────────────────────────────────────── */
   const handleStartSprint = () => {
+    onClearSnapshot?.();
     sprintSound.unlockAudio();
     sprintSound.playBgm();
     clearAllFXTimeouts();
@@ -405,6 +422,7 @@ export default function CipherSprint({
   };
 
   const handleRetryFromCheckpoint = () => {
+    onClearSnapshot?.();
     sprintSound.unlockAudio();
     sprintSound.playBgm();
     clearAllFXTimeouts();
@@ -572,6 +590,7 @@ export default function CipherSprint({
         setActiveShift(nextShift);
 
         if (nextShift === target) {
+          onClearSnapshot?.();
           sprintStepRef.current = 'finished';
           setSprintStep('finished');
           sprintSound.stopBgm();
@@ -612,6 +631,7 @@ export default function CipherSprint({
           setLives((l) => {
             const next = l - 1;
             if (next <= 0) {
+              onClearSnapshot?.();
               sprintStepRef.current = 'gameover';
               setSprintStep('gameover');
               sprintSound.stopBgm();
@@ -697,6 +717,7 @@ export default function CipherSprint({
     triggerShake,
     triggerSpin,
     tier,
+    onClearSnapshot,
   ]);
 
   /* ───────────────────────────────────────────────
@@ -1218,10 +1239,14 @@ export default function CipherSprint({
         open={isMenuOpen}
         onResume={() => setIsMenuOpen(false)}
         onTutorial={() => {
+          onClearSnapshot?.();
           setIsMenuOpen(false);
           setSprintStep('ready');
         }}
-        onExit={onBackToStages}
+        onExit={() => {
+          onClearSnapshot?.();
+          onBackToStages();
+        }}
       />
     </div>
   );
