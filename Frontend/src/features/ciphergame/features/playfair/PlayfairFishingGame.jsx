@@ -16,6 +16,8 @@ import { fishingSound } from '../../core/engine/fishingSound';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
+import { useFishingStageFail } from '../../core/hooks/useFishingStageFail';
+import FishingGameOverOverlay from '../../ui/FishingGameOverOverlay';
 
 const normalizePair = (value) => String(value || '').replace(/[^A-Z]/g, '').slice(0, 2);
 
@@ -103,6 +105,7 @@ export default function PlayfairFishingGame({
   onStartStageTimer,
   onSaveSnapshot,
   onClearSnapshot,
+  onStageFail,
 }) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -141,6 +144,14 @@ export default function PlayfairFishingGame({
   const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
   const [isMuted, setIsMuted] = useState(false);
 
+  // Running out of attempts loses the stage and costs one session heart.
+  // Declared BEFORE the snapshot saver so `gameOver` is in scope there.
+  const { gameOver, resetStageFail } = useFishingStageFail({
+    attemptsLeft,
+    isSolved: levelSolved,
+    onStageFail,
+  });
+
   const isRunning = phase === 'playing' && !levelSolved;
   useStageSnapshotAutoSaver(
     onSaveSnapshot,
@@ -153,7 +164,9 @@ export default function PlayfairFishingGame({
       attemptsLeft,
       chumCount,
     }), [activeIndex, solvedPairs, misses, streak, attemptsLeft, chumCount]),
-    isRunning
+    // A lost stage must not be resurrected from a stale snapshot, so stop
+    // persisting as soon as the failure overlay is up.
+    isRunning && !gameOver
   );
 
   useEffect(() => {
@@ -161,12 +174,12 @@ export default function PlayfairFishingGame({
   }, []);
 
   useEffect(() => {
-    if (phase === 'playing' && !isMenuOpen) {
+    if (phase === 'playing' && !isMenuOpen && !gameOver) {
       fishingSound.playBgm();
     } else {
       fishingSound.pauseBgm();
     }
-  }, [phase, isMenuOpen]);
+  }, [phase, isMenuOpen, gameOver]);
 
   /* ── spawn fish when resuming or starting ── */
   useEffect(() => {
@@ -220,6 +233,7 @@ export default function PlayfairFishingGame({
     setChumCount(3);
     setBubbles(makeBubbles());
     setFishList(makeFishForPair(pairData[0].plainPair, matrix, tier));
+    resetStageFail();
   };
 
   const prevLevelIdRef = useRef(levelData.id || `${levelData.plaintext || ''}-${levelData.pairCiphertext || ''}`);
@@ -260,14 +274,14 @@ export default function PlayfairFishingGame({
   };
 
   useEffect(() => {
-    if (phase !== 'playing' || isMenuOpen || levelSolved) return undefined;
+    if (phase !== 'playing' || isMenuOpen || levelSolved || gameOver) return undefined;
     const tick = () => {
       setFishList((prev) => prev.map((fish) => tickFish(fish, { minY: 28, maxY: 196 })));
       animationRef.current = requestAnimationFrame(tick);
     };
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [phase, isMenuOpen, levelSolved]);
+  }, [phase, isMenuOpen, levelSolved, gameOver]);
 
   const handleCatch = (fish) => {
     const candidate = normalizePair(fish.pair);
@@ -310,7 +324,7 @@ export default function PlayfairFishingGame({
   };
 
   const castAt = (fish) => {
-    if (isCasting || phase !== 'playing' || levelSolved || attemptsLeft <= 0) return;
+    if (isCasting || phase !== 'playing' || levelSolved || attemptsLeft <= 0 || gameOver) return;
     fishingSound.unlockAudio();
     fishingSound.playSfx('cast');
     setIsCasting(true);
@@ -352,7 +366,7 @@ export default function PlayfairFishingGame({
   /* Chum the Waters — same behaviour as Caesar fishing: scatters a fresh shoal
    * of candidate fish for the pair the player is currently working on. */
   const handleChumWaters = () => {
-    if (chumCount <= 0 || isCasting || phase !== 'playing' || levelSolved || !activePair) return;
+    if (chumCount <= 0 || isCasting || phase !== 'playing' || levelSolved || gameOver || !activePair) return;
     fishingSound.unlockAudio();
     fishingSound.playSfx('chum');
     setChumCount((prev) => prev - 1);
@@ -559,6 +573,12 @@ export default function PlayfairFishingGame({
           </div>
         )}
       </div>
+
+      <FishingGameOverOverlay
+        open={gameOver}
+        onRetry={startGame}
+        onExit={onBackToStages}
+      />
 
       <PauseMenu
         open={isMenuOpen}
