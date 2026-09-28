@@ -5,6 +5,7 @@ import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
+import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import FullscreenButton from '../../ui/FullscreenButton';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
@@ -245,6 +246,16 @@ export default function CipherSprint({
   const [isBadgePopping, setIsBadgePopping] = useState(false);
   const [slimeFrame, setSlimeFrame] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+
+  const toggleSound = useCallback(() => {
+    const muted = sprintSound.toggleMute();
+    setIsMuted(muted);
+  }, []);
+
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
 
   /* ───────────────────────────────────────────────
      Refs — game truth inside RAF loop
@@ -738,35 +749,6 @@ export default function CipherSprint({
   }, []);
 
   /* ───────────────────────────────────────────────
-     Audio — mute toggle button
-     ─────────────────────────────────────────────── */
-  const toggleSound = () => {
-    const muted = sprintSound.toggleMute();
-    setIsMuted(muted);
-  };
-
-  const soundToggleButton = (
-    <button
-      className="fg-btn-icon"
-      onClick={toggleSound}
-      title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
-      style={{
-        background: 'rgba(255, 255, 255, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '8px',
-        color: '#fff',
-        padding: '4px 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '1rem',
-      }}
-    >
-      {isMuted ? '🔇' : '🔊'}
-    </button>
-  );
-
-  /* ───────────────────────────────────────────────
      Explanation / submit handler
      ─────────────────────────────────────────────── */
   const handleVerifySubmit = () => {
@@ -817,13 +799,10 @@ export default function CipherSprint({
           onBackToStages={onBackToStages}
           onOpenMenu={() => setIsMenuOpen(true)}
           lives={sprintStep === 'ready' ? null : lives}
-          customRightContent={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {soundToggleButton}
-              <FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
-            </div>
-          }
-          extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isMuted={isMuted}
+          onToggleMute={toggleSound}
         />
       )}
 

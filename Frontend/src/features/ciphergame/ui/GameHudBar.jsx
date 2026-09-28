@@ -1,5 +1,6 @@
 import '../CipherGame.css';
 import { useScoring } from '../core/hooks/ScoringContext';
+import FullscreenButton from './FullscreenButton';
 
 export default function GameHudBar({
   title,
@@ -12,6 +13,10 @@ export default function GameHudBar({
   maxLives = 5,
   attempts,
   maxAttempts,
+  isFullscreen,
+  onToggleFullscreen,
+  isMuted,
+  onToggleMute,
   customRightContent
 }) {
   return (
@@ -81,6 +86,30 @@ export default function GameHudBar({
             <div className={`fg-header-attempts ${attempts <= 1 ? 'low-attempts' : ''}`}>
               Attempts: {attempts} {maxAttempts ? `/ ${maxAttempts}` : ''}
             </div>
+          )}
+          {onToggleMute && (
+            <button
+              type="button"
+              className="fg-btn-icon"
+              onClick={onToggleMute}
+              title={isMuted ? "Unmute Sound (M)" : "Mute Sound (M)"}
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '8px',
+                color: '#fff',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: '1rem'
+              }}
+            >
+              {isMuted ? '🔇' : '🔊'}
+            </button>
+          )}
+          {onToggleFullscreen && (
+            <FullscreenButton isFullscreen={isFullscreen} onToggle={onToggleFullscreen} />
           )}
           {customRightContent}
         </div>

@@ -62,6 +62,12 @@ export function useFullscreen() {
     else enterFullscreen();
   }, [isFullscreen, enterFullscreen, exitFullscreen]);
 
+  const onKey = useCallback((e) => {
+    if (e.key === 'Escape' && isCssFallback && isFullscreen) {
+      exitFullscreen();
+    }
+  }, [isCssFallback, isFullscreen, exitFullscreen]);
+
   useEffect(() => {
     const onChange = () => {
       const fsEl =
@@ -87,14 +93,7 @@ export function useFullscreen() {
       document.removeEventListener('msfullscreenchange', onChange);
       document.removeEventListener('keydown', onKey);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCssFallback]);
-
-  const onKey = useCallback((e) => {
-    if (e.key === 'Escape' && isCssFallback && isFullscreen) {
-      exitFullscreen();
-    }
-  }, [isCssFallback, isFullscreen, exitFullscreen]);
+  }, [isCssFallback, onKey]);
 
   return {
     containerRef,
@@ -105,3 +104,4 @@ export function useFullscreen() {
     exitFullscreen,
   };
 }
+

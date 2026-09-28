@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import GameHudBar from '../../ui/GameHudBar';
 import './PlayfairGame.css';
 import '../../CipherGame.css';
@@ -13,6 +12,8 @@ import {
 } from './PlayfairHelpers';
 import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
+import { useFullscreen } from '../../core/hooks/useFullscreen';
+import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 
 const normalizePair = (value) => String(value || '').replace(/[^A-Z]/g, '').slice(0, 2);
 
@@ -98,6 +99,8 @@ export default function PlayfairFishingGame({
   onReplayNewQuestion,
   onStartStageTimer,
 }) {
+  const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
+
   const matrix = levelData.matrix;
   const pairData = useMemo(() => levelData.cipherPairs.map((cipherPair, index) => {
     const transformed = transformPlayfairPair(cipherPair, matrix, 'decrypt');
@@ -142,10 +145,15 @@ export default function PlayfairFishingGame({
     }
   }, [phase, isMenuOpen]);
 
-  const toggleSound = () => {
+  const toggleSound = useCallback(() => {
     const muted = fishingSound.toggleMute();
     setIsMuted(muted);
-  };
+  }, []);
+
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
 
   const handleVerifySubmit = () => {
     if (onVerifySubmit) onVerifySubmit();
@@ -366,8 +374,18 @@ export default function PlayfairFishingGame({
       );
     }
     return (
-      <div className="pf-root">
-        <GameHudBar title="Playfair Fishing" stage={levelData.level} tier={tier} isReady={true} onBackToStages={onBackToStages} customRightContent={soundToggleButton} />
+      <div className="pf-root" ref={containerRef}>
+        <GameHudBar
+          title="Playfair Fishing"
+          stage={levelData.level}
+          tier={tier}
+          isReady={true}
+          onBackToStages={onBackToStages}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isMuted={isMuted}
+          onToggleMute={toggleSound}
+        />
         <main className="cq-brief-screen">
           <img className="cq-bg-img" src="/assets/fish/lobbybg/lobbybg.png" alt="Lobby Background" aria-hidden="true" />
           <div className="cq-lobby-scrim" />
@@ -402,9 +420,20 @@ export default function PlayfairFishingGame({
   }
 
   return (
-    <div className="fg-root caesar-fishing-fullscreen pf-fishing-fullscreen">
+    <div className="fg-root caesar-fishing-fullscreen pf-fishing-fullscreen" ref={containerRef}>
       {showExplanation && (<CryptographicRecap cipherType="playfair" levelData={levelData} onUnlockNext={onVerifySubmit} />)}
-      <GameHudBar title="Playfair Fishing" stage={levelData.level} tier={tier} isReady={false} onOpenMenu={() => setIsMenuOpen(true)} attempts={attemptsLeft} customRightContent={soundToggleButton} />
+      <GameHudBar
+        title="Playfair Fishing"
+        stage={levelData.level}
+        tier={tier}
+        isReady={false}
+        onOpenMenu={() => setIsMenuOpen(true)}
+        attempts={attemptsLeft}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        isMuted={isMuted}
+        onToggleMute={toggleSound}
+      />
       <div className="caesar-fullscreen-stage">
         <video className="fg-pond-video" src="/assets/fish/ocean_bg.mp4" autoPlay loop muted playsInline />
         <div className="fg-pond-overlay" />

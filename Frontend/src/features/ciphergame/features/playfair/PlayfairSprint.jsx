@@ -5,6 +5,7 @@ import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
+import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import FullscreenButton from '../../ui/FullscreenButton';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
@@ -860,10 +861,15 @@ export default function PlayfairSprint({
   /* ───────────────────────────────────────────────
      Audio — mute toggle button
      ─────────────────────────────────────────────── */
-  const toggleSound = () => {
+  const toggleSound = useCallback(() => {
     const muted = sprintSound.toggleMute();
     setIsMuted(muted);
-  };
+  }, []);
+
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
 
   const soundToggleButton = (
     <button
@@ -932,13 +938,10 @@ export default function PlayfairSprint({
           onBackToStages={onBackToStages}
           onOpenMenu={() => setIsMenuOpen(true)}
           lives={sprintStep === 'ready' ? null : lives}
-          customRightContent={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {soundToggleButton}
-              <FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
-            </div>
-          }
-          extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isMuted={isMuted}
+          onToggleMute={toggleSound}
         />
       )}
 
