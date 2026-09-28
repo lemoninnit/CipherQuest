@@ -152,8 +152,9 @@ public class UserProgressService {
         validateCipherAndDifficulty(cipher, difficulty);
 
         boolean alreadyDone = progressRepository
-                .existsByUserIdAndCipherTypeAndDifficultyTierAndLevelIndex(
-                        userId, cipher, difficulty, levelIndex);
+                .findByUserIdAndCipherTypeAndDifficultyTierAndLevelIndex(
+                        userId, cipher, difficulty, levelIndex)
+                .isPresent();
 
         if (!alreadyDone) {
             UserProgress p = UserProgress.builder()

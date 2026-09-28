@@ -741,6 +741,84 @@
 }
 
 /* ── Key Matrix Cheat Sheet (inside caesar-floating-cheat-sheet) ── */
+.playfair-matrix-card {
+  background: rgba(3, 16, 26, 0.92) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.45) !important;
+  border-radius: 14px !important;
+  padding: 12px 14px 10px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 240, 255, 0.1) !important;
+  width: fit-content !important;
+  pointer-events: auto !important;
+}
+
+.playfair-cheat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+.playfair-cheat-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.playfair-cheat-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.08);
+  border: 1.5px solid #00f0ff;
+  padding: 2px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.6);
+  box-shadow: inset 0 0 6px rgba(0, 240, 255, 0.15);
+}
+
+.playfair-cheat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pf-template-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.pf-template-cell {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  color: #ffffff;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.84rem;
+  transition: all 0.15s ease-in-out;
+}
+
+.pf-template-cell.active {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1.5px solid #00f0ff;
+  color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.45), inset 0 0 6px rgba(0, 240, 255, 0.2);
+  text-shadow: 0 0 8px #00f0ff;
+}
+
 .pf-cheat-matrix-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -952,3 +1030,94 @@
   color: var(--neon-green);
   font-size: 0.95rem;
 }
+
+/* Position Playfair 5x5 Matrix at Bottom-Left */
+.pf-matrix-bottom-left {
+  position: absolute !important;
+  bottom: 24px !important;
+  left: 24px !important;
+  top: auto !important;
+  z-index: 20 !important;
+}
+
+/* Floating Keyword Card (Bottom-Right)
+ *
+ * SPECIFICITY TRAP: CipherGame.css ships
+ *   `.caesar-fishing-fullscreen .caesar-floating-cheat-sheet { left: 24px !important; }`
+ * which is (0,2,0) + !important and therefore outranks a single-class rule. With both
+ * `left` and `right` pinned and `width: auto`, an absolutely positioned box stretches
+ * edge to edge — which is why this card used to render as a full-width bar.
+ * Fix: match at (0,3,0) via the root's own compound class and force `left: auto`
+ * + `width: fit-content` so the card can never be stretched again. */
+.caesar-fishing-fullscreen.pf-fishing-fullscreen .pf-keyword-bottom-right {
+  position: absolute !important;
+  top: auto !important;
+  bottom: 22px !important;
+  left: auto !important;
+  right: 22px !important;
+  width: fit-content !important;
+  max-width: 220px;
+  z-index: 20 !important;
+  background: rgba(3, 16, 26, 0.92) !important;
+  border: 1.5px solid rgba(250, 204, 21, 0.45) !important;
+  border-radius: 10px !important;
+  padding: 6px 14px 7px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), 0 0 12px rgba(250, 204, 21, 0.15) !important;
+  text-align: center;
+}
+
+/* Single child in the header row — centre it so the label tracks the value. */
+.caesar-fishing-fullscreen.pf-fishing-fullscreen .pf-keyword-bottom-right .playfair-cheat-header {
+  justify-content: center;
+  margin-bottom: 1px;
+  gap: 0;
+}
+
+.caesar-fishing-fullscreen.pf-fishing-fullscreen .pf-keyword-bottom-right .playfair-cheat-title {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #fde68a;
+  white-space: nowrap;
+}
+
+/* Chum the Waters tucks directly above the compact keyword card — Caesar's default
+ * 185px offset is sized for the much taller basket card. */
+.caesar-fishing-fullscreen.pf-fishing-fullscreen .caesar-floating-chum-btn {
+  bottom: 96px !important;
+  right: 22px !important;
+  padding: 7px 13px !important;
+  font-size: 0.78rem !important;
+}
+
+.pf-keyword-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.02rem;
+  font-weight: 900;
+  color: #facc15;
+  letter-spacing: 0.1em;
+  line-height: 1.15;
+  text-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+  margin-top: 1px;
+}
+
+.pf-keyword-clue {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.76rem;
+  color: #94a3b8;
+  margin-top: 6px;
+  max-width: 200px;
+  line-height: 1.3;
+}
+
+/* Top-tier catches (P Fish 9 / P Fish 10) are long, slim sprites — scale them up
+   well beyond the standard 54px pond fish so they read as the biggest catch. */
+
+.pf-fish-img.fg-large-fish {
+  width: 126px !important;
+  height: auto !important;
+}
+
+

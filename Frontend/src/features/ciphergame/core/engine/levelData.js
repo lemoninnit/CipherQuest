@@ -632,7 +632,20 @@ function buildCaesarLevel(plain, shift, stageIndex, difficulty, hint) {
   };
 }
 
-const GAME_CYCLE_CAESAR = ['FISHING', 'PACMAN', 'SPRINT', 'FISHING', 'PACMAN'];
+// ─── Game-type randomizer ─────────────────────────────────────────
+// Each cipher has 3 game types. On every call we pick one at random
+// but exclude the previously-picked type so replays always differ.
+const CIPHER_GAME_TYPES = ['FISHING', 'PACMAN', 'SPRINT'];
+const _lastGameType = { caesar: null, vigenere: null, playfair: null };
+
+function pickRandomGameType(cipher) {
+  const last = _lastGameType[cipher];
+  const pool = last ? CIPHER_GAME_TYPES.filter(t => t !== last) : CIPHER_GAME_TYPES;
+  const picked = pool[Math.floor(Math.random() * pool.length)];
+  _lastGameType[cipher] = picked;
+  return picked;
+}
+// ──────────────────────────────────────────────────────────────────
 
 export function getCaesarLevelData(difficulty, stageIndex) {
   const pool = caesarWords[difficulty] || caesarWords.easy;
@@ -642,8 +655,8 @@ export function getCaesarLevelData(difficulty, stageIndex) {
   return buildCaesarLevel(w.plain, shift, stageIndex, difficulty, w.hint);
 }
 
-export function getCaesarGameType(stageIndex) {
-  return GAME_CYCLE_CAESAR[stageIndex % GAME_CYCLE_CAESAR.length];
+export function getCaesarGameType(/* stageIndex */) {
+  return pickRandomGameType('caesar');
 }
 
 /* ─────────────────── Vigenere levels ─────────────────── */
@@ -1541,10 +1554,8 @@ export function getVigenereLevelData(difficulty, stageIndex) {
   return buildVigenereLevel(d.plain, d.key, stageIndex, difficulty, d.hint, d.keyClue, d.keyInfo);
 }
 
-const GAME_CYCLE_VIGENERE = ['FISHING', 'PACMAN', 'SPRINT', 'FISHING', 'PACMAN'];
-
-export function getVigenereGameType(stageIndex = 0) {
-  return GAME_CYCLE_VIGENERE[stageIndex % GAME_CYCLE_VIGENERE.length];
+export function getVigenereGameType(/* stageIndex */) {
+  return pickRandomGameType('vigenere');
 }
 
 /* ─────────────────── Playfair levels ─────────────────── */
@@ -2399,12 +2410,12 @@ const playfairData = {
 
 export function getPlayfairLevelData(difficulty, stageIndex) {
   const pool = playfairData[difficulty] || playfairData.easy;
-  const randIndex = Math.floor(Math.random() * pool.length);
-  const data = pool[randIndex];
+  const index = (typeof stageIndex === 'number' && stageIndex >= 0)
+    ? (stageIndex % pool.length)
+    : Math.floor(Math.random() * pool.length);
+  const data = pool[index];
   return buildPlayfairLevel(data.plain, data.key, stageIndex, difficulty, data.hint, data.keyClue, data.lesson);
 }
-
-const GAME_CYCLE_PLAYFAIR = ['FISHING', 'PACMAN', 'SPRINT', 'FISHING', 'PACMAN'];
 
 function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, lesson) {
   const matrix = generatePlayfairMatrix(key);
@@ -2478,6 +2489,6 @@ function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, l
   };
 }
 
-export function getPlayfairGameType(stageIndex = 0) {
-  return GAME_CYCLE_PLAYFAIR[stageIndex % GAME_CYCLE_PLAYFAIR.length];
+export function getPlayfairGameType(/* stageIndex */) {
+  return pickRandomGameType('playfair');
 }

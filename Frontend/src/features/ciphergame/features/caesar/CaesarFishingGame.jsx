@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/purity, react-hooks/exhaustive-deps */
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
@@ -5,7 +7,7 @@ import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
-import { facingTransform, makeSwimProps, tickFish, visualsForValue, DEFAULT_FISH_IMG } from '../../core/engine/fishPhysics';
+import { facingTransform, isLargeFish, makeSwimProps, onFishImgError, spriteForFishValue, tickFish } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 import { caesarDecryptChar } from '../../core/engine/caesar';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
@@ -21,7 +23,12 @@ const applyShiftDelta = (curr, delta) => {
   return normalizeShift(curr + delta);
 };
 
-const formatShift = (shift) => normalizeShift(shift) === 0 ? '0' : `+${normalizeShift(shift)}`;
+const formatShift = (shift) => {
+  const norm = normalizeShift(shift);
+  if (norm === 0) return '0';
+  const dist = norm > 13 ? norm - 26 : norm;
+  return dist > 0 ? `+${dist}` : `${dist}`;
+};
 
 const generateCaesarFishValues = (targetShift, currentShift, difficulty = 'easy', totalCount = 9) => {
   const diffNorm = normalizeShift(targetShift - currentShift);
@@ -143,27 +150,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     onToggleMute: toggleSound,
   });
 
-  const soundToggleButton = (
-    <button
-      className="fg-btn-icon"
-      onClick={toggleSound}
-      title={isMuted ? "Unmute Sound" : "Mute Sound"}
-      style={{
-        background: 'rgba(255, 255, 255, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '8px',
-        color: '#fff',
-        padding: '4px 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '1rem'
-      }}
-    >
-      {isMuted ? '🔇' : '🔊'}
-    </button>
-  );
-
   /* ── ESC key to toggle pause menu ── */
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -284,7 +270,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         x: 2 + Math.random() * 94,
         y,
         speed: 0.3 + Math.random() * 0.5,
-        ...visualsForValue(value),
+        ...spriteForFishValue(value),
         ...makeSwimProps(),
       });
     }
@@ -401,7 +387,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                 x: Math.random() > 0.5 ? 94 : 2,
                 y: 30 + Math.random() * 200,
                 speed: 0.3 + Math.random() * 0.5,
-                ...visualsForValue(value),
+                ...spriteForFishValue(value),
                 ...makeSwimProps(),
               }];
             });
@@ -596,14 +582,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               >
                 <div className="fg-fish-facing" style={{ transform: facingTransform(f.facing) }}>
                   <img
-                    className="fg-fish-sprite-img"
+                    className={`fg-fish-sprite-img${isLargeFish(f.imgSrc) ? ' fg-large-fish' : ''}`}
                     src={f.imgSrc}
                     alt=""
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = DEFAULT_FISH_IMG;
-                    }}
                     draggable={false}
+                    onError={onFishImgError}
                   />
                 </div>
                 <div className={badgeClass}>
@@ -622,14 +605,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
             }}>
               <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
                 <img
-                  className="fg-fish-sprite-img"
+                  className={`fg-fish-sprite-img${isLargeFish(caughtFish.imgSrc) ? ' fg-large-fish' : ''}`}
                   src={caughtFish.imgSrc}
                   alt=""
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = DEFAULT_FISH_IMG;
-                  }}
                   draggable={false}
+                  onError={onFishImgError}
                 />
               </div>
             </div>

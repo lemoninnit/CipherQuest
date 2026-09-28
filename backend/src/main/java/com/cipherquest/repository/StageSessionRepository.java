@@ -2,6 +2,7 @@ package com.cipherquest.repository;
 
 import com.cipherquest.model.StageSession;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -21,6 +22,7 @@ public interface StageSessionRepository extends JpaRepository<StageSession, Long
      * Invalidate any stale ACTIVE sessions for a user + stage
      * (e.g. the player abandoned a previous attempt).
      */
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE StageSession s SET s.status = 'EXPIRED', s.endedAt = CURRENT_TIMESTAMP " +
            "WHERE s.user.id = :userId AND s.cipherType = :cipherType " +
            "AND s.difficultyTier = :difficultyTier AND s.levelIndex = :levelIndex " +

@@ -1,3 +1,5 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
@@ -5,7 +7,7 @@ import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
-import { facingTransform, makeSwimProps, randomVisualFrames, tickFish, DEFAULT_FISH_IMG } from '../../core/engine/fishPhysics';
+import { facingTransform, isLargeFish, makeSwimProps, onFishImgError, randomFishSprite, tickFish } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
@@ -175,27 +177,6 @@ export default function VigenereFishingGame({
     onToggleMute: toggleSound,
   });
 
-  const soundToggleButton = (
-    <button
-      className="fg-btn-icon"
-      onClick={toggleSound}
-      title={isMuted ? "Unmute Sound" : "Mute Sound"}
-      style={{
-        background: 'rgba(255, 255, 255, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '8px',
-        color: '#fff',
-        padding: '4px 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '1rem'
-      }}
-    >
-      {isMuted ? '🔇' : '🔊'}
-    </button>
-  );
-
   /* ── ESC key to toggle pause menu ── */
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -225,13 +206,6 @@ export default function VigenereFishingGame({
   const currentKeyChar = currentTarget.keyChar;
   const currentKeyShift = currentTarget.keyShift;
 
-  const totalLetters = flatLetterPositions.length;
-  const totalBlanks = flatLetterPositions.filter(
-    p => !levelData.masks?.[p.wordIdx]?.[p.charIdx]
-  ).length || Math.max(1, totalLetters - 2);
-  const solvedBlanks = flatLetterPositions.filter(
-    p => !levelData.masks?.[p.wordIdx]?.[p.charIdx] && revealedMasks[p.wordIdx]?.[p.charIdx]
-  ).length;
   const allCorrect = flatLetterPositions.length > 0 && flatLetterPositions.every(
     p => revealedMasks[p.wordIdx]?.[p.charIdx]
   );
@@ -255,7 +229,7 @@ export default function VigenereFishingGame({
         x: 2 + Math.random() * 94,
         y,
         speed: 0.3 + Math.random() * 0.5,
-        ...randomVisualFrames(),
+        ...randomFishSprite(),
         ...makeSwimProps(),
       };
     });
@@ -447,7 +421,7 @@ export default function VigenereFishingGame({
                 x: Math.random() > 0.5 ? 90 : 10,
                 y: 60 + Math.random() * 140,
                 speed: 0.3 + Math.random() * 0.4,
-                ...randomVisualFrames(),
+                ...randomFishSprite(),
                 ...makeSwimProps(),
               }];
             });
@@ -641,14 +615,11 @@ export default function VigenereFishingGame({
               >
                 <div className="fg-fish-facing" style={{ transform: facingTransform(fish.facing) }}>
                   <img
-                    className="fg-fish-sprite-img"
+                    className={`fg-fish-sprite-img${isLargeFish(fish.imgSrc) ? ' fg-large-fish' : ''}`}
                     src={fish.imgSrc}
                     alt=""
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = DEFAULT_FISH_IMG;
-                    }}
                     draggable={false}
+                    onError={onFishImgError}
                   />
                 </div>
                 <div className={badgeClass}>
@@ -661,14 +632,11 @@ export default function VigenereFishingGame({
             <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
               <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
                 <img
-                  className="fg-fish-sprite-img"
+                  className={`fg-fish-sprite-img${isLargeFish(caughtFish.imgSrc) ? ' fg-large-fish' : ''}`}
                   src={caughtFish.imgSrc}
                   alt=""
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = DEFAULT_FISH_IMG;
-                  }}
                   draggable={false}
+                  onError={onFishImgError}
                 />
               </div>
             </div>
