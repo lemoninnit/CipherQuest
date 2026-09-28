@@ -133,7 +133,7 @@ export default function CipherGame() {
     dismissStageResult();
 
     if (typeof stageIdx === 'number' && stageIdx >= 0 && stageIdx < 4) {
-      // Auto-advance directly to the next stage (Stage 1 -> 2 -> 3 -> 4 -> 5)
+      // Auto-advance directly to the next stage's mission brief (Stage 1 -> 2 -> 3 -> 4 -> 5)
       startStage(cat, diff, stageIdx + 1);
     } else if (returnToRoadmap) {
       // Last stage of tier (stageIndex >= 4): route to roadmap with tier complete
@@ -213,11 +213,16 @@ export default function CipherGame() {
           <StageScoreModal
             result={stageResult}
             onContinue={handleContinueFromScore}
-            onBack={() => returnToRoadmap(stageResult.category || category, stageResult.difficulty || difficulty)}
+            onBack={() => returnToRoadmap(stageResult?.category || category, stageResult?.difficulty || difficulty)}
             onViewLeaderboard={() => openStageLeaderboard(
-              stageResult.category, stageResult.difficulty, stageResult.stageIndex)}
+              stageResult?.category || category,
+              stageResult?.difficulty || difficulty,
+              stageResult?.stageIndex ?? currentStage?.stageIndex ?? 0
+            )}
             onReplay={() => {
-              const { category: cat, difficulty: diff, stageIndex } = stageResult;
+              const cat = stageResult?.category || category;
+              const diff = stageResult?.difficulty || difficulty;
+              const stageIndex = stageResult?.stageIndex ?? currentStage?.stageIndex ?? 0;
               dismissStageResult();
               startStage(cat, diff, stageIndex);
             }}
@@ -270,11 +275,16 @@ export default function CipherGame() {
           <StageScoreModal
             result={stageResult}
             onContinue={handleContinueFromScore}
-            onBack={() => returnToRoadmap(stageResult.category || category, stageResult.difficulty || difficulty)}
+            onBack={() => returnToRoadmap(stageResult?.category || category, stageResult?.difficulty || difficulty)}
             onViewLeaderboard={() => openStageLeaderboard(
-              stageResult.category, stageResult.difficulty, stageResult.stageIndex)}
+              stageResult?.category || category,
+              stageResult?.difficulty || difficulty,
+              stageResult?.stageIndex ?? currentStage?.stageIndex ?? 0
+            )}
             onReplay={() => {
-              const { category: cat, difficulty: diff, stageIndex } = stageResult;
+              const cat = stageResult?.category || category;
+              const diff = stageResult?.difficulty || difficulty;
+              const stageIndex = stageResult?.stageIndex ?? currentStage?.stageIndex ?? 0;
               dismissStageResult();
               startStage(cat, diff, stageIndex);
             }}

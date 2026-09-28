@@ -18,7 +18,7 @@ export default function StageScoreModal({ result, onContinue, onReplay, onViewLe
   } = result;
 
   return (
-    <div className="ssm-overlay" onClick={onContinue}>
+    <div className="ssm-overlay" onClick={onBack ? onBack : undefined}>
       <div className="ssm-card" onClick={(e) => e.stopPropagation()}>
         
         {/* Top-Left Back to Roadmap Control */}

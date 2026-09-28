@@ -146,7 +146,14 @@ export function useGameFlow() {
 
   const [progress, setProgress] = useState(() => {
     const map = user?.progress || user?.progressMap;
-    return convertBackendProgress(map);
+    if (map) return convertBackendProgress(map);
+    try {
+      const saved = localStorage.getItem("cipher_progress_v2");
+      if (saved) return JSON.parse(saved);
+    } catch (_e) {
+      /* ignore storage error */
+    }
+    return defaultProgress();
   });
 
   // Keep progress in sync when user updates
@@ -159,7 +166,17 @@ export function useGameFlow() {
     }
   }, [user]);
 
-  const initialProg = convertBackendProgress(user?.progress || user?.progressMap);
+  const initialProg = (() => {
+    const map = user?.progress || user?.progressMap;
+    if (map) return convertBackendProgress(map);
+    try {
+      const saved = localStorage.getItem("cipher_progress_v2");
+      if (saved) return JSON.parse(saved);
+    } catch (_e) {
+      /* ignore storage error */
+    }
+    return defaultProgress();
+  })();
   const initialParsed = parseUrlParams(location.search, location.state, initialProg);
   const initialUid = user?.id || user?.userId || user?.username || 'anonymous';
   const initialSnapshot = (initialParsed.category && initialParsed.difficulty && typeof initialParsed.stageIndex === 'number')
@@ -370,6 +387,26 @@ export function useGameFlow() {
     }
     setStageResult({ ...scoreResult, category: cat, difficulty: diff, stageIndex });
 
+    // Optimistically record stage completion synchronously so next stage unlocks immediately
+    const stageId = `${cat}-${diff}-${stageIndex}`;
+    setProgress((prev) => {
+      const catProg = prev[cat] || { easy: [], medium: [], hard: [] };
+      const diffArr = catProg[diff] || [];
+      const next = {
+        ...prev,
+        [cat]: {
+          ...catProg,
+          [diff]: diffArr.includes(stageId) ? diffArr : [...diffArr, stageId],
+        },
+      };
+      try {
+        localStorage.setItem("cipher_progress_v2", JSON.stringify(next));
+      } catch (e) {
+        /* ignore storage error */
+      }
+      return next;
+    });
+
     try {
       const response = await userApi.saveProgress(cat, diff, stageIndex);
       if (response && response.progressMap) {
@@ -379,20 +416,7 @@ export function useGameFlow() {
         await refreshProfile();
       }
     } catch (err) {
-      console.error("Failed to save progress to backend:", err);
-      setProgress(prev => {
-        const catProg = prev[cat] || { easy: [], medium: [], hard: [] };
-        const diffArr = catProg[diff] || [];
-        const next = {
-          ...prev,
-          [cat]: {
-            ...catProg,
-            [diff]: diffArr.includes(id) ? diffArr : [...diffArr, id],
-          },
-        };
-        try { localStorage.setItem("cipher_progress_v2", JSON.stringify(next)); } catch (e) { /* ignore storage error */ }
-        return next;
-      });
+      console.warn("Could not save progress to backend, using local progress:", err.message);
     }
 
     if (stageIndex === 4) {
