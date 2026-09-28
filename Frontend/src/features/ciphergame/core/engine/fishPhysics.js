@@ -30,6 +30,9 @@ const FISH_FOLDER = {
   negative: 'negative fish (marine)',
 };
 
+/** Last-resort sprite, used only if a fish path 404s twice in a row. */
+export const DEFAULT_FISH_IMG = encodeURI('/assets/fish/positive fish (freshwater)/P Fish 1.1.png');
+
 // Exact filename spelling per species. "N Fish 3.1.png" is the only marine
 // sprite that keeps a capital "F", so it has to be requested with that exact
 // spelling on case-sensitive file systems (Cloudflare Pages / Linux).
@@ -66,14 +69,24 @@ export const randomFishSprite = () => ({
 });
 
 /**
- * <img onError> handler: swaps "N Fish" ⇄ "N fish" (and the "P Fish" variants)
- * once before giving up, so a spelling mismatch between this module and the
- * shipped asset can never make a fish invisible.
+ * <img onError> handler, in two escalating stages:
+ *   1. swap "N Fish" ⇄ "N fish" (and the "P Fish" variants) once, so a casing
+ *      mismatch between this module and the shipped asset self-heals;
+ *   2. if even the swapped path is missing, fall back to DEFAULT_FISH_IMG.
+ * Together these mean a fish can never end up invisible.
  */
 export const onFishImgError = (event) => {
   const img = event.currentTarget;
-  if (!img || img.dataset.spriteRetried === '1') return;
-  img.dataset.spriteRetried = '1';
+  if (!img) return;
+  const stage = img.dataset.spriteRetry || '0';
+  if (stage === '2') return;
+  img.dataset.spriteRetry = stage === '0' ? '1' : '2';
+
+  // Stage 2 — the casing swap already failed, so show the guaranteed-good fish.
+  if (stage === '1') {
+    img.src = DEFAULT_FISH_IMG;
+    return;
+  }
 
   let decoded = img.getAttribute('src') || '';
   try {
@@ -95,6 +108,10 @@ export const onFishImgError = (event) => {
       return;
     }
   }
+
+  // No known casing variant in the path — go straight to the fallback.
+  img.dataset.spriteRetry = '2';
+  img.src = DEFAULT_FISH_IMG;
 };
 
 export const makeSwimProps = () => {

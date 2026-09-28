@@ -584,7 +584,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                   <img
                     className={`fg-fish-sprite-img${isLargeFish(f.imgSrc) ? ' fg-large-fish' : ''}`}
                     src={f.imgSrc}
-                    alt="fish"
+                    alt=""
                     draggable={false}
                     onError={onFishImgError}
                   />
@@ -607,7 +607,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                 <img
                   className={`fg-fish-sprite-img${isLargeFish(caughtFish.imgSrc) ? ' fg-large-fish' : ''}`}
                   src={caughtFish.imgSrc}
-                  alt="fish"
+                  alt=""
                   draggable={false}
                   onError={onFishImgError}
                 />
