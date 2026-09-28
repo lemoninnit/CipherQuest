@@ -1040,33 +1040,67 @@
   z-index: 20 !important;
 }
 
-/* Floating Keyword Card (Bottom-Right) */
-.pf-keyword-bottom-right {
+/* Floating Keyword Card (Bottom-Right)
+ *
+ * SPECIFICITY TRAP: CipherGame.css ships
+ *   `.caesar-fishing-fullscreen .caesar-floating-cheat-sheet { left: 24px !important; }`
+ * which is (0,2,0) + !important and therefore outranks a single-class rule. With both
+ * `left` and `right` pinned and `width: auto`, an absolutely positioned box stretches
+ * edge to edge — which is why this card used to render as a full-width bar.
+ * Fix: match at (0,3,0) via the root's own compound class and force `left: auto`
+ * + `width: fit-content` so the card can never be stretched again. */
+.caesar-fishing-fullscreen.pf-fishing-fullscreen .pf-keyword-bottom-right {
   position: absolute !important;
-  bottom: 24px !important;
-  right: 24px !important;
   top: auto !important;
+  bottom: 22px !important;
   left: auto !important;
+  right: 22px !important;
+  width: fit-content !important;
+  max-width: 220px;
   z-index: 20 !important;
   background: rgba(3, 16, 26, 0.92) !important;
   border: 1.5px solid rgba(250, 204, 21, 0.45) !important;
-  border-radius: 14px !important;
-  padding: 12px 18px !important;
+  border-radius: 10px !important;
+  padding: 6px 14px 7px !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 14px rgba(250, 204, 21, 0.15) !important;
-  min-width: 150px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), 0 0 12px rgba(250, 204, 21, 0.15) !important;
   text-align: center;
+}
+
+/* Single child in the header row — centre it so the label tracks the value. */
+.caesar-fishing-fullscreen.pf-fishing-fullscreen .pf-keyword-bottom-right .playfair-cheat-header {
+  justify-content: center;
+  margin-bottom: 1px;
+  gap: 0;
+}
+
+.caesar-fishing-fullscreen.pf-fishing-fullscreen .pf-keyword-bottom-right .playfair-cheat-title {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: #fde68a;
+  white-space: nowrap;
+}
+
+/* Chum the Waters tucks directly above the compact keyword card — Caesar's default
+ * 185px offset is sized for the much taller basket card. */
+.caesar-fishing-fullscreen.pf-fishing-fullscreen .caesar-floating-chum-btn {
+  bottom: 96px !important;
+  right: 22px !important;
+  padding: 7px 13px !important;
+  font-size: 0.78rem !important;
 }
 
 .pf-keyword-value {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.35rem;
+  font-size: 1.02rem;
   font-weight: 900;
   color: #facc15;
-  letter-spacing: 0.12em;
-  text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
-  margin-top: 4px;
+  letter-spacing: 0.1em;
+  line-height: 1.15;
+  text-shadow: 0 0 8px rgba(250, 204, 21, 0.5);
+  margin-top: 1px;
 }
 
 .pf-keyword-clue {
