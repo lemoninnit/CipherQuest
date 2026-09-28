@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect, react-hooks/purity, react-hooks/exhaustive-deps */
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
@@ -9,6 +8,8 @@ import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingTransform, makeSwimProps, tickFish, visualsForValue } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 import { caesarDecryptChar } from '../../core/engine/caesar';
+import { useFullscreen } from '../../core/hooks/useFullscreen';
+import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 
 /* ─── Caesar math ─── */
 const caesarShiftChar = (char, shift) => {
@@ -91,6 +92,8 @@ const generateCaesarFishValues = (targetShift, currentShift, difficulty = 'easy'
 };
 
 export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion, onStartStageTimer }) {
+  const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
+
   const words         = levelData.plaintext.split(' ');
   const cipherSegs    = levelData.ciphertext.split(' ');
   const getInitialShift = () => 0;
@@ -135,10 +138,15 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     }
   }, [phase, isMenuOpen, showExplanation]);
 
-  const toggleSound = () => {
+  const toggleSound = useCallback(() => {
     const muted = fishingSound.toggleMute();
     setIsMuted(muted);
-  };
+  }, []);
+
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
 
   const soundToggleButton = (
     <button
@@ -415,14 +423,17 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
     const stageCode = `OP-${String(levelData.level || 1).padStart(2, '0')}`;
     return (
-      <div className="fg-root">
+      <div className="fg-root" ref={containerRef}>
         <GameHudBar
           title="Caesar Fishing"
           stage={levelData.level}
           tier={tier}
           isReady={true}
           onBackToStages={onBackToStages}
-          customRightContent={soundToggleButton}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isMuted={isMuted}
+          onToggleMute={toggleSound}
         />
         <div className="cq-brief-screen">
           <img
@@ -486,7 +497,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const currentShift = basketShift;
 
   return (
-    <div className="fg-root caesar-fishing-fullscreen">
+    <div className="fg-root caesar-fishing-fullscreen" ref={containerRef}>
       <style>{`
         .golden-badge {
           background: #ffd700 !important;
@@ -516,7 +527,10 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         isReady={false}
         onOpenMenu={() => setIsMenuOpen(true)}
         attempts={attemptsLeft}
-        customRightContent={soundToggleButton}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        isMuted={isMuted}
+        onToggleMute={toggleSound}
       />
 
       <div className="caesar-fullscreen-stage">

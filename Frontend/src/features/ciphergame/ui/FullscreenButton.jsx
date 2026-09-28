@@ -7,7 +7,7 @@ export default function FullscreenButton({ isFullscreen, onToggle, className = '
       onClick={onToggle}
       className={`fg-fullscreen-btn ${className}`}
       aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-      title={isFullscreen ? 'Exit fullscreen (Esc)' : 'Enter fullscreen (F)'}
+      title={isFullscreen ? 'Exit fullscreen (F)' : 'Enter fullscreen (F)'}
     >
       {isFullscreen ? (
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -27,7 +27,7 @@ export default function FullscreenButton({ isFullscreen, onToggle, className = '
         </svg>
       )}
       <span className="fg-fullscreen-label">
-        {isFullscreen ? 'Exit FS' : 'Fullscreen'}
+        {isFullscreen ? 'Exit FS (F)' : 'Fullscreen (F)'}
       </span>
     </button>
   );

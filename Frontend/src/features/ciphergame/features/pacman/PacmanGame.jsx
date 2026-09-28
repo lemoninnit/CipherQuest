@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import './PacmanGame.css';
 import '../../CipherGame.css';
 
@@ -11,6 +10,8 @@ import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingFromDir } from './pacmanWorld';
+import { useFullscreen } from '../../core/hooks/useFullscreen';
+import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 
 const EASY_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -565,6 +566,8 @@ function CaesarCheatSheet({
 }
 
 export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion, onStartStageTimer }) {
+  const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
+
   const isVigenere = !!levelData?.targetKey;
   const isPlayfair = !!levelData.matrix;
   const isCaesar = !isVigenere && !isPlayfair;
@@ -831,10 +834,15 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     }
   }, [phase, isMenuOpen, gameOver, levelSolved, showExplanation]);
 
-  const toggleSound = () => {
+  const toggleSound = useCallback(() => {
     const muted = pacmanSound.toggleMute();
     setIsMuted(muted);
-  };
+  }, []);
+
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
 
   const soundToggleButton = (
     <button
@@ -1497,14 +1505,17 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     const stageCode = `OP-${String(levelData.level || 1).padStart(2, '0')}`;
     const gameTitle = isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man");
     return (
-      <div className="pacman-container fg-root">
+      <div className="pacman-container fg-root" ref={containerRef}>
         <GameHudBar
           title={gameTitle}
           stage={levelData.level}
           tier={tier}
           isReady={true}
           onBackToStages={onBackToStages}
-          customRightContent={soundToggleButton}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isMuted={isMuted}
+          onToggleMute={toggleSound}
         />
         <div className="cq-brief-screen">
           <img
@@ -1701,7 +1712,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 };
 
   return (
-    <div className="pacman-container fg-root">
+    <div className="pacman-container fg-root" ref={containerRef}>
       {showExplanation && (
         <CryptographicRecap
           cipherType={isPlayfair ? 'playfair' : (isVigenere ? 'vigenere' : 'caesar')}
@@ -1718,7 +1729,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         isReady={false}
         onOpenMenu={() => setIsMenuOpen(true)}
         lives={lives}
-        customRightContent={soundToggleButton}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        isMuted={isMuted}
+        onToggleMute={toggleSound}
       />
 
       <div className={`pacman-layout caesar-pacman-fullscreen ${isVigenere ? 'vg-pacman-fullscreen' : ''}`}>
