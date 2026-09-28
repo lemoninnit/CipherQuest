@@ -15,13 +15,18 @@ export const facingTransform = (facing) => {
   return 'scaleX(1)'; // left is default orientation
 };
 
+export const DEFAULT_FISH_IMG = encodeURI('/assets/fish/positive fish (freshwater)/P Fish 1.1.png');
+
 const fishSrc = (folder, prefix, n, frame) =>
   encodeURI(`/assets/fish/${folder}/${prefix} ${n}.${frame}.png`);
 
 export const getFishFrames = (isPositive, n) => {
   const species = Math.min(10, Math.max(1, Math.round(Number(n)) || 1));
   const folder = isPositive ? 'positive fish (freshwater)' : 'negative fish (marine)';
-  const prefix = isPositive ? 'P Fish' : 'N fish';
+  let prefix = isPositive ? 'P Fish' : 'N fish';
+  if (!isPositive && species === 3) {
+    prefix = 'N Fish';
+  }
   const frame1 = fishSrc(folder, prefix, species, 1);
   const hasFrame2 = !isPositive || P_FISH_FRAME2.has(species);
   const frame2 = hasFrame2 ? fishSrc(folder, prefix, species, 2) : frame1;

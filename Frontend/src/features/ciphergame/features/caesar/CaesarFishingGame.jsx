@@ -5,7 +5,7 @@ import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
-import { facingTransform, makeSwimProps, tickFish, visualsForValue } from '../../core/engine/fishPhysics';
+import { facingTransform, makeSwimProps, tickFish, visualsForValue, DEFAULT_FISH_IMG } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 import { caesarDecryptChar } from '../../core/engine/caesar';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
@@ -598,7 +598,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                   <img
                     className="fg-fish-sprite-img"
                     src={f.imgSrc}
-                    alt="fish"
+                    alt=""
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = DEFAULT_FISH_IMG;
+                    }}
                     draggable={false}
                   />
                 </div>
@@ -620,7 +624,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                 <img
                   className="fg-fish-sprite-img"
                   src={caughtFish.imgSrc}
-                  alt="fish"
+                  alt=""
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = DEFAULT_FISH_IMG;
+                  }}
                   draggable={false}
                 />
               </div>
