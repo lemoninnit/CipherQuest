@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cipher-quest",
+  "compatibility_date": "2026-09-26",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "Frontend/dist",
+    "not_found_handling": "single-page-application"
+  },
+  "previews": {}
+}

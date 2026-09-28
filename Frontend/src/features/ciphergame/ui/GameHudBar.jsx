@@ -15,68 +15,76 @@ export default function GameHudBar({
   customRightContent
 }) {
   return (
-    <header className="fg-header relative-header" style={{ position: 'relative' }}>
+    <header className={`fg-header relative-header ${isReady ? 'fg-header-ready' : ''}`}>
       <div className="fg-header-left" style={{ zIndex: 6 }}>
         {isReady ? (
-          <button className="fg-btn-back-nav" onClick={onBackToStages}>
-            <span className="material-symbols-outlined">arrow_back</span>
-            Exit to Stages
+          <button className="cq-back-btn fg-btn-back-nav" onClick={onBackToStages}>
+            <span className="cq-back-icon-circle">
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
+            </span>
+            <span>Exit to Stages</span>
           </button>
         ) : (
-          <button className="fg-btn-back-nav" onClick={onOpenMenu}>
-            <span className="material-symbols-outlined">menu</span>
-            Menu
+          <button className="cq-back-btn fg-btn-back-nav" onClick={onOpenMenu}>
+            <span className="cq-back-icon-circle">
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>menu</span>
+            </span>
+            <span>Menu</span>
           </button>
         )}
       </div>
 
-      <div
-        className="fg-header-title"
-        style={{
-          position: 'absolute',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          textAlign: 'center',
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: '1.1rem',
-          fontWeight: '700',
-          color: '#ffffff',
-          whiteSpace: 'nowrap',
-          pointerEvents: 'none',
-          zIndex: 5,
-        }}
-      >
-        {title} {stage != null && `— Stage ${stage}`} {tier && `(${tier.toUpperCase()})`}
-      </div>
+      {!isReady && (
+        <div
+          className="fg-header-title"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            textAlign: 'center',
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: '1.1rem',
+            fontWeight: '700',
+            color: '#ffffff',
+            whiteSpace: 'nowrap',
+            pointerEvents: 'none',
+            zIndex: 5,
+          }}
+        >
+          {title} {stage != null && `— Stage ${stage}`} {tier && `(${tier.toUpperCase()})`}
+        </div>
+      )}
 
-      <div className="fg-header-right" style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 6 }}>
-        {/* ── SCORING SYSTEM: live score / streak / multiplier / stage timer ── */}
-        <ScoringStrip />
-        {lives != null && (
-          <div className="hearts-glow" style={{ display: 'flex', alignItems: 'center' }}>
-            {Array.from({ length: maxLives }).map((_, i) => (
-              <span
-                key={i}
-                className="material-symbols-outlined"
-                style={{
-                  color: i < lives ? '#ff007f' : 'rgba(255,255,255,0.15)',
-                  fontVariationSettings: "'FILL' 1",
-                  fontSize: '1.2rem',
-                  marginRight: '2px'
-                }}
-              >
-                favorite
-              </span>
-            ))}
-          </div>
-        )}
-        {attempts != null && (
-          <div className={`fg-header-attempts ${attempts <= 1 ? 'low-attempts' : ''}`}>
-            Attempts: {attempts} {maxAttempts ? `/ ${maxAttempts}` : ''}
-          </div>
-        )}
-        {customRightContent}
-      </div>
+      {!isReady && (
+        <div className="fg-header-right" style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 6 }}>
+          {/* ── SCORING SYSTEM: live score / streak / multiplier / stage timer ── */}
+          <ScoringStrip />
+          {lives != null && (
+            <div className="hearts-glow" style={{ display: 'flex', alignItems: 'center' }}>
+              {Array.from({ length: maxLives }).map((_, i) => (
+                <span
+                  key={i}
+                  className="material-symbols-outlined"
+                  style={{
+                    color: i < lives ? '#ff007f' : 'rgba(255,255,255,0.15)',
+                    fontVariationSettings: "'FILL' 1",
+                    fontSize: '1.2rem',
+                    marginRight: '2px'
+                  }}
+                >
+                  favorite
+                </span>
+              ))}
+            </div>
+          )}
+          {attempts != null && (
+            <div className={`fg-header-attempts ${attempts <= 1 ? 'low-attempts' : ''}`}>
+              Attempts: {attempts} {maxAttempts ? `/ ${maxAttempts}` : ''}
+            </div>
+          )}
+          {customRightContent}
+        </div>
+      )}
     </header>
   );
 }

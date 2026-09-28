@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: cipherquest-backend
+    runtime: java
+    buildCommand: cd backend && mvn clean package -DskipTests
+    startCommand: java -jar backend/target/cipherquest-backend-0.0.1-SNAPSHOT.jar
+    plan: free
+    envVars:
+      - key: DB_URL
+        value: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?prepareThreshold=0
+      - key: DB_USERNAME
+        value: postgres.jacbtscvbixzsfbkkjcf
+      - key: DB_PASSWORD
+        sync: false        # Set this manually in Render dashboard (secret)
+      - key: JWT_SECRET
+        sync: false        # Set this manually in Render dashboard (secret)
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://cipher-quest.kwpoliquit.workers.dev

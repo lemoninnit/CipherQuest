@@ -1,17 +1,45 @@
-// Allow overriding the backend base URL via Vite env `VITE_API_BASE`.
-// Falls back to relative `/api` so the app works behind a proxy or in production.
-const BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE) || (window && window.__API_BASE__) || (window && window.location.origin + '/api');
+// Support setting API via URL parameter (e.g. ?api=https://mean-beers-win.loca.lt/api) or localStorage
+if (typeof window !== 'undefined') {
+  const urlParams = new URLSearchParams(window.location.search);
+  const apiParam = urlParams.get('api');
+  if (apiParam) {
+    let formatted = apiParam.trim();
+    if (!formatted.endsWith('/api')) {
+      formatted = formatted.replace(/\/+$/, '') + '/api';
+    }
+    localStorage.setItem('cq_api_base', formatted);
+  }
+}
+
+const getBaseUrl = () => {
+  let url = '';
+  if (typeof window !== 'undefined' && localStorage.getItem('cq_api_base')) {
+    url = localStorage.getItem('cq_api_base');
+  } else if (import.meta.env && import.meta.env.VITE_API_BASE) {
+    url = import.meta.env.VITE_API_BASE;
+  } else if (typeof window !== 'undefined' && window.__API_BASE__) {
+    url = window.__API_BASE__;
+  } else {
+    url = (typeof window !== 'undefined' ? window.location.origin : '') + '/api';
+  }
+  url = url.trim().replace(/\/+$/, '');
+  return url;
+};
 
 const getToken = () => localStorage.getItem('cq_token');
 
 const headers = () => ({
   'Content-Type': 'application/json',
+  'bypass-tunnel-reminder': 'true',
+  'Bypass-Tunnel-Reminder': 'true',
   ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
 });
 
 async function request(method, path, body) {
   // Small fetch wrapper with network error handling and clearer messages.
-  const url = `${BASE_URL}${path}`;
+  const baseUrl = getBaseUrl();
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${baseUrl}${cleanPath}`;
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -26,7 +54,12 @@ async function request(method, path, body) {
 
     // attempt to parse JSON safely
     const text = await res.text().catch(() => '');
-    const data = text ? JSON.parse(text) : {};
+    let data = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch {
+      data = {};
+    }
 
     if (!res.ok) {
       const msg = data && data.message ? data.message : `HTTP ${res.status}`;
@@ -34,9 +67,14 @@ async function request(method, path, body) {
     }
     return data;
   } catch (err) {
-    if (err.name === 'AbortError') throw new Error('Network timeout: backend did not respond', { cause: err });
-    // map typical network failure into a friendlier message
-    throw new Error(err.message || 'Network error: could not reach backend', { cause: err });
+    if (err.name === 'AbortError') {
+      throw new Error(`Network timeout: backend at ${baseUrl} did not respond within 10s`);
+    }
+    const isTypeError = err instanceof TypeError || err.message === 'Failed to fetch';
+    if (isTypeError) {
+      throw new Error(`Unable to connect to backend at ${baseUrl}. Ensure backend is running and CORS/tunnel is active.`);
+    }
+    throw new Error(err.message || 'Network error: could not reach backend');
   }
 }
 

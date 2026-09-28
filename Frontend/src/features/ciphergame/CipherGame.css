@@ -44,6 +44,22 @@
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
   flex-shrink: 0;
 }
+.fg-header.fg-header-ready {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  position: absolute !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 24px 32px !important;
+  z-index: 50 !important;
+  pointer-events: none !important;
+}
+.fg-header.fg-header-ready .fg-header-left {
+  pointer-events: auto !important;
+}
 .fg-header-category {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 1.4rem;
@@ -118,24 +134,29 @@
 .fg-btn-back-nav {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(239, 68, 68, 0.08) !important;
-  border: 1px solid rgba(239, 68, 68, 0.4) !important;
-  color: #ef4444 !important;
-  padding: 8px 16px !important;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 10px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: rgba(215, 235, 255, 0.85) !important;
+  padding: 4px 8px 4px 0 !important;
+  border-radius: 20px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
   cursor: pointer;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Space Grotesk', sans-serif !important;
+  transition: all 0.22s ease !important;
+  outline: none !important;
 }
 
-.fg-btn-back-nav:hover {
-  background: rgba(239, 68, 68, 0.2) !important;
-  border-color: #ef4444 !important;
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+.fg-btn-back-nav:hover,
+.fg-btn-back-nav:focus-visible {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #00e5ff !important;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.6) !important;
+  transform: translateX(-3px) !important;
 }
 
 .fg-btn-primary {
@@ -5463,7 +5484,8 @@
   position: relative !important;
   isolation: isolate !important;
   overflow: hidden !important;
-  min-height: calc(100vh - 64px);
+  min-height: 100vh !important;
+  height: 100vh !important;
   width: 100%;
   box-sizing: border-box;
   display: flex !important;
@@ -5541,39 +5563,60 @@
   box-sizing: border-box !important;
 }
 
-/* Restyle red "Exit to Stages" button to match cyan selector back buttons */
+/* Strip outer box border from fg-btn-back-nav so cq-back-btn renders 100% identically across all screens */
 .fg-btn-back-nav {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  background: rgba(0, 229, 255, 0.08) !important;
-  border: 1px solid rgba(0, 229, 255, 0.35) !important;
-  color: #00e5ff !important;
-  padding: 8px 16px !important;
-  border-radius: 8px !important;
-  font-size: 0.82rem !important;
+  gap: 10px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: rgba(215, 235, 255, 0.85) !important;
+  padding: 4px 8px 4px 0 !important;
+  border-radius: 20px !important;
+  font-size: 13.5px !important;
   font-weight: 700 !important;
   letter-spacing: 0.03em !important;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.22s ease !important;
   cursor: pointer !important;
   font-family: 'Space Grotesk', sans-serif !important;
   outline: none !important;
 }
 
-.fg-btn-back-nav:hover {
-  background: rgba(0, 229, 255, 0.18) !important;
-  border-color: #00e5ff !important;
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.4) !important;
-  color: #ffffff !important;
+.fg-btn-back-nav:hover,
+.fg-btn-back-nav:focus-visible {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #00e5ff !important;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.6) !important;
+  transform: translateX(-3px) !important;
 }
 
-.fg-btn-back-nav:focus-visible {
-  background: rgba(0, 229, 255, 0.18) !important;
-  border-color: #00e5ff !important;
-  box-shadow: 0 0 14px rgba(0, 229, 255, 0.4) !important;
-  outline: 2px solid #00e5ff !important;
-  outline-offset: 3px !important;
-  color: #ffffff !important;
+/* ── Smooth Stage Navigation & Node Click Animations ── */
+.cq-roadmap-node {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease !important;
+}
+
+.cq-roadmap-node:active .cq-node-circle {
+  transform: scale(0.92) !important;
+  transition: transform 0.1s ease !important;
+}
+
+.cq-dossier-card,
+.cq-brief-card {
+  animation: cq-dossier-card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cq-dossier-card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Dossier Card Container */

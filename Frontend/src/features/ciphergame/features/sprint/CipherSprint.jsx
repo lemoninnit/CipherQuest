@@ -808,22 +808,24 @@ export default function CipherSprint({
       )}
 
       {/* HUD Header */}
-      <GameHudBar
-        title="Cipher Sprint Relay"
-        stage={levelData.level}
-        tier={tier}
-        isReady={sprintStep === 'ready'}
-        onBackToStages={onBackToStages}
-        onOpenMenu={() => setIsMenuOpen(true)}
-        lives={sprintStep === 'ready' ? null : lives}
-        customRightContent={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {soundToggleButton}
-            <FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
-          </div>
-        }
-        extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
-      />
+      {!isOperationLoading && (
+        <GameHudBar
+          title="Cipher Sprint Relay"
+          stage={levelData.level}
+          tier={tier}
+          isReady={sprintStep === 'ready'}
+          onBackToStages={onBackToStages}
+          onOpenMenu={() => setIsMenuOpen(true)}
+          lives={sprintStep === 'ready' ? null : lives}
+          customRightContent={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {soundToggleButton}
+              <FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
+            </div>
+          }
+          extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
+        />
+      )}
 
       {/* ───── Ready Screen ───── */}
       {sprintStep === 'ready' ? (
