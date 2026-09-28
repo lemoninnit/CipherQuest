@@ -839,15 +839,15 @@ export default function PlayfairSprint({
   }, [levelData]);
 
   /* ───────────────────────────────────────────────
-     Audio — BGM follows the run state
+     Audio — BGM follows the run state (continues playing on space pause)
      ─────────────────────────────────────────────── */
   useEffect(() => {
-    if (sprintStep === 'running' && !isPaused && !isMenuOpen && !showExplanation) {
+    if (sprintStep === 'running' && !isMenuOpen && !showExplanation) {
       sprintSound.playBgm();
     } else {
       sprintSound.pauseBgm();
     }
-  }, [sprintStep, isPaused, isMenuOpen, showExplanation]);
+  }, [sprintStep, isMenuOpen, showExplanation]);
 
   useEffect(() => {
     return () => {
@@ -907,7 +907,7 @@ export default function PlayfairSprint({
      ─────────────────────────────────────────────── */
   let runnerAnim = 'idle';
   if (sprintStep === 'gameover' || isCrashing) runnerAnim = 'death';
-  else if (isPaused) runnerAnim = 'idle';
+  else if (isPaused || isMenuOpen || sprintStep === 'finished') runnerAnim = 'idle';
   else if (laneChangeEffect !== null || isBoosting) runnerAnim = 'jump';
   else if (sprintStep === 'running') runnerAnim = 'run';
 
@@ -1020,8 +1020,8 @@ export default function PlayfairSprint({
               'sprint-track-container',
               'sprint-track-fullscreen',
               trackShake ? 'shake-track' : '',
-              isBoosting ? 'is-boosting' : '',
-              isPaused ? 'is-paused' : '',
+              isBoosting && sprintStep === 'running' && !isPaused && !isMenuOpen ? 'is-boosting' : '',
+              (isPaused || isMenuOpen || sprintStep === 'finished' || sprintStep === 'gameover' || sprintStep === 'explanation') ? 'is-paused' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -1357,9 +1357,9 @@ export default function PlayfairSprint({
           </div>
 
           {/* 4. Floating Action / Outcome Panels */}
-          {sprintStep === 'finished' && <VictoryConfetti isPaused={isPaused} />}
+          {sprintStep === 'finished' && <VictoryConfetti isPaused={isMenuOpen} />}
           {sprintStep === 'finished' && (
-            <div className="caesar-floating-victory-panel sprint-floating-victory-panel">
+            <div className="caesar-floating-victory-panel">
               <FinishedPanel
                 onVerifySubmit={handleVerifySubmit}
                 onReplayNewQuestion={onReplayNewQuestion}
@@ -1401,7 +1401,7 @@ export default function PlayfairSprint({
 
 function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
-    <div className="fg-success-panel">
+    <>
       <h3 className="caesar-victory-title">STAGE SECURED!</h3>
       <p className="caesar-victory-desc">All digraphs decrypted successfully.</p>
       <button
@@ -1418,7 +1418,7 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
           Play Again
         </button>
       )}
-    </div>
+    </>
   );
 }
 

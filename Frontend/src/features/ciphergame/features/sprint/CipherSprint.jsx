@@ -728,15 +728,15 @@ export default function CipherSprint({
   }, [levelData]);
 
   /* ───────────────────────────────────────────────
-     Audio — BGM follows the run state
+     Audio — BGM follows the run state (continues playing on space pause)
      ─────────────────────────────────────────────── */
   useEffect(() => {
-    if (sprintStep === 'running' && !isPaused && !isMenuOpen && !showExplanation) {
+    if (sprintStep === 'running' && !isMenuOpen && !showExplanation) {
       sprintSound.playBgm();
     } else {
       sprintSound.pauseBgm();
     }
-  }, [sprintStep, isPaused, isMenuOpen, showExplanation]);
+  }, [sprintStep, isMenuOpen, showExplanation]);
 
   /* Unmount — hard cleanup */
   useEffect(() => {
@@ -766,7 +766,7 @@ export default function CipherSprint({
      ─────────────────────────────────────────────── */
   let runnerAnim = 'idle';
   if (sprintStep === 'gameover') runnerAnim = 'death';
-  else if (isPaused) runnerAnim = 'idle';
+  else if (isPaused || isMenuOpen || sprintStep === 'finished') runnerAnim = 'idle';
   else if (laneChangeEffect !== null || isBoosting) runnerAnim = 'jump';
   else if (sprintStep === 'running') runnerAnim = 'run';
 
@@ -882,8 +882,8 @@ export default function CipherSprint({
               'sprint-track-container',
               'sprint-track-fullscreen',
               trackShake ? 'shake-track' : '',
-              isBoosting ? 'is-boosting' : '',
-              isPaused ? 'is-paused' : '',
+              isBoosting && sprintStep === 'running' && !isPaused && !isMenuOpen ? 'is-boosting' : '',
+              (isPaused || isMenuOpen || sprintStep === 'finished' || sprintStep === 'gameover') ? 'is-paused' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -1195,9 +1195,9 @@ export default function CipherSprint({
           </div>
 
           {/* 4. Floating Action / Outcome Panels */}
-          {sprintStep === 'finished' && <VictoryConfetti isPaused={isPaused} />}
+          {sprintStep === 'finished' && <VictoryConfetti isPaused={isMenuOpen} />}
           {sprintStep === 'finished' && (
-            <div className="caesar-floating-victory-panel sprint-floating-victory-panel">
+            <div className="caesar-floating-victory-panel">
               <FinishedPanel
                 onVerifySubmit={handleVerifySubmit}
                 onReplayNewQuestion={onReplayNewQuestion}
@@ -1233,7 +1233,7 @@ export default function CipherSprint({
 
 function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
-    <div className="fg-success-panel">
+    <>
       <h3 className="caesar-victory-title">STAGE SECURED!</h3>
       <p className="caesar-victory-desc">Shift key identified and word decrypted successfully.</p>
       <button className="fg-btn fg-btn-primary" onClick={onVerifySubmit}>
@@ -1244,7 +1244,7 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
           Play Again
         </button>
       )}
-    </div>
+    </>
   );
 }
 
