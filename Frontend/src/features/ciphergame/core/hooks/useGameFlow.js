@@ -340,6 +340,7 @@ export function useGameFlow() {
 
     let scoreResult = null;
     const sessionId = stageSessionIdRef.current;
+    stageSessionIdRef.current = null; // consume the session — prevents duplicate complete calls (409)
     if (sessionId) {
       try {
         scoreResult = await scoringApi.completeStage(sessionId);
