@@ -12,6 +12,8 @@ import { fishingSound } from '../../core/engine/fishingSound';
 import { caesarDecryptChar } from '../../core/engine/caesar';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
+import { useFishingStageFail } from '../../core/hooks/useFishingStageFail';
+import FishingGameOverOverlay from '../../ui/FishingGameOverOverlay';
 
 /* ─── Caesar math ─── */
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -93,7 +95,7 @@ const generateCaesarFishValues = (targetShift, currentShift, difficulty = 'easy'
   return result.sort(() => Math.random() - 0.5);
 };
 
-export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion, onStartStageTimer }) {
+export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion, onStartStageTimer, onStageFail }) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
   const words         = levelData.plaintext.split(' ');
@@ -126,6 +128,13 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const animationRef = useRef(null);
   const swimLaneRef = useRef(null);        // the swim-lane container div
 
+  // Running out of attempts loses the stage and costs one session heart.
+  const { gameOver, resetStageFail } = useFishingStageFail({
+    attemptsLeft,
+    isSolved: levelSolved,
+    onStageFail,
+  });
+
   useEffect(() => {
     return () => {
       fishingSound.stopBgm();
@@ -133,12 +142,12 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   }, []);
 
   useEffect(() => {
-    if (phase === 'playing' && !isMenuOpen && !showExplanation) {
+    if (phase === 'playing' && !isMenuOpen && !showExplanation && !gameOver) {
       fishingSound.playBgm();
     } else {
       fishingSound.pauseBgm();
     }
-  }, [phase, isMenuOpen, showExplanation]);
+  }, [phase, isMenuOpen, showExplanation, gameOver]);
 
   const toggleSound = useCallback(() => {
     const muted = fishingSound.toggleMute();
@@ -222,6 +231,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     setChumCount(3);
     setLevelSolved(false);
     setPhase('playing');
+    resetStageFail();
     spawnFish();
     spawnBubbles();
   };
@@ -291,18 +301,18 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   };
 
   useEffect(() => {
-    if (phase !== 'playing' || isMenuOpen || levelSolved) return;
+    if (phase !== 'playing' || isMenuOpen || levelSolved || gameOver) return;
     const tick = () => {
       setFishList(prev => prev.map(f => tickFish(f)));
       animationRef.current = requestAnimationFrame(tick);
     };
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [phase, isMenuOpen, levelSolved]);
+  }, [phase, isMenuOpen, levelSolved, gameOver]);
 
   /* ── casting ── */
   const handleChumWaters = () => {
-    if (chumCount <= 0 || isCasting) return;
+    if (chumCount <= 0 || isCasting || gameOver) return;
     fishingSound.playSfx('chum');
     setChumCount(prev => prev - 1);
     spawnFish();
@@ -311,7 +321,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   };
 
   const castLineToFish = (fish) => {
-    if (isCasting || levelSolved) return;
+    if (isCasting || levelSolved || gameOver) return;
     fishingSound.unlockAudio();
     fishingSound.playSfx('cast');
     setIsCasting(true);
@@ -803,6 +813,13 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           </div>
         )}
       </div>
+
+      {/* Running out of attempts loses the stage + one session heart */}
+      <FishingGameOverOverlay
+        open={gameOver}
+        onRetry={startGame}
+        onExit={onBackToStages}
+      />
 
       {/* Shared Pause Menu */}
       <PauseMenu

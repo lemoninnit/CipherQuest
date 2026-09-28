@@ -303,7 +303,11 @@ export function useGameFlow() {
   // ── SCORING: failure flow ─────────────────────────────────────────
   // 0 points, streak -> 0, multiplier -> 1.00, total score preserved.
   // Called by games when the player runs out of lives / fails the stage.
-  const failStage = async () => {
+  //
+  // `showNotice: false` lets a game that already renders its own GAME OVER
+  // overlay keep the scoring side-effects (streak reset, 0 score) without a
+  // second modal stacking on top of it.
+  const failStage = async ({ showNotice = true } = {}) => {
     const sessionId = stageSessionIdRef.current;
 
     // Ignore duplicate failure signals for the same attempt.
@@ -322,12 +326,14 @@ export function useGameFlow() {
 
     // FAILURE BEHAVIOR (spec §7 / §18): no score, streak reset to 0,
     // multiplier effective at 1.00x, existing total score preserved.
-    setStageFailNotice({
-      score: 0,
-      streak: failResult?.gameStreak ?? 0,
-      multiplier: failResult?.multiplier ?? 1,
-      totalScore: failResult?.totalScore ?? (Number(user?.totalScore) || 0),
-    });
+    if (showNotice) {
+      setStageFailNotice({
+        score: 0,
+        streak: failResult?.gameStreak ?? 0,
+        multiplier: failResult?.multiplier ?? 1,
+        totalScore: failResult?.totalScore ?? (Number(user?.totalScore) || 0),
+      });
+    }
 
     if (refreshProfile) {
       try { await refreshProfile(); } catch { /* offline: streak resets locally */ }

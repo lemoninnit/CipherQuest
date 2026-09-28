@@ -11,6 +11,8 @@ import { facingTransform, isLargeFish, makeSwimProps, onFishImgError, randomFish
 import { fishingSound } from '../../core/engine/fishingSound';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
+import { useFishingStageFail } from '../../core/hooks/useFishingStageFail';
+import FishingGameOverOverlay from '../../ui/FishingGameOverOverlay';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -78,7 +80,8 @@ export default function VigenereFishingGame({
   onVerifySubmit,
   onBackToStages,
   onReplayNewQuestion,
-  onStartStageTimer
+  onStartStageTimer,
+  onStageFail
 }) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -153,6 +156,13 @@ export default function VigenereFishingGame({
   const [isMuted, setIsMuted]       = useState(false);
   const animationRef = useRef(null);
 
+  // Running out of attempts loses the stage and costs one session heart.
+  const { gameOver, resetStageFail } = useFishingStageFail({
+    attemptsLeft,
+    isSolved: levelSolved,
+    onStageFail,
+  });
+
   useEffect(() => {
     return () => {
       fishingSound.stopBgm();
@@ -160,12 +170,12 @@ export default function VigenereFishingGame({
   }, []);
 
   useEffect(() => {
-    if (phase === 'playing' && !isMenuOpen && !showExplanation) {
+    if (phase === 'playing' && !isMenuOpen && !showExplanation && !gameOver) {
       fishingSound.playBgm();
     } else {
       fishingSound.pauseBgm();
     }
-  }, [phase, isMenuOpen, showExplanation]);
+  }, [phase, isMenuOpen, showExplanation, gameOver]);
 
   const toggleSound = useCallback(() => {
     const muted = fishingSound.toggleMute();
@@ -275,6 +285,7 @@ export default function VigenereFishingGame({
     fishingSound.playBgm();
     resetRound();
     setPhase('playing');
+    resetStageFail();
     spawnFish();
     spawnBubbles();
   };
@@ -296,7 +307,7 @@ export default function VigenereFishingGame({
   }, [phase, allCorrect, levelSolved]);
 
   useEffect(() => {
-    if (phase !== 'playing' || isMenuOpen || levelSolved) return;
+    if (phase !== 'playing' || isMenuOpen || levelSolved || gameOver) return;
     const tick = () => {
       setFishList(prev => prev.map(fish => tickFish(fish)));
       animationRef.current = requestAnimationFrame(tick);
@@ -304,7 +315,7 @@ export default function VigenereFishingGame({
 
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [phase, isMenuOpen, levelSolved]);
+  }, [phase, isMenuOpen, levelSolved, gameOver]);
 
   // Ensure current target plaintext letter is always swimming in the pond
   useEffect(() => {
@@ -325,7 +336,7 @@ export default function VigenereFishingGame({
   }, [currentTargetPlain, phase, isCasting]);
 
   const handleChumWaters = () => {
-    if (chumCount <= 0 || isCasting) return;
+    if (chumCount <= 0 || isCasting || gameOver) return;
     fishingSound.playSfx('chum');
     setChumCount(prev => prev - 1);
     spawnFish();
@@ -334,7 +345,7 @@ export default function VigenereFishingGame({
   };
 
   const castLineToFish = (fish) => {
-    if (isCasting || levelSolved) return;
+    if (isCasting || levelSolved || gameOver) return;
     fishingSound.unlockAudio();
     fishingSound.playSfx('cast');
     setIsCasting(true);
@@ -941,6 +952,13 @@ export default function VigenereFishingGame({
           </div>
         </div>
       )}
+
+      {/* Running out of attempts loses the stage + one session heart */}
+      <FishingGameOverOverlay
+        open={gameOver}
+        onRetry={startGame}
+        onExit={onBackToStages}
+      />
 
       {/* Shared Pause Menu */}
       <PauseMenu
