@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import './PacmanGame.css';
 import '../../CipherGame.css';
 
@@ -11,6 +10,8 @@ import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingFromDir } from './pacmanWorld';
+import { useFullscreen } from '../../core/hooks/useFullscreen';
+import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 
 const EASY_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -191,16 +192,31 @@ const getMask = (levelData, idx) => {
 };
 
 // Helper to extract all required target items for levelData
-const getRequiredTargetItems = (levelData) => {
+const getRequiredTargetItems = (levelData, tier) => {
   if (!levelData) return [];
   const isPlayfair = !!levelData.matrix;
+  const normTier = String(tier || levelData.difficulty || 'easy').toLowerCase();
   if (isPlayfair) {
     const pairs = levelData.pairs || [];
-    return pairs.map((plainPair, i) => ({
-      index: i,
-      char: plainPair,
-      id: `ghost-target-${i}`
-    }));
+    const maskedPairs = [];
+    pairs.forEach((plainPair, i) => {
+      const isHint = normTier !== 'hard' && (getMask(levelData, i * 2) || getMask(levelData, i * 2 + 1));
+      if (!isHint) {
+        maskedPairs.push({
+          index: i,
+          char: plainPair,
+          id: `ghost-target-${i}`
+        });
+      }
+    });
+    if (maskedPairs.length === 0 && pairs.length > 0) {
+      maskedPairs.push({
+        index: pairs.length - 1,
+        char: pairs[pairs.length - 1],
+        id: `ghost-target-${pairs.length - 1}`
+      });
+    }
+    return maskedPairs;
   }
 
   const maskedIndices = [];
@@ -343,7 +359,7 @@ const generateInitialGhosts = (levelData, tier) => {
 
   const maxActive = MAX_ACTIVE_TARGET_GHOSTS[normTier] || 8;
   const decoyCount = DECOY_GHOST_COUNT[normTier] || 2;
-  const requiredTargets = getRequiredTargetItems(levelData);
+  const requiredTargets = getRequiredTargetItems(levelData, normTier);
   const activeTargets = requiredTargets.slice(0, maxActive);
   const queue = requiredTargets.slice(maxActive);
 
@@ -426,145 +442,166 @@ const generateInitialGhosts = (levelData, tier) => {
 };
 /**
  * Caesar Cheat Sheet — Decryption Guide (Bottom-Left Floating Panel)
- *
- * Tier-aware, accuracy-focused reference for Shift Ghosts gameplay:
- *  - Shows the DECRYPTION direction (Cipher → Plain), which is what the player
- *    actually does, replacing the old misleading encryption table.
- *  - EASY: full 26-letter mapping + live worked example for the active blank.
- *  - MEDIUM/HARD: no shift given — a derivation worksheet built from the
- *    actually-revealed letter pairs (cipher − plain) plus a step checklist.
+ * Rebuilt on Vigenère Decryption Arithmetic pattern:
+ * Shows live working for active letter being solved, value grid, and 3-step hint line.
  */
 function CaesarCheatSheet({
   tier,
-  targetShift,
+  activeShift,
   ciphertext,
   plaintext,
-  fullMask,
-  activeIdx,
+  levelSolved,
+  levelData,
 }) {
   const isEasy = tier === 'easy';
+  const normShift = ((activeShift % 26) + 26) % 26;
 
-  /* Revealed (cipher, plain) pairs the player can legitimately see */
-  const revealedPairs = useMemo(() => {
-    const pairs = [];
+  /* Calculate all letter positions and solve states */
+  const letterPositions = useMemo(() => {
+    const list = [];
+    let count = 0;
     for (let i = 0; i < plaintext.length; i++) {
       const p = plaintext[i];
-      const masked = fullMask && fullMask[i] === false;
-      if (p >= 'A' && p <= 'Z' && !masked) {
-        pairs.push({ idx: i, cipherCh: ciphertext[i] || '', plainCh: p });
+      if (p >= 'A' && p <= 'Z') {
+        const mask = getMask(levelData, i);
+        list.push({
+          globalIdx: count++,
+          charIdx: i,
+          plainChar: p,
+          cipherChar: ciphertext[i] || '',
+          isHint: Boolean(mask),
+        });
       }
     }
-    return pairs.slice(0, 3);
-  }, [plaintext, ciphertext, fullMask]);
+    return list;
+  }, [plaintext, ciphertext, levelData]);
 
-  /* Highlight cipher character for the active solving slot */
-  const activeCipherCh = useMemo(() => {
-    if (activeIdx == null || activeIdx < 0) return '';
-    return ciphertext[activeIdx] || '';
-  }, [activeIdx, ciphertext]);
-
-  /* EASY: A-Z strip columns — PLAIN on top, CIPHER below, numeric VALUE (1-26) */
-  const stripCols = useMemo(() => {
-    if (!isEasy) return [];
-    return CQS_ALPHABET.map((plain, i) => ({
-      plain,
-      // Encryption view of the table: plain + shift = cipher (user-facing keyshift)
-      cipher: caesarShiftChar(plain, targetShift),
-      value: i + 1,
-    }));
-  }, [isEasy, targetShift]);
-
-  /* Numeric position of a letter: A=1 … Z=26 */
-  const charValue = (ch) => {
-    const code = (ch || '').charCodeAt(0);
-    return code >= 65 && code <= 90 ? code - 64 : null;
+  const isLetterSolved = (p) => {
+    if (p.isHint) return true;
+    if (levelSolved && activeShift !== 0) return true;
+    if (activeShift !== 0 && ((charToIdx(p.cipherChar) - normShift + 26) % 26) === charToIdx(p.plainChar)) {
+      return true;
+    }
+    return false;
   };
 
+  const totalLetters = letterPositions.length;
+  const solvedLettersCount = letterPositions.filter(p => isLetterSolved(p)).length;
+  const activeTarget = letterPositions.find(p => !isLetterSolved(p)) || letterPositions[0] || {
+    globalIdx: 0,
+    charIdx: 0,
+    plainChar: 'A',
+    cipherChar: 'A',
+  };
+
+  const activeCipherChar = activeTarget.cipherChar;
+  const activeCipherVal = charToIdx(activeCipherChar);
+  const activePlainChar = activeTarget.plainChar;
+  const activePlainVal = charToIdx(activePlainChar);
+  const isActiveSolved = isLetterSolved(activeTarget);
+
+  const revealedHintsCount = letterPositions.filter(p => p.isHint).length;
+
   return (
-    <div className="caesar-floating-cheat-sheet caesar-pacman-cheat-sheet cqs-cheat-sheet">
-      <div className="caesar-cheat-header">
-        <span className="caesar-cheat-title">🔐 Decryption Guide</span>
-        <span className={`caesar-cheat-badge ${isEasy ? '' : 'mystery'}`}>
-          {isEasy ? `Shift −${targetShift}` : 'Shift: ??'}
-        </span>
+    <div className="caesar-floating-cheat-sheet caesar-pacman-cheat-sheet vg-fishing-az-panel">
+      <div className="vg-floating-current-slot">
+        <div className="vg-arithmetic-title">
+          Decryption Arithmetic
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {!isEasy && (
+            <span className="caesar-cheat-badge mystery" style={{ fontSize: '0.74rem', padding: '2px 6px' }}>
+              Shift: ??
+            </span>
+          )}
+          <div className="vg-slot-badge-lg" style={{ fontSize: '0.82rem', padding: '2px 8px' }}>
+            {Math.min(solvedLettersCount, totalLetters)}/{totalLetters} Solved
+          </div>
+        </div>
       </div>
 
-      {isEasy ? (
-        <div className="caesar-cheat-body">
-          <div className="caesar-cheat-labels cqs-labels-three">
-            <span className="caesar-cheat-label-plain">PLAIN</span>
-            <span className="caesar-cheat-label-shift">CIPHER</span>
-            <span className="cqs-label-value">VALUE</span>
+      {/* Active calculation card */}
+      <div className="vg-fishing-calc-card">
+        <div className="vg-calc-top-row">
+          <span className="vg-calc-label">Active Letter Decryption:</span>
+          <span className="vg-calc-badge">Pos #{activeTarget.globalIdx + 1}</span>
+        </div>
+        <div className="vg-calc-formula-row">
+          <div className="vg-calc-item cipher">
+            <span className="lbl">Cipher</span>
+            <strong>{activeCipherChar}</strong>
+            <span className="val">{activeCipherVal}</span>
           </div>
-          <div className="caesar-cheat-columns">
-            {stripCols.map((c) => {
-              const isActive = activeCipherCh && c.cipher === activeCipherCh;
-              return (
-                <div key={c.plain} className={`caesar-cheat-col cqs-col-three ${isActive ? 'highlighted' : ''}`}>
-                  <span className="caesar-cheat-plain">{c.plain}</span>
-                  <span className="caesar-cheat-shifted">{c.cipher}</span>
-                  <span className="cqs-cheat-value">{c.value}</span>
-                </div>
-              );
-            })}
+          <span className="vg-calc-op">−</span>
+          <div className="vg-calc-item key">
+            <span className="lbl">Shift</span>
+            <strong>{activeShift}</strong>
+            <span className="val">{normShift}</span>
+          </div>
+          <span className="vg-calc-op">=</span>
+          <div className="vg-calc-item plain">
+            <span className="lbl">Target</span>
+            <strong style={{ color: 'var(--neon-green)' }}>
+              {isActiveSolved ? activePlainChar : '?'}
+            </strong>
+            <span
+              className="val"
+              style={{ visibility: isActiveSolved ? 'visible' : 'hidden' }}
+            >
+              {activePlainVal}
+            </span>
           </div>
         </div>
-      ) : (
-        <div className="cqs-derive-body">
-          <div className="cqs-derive-hint">
-            Compute <strong>shift = cipher − plain</strong> using the VALUE ruler (A=1 … Z=26):
-          </div>
-          <div className="cqs-derive-pairs">
-            {revealedPairs.length > 0 ? (
-              revealedPairs.map((p) => {
-                const s = ((p.cipherCh.charCodeAt(0) - 65) - (p.plainCh.charCodeAt(0) - 65) + 26) % 26;
-                return (
-                  <div key={p.idx} className="cqs-derive-pair">
-                    <span className="cqs-dp-stack">
-                      <span className="cqs-dp-cipher">{p.cipherCh}</span>
-                      <span className="cqs-dp-val">{charValue(p.cipherCh)}</span>
-                    </span>
-                    <span className="cqs-dp-op">−</span>
-                    <span className="cqs-dp-stack">
-                      <span className="cqs-dp-plain">{p.plainCh}</span>
-                      <span className="cqs-dp-val">{charValue(p.plainCh)}</span>
-                    </span>
-                    <span className="cqs-dp-eq">=</span>
-                    <span className="cqs-dp-shift">{s === 0 ? 26 : s}</span>
-                  </div>
-                );
-              })
-            ) : (
-              <span className="cqs-derive-empty">No letters revealed yet…</span>
-            )}
-          </div>
+      </div>
 
-          {/* Shift-agnostic letter ↔ value reference (A=1 … Z=26) */}
-          <div className="cqs-value-ruler">
-            <div className="cqs-ruler-row">
-              {CQS_ALPHABET.map((ch) => (
-                <span key={ch} className="cqs-ruler-letter">{ch}</span>
-              ))}
-            </div>
-            <div className="cqs-ruler-row">
-              {CQS_ALPHABET.map((ch, i) => (
-                <span key={ch} className="cqs-ruler-num">{i + 1}</span>
-              ))}
-            </div>
-          </div>
-
-          <div className="cqs-derive-steps">
-            <span className={revealedPairs.length >= 1 ? 'done' : ''}>① Derive from a pair</span>
-            <span className={revealedPairs.length >= 2 ? 'done' : ''}>② Verify on a 2nd</span>
-            <span>③ Hunt the shift goblin</span>
-          </div>
+      {/* 2-row x 13-col Alphabet grid */}
+      <div className="vg-sprint-alphabet-grid">
+        <div className="vg-alphabet-row">
+          {CQS_ALPHABET.slice(0, 13).map((ch, i) => {
+            const isCipher = ch === activeCipherChar;
+            const isKey = i === normShift;
+            let cellClass = "vg-alphabet-cell";
+            if (isCipher) cellClass += " is-cipher";
+            if (isKey) cellClass += " is-key";
+            return (
+              <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
+                <span className="vg-alpha-char">{ch}</span>
+                <span className="vg-alpha-val">{i}</span>
+              </div>
+            );
+          })}
         </div>
-      )}
+        <div className="vg-alphabet-row">
+          {CQS_ALPHABET.slice(13, 26).map((ch, i) => {
+            const val = i + 13;
+            const isCipher = ch === activeCipherChar;
+            const isKey = val === normShift;
+            let cellClass = "vg-alphabet-cell";
+            if (isCipher) cellClass += " is-cipher";
+            if (isKey) cellClass += " is-key";
+            return (
+              <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
+                <span className="vg-alpha-char">{ch}</span>
+                <span className="vg-alpha-val">{val}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3-step hint list under the grid as a compact line */}
+      <div className="cqs-derive-steps" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '6px', fontSize: '0.68rem', marginTop: '3px' }}>
+        <span className={revealedHintsCount >= 1 ? 'done' : ''}>① Derive from a pair</span>
+        <span className={revealedHintsCount >= 2 ? 'done' : ''}>② Verify on a 2nd</span>
+        <span>③ Hunt the shift goblin</span>
+      </div>
     </div>
   );
 }
 
 export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion, onStartStageTimer }) {
+  const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
+
   const isVigenere = !!levelData?.targetKey;
   const isPlayfair = !!levelData.matrix;
   const isCaesar = !isVigenere && !isPlayfair;
@@ -586,7 +623,23 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 
   const maskedIndices = React.useMemo(() => {
     const indices = [];
-    if (!levelData || !levelData.plaintext) return indices;
+    if (!levelData) return indices;
+    const isPf = !!levelData.matrix;
+    const normTier = String(currentTier || levelData.difficulty || 'easy').toLowerCase();
+    if (isPf) {
+      const pairs = levelData.pairs || [];
+      pairs.forEach((_, i) => {
+        const isHint = normTier !== 'hard' && (getMask(levelData, i * 2) || getMask(levelData, i * 2 + 1));
+        if (!isHint) {
+          indices.push(i);
+        }
+      });
+      if (indices.length === 0 && pairs.length > 0) {
+        indices.push(pairs.length - 1);
+      }
+      return indices;
+    }
+    if (!levelData.plaintext) return indices;
     for (let i = 0; i < levelData.plaintext.length; i++) {
       const ch = levelData.plaintext[i];
       if (ch >= 'A' && ch <= 'Z') {
@@ -596,7 +649,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       }
     }
     return indices;
-  }, [levelData]);
+  }, [levelData, currentTier]);
 
   const [phase, setPhase] = useState('ready');
   const [isOperationLoading, setIsOperationLoading] = useState(false);
@@ -831,10 +884,15 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     }
   }, [phase, isMenuOpen, gameOver, levelSolved, showExplanation]);
 
-  const toggleSound = () => {
+  const toggleSound = useCallback(() => {
     const muted = pacmanSound.toggleMute();
     setIsMuted(muted);
-  };
+  }, []);
+
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
 
   const soundToggleButton = (
     <button
@@ -1497,14 +1555,17 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     const stageCode = `OP-${String(levelData.level || 1).padStart(2, '0')}`;
     const gameTitle = isPlayfair ? "Playfair Pac-Man" : (isVigenere ? "Vigenère Pac-Man" : "Caesar Pac-Man");
     return (
-      <div className="pacman-container fg-root">
+      <div className="pacman-container fg-root" ref={containerRef}>
         <GameHudBar
           title={gameTitle}
           stage={levelData.level}
           tier={tier}
           isReady={true}
           onBackToStages={onBackToStages}
-          customRightContent={soundToggleButton}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isMuted={isMuted}
+          onToggleMute={toggleSound}
         />
         <div className="cq-brief-screen">
           <img
@@ -1701,7 +1762,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
 };
 
   return (
-    <div className="pacman-container fg-root">
+    <div className="pacman-container fg-root" ref={containerRef}>
       {showExplanation && (
         <CryptographicRecap
           cipherType={isPlayfair ? 'playfair' : (isVigenere ? 'vigenere' : 'caesar')}
@@ -1718,7 +1779,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         isReady={false}
         onOpenMenu={() => setIsMenuOpen(true)}
         lives={lives}
-        customRightContent={soundToggleButton}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        isMuted={isMuted}
+        onToggleMute={toggleSound}
       />
 
       <div className={`pacman-layout caesar-pacman-fullscreen ${isVigenere ? 'vg-pacman-fullscreen' : ''}`}>
@@ -1785,7 +1849,8 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   <div className="pf-pair-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', margin: '4px 0' }}>
                     {(levelData.pairs || []).map((plainPair, idx) => {
                       const cPair = levelData.cipherPairs ? levelData.cipherPairs[idx] : '';
-                      const isSolved = eatenGhosts.includes(idx);
+                      const isHint = currentTier !== 'hard' && (getMask(levelData, idx * 2) || getMask(levelData, idx * 2 + 1));
+                      const isSolved = isHint || eatenGhosts.includes(idx);
                       const isActive = activeIndex === idx;
 
                       return (
@@ -1859,10 +1924,11 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             <CaesarCheatSheet
               tier={currentTier}
               targetShift={targetShift}
+              activeShift={activeShiftValue}
               ciphertext={levelData.ciphertext || ''}
               plaintext={levelData.plaintext || ''}
-              fullMask={levelData.fullMask}
-              activeIdx={activeSolvingIndex}
+              levelSolved={levelSolved}
+              levelData={levelData}
             />
           ) : isVigenere ? (
             <div className="vg-floating-ref-panel vg-pacman-ref-panel">

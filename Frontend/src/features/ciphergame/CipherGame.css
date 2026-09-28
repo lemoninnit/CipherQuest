@@ -6877,7 +6877,7 @@
   flex-shrink: 0 !important;
 }
 
-/* Tightened Decryption Arithmetic Panel (Bottom-Right) */
+/* Tightened Decryption Arithmetic Panel */
 .vigenere-fishing-fullscreen .vg-fishing-az-panel,
 .vigenere-sprint-fullscreen .vg-fishing-az-panel,
 .vg-pacman-fullscreen .vg-fishing-az-panel {
@@ -6890,9 +6890,26 @@
   gap: 6px !important;
 }
 
+.caesar-fishing-fullscreen .caesar-floating-cheat-sheet {
+  top: auto !important;
+  bottom: 18px !important;
+  left: 24px !important;
+}
+
+.caesar-floating-cheat-sheet.vg-fishing-az-panel {
+  width: fit-content !important;
+  min-width: 360px !important;
+  max-width: 440px !important;
+  padding: 10px 14px !important;
+  gap: 6px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
 .vigenere-fishing-fullscreen .vg-arithmetic-title,
 .vigenere-sprint-fullscreen .vg-arithmetic-title,
-.vg-pacman-fullscreen .vg-arithmetic-title {
+.vg-pacman-fullscreen .vg-arithmetic-title,
+.caesar-floating-cheat-sheet .vg-arithmetic-title {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 0.82rem;
   color: #ffffff;
@@ -6903,7 +6920,8 @@
 
 .vigenere-fishing-fullscreen .vg-fishing-calc-card,
 .vigenere-sprint-fullscreen .vg-fishing-calc-card,
-.vg-pacman-fullscreen .vg-fishing-calc-card {
+.vg-pacman-fullscreen .vg-fishing-calc-card,
+.caesar-floating-cheat-sheet .vg-fishing-calc-card {
   padding: 6px 12px !important;
   background: rgba(2, 10, 24, 0.85) !important;
   border: 1.5px solid rgba(0, 229, 255, 0.35) !important;
@@ -6913,13 +6931,15 @@
 
 .vigenere-fishing-fullscreen .vg-calc-top-row,
 .vigenere-sprint-fullscreen .vg-calc-top-row,
-.vg-pacman-fullscreen .vg-calc-top-row {
+.vg-pacman-fullscreen .vg-calc-top-row,
+.caesar-floating-cheat-sheet .vg-calc-top-row {
   font-size: 0.74rem !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-label,
 .vigenere-sprint-fullscreen .vg-calc-label,
-.vg-pacman-fullscreen .vg-calc-label {
+.vg-pacman-fullscreen .vg-calc-label,
+.caesar-floating-cheat-sheet .vg-calc-label {
   font-size: 0.7rem !important;
   font-weight: 800 !important;
   color: #94a3b8;
@@ -6929,21 +6949,24 @@
 
 .vigenere-fishing-fullscreen .vg-calc-badge,
 .vigenere-sprint-fullscreen .vg-calc-badge,
-.vg-pacman-fullscreen .vg-calc-badge {
+.vg-pacman-fullscreen .vg-calc-badge,
+.caesar-floating-cheat-sheet .vg-calc-badge {
   font-size: 0.76rem !important;
   padding: 2px 8px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-formula-row,
 .vigenere-sprint-fullscreen .vg-calc-formula-row,
-.vg-pacman-fullscreen .vg-calc-formula-row {
+.vg-pacman-fullscreen .vg-calc-formula-row,
+.caesar-floating-cheat-sheet .vg-calc-formula-row {
   gap: 12px !important;
   margin: 3px 0 !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-item,
 .vigenere-sprint-fullscreen .vg-calc-item,
-.vg-pacman-fullscreen .vg-calc-item {
+.vg-pacman-fullscreen .vg-calc-item,
+.caesar-floating-cheat-sheet .vg-calc-item {
   padding: 3px 10px !important;
   min-width: 54px !important;
   border-radius: 8px !important;
@@ -6951,7 +6974,8 @@
 
 .vigenere-fishing-fullscreen .vg-calc-item .lbl,
 .vigenere-sprint-fullscreen .vg-calc-item .lbl,
-.vg-pacman-fullscreen .vg-calc-item .lbl {
+.vg-pacman-fullscreen .vg-calc-item .lbl,
+.caesar-floating-cheat-sheet .vg-calc-item .lbl {
   font-size: 0.62rem !important;
   font-weight: 800 !important;
   letter-spacing: 0.06em !important;
@@ -6959,21 +6983,24 @@
 
 .vigenere-fishing-fullscreen .vg-calc-item strong,
 .vigenere-sprint-fullscreen .vg-calc-item strong,
-.vg-pacman-fullscreen .vg-calc-item strong {
+.vg-pacman-fullscreen .vg-calc-item strong,
+.caesar-floating-cheat-sheet .vg-calc-item strong {
   font-size: 1.35rem !important;
   line-height: 1.15 !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-item .val,
 .vigenere-sprint-fullscreen .vg-calc-item .val,
-.vg-pacman-fullscreen .vg-calc-item .val {
+.vg-pacman-fullscreen .vg-calc-item .val,
+.caesar-floating-cheat-sheet .vg-calc-item .val {
   font-size: 0.78rem !important;
   font-weight: 800 !important;
 }
 
 .vigenere-fishing-fullscreen .vg-calc-op,
 .vigenere-sprint-fullscreen .vg-calc-op,
-.vg-pacman-fullscreen .vg-calc-op {
+.vg-pacman-fullscreen .vg-calc-op,
+.caesar-floating-cheat-sheet .vg-calc-op {
   font-size: 1.3rem !important;
   font-weight: 900 !important;
   color: rgba(255, 255, 255, 0.6) !important;
@@ -6982,20 +7009,23 @@
 /* Enlarged A-Z 26-Letter Grid */
 .vigenere-fishing-fullscreen .vg-sprint-alphabet-grid,
 .vigenere-sprint-fullscreen .vg-sprint-alphabet-grid,
-.vg-pacman-fullscreen .vg-sprint-alphabet-grid {
+.vg-pacman-fullscreen .vg-sprint-alphabet-grid,
+.caesar-floating-cheat-sheet .vg-sprint-alphabet-grid {
   gap: 3px !important;
   margin-top: 2px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alphabet-row,
 .vigenere-sprint-fullscreen .vg-alphabet-row,
-.vg-pacman-fullscreen .vg-alphabet-row {
+.vg-pacman-fullscreen .vg-alphabet-row,
+.caesar-floating-cheat-sheet .vg-alphabet-row {
   gap: 2px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alphabet-cell,
 .vigenere-sprint-fullscreen .vg-alphabet-cell,
-.vg-pacman-fullscreen .vg-alphabet-cell {
+.vg-pacman-fullscreen .vg-alphabet-cell,
+.caesar-floating-cheat-sheet .vg-alphabet-cell {
   padding: 3px 2px !important;
   min-width: 20px !important;
   max-width: 32px !important;
@@ -7004,7 +7034,8 @@
 
 .vigenere-fishing-fullscreen .vg-alpha-char,
 .vigenere-sprint-fullscreen .vg-alpha-char,
-.vg-pacman-fullscreen .vg-alpha-char {
+.vg-pacman-fullscreen .vg-alpha-char,
+.caesar-floating-cheat-sheet .vg-alpha-char {
   font-size: 0.84rem !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
@@ -7012,7 +7043,8 @@
 
 .vigenere-fishing-fullscreen .vg-alpha-val,
 .vigenere-sprint-fullscreen .vg-alpha-val,
-.vg-pacman-fullscreen .vg-alpha-val {
+.vg-pacman-fullscreen .vg-alpha-val,
+.caesar-floating-cheat-sheet .vg-alpha-val {
   font-size: 0.68rem !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
@@ -7020,7 +7052,8 @@
 
 .vigenere-fishing-fullscreen .vg-alphabet-cell.is-cipher,
 .vigenere-sprint-fullscreen .vg-alphabet-cell.is-cipher,
-.vg-pacman-fullscreen .vg-alphabet-cell.is-cipher {
+.vg-pacman-fullscreen .vg-alphabet-cell.is-cipher,
+.caesar-floating-cheat-sheet .vg-alphabet-cell.is-cipher {
   border: 1.5px solid var(--neon-cyan) !important;
   background: rgba(0, 229, 255, 0.28) !important;
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.55) !important;
@@ -7028,13 +7061,15 @@
 
 .vigenere-fishing-fullscreen .vg-alphabet-cell.is-cipher .vg-alpha-char,
 .vigenere-sprint-fullscreen .vg-alphabet-cell.is-cipher .vg-alpha-char,
-.vg-pacman-fullscreen .vg-alphabet-cell.is-cipher .vg-alpha-char {
+.vg-pacman-fullscreen .vg-alphabet-cell.is-cipher .vg-alpha-char,
+.caesar-floating-cheat-sheet .vg-alphabet-cell.is-cipher .vg-alpha-char {
   color: var(--neon-cyan) !important;
 }
 
 .vigenere-fishing-fullscreen .vg-alphabet-cell.is-key,
 .vigenere-sprint-fullscreen .vg-alphabet-cell.is-key,
-.vg-pacman-fullscreen .vg-alphabet-cell.is-key {
+.vg-pacman-fullscreen .vg-alphabet-cell.is-key,
+.caesar-floating-cheat-sheet .vg-alphabet-cell.is-key {
   border: 1.5px solid var(--neon-yellow) !important;
   background: rgba(255, 215, 0, 0.28) !important;
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.55) !important;
@@ -7042,7 +7077,8 @@
 
 .vigenere-fishing-fullscreen .vg-alphabet-cell.is-key .vg-alpha-char,
 .vigenere-sprint-fullscreen .vg-alphabet-cell.is-key .vg-alpha-char,
-.vg-pacman-fullscreen .vg-alphabet-cell.is-key .vg-alpha-char {
+.vg-pacman-fullscreen .vg-alphabet-cell.is-key .vg-alpha-char,
+.caesar-floating-cheat-sheet .vg-alphabet-cell.is-key .vg-alpha-char {
   color: var(--neon-yellow) !important;
 }
 

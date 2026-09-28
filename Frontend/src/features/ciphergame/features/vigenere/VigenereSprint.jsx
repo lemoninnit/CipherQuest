@@ -5,6 +5,7 @@ import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
+import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import FullscreenButton from '../../ui/FullscreenButton';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
@@ -126,6 +127,16 @@ export default function VigenereSprint({
   const [isBadgePopping, setIsBadgePopping] = useState(false);
   const [slimeFrame, setSlimeFrame] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+
+  const toggleSound = useCallback(() => {
+    const muted = sprintSound.toggleMute();
+    setIsMuted(muted);
+  }, []);
+
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
 
   /* ───────────────────────────────────────────────
      Refs — game truth inside RAF loop, timeout tracking
@@ -810,15 +821,15 @@ export default function VigenereSprint({
   }, [levelData]);
 
   /* ───────────────────────────────────────────────
-     Audio — BGM follows the run state
+     Audio — BGM follows the run state (continues playing on space pause)
      ─────────────────────────────────────────────── */
   useEffect(() => {
-    if (sprintStep === 'running' && !isPaused && !isMenuOpen && !showExplanation) {
+    if (sprintStep === 'running' && !isMenuOpen && !showExplanation) {
       sprintSound.playBgm();
     } else {
       sprintSound.pauseBgm();
     }
-  }, [sprintStep, isPaused, isMenuOpen, showExplanation]);
+  }, [sprintStep, isMenuOpen, showExplanation]);
 
   useEffect(() => {
     return () => {
@@ -829,34 +840,6 @@ export default function VigenereSprint({
     };
   }, []);
 
-  /* ───────────────────────────────────────────────
-     Audio — mute toggle button
-     ─────────────────────────────────────────────── */
-  const toggleSound = () => {
-    const muted = sprintSound.toggleMute();
-    setIsMuted(muted);
-  };
-
-  const soundToggleButton = (
-    <button
-      className="fg-btn-icon"
-      onClick={toggleSound}
-      title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
-      style={{
-        background: 'rgba(255, 255, 255, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '8px',
-        color: '#fff',
-        padding: '4px 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '1rem',
-      }}
-    >
-      {isMuted ? '🔇' : '🔊'}
-    </button>
-  );
 
   const handleVerifySubmit = () => {
     clearAllFXTimeouts();
@@ -873,7 +856,7 @@ export default function VigenereSprint({
      ─────────────────────────────────────────────── */
   let runnerAnim = 'idle';
   if (sprintStep === 'gameover' || isCrashing) runnerAnim = 'death';
-  else if (isPaused) runnerAnim = 'idle';
+  else if (isPaused || isMenuOpen || sprintStep === 'finished') runnerAnim = 'idle';
   else if (laneChangeEffect !== null || isBoosting) runnerAnim = 'jump';
   else if (sprintStep === 'running') runnerAnim = 'run';
 
@@ -904,13 +887,10 @@ export default function VigenereSprint({
           onBackToStages={onBackToStages}
           onOpenMenu={() => setIsMenuOpen(true)}
           lives={sprintStep === 'ready' ? null : lives}
-          customRightContent={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {soundToggleButton}
-              <FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
-            </div>
-          }
-          extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isMuted={isMuted}
+          onToggleMute={toggleSound}
         />
       )}
 
@@ -991,8 +971,8 @@ export default function VigenereSprint({
               'sprint-track-container',
               'sprint-track-fullscreen',
               trackShake ? 'shake-track' : '',
-              isBoosting ? 'is-boosting' : '',
-              isPaused ? 'is-paused' : '',
+              isBoosting && sprintStep === 'running' && !isPaused && !isMenuOpen ? 'is-boosting' : '',
+              (isPaused || isMenuOpen || sprintStep === 'finished' || sprintStep === 'gameover' || sprintStep === 'explanation') ? 'is-paused' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -1452,9 +1432,9 @@ export default function VigenereSprint({
           </div>
 
           {/* 4. Floating Action / Outcome Panels */}
-          {sprintStep === 'finished' && <VictoryConfetti isPaused={isPaused} />}
+          {sprintStep === 'finished' && <VictoryConfetti isPaused={isMenuOpen} />}
           {sprintStep === 'finished' && (
-            <div className="caesar-floating-victory-panel sprint-floating-victory-panel">
+            <div className="caesar-floating-victory-panel">
               <FinishedPanel
                 onVerifySubmit={handleVerifySubmit}
                 onReplayNewQuestion={onReplayNewQuestion}
@@ -1551,7 +1531,7 @@ export default function VigenereSprint({
 
 function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
-    <div className="fg-success-panel">
+    <>
       <h3 className="caesar-victory-title">STAGE SECURED!</h3>
       <p className="caesar-victory-desc">All letters decrypted successfully.</p>
       <button
@@ -1568,7 +1548,7 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
           Play Again
         </button>
       )}
-    </div>
+    </>
   );
 }
 
@@ -1651,41 +1631,42 @@ function CrashPanel({ message, onContinue }) {
 function useMemoLevelMeta(levelData, tier) {
   return React.useMemo(() => {
     const hintIndices = new Set();
-    const normTier = String(tier || 'easy').toLowerCase();
-    if (normTier === 'easy' || normTier === 'medium') {
-      const numHints = normTier === 'easy' ? 2 : 1;
-      let hintsFound = 0;
-      for (let i = 0; i < levelData.plaintext.length; i++) {
-        if (
-          levelData.plaintext[i] !== ' ' &&
-          levelData.masks &&
-          levelData.masks[0] &&
-          levelData.masks[0][i]
-        ) {
-          hintIndices.add(i);
-          hintsFound++;
-          if (hintsFound >= numHints) break;
+    const normTier = String(tier || levelData?.difficulty || 'easy').toLowerCase();
+    const plain = levelData?.plaintext || '';
+
+    if (normTier !== 'hard') {
+      const getMask = (idx) => {
+        if (!levelData) return false;
+        if (levelData.fullMask && levelData.fullMask[idx] !== undefined) {
+          return levelData.fullMask[idx];
         }
-      }
-      if (hintsFound < numHints) {
-        for (let i = 0; i < levelData.plaintext.length; i++) {
-          if (levelData.plaintext[i] !== ' ' && !hintIndices.has(i)) {
-            hintIndices.add(i);
-            hintsFound++;
-            if (hintsFound >= numHints) break;
+        let wordStart = 0;
+        const words = plain.split(' ');
+        for (let w = 0; w < words.length; w++) {
+          const word = words[w];
+          if (idx >= wordStart && idx < wordStart + word.length) {
+            return levelData.masks?.[w]?.[idx - wordStart] ?? false;
           }
+          wordStart += word.length + 1;
+        }
+        return false;
+      };
+
+      for (let i = 0; i < plain.length; i++) {
+        if (plain[i] !== ' ' && getMask(i)) {
+          hintIndices.add(i);
         }
       }
     }
 
     const maskedIndices = [];
-    for (let i = 0; i < levelData.plaintext.length; i++) {
-      if (levelData.plaintext[i] !== ' ' && !hintIndices.has(i)) {
+    for (let i = 0; i < plain.length; i++) {
+      if (plain[i] !== ' ' && !hintIndices.has(i)) {
         maskedIndices.push(i);
       }
     }
 
-    const words = levelData.plaintext.split(' ');
+    const words = plain.split(' ');
 
     return { hintIndices, maskedIndices, words };
   }, [levelData, tier]);

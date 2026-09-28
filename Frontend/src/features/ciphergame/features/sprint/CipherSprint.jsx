@@ -5,6 +5,7 @@ import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
+import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import FullscreenButton from '../../ui/FullscreenButton';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
@@ -12,6 +13,7 @@ import VictoryConfetti from '../../ui/VictoryConfetti';
 import { sprintSound } from './sprintSound';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const charToIdx = (char) => (char && char.charCodeAt(0) >= 65 && char.charCodeAt(0) <= 90 ? char.charCodeAt(0) - 65 : 0);
 const BASE_SPEED = 0.22;
 const BOOST_MULT = 1.6;
 const RUNNER_X = 14;
@@ -185,32 +187,27 @@ export default function CipherSprint({
       }
     }
 
-    const minHints = 1;
-    const maxHints = Math.max(1, Math.floor(nonSpaceIndices.length / 2));
-
-    if (hints.size > maxHints) {
-      const trimmed = Array.from(hints).slice(0, maxHints);
-      return new Set(trimmed);
-    }
-
-    if (hints.size < minHints) {
-      const seed = (levelData?.level || 1) % nonSpaceIndices.length;
-      hints.add(nonSpaceIndices[seed]);
-    }
-
     return hints;
   }, [levelData, tier]);
 
-  /* Ciphertext letters set for highlighting in Decryption Guide */
-  const cipherLettersSet = useMemo(() => {
-    const set = new Set();
+  /* Calculate all letter positions and solve states */
+  const flatLetterPositions = useMemo(() => {
+    const list = [];
+    const text = levelData?.plaintext || '';
     const cipher = levelData?.ciphertext || '';
-    for (let i = 0; i < cipher.length; i++) {
-      if (cipher[i] >= 'A' && cipher[i] <= 'Z') {
-        set.add(cipher[i]);
+    let count = 0;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch >= 'A' && ch <= 'Z') {
+        list.push({
+          globalIdx: count++,
+          charIdx: i,
+          plainChar: ch,
+          cipherChar: cipher[i] || '',
+        });
       }
     }
-    return set;
+    return list;
   }, [levelData]);
 
   /* ───────────────────────────────────────────────
@@ -249,6 +246,16 @@ export default function CipherSprint({
   const [isBadgePopping, setIsBadgePopping] = useState(false);
   const [slimeFrame, setSlimeFrame] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+
+  const toggleSound = useCallback(() => {
+    const muted = sprintSound.toggleMute();
+    setIsMuted(muted);
+  }, []);
+
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
 
   /* ───────────────────────────────────────────────
      Refs — game truth inside RAF loop
@@ -721,15 +728,15 @@ export default function CipherSprint({
   }, [levelData]);
 
   /* ───────────────────────────────────────────────
-     Audio — BGM follows the run state
+     Audio — BGM follows the run state (continues playing on space pause)
      ─────────────────────────────────────────────── */
   useEffect(() => {
-    if (sprintStep === 'running' && !isPaused && !isMenuOpen && !showExplanation) {
+    if (sprintStep === 'running' && !isMenuOpen && !showExplanation) {
       sprintSound.playBgm();
     } else {
       sprintSound.pauseBgm();
     }
-  }, [sprintStep, isPaused, isMenuOpen, showExplanation]);
+  }, [sprintStep, isMenuOpen, showExplanation]);
 
   /* Unmount — hard cleanup */
   useEffect(() => {
@@ -740,35 +747,6 @@ export default function CipherSprint({
       sprintSound.stopBgm();
     };
   }, []);
-
-  /* ───────────────────────────────────────────────
-     Audio — mute toggle button
-     ─────────────────────────────────────────────── */
-  const toggleSound = () => {
-    const muted = sprintSound.toggleMute();
-    setIsMuted(muted);
-  };
-
-  const soundToggleButton = (
-    <button
-      className="fg-btn-icon"
-      onClick={toggleSound}
-      title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
-      style={{
-        background: 'rgba(255, 255, 255, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '8px',
-        color: '#fff',
-        padding: '4px 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '1rem',
-      }}
-    >
-      {isMuted ? '🔇' : '🔊'}
-    </button>
-  );
 
   /* ───────────────────────────────────────────────
      Explanation / submit handler
@@ -788,7 +766,7 @@ export default function CipherSprint({
      ─────────────────────────────────────────────── */
   let runnerAnim = 'idle';
   if (sprintStep === 'gameover') runnerAnim = 'death';
-  else if (isPaused) runnerAnim = 'idle';
+  else if (isPaused || isMenuOpen || sprintStep === 'finished') runnerAnim = 'idle';
   else if (laneChangeEffect !== null || isBoosting) runnerAnim = 'jump';
   else if (sprintStep === 'running') runnerAnim = 'run';
 
@@ -821,13 +799,10 @@ export default function CipherSprint({
           onBackToStages={onBackToStages}
           onOpenMenu={() => setIsMenuOpen(true)}
           lives={sprintStep === 'ready' ? null : lives}
-          customRightContent={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {soundToggleButton}
-              <FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
-            </div>
-          }
-          extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isMuted={isMuted}
+          onToggleMute={toggleSound}
         />
       )}
 
@@ -907,8 +882,8 @@ export default function CipherSprint({
               'sprint-track-container',
               'sprint-track-fullscreen',
               trackShake ? 'shake-track' : '',
-              isBoosting ? 'is-boosting' : '',
-              isPaused ? 'is-paused' : '',
+              isBoosting && sprintStep === 'running' && !isPaused && !isMenuOpen ? 'is-boosting' : '',
+              (isPaused || isMenuOpen || sprintStep === 'finished' || sprintStep === 'gameover') ? 'is-paused' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -1101,38 +1076,116 @@ export default function CipherSprint({
             )}
           </div>
 
-          {/* 2. Bottom-Left Floating Cipher Cheat Sheet (Matching Pac-Man Image 2 Decryption Guide) */}
-          <div className="caesar-floating-cheat-sheet sprint-cheat-sheet cqs-cheat-sheet">
-            <div className="caesar-cheat-header">
-              <span className="caesar-cheat-title">🔐 Decryption Guide</span>
-              <span className="caesar-cheat-badge">
-                Shift {formatShift(activeShift)}
-              </span>
-            </div>
-            <div className="caesar-cheat-body">
-              <div className="caesar-cheat-labels cqs-labels-three">
-                <span className="caesar-cheat-label-plain">PLAIN</span>
-                <span className="caesar-cheat-label-shift">CIPHER</span>
-                <span className="cqs-label-value">VALUE</span>
-              </div>
-              <div className="caesar-cheat-columns">
-                {ALPHABET.map((plain, i) => {
-                  const cipher = caesarShiftChar(plain, activeShift);
-                  const isHighlighted = cipherLettersSet.has(cipher);
-                  return (
-                    <div
-                      key={plain}
-                      className={`caesar-cheat-col cqs-col-three ${isHighlighted ? 'highlighted' : ''}`}
-                    >
-                      <span className="caesar-cheat-plain">{plain}</span>
-                      <span className="caesar-cheat-shifted">{cipher}</span>
-                      <span className="cqs-cheat-value">{i + 1}</span>
+          {/* 2. Bottom-Left Floating Caesar Decryption Arithmetic & A-Z Reference */}
+          {(() => {
+            const normActiveShift = normalizeShift(activeShift);
+            const isLetterSolved = (p) => {
+              const isHint = hintIndices.has(p.charIdx);
+              if (isHint) return true;
+              if (isSolved && activeShift !== 0) return true;
+              if (activeShift !== 0 && ((charToIdx(p.cipherChar) - normActiveShift + 26) % 26) === charToIdx(p.plainChar)) {
+                return true;
+              }
+              return false;
+            };
+
+            const totalLetters = flatLetterPositions.length;
+            const solvedLettersCount = flatLetterPositions.filter(p => isLetterSolved(p)).length;
+            const activeTarget = flatLetterPositions.find(p => !isLetterSolved(p)) || flatLetterPositions[0] || {
+              globalIdx: 0,
+              charIdx: 0,
+              plainChar: 'A',
+              cipherChar: 'A',
+            };
+
+            const activeCipherChar = activeTarget.cipherChar;
+            const activeCipherVal = charToIdx(activeCipherChar);
+            const activePlainChar = activeTarget.plainChar;
+            const activePlainVal = charToIdx(activePlainChar);
+            const isActiveSolved = isLetterSolved(activeTarget);
+
+            return (
+              <div className="caesar-floating-cheat-sheet sprint-cheat-sheet vg-fishing-az-panel">
+                <div className="vg-floating-current-slot">
+                  <div className="vg-arithmetic-title">
+                    Decryption Arithmetic
+                  </div>
+                  <div className="vg-slot-badge-lg" style={{ fontSize: '0.82rem', padding: '2px 8px' }}>
+                    {Math.min(solvedLettersCount, totalLetters)}/{totalLetters} Solved
+                  </div>
+                </div>
+
+                {/* Active calculation card */}
+                <div className="vg-fishing-calc-card">
+                  <div className="vg-calc-top-row">
+                    <span className="vg-calc-label">Active Letter Decryption:</span>
+                    <span className="vg-calc-badge">Pos #{activeTarget.globalIdx + 1}</span>
+                  </div>
+                  <div className="vg-calc-formula-row">
+                    <div className="vg-calc-item cipher">
+                      <span className="lbl">Cipher</span>
+                      <strong>{activeCipherChar}</strong>
+                      <span className="val">{activeCipherVal}</span>
                     </div>
-                  );
-                })}
+                    <span className="vg-calc-op">−</span>
+                    <div className="vg-calc-item key">
+                      <span className="lbl">Shift</span>
+                      <strong>{activeShift}</strong>
+                      <span className="val">{normActiveShift}</span>
+                    </div>
+                    <span className="vg-calc-op">=</span>
+                    <div className="vg-calc-item plain">
+                      <span className="lbl">Target</span>
+                      <strong style={{ color: 'var(--neon-green)' }}>
+                        {isActiveSolved ? activePlainChar : '?'}
+                      </strong>
+                      <span
+                        className="val"
+                        style={{ visibility: isActiveSolved ? 'visible' : 'hidden' }}
+                      >
+                        {activePlainVal}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2-row x 13-col Alphabet grid */}
+                <div className="vg-sprint-alphabet-grid">
+                  <div className="vg-alphabet-row">
+                    {ALPHABET.slice(0, 13).map((ch, i) => {
+                      const isCipher = ch === activeCipherChar;
+                      const isKey = i === normActiveShift;
+                      let cellClass = "vg-alphabet-cell";
+                      if (isCipher) cellClass += " is-cipher";
+                      if (isKey) cellClass += " is-key";
+                      return (
+                        <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
+                          <span className="vg-alpha-char">{ch}</span>
+                          <span className="vg-alpha-val">{i}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="vg-alphabet-row">
+                    {ALPHABET.slice(13, 26).map((ch, i) => {
+                      const val = i + 13;
+                      const isCipher = ch === activeCipherChar;
+                      const isKey = val === normActiveShift;
+                      let cellClass = "vg-alphabet-cell";
+                      if (isCipher) cellClass += " is-cipher";
+                      if (isKey) cellClass += " is-key";
+                      return (
+                        <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
+                          <span className="vg-alpha-char">{ch}</span>
+                          <span className="vg-alpha-val">{val}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* 3. Bottom-Right Floating Shift Key Clue Card */}
           <div className="caesar-floating-basket-card sprint-clue-card">
@@ -1142,9 +1195,9 @@ export default function CipherSprint({
           </div>
 
           {/* 4. Floating Action / Outcome Panels */}
-          {sprintStep === 'finished' && <VictoryConfetti isPaused={isPaused} />}
+          {sprintStep === 'finished' && <VictoryConfetti isPaused={isMenuOpen} />}
           {sprintStep === 'finished' && (
-            <div className="caesar-floating-victory-panel sprint-floating-victory-panel">
+            <div className="caesar-floating-victory-panel">
               <FinishedPanel
                 onVerifySubmit={handleVerifySubmit}
                 onReplayNewQuestion={onReplayNewQuestion}
@@ -1180,7 +1233,7 @@ export default function CipherSprint({
 
 function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
-    <div className="fg-success-panel">
+    <>
       <h3 className="caesar-victory-title">STAGE SECURED!</h3>
       <p className="caesar-victory-desc">Shift key identified and word decrypted successfully.</p>
       <button className="fg-btn fg-btn-primary" onClick={onVerifySubmit}>
@@ -1191,7 +1244,7 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
           Play Again
         </button>
       )}
-    </div>
+    </>
   );
 }
 

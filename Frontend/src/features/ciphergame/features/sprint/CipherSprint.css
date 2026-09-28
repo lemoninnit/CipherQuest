@@ -328,6 +328,9 @@
 .sprint-track-container.is-boosting .sprint-lane-platform { animation-duration: 0.9s; }
 
 /* Paused mode — pause ALL animations inside track */
+.sprint-track-container.is-paused *,
+.sprint-track-container.is-paused *::before,
+.sprint-track-container.is-paused *::after,
 .sprint-track-container.is-paused .sprint-parallax-layer,
 .sprint-track-container.is-paused .sprint-bg-sky,
 .sprint-track-container.is-paused .sprint-bg-trees-front,

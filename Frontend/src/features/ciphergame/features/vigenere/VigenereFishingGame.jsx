@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
@@ -8,6 +9,8 @@ import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingTransform, isLargeFish, makeSwimProps, onFishImgError, randomFishSprite, tickFish } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
+import { useFullscreen } from '../../core/hooks/useFullscreen';
+import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -77,6 +80,8 @@ export default function VigenereFishingGame({
   onReplayNewQuestion,
   onStartStageTimer
 }) {
+  const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
+
   const words = useMemo(() => (levelData.plaintext || '').split(' '), [levelData.plaintext]);
   const cipherSegs = useMemo(() => (levelData.ciphertext || '').split(' '), [levelData.ciphertext]);
   const targetKey = levelData.targetKey || '';
@@ -112,23 +117,18 @@ export default function VigenereFishingGame({
   }, [words, cipherSegs, slotMap, targetKey, targetShifts]);
 
   const getInitialRevealed = useCallback(() => {
+    const normTier = String(tier || levelData.difficulty || 'easy').toLowerCase();
+    if (normTier === 'hard') {
+      return words.map(w => Array(w.length).fill(false));
+    }
     if (levelData.masks && Array.isArray(levelData.masks)) {
       return levelData.masks.map((row, wIdx) => {
         if (row && Array.isArray(row)) return [...row];
         return Array(words[wIdx]?.length || 0).fill(false);
       });
     }
-    let count = 0;
-    return words.map(w =>
-      w.split('').map(() => {
-        if (count < 2) {
-          count++;
-          return true;
-        }
-        return false;
-      })
-    );
-  }, [levelData.masks, words]);
+    return words.map(w => Array(w.length).fill(false));
+  }, [levelData.masks, levelData.difficulty, tier, words]);
 
   const [phase, setPhase] = useState('ready');
   const [isOperationLoading, setIsOperationLoading] = useState(false);
@@ -167,31 +167,15 @@ export default function VigenereFishingGame({
     }
   }, [phase, isMenuOpen, showExplanation]);
 
-  const toggleSound = () => {
+  const toggleSound = useCallback(() => {
     const muted = fishingSound.toggleMute();
     setIsMuted(muted);
-  };
+  }, []);
 
-  const soundToggleButton = (
-    <button
-      className="fg-btn-icon"
-      onClick={toggleSound}
-      title={isMuted ? "Unmute Sound" : "Mute Sound"}
-      style={{
-        background: 'rgba(255, 255, 255, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '8px',
-        color: '#fff',
-        padding: '4px 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '1rem'
-      }}
-    >
-      {isMuted ? '🔇' : '🔊'}
-    </button>
-  );
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
 
   /* ── ESC key to toggle pause menu ── */
   useEffect(() => {
@@ -540,14 +524,17 @@ export default function VigenereFishingGame({
     }
 
     return (
-      <div className="fg-root">
+      <div className="fg-root" ref={containerRef}>
         <GameHudBar
           title="Vigenère Fishing"
           stage={levelData.level}
           tier={tier}
           isReady={true}
           onBackToStages={onBackToStages}
-          customRightContent={soundToggleButton}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isMuted={isMuted}
+          onToggleMute={toggleSound}
         />
         <div className="cq-brief-screen">
           <img
@@ -614,7 +601,7 @@ export default function VigenereFishingGame({
   }
 
   return (
-    <div className="fg-root caesar-fishing-fullscreen vigenere-fishing-fullscreen">
+    <div className="fg-root caesar-fishing-fullscreen vigenere-fishing-fullscreen" ref={containerRef}>
       {/* Recap & Learning Overlay */}
       {showExplanation && (
         <CryptographicRecap
@@ -631,7 +618,10 @@ export default function VigenereFishingGame({
         isReady={false}
         onOpenMenu={() => setIsMenuOpen(true)}
         attempts={attemptsLeft}
-        customRightContent={soundToggleButton}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={toggleFullscreen}
+        isMuted={isMuted}
+        onToggleMute={toggleSound}
       />
 
       <div className="caesar-fullscreen-stage">

@@ -5,6 +5,7 @@ import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
+import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import FullscreenButton from '../../ui/FullscreenButton';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
@@ -114,7 +115,7 @@ export default function PlayfairSprint({
     [levelData.cipherPairs, matrix]
   );
 
-  const { hintIndices, maskedIndices } = useMemoLevelMeta(pairData, tier);
+  const { hintIndices, maskedIndices } = useMemoLevelMeta(pairData, tier, levelData);
 
   /* ───────────────────────────────────────────────
      Game state (visual — allowed to trigger renders)
@@ -838,15 +839,15 @@ export default function PlayfairSprint({
   }, [levelData]);
 
   /* ───────────────────────────────────────────────
-     Audio — BGM follows the run state
+     Audio — BGM follows the run state (continues playing on space pause)
      ─────────────────────────────────────────────── */
   useEffect(() => {
-    if (sprintStep === 'running' && !isPaused && !isMenuOpen && !showExplanation) {
+    if (sprintStep === 'running' && !isMenuOpen && !showExplanation) {
       sprintSound.playBgm();
     } else {
       sprintSound.pauseBgm();
     }
-  }, [sprintStep, isPaused, isMenuOpen, showExplanation]);
+  }, [sprintStep, isMenuOpen, showExplanation]);
 
   useEffect(() => {
     return () => {
@@ -860,10 +861,15 @@ export default function PlayfairSprint({
   /* ───────────────────────────────────────────────
      Audio — mute toggle button
      ─────────────────────────────────────────────── */
-  const toggleSound = () => {
+  const toggleSound = useCallback(() => {
     const muted = sprintSound.toggleMute();
     setIsMuted(muted);
-  };
+  }, []);
+
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
 
   const soundToggleButton = (
     <button
@@ -901,7 +907,7 @@ export default function PlayfairSprint({
      ─────────────────────────────────────────────── */
   let runnerAnim = 'idle';
   if (sprintStep === 'gameover' || isCrashing) runnerAnim = 'death';
-  else if (isPaused) runnerAnim = 'idle';
+  else if (isPaused || isMenuOpen || sprintStep === 'finished') runnerAnim = 'idle';
   else if (laneChangeEffect !== null || isBoosting) runnerAnim = 'jump';
   else if (sprintStep === 'running') runnerAnim = 'run';
 
@@ -932,13 +938,10 @@ export default function PlayfairSprint({
           onBackToStages={onBackToStages}
           onOpenMenu={() => setIsMenuOpen(true)}
           lives={sprintStep === 'ready' ? null : lives}
-          customRightContent={
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {soundToggleButton}
-              <FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />
-            </div>
-          }
-          extraRight={<FullscreenButton isFullscreen={isFullscreen} onToggle={toggleFullscreen} />}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          isMuted={isMuted}
+          onToggleMute={toggleSound}
         />
       )}
 
@@ -1017,8 +1020,8 @@ export default function PlayfairSprint({
               'sprint-track-container',
               'sprint-track-fullscreen',
               trackShake ? 'shake-track' : '',
-              isBoosting ? 'is-boosting' : '',
-              isPaused ? 'is-paused' : '',
+              isBoosting && sprintStep === 'running' && !isPaused && !isMenuOpen ? 'is-boosting' : '',
+              (isPaused || isMenuOpen || sprintStep === 'finished' || sprintStep === 'gameover' || sprintStep === 'explanation') ? 'is-paused' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -1354,9 +1357,9 @@ export default function PlayfairSprint({
           </div>
 
           {/* 4. Floating Action / Outcome Panels */}
-          {sprintStep === 'finished' && <VictoryConfetti isPaused={isPaused} />}
+          {sprintStep === 'finished' && <VictoryConfetti isPaused={isMenuOpen} />}
           {sprintStep === 'finished' && (
-            <div className="caesar-floating-victory-panel sprint-floating-victory-panel">
+            <div className="caesar-floating-victory-panel">
               <FinishedPanel
                 onVerifySubmit={handleVerifySubmit}
                 onReplayNewQuestion={onReplayNewQuestion}
@@ -1398,7 +1401,7 @@ export default function PlayfairSprint({
 
 function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
-    <div className="fg-success-panel">
+    <>
       <h3 className="caesar-victory-title">STAGE SECURED!</h3>
       <p className="caesar-victory-desc">All digraphs decrypted successfully.</p>
       <button
@@ -1415,7 +1418,7 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
           Play Again
         </button>
       )}
-    </div>
+    </>
   );
 }
 
@@ -1495,16 +1498,23 @@ function CrashPanel({ message, onContinue }) {
 /* ───────────────────────────────────────────────
    Level metadata hook (memoised)
    ─────────────────────────────────────────────── */
-function useMemoLevelMeta(pairData, tier) {
+function useMemoLevelMeta(pairData, tier, levelData) {
   return React.useMemo(() => {
     const hintIndices = new Set();
-    const normTier = String(tier || 'easy').toLowerCase();
-    if (normTier === 'easy' || normTier === 'medium') {
-      const numHints = normTier === 'easy' ? 2 : 1;
-      if (pairData.length > numHints) {
-        for (let i = 0; i < numHints; i++) {
+    const normTier = String(tier || levelData?.difficulty || 'easy').toLowerCase();
+    
+    if (normTier !== 'hard') {
+      for (let i = 0; i < pairData.length; i++) {
+        const c1 = i * 2;
+        const c2 = i * 2 + 1;
+        const m1 = levelData?.fullMask?.[c1];
+        const m2 = levelData?.fullMask?.[c2];
+        if (m1 === true || m2 === true) {
           hintIndices.add(i);
         }
+      }
+      if (hintIndices.size >= pairData.length && pairData.length > 0) {
+        hintIndices.delete(pairData.length - 1);
       }
     }
 
@@ -1516,5 +1526,5 @@ function useMemoLevelMeta(pairData, tier) {
     }
 
     return { hintIndices, maskedIndices };
-  }, [pairData, tier]);
+  }, [pairData, tier, levelData]);
 }
