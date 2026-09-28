@@ -555,16 +555,23 @@
   line-height: 0;
 }
 
-/* PNG fish image sprite — fixed size prevents frame-switch flicker */
+/* PNG fish sprite — the assets are single static frames now, so the sprite is
+ * no longer animated (no frame swaps, no wiggle); only tickFish() moves it. */
 .fg-fish-sprite-img {
   width: 64px;
   height: 52px;
   object-fit: contain;
   image-rendering: auto;
   filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.65));
-  animation: fishWiggle 1.4s ease-in-out infinite alternate;
   display: block;
   flex-shrink: 0;
+}
+
+/* Top-tier catches: "P Fish 9" (alligator gar) and "P Fish 10" (sawfish) are
+ * long, slim sprites, so they are rendered noticeably bigger than the rest. */
+.fg-fish-sprite-img.fg-large-fish {
+  width: 150px !important;
+  height: auto !important;
 }
 
 /* Legacy emoji sprite (fallback) */
@@ -4160,6 +4167,158 @@
   color: var(--neon-cyan);
   line-height: 1;
   text-shadow: 0 0 8px rgba(0, 229, 255, 0.5);
+}
+
+/* Caesar Decryption Guide (exact fit for A-Z without overlapping center card) */
+.caesar-decryption-guide {
+  background: rgba(3, 16, 26, 0.92) !important;
+  border: 1.5px solid rgba(0, 240, 255, 0.45) !important;
+  border-radius: 12px !important;
+  padding: 6px 10px 6px 8px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(0, 240, 255, 0.1) !important;
+  width: max-content !important;
+  max-width: calc(50vw - 120px) !important;
+}
+
+.caesar-decryption-guide .caesar-cheat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.caesar-decryption-guide .caesar-cheat-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.caesar-decryption-guide .caesar-cheat-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.caesar-decryption-guide .caesar-cheat-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.caesar-decryption-guide .caesar-cheat-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #00f0ff;
+  background: rgba(0, 240, 255, 0.06);
+  border: 1px solid #00f0ff;
+  padding: 2px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 6px rgba(0, 240, 255, 0.6);
+  box-shadow: inset 0 0 6px rgba(0, 240, 255, 0.15);
+}
+
+.caesar-decryption-guide .caesar-cheat-body {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.caesar-decryption-guide .caesar-cheat-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  flex-shrink: 0;
+  padding-right: 1px;
+}
+
+.caesar-decryption-guide .caesar-cheat-label-plain {
+  color: #94a3b8;
+}
+
+.caesar-decryption-guide .caesar-cheat-label-cipher {
+  color: #00f0ff;
+}
+
+.caesar-decryption-guide .caesar-cheat-label-value {
+  color: #ffeb3b;
+}
+
+.caesar-decryption-guide .caesar-cheat-columns {
+  display: flex;
+  gap: 1px;
+  align-items: center;
+}
+
+.caesar-decryption-guide .caesar-cheat-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 1.5px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.12s ease-in-out;
+  border: 1px solid transparent;
+  min-width: 13px;
+}
+
+.caesar-decryption-guide .caesar-cheat-col:hover,
+.caesar-decryption-guide .caesar-cheat-col.active {
+  background: rgba(0, 240, 255, 0.15);
+  border-color: #00f0ff;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.45), inset 0 0 5px rgba(0, 240, 255, 0.2);
+}
+
+.caesar-decryption-guide .caesar-cheat-plain {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  line-height: 1;
+}
+
+.caesar-decryption-guide .caesar-cheat-cipher {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #00f0ff;
+  line-height: 1;
+  text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
+}
+
+.caesar-decryption-guide .caesar-cheat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #ffeb3b;
+  line-height: 1;
+}
+
+.caesar-decryption-guide .caesar-cheat-col.active .caesar-cheat-plain {
+  color: #ffffff;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+
+.caesar-decryption-guide .caesar-cheat-col.active .caesar-cheat-cipher {
+  color: #ffffff;
+  text-shadow: 0 0 8px #00f0ff;
+}
+
+.caesar-decryption-guide .caesar-cheat-col.active .caesar-cheat-value {
+  color: #ffeb3b;
+  text-shadow: 0 0 5px rgba(255, 235, 59, 0.8);
 }
 
 /* ══════════════════════════════════════════════════════════════════

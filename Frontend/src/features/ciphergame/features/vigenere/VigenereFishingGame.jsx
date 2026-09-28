@@ -6,7 +6,7 @@ import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
-import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '../../core/engine/fishPhysics';
+import { facingTransform, isLargeFish, makeSwimProps, onFishImgError, randomFishSprite, tickFish } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -286,7 +286,7 @@ export default function VigenereFishingGame({
         x: 2 + Math.random() * 94,
         y,
         speed: 0.3 + Math.random() * 0.5,
-        ...randomVisualFrames(),
+        ...randomFishSprite(),
         ...makeSwimProps(),
       };
     });
@@ -478,7 +478,7 @@ export default function VigenereFishingGame({
                 x: Math.random() > 0.5 ? 90 : 10,
                 y: 60 + Math.random() * 140,
                 speed: 0.3 + Math.random() * 0.4,
-                ...randomVisualFrames(),
+                ...randomFishSprite(),
                 ...makeSwimProps(),
               }];
             });
@@ -666,10 +666,11 @@ export default function VigenereFishingGame({
               >
                 <div className="fg-fish-facing" style={{ transform: facingTransform(fish.facing) }}>
                   <img
-                    className="fg-fish-sprite-img"
+                    className={`fg-fish-sprite-img${isLargeFish(fish.imgSrc) ? ' fg-large-fish' : ''}`}
                     src={fish.imgSrc}
                     alt="fish"
                     draggable={false}
+                    onError={onFishImgError}
                   />
                 </div>
                 <div className={badgeClass}>
@@ -682,10 +683,11 @@ export default function VigenereFishingGame({
             <div className="fg-fish-entity" style={{ left: `${(hookX / 500) * 100}%`, top: `${hookY - 20}px`, transform: 'scale(1.2)' }}>
               <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
                 <img
-                  className="fg-fish-sprite-img"
+                  className={`fg-fish-sprite-img${isLargeFish(caughtFish.imgSrc) ? ' fg-large-fish' : ''}`}
                   src={caughtFish.imgSrc}
                   alt="fish"
                   draggable={false}
+                  onError={onFishImgError}
                 />
               </div>
             </div>

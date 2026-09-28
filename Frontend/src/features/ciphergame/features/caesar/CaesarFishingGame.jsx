@@ -6,7 +6,7 @@ import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
-import { facingTransform, makeSwimProps, tickFish, visualsForValue } from '../../core/engine/fishPhysics';
+import { facingTransform, isLargeFish, makeSwimProps, onFishImgError, spriteForFishValue, tickFish } from '../../core/engine/fishPhysics';
 import { fishingSound } from '../../core/engine/fishingSound';
 import { caesarDecryptChar } from '../../core/engine/caesar';
 
@@ -25,7 +25,12 @@ const applyShiftDelta = (curr, delta) => {
   return normalizeShift(curr + delta);
 };
 
-const formatShift = (shift) => normalizeShift(shift) === 0 ? '0' : `+${normalizeShift(shift)}`;
+const formatShift = (shift) => {
+  const norm = normalizeShift(shift);
+  if (norm === 0) return '0';
+  const dist = norm > 13 ? norm - 26 : norm;
+  return dist > 0 ? `+${dist}` : `${dist}`;
+};
 
 const generateCaesarFishValues = (targetShift, currentShift, difficulty = 'easy', totalCount = 9) => {
   const diffNorm = normalizeShift(targetShift - currentShift);
@@ -118,6 +123,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const [isMuted, setIsMuted]                 = useState(false);
   const [rodTip, setRodTip]                   = useState({ x: 110, y: 55 });
   const [laneHeight, setLaneHeight]           = useState(500);
+  const [hoveredCol, setHoveredCol]           = useState(null);
   const animationRef = useRef(null);
   const swimLaneRef = useRef(null);        // the swim-lane container div
 
@@ -242,7 +248,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         x: 2 + Math.random() * 94,
         y,
         speed: 0.3 + Math.random() * 0.5,
-        ...visualsForValue(value),
+        ...spriteForFishValue(value),
         ...makeSwimProps(),
       });
     }
@@ -359,7 +365,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                 x: Math.random() > 0.5 ? 94 : 2,
                 y: 30 + Math.random() * 200,
                 speed: 0.3 + Math.random() * 0.5,
-                ...visualsForValue(value),
+                ...spriteForFishValue(value),
                 ...makeSwimProps(),
               }];
             });
@@ -550,10 +556,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
               >
                 <div className="fg-fish-facing" style={{ transform: facingTransform(f.facing) }}>
                   <img
-                    className="fg-fish-sprite-img"
+                    className={`fg-fish-sprite-img${isLargeFish(f.imgSrc) ? ' fg-large-fish' : ''}`}
                     src={f.imgSrc}
                     alt="fish"
                     draggable={false}
+                    onError={onFishImgError}
                   />
                 </div>
                 <div className={badgeClass}>
@@ -572,10 +579,11 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
             }}>
               <div className="fg-fish-facing" style={{ transform: facingTransform(caughtFish.facing) }}>
                 <img
-                  className="fg-fish-sprite-img"
+                  className={`fg-fish-sprite-img${isLargeFish(caughtFish.imgSrc) ? ' fg-large-fish' : ''}`}
                   src={caughtFish.imgSrc}
                   alt="fish"
                   draggable={false}
+                  onError={onFishImgError}
                 />
               </div>
             </div>
@@ -678,24 +686,38 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           )}
         </div>
 
-        {/* 5. Floating Cipher Cheat Sheet (Top-Left) */}
-        <div className="caesar-floating-cheat-sheet">
+        {/* 5. Floating Caesar Decryption Guide (Top-Left) */}
+        <div className="caesar-floating-cheat-sheet caesar-decryption-guide">
           <div className="caesar-cheat-header">
-            <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
+            <div className="caesar-cheat-title-group">
+              <span className="caesar-cheat-icon">🔐</span>
+              <span className="caesar-cheat-title">DECRYPTION GUIDE</span>
+            </div>
             <span className="caesar-cheat-badge">Shift {formatShift(currentShift)}</span>
           </div>
           <div className="caesar-cheat-body">
             <div className="caesar-cheat-labels">
               <span className="caesar-cheat-label-plain">PLAIN</span>
-              <span className="caesar-cheat-label-shift">SHIFT</span>
+              <span className="caesar-cheat-label-cipher">CIPHER</span>
+              <span className="caesar-cheat-label-value">VALUE</span>
             </div>
             <div className="caesar-cheat-columns">
-              {alphabet.map(ch => (
-                <div key={ch} className="caesar-cheat-col">
-                  <span className="caesar-cheat-plain">{ch}</span>
-                  <span className="caesar-cheat-shifted">{caesarShiftChar(ch, currentShift)}</span>
-                </div>
-              ))}
+              {alphabet.map((ch, idx) => {
+                const cipherCh = caesarShiftChar(ch, -currentShift);
+                const isHovered = hoveredCol === idx;
+                return (
+                  <div
+                    key={ch}
+                    className={`caesar-cheat-col ${isHovered ? 'active' : ''}`}
+                    onMouseEnter={() => setHoveredCol(idx)}
+                    onMouseLeave={() => setHoveredCol(null)}
+                  >
+                    <span className="caesar-cheat-plain">{ch}</span>
+                    <span className="caesar-cheat-cipher">{cipherCh}</span>
+                    <span className="caesar-cheat-value">{idx + 1}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
