@@ -12,6 +12,8 @@ import { caesarDecryptChar } from '../../core/engine/caesar';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
+import { useFishingStageFail } from '../../core/hooks/useFishingStageFail';
+import FishingGameOverOverlay from '../../ui/FishingGameOverOverlay';
 
 /* ─── Caesar math ─── */
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -103,6 +105,7 @@ export default function CaesarFishingGame({
   onStartStageTimer,
   onSaveSnapshot,
   onClearSnapshot,
+  onStageFail,
 }) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -139,6 +142,14 @@ export default function CaesarFishingGame({
   const swimLaneRef = useRef(null);        // the swim-lane container div
   const prevLevelIdRef = useRef(levelData.id || `${levelData.plaintext}-${levelData.ciphertext}`);
 
+  // Running out of attempts loses the stage and costs one session heart.
+  // Declared BEFORE the snapshot saver so `gameOver` is in scope there.
+  const { gameOver, resetStageFail } = useFishingStageFail({
+    attemptsLeft,
+    isSolved: levelSolved,
+    onStageFail,
+  });
+
   const isRunning = phase === 'playing' && !levelSolved;
   useStageSnapshotAutoSaver(
     onSaveSnapshot,
@@ -149,7 +160,9 @@ export default function CaesarFishingGame({
       attemptsLeft,
       chumCount,
     }), [activeShifts, targetSegIdx, attemptsLeft, chumCount]),
-    isRunning
+    // A lost stage must not be resurrected from a stale snapshot, so stop
+    // persisting as soon as the failure overlay is up.
+    isRunning && !gameOver
   );
 
   useEffect(() => {
@@ -159,12 +172,12 @@ export default function CaesarFishingGame({
   }, []);
 
   useEffect(() => {
-    if (phase === 'playing' && !isMenuOpen && !showExplanation) {
+    if (phase === 'playing' && !isMenuOpen && !showExplanation && !gameOver) {
       fishingSound.playBgm();
     } else {
       fishingSound.pauseBgm();
     }
-  }, [phase, isMenuOpen, showExplanation]);
+  }, [phase, isMenuOpen, showExplanation, gameOver]);
 
   const toggleSound = useCallback(() => {
     const muted = fishingSound.toggleMute();
@@ -287,6 +300,7 @@ export default function CaesarFishingGame({
   /* ── start game ── */
   const startGame = () => {
     onClearSnapshot?.();
+    resetStageFail();
     fishingSound.unlockAudio();
     fishingSound.playBgm();
     setActiveShifts(cipherSegs.map(() => getInitialShift()));
@@ -331,18 +345,18 @@ export default function CaesarFishingGame({
   }, [activeShifts, allCorrect, levelSolved, onClearSnapshot, phase]);
 
   useEffect(() => {
-    if (phase !== 'playing' || isMenuOpen || levelSolved) return;
+    if (phase !== 'playing' || isMenuOpen || levelSolved || gameOver) return;
     const tick = () => {
       setFishList(prev => prev.map(f => tickFish(f)));
       animationRef.current = requestAnimationFrame(tick);
     };
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [phase, isMenuOpen, levelSolved]);
+  }, [phase, isMenuOpen, levelSolved, gameOver]);
 
   /* ── casting ── */
   const handleChumWaters = () => {
-    if (chumCount <= 0 || isCasting) return;
+    if (chumCount <= 0 || isCasting || gameOver) return;
     fishingSound.playSfx('chum');
     setChumCount(prev => prev - 1);
     spawnFish();
@@ -351,7 +365,7 @@ export default function CaesarFishingGame({
   };
 
   const castLineToFish = (fish) => {
-    if (isCasting || levelSolved) return;
+    if (isCasting || levelSolved || gameOver) return;
     fishingSound.unlockAudio();
     fishingSound.playSfx('cast');
     setIsCasting(true);
@@ -843,6 +857,13 @@ export default function CaesarFishingGame({
           </div>
         )}
       </div>
+
+      {/* Running out of attempts loses the stage + one session heart */}
+      <FishingGameOverOverlay
+        open={gameOver}
+        onRetry={startGame}
+        onExit={onBackToStages}
+      />
 
       {/* Shared Pause Menu */}
       <PauseMenu

@@ -11,6 +11,8 @@ import { fishingSound } from '../../core/engine/fishingSound';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
+import { useFishingStageFail } from '../../core/hooks/useFishingStageFail';
+import FishingGameOverOverlay from '../../ui/FishingGameOverOverlay';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -82,6 +84,7 @@ export default function VigenereFishingGame({
   onStartStageTimer,
   onSaveSnapshot,
   onClearSnapshot,
+  onStageFail,
 }) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -174,6 +177,14 @@ export default function VigenereFishingGame({
   const currentKeyChar = currentTarget.keyChar;
   const currentKeyShift = currentTarget.keyShift;
 
+  // Running out of attempts loses the stage and costs one session heart.
+  // Declared BEFORE the snapshot saver so `gameOver` is in scope there.
+  const { gameOver, resetStageFail } = useFishingStageFail({
+    attemptsLeft,
+    isSolved: levelSolved,
+    onStageFail,
+  });
+
   const isRunning = phase === 'playing' && !levelSolved;
   useStageSnapshotAutoSaver(
     onSaveSnapshot,
@@ -184,7 +195,9 @@ export default function VigenereFishingGame({
       attemptsLeft,
       chumCount,
     }), [revealedMasks, activeTargetIdx, attemptsLeft, chumCount]),
-    isRunning
+    // A lost stage must not be resurrected from a stale snapshot, so stop
+    // persisting as soon as the failure overlay is up.
+    isRunning && !gameOver
   );
 
   const spawnFish = useCallback(() => {
@@ -253,12 +266,12 @@ export default function VigenereFishingGame({
   }, []);
 
   useEffect(() => {
-    if (phase === 'playing' && !isMenuOpen && !showExplanation) {
+    if (phase === 'playing' && !isMenuOpen && !showExplanation && !gameOver) {
       fishingSound.playBgm();
     } else {
       fishingSound.pauseBgm();
     }
-  }, [phase, isMenuOpen, showExplanation]);
+  }, [phase, isMenuOpen, showExplanation, gameOver]);
 
   const toggleSound = useCallback(() => {
     const muted = fishingSound.toggleMute();
@@ -313,6 +326,7 @@ export default function VigenereFishingGame({
     fishingSound.playBgm();
     resetRound();
     setPhase('playing');
+    resetStageFail();
     spawnFish();
     spawnBubbles();
   };
@@ -329,7 +343,7 @@ export default function VigenereFishingGame({
   }, [phase, allCorrect, levelSolved, onClearSnapshot]);
 
   useEffect(() => {
-    if (phase !== 'playing' || isMenuOpen || levelSolved) return;
+    if (phase !== 'playing' || isMenuOpen || levelSolved || gameOver) return;
     const tick = () => {
       setFishList(prev => prev.map(fish => tickFish(fish)));
       animationRef.current = requestAnimationFrame(tick);
@@ -337,7 +351,7 @@ export default function VigenereFishingGame({
 
     animationRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationRef.current);
-  }, [phase, isMenuOpen, levelSolved]);
+  }, [phase, isMenuOpen, levelSolved, gameOver]);
 
   // Ensure current target plaintext letter is always swimming in the pond
   useEffect(() => {
@@ -358,7 +372,7 @@ export default function VigenereFishingGame({
   }, [currentTargetPlain, phase, isCasting]);
 
   const handleChumWaters = () => {
-    if (chumCount <= 0 || isCasting) return;
+    if (chumCount <= 0 || isCasting || gameOver) return;
     fishingSound.playSfx('chum');
     setChumCount(prev => prev - 1);
     spawnFish();
@@ -367,7 +381,7 @@ export default function VigenereFishingGame({
   };
 
   const castLineToFish = (fish) => {
-    if (isCasting || levelSolved) return;
+    if (isCasting || levelSolved || gameOver) return;
     fishingSound.unlockAudio();
     fishingSound.playSfx('cast');
     setIsCasting(true);
@@ -974,6 +988,13 @@ export default function VigenereFishingGame({
           </div>
         </div>
       )}
+
+      {/* Running out of attempts loses the stage + one session heart */}
+      <FishingGameOverOverlay
+        open={gameOver}
+        onRetry={startGame}
+        onExit={onBackToStages}
+      />
 
       {/* Shared Pause Menu */}
       <PauseMenu

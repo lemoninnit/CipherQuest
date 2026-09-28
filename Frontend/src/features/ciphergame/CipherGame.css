@@ -5117,6 +5117,42 @@
   margin: 0 0 20px;
 }
 
+/* Fishing stage-fail: session heart cost line (see useFishingStageFail) */
+.fishing-gameover-hearts {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: -10px 0 20px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fda4af;
+}
+
+.fishing-gameover-hearts .material-symbols-outlined {
+  font-size: 1.1rem;
+  animation: fishing-heart-loss 0.9s ease-out;
+}
+
+@keyframes fishing-heart-loss {
+  0%   { transform: scale(1.5); }
+  40%  { transform: scale(0.9); }
+  70%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* Scoring consequences restated on the overlay, because the global
+   StageFailNotice is suppressed (onStageFail({ showNotice: false })). */
+.fishing-gameover-score {
+  margin: 0 0 20px;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.62);
+  text-align: center;
+}
+
 /* Floating Victory Panel */
 .caesar-floating-victory-panel.caesar-pacman-victory-panel {
   position: absolute;
