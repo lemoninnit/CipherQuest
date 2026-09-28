@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import GameHudBar from '../../ui/GameHudBar';
 import './PlayfairGame.css';
@@ -14,6 +15,7 @@ import { facingTransform, makeSwimProps, randomVisualFrames, tickFish } from '..
 import { fishingSound } from '../../core/engine/fishingSound';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
+import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 
 const normalizePair = (value) => String(value || '').replace(/[^A-Z]/g, '').slice(0, 2);
 
@@ -94,10 +96,13 @@ function positionKey(pos) {
 export default function PlayfairFishingGame({
   levelData,
   tier,
+  snapshot,
   onVerifySubmit,
   onBackToStages,
   onReplayNewQuestion,
   onStartStageTimer,
+  onSaveSnapshot,
+  onClearSnapshot,
 }) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -113,14 +118,16 @@ export default function PlayfairFishingGame({
     };
   }), [levelData.cipherPairs, matrix]);
 
-  const [phase, setPhase] = useState('ready');
+  const hasSnapshot = Boolean(snapshot?.gameState && snapshot.gameState.phase === 'playing');
+
+  const [phase, setPhase] = useState(() => (hasSnapshot ? 'playing' : 'ready'));
   const [isOperationLoading, setIsOperationLoading] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [solvedPairs, setSolvedPairs] = useState([]);
-  const [misses, setMisses] = useState(0);
-  const [streak, setStreak] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(() => (hasSnapshot && typeof snapshot.gameState.activeIndex === 'number' ? snapshot.gameState.activeIndex : 0));
+  const [solvedPairs, setSolvedPairs] = useState(() => (hasSnapshot && Array.isArray(snapshot.gameState.solvedPairs) ? snapshot.gameState.solvedPairs : Array(pairData.length).fill(null)));
+  const [misses, setMisses] = useState(() => (hasSnapshot && typeof snapshot.gameState.misses === 'number' ? snapshot.gameState.misses : 0));
+  const [streak, setStreak] = useState(() => (hasSnapshot && typeof snapshot.gameState.streak === 'number' ? snapshot.gameState.streak : 0));
   const [fishList, setFishList] = useState([]);
-  const [bubbles, setBubbles] = useState([]);
+  const [bubbles, setBubbles] = useState(() => makeBubbles());
   const [isCasting, setIsCasting] = useState(false);
   const [caughtFish, setCaughtFish] = useState(null);
   const [castTarget, setCastTarget] = useState({ x: 0, y: 0 });
@@ -128,10 +135,24 @@ export default function PlayfairFishingGame({
   const [splash, setSplash] = useState(null);
   const [feedback, setFeedback] = useState(null);
   const [levelSolved, setLevelSolved] = useState(false);
-  const [attemptsLeft, setAttemptsLeft] = useState(15);
+  const [attemptsLeft, setAttemptsLeft] = useState(() => (hasSnapshot && typeof snapshot.gameState.attemptsLeft === 'number' ? snapshot.gameState.attemptsLeft : 15));
   const [showExplanation, setShowExplanation] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
   const [isMuted, setIsMuted] = useState(false);
+
+  const isRunning = phase === 'playing' && !levelSolved;
+  useStageSnapshotAutoSaver(
+    onSaveSnapshot,
+    useCallback(() => ({
+      phase: 'playing',
+      activeIndex,
+      solvedPairs,
+      misses,
+      streak,
+      attemptsLeft,
+    }), [activeIndex, solvedPairs, misses, streak, attemptsLeft]),
+    isRunning
+  );
 
   useEffect(() => {
     return () => { fishingSound.stopBgm(); };
@@ -144,6 +165,14 @@ export default function PlayfairFishingGame({
       fishingSound.pauseBgm();
     }
   }, [phase, isMenuOpen]);
+
+  /* ── spawn fish when resuming or starting ── */
+  useEffect(() => {
+    if (phase === 'playing' && !isMenuOpen && fishList.length === 0 && pairData[activeIndex]) {
+      setBubbles(makeBubbles());
+      setFishList(makeFishForPair(pairData[activeIndex].plainPair, matrix, tier));
+    }
+  }, [phase, isMenuOpen, fishList.length, activeIndex, pairData, matrix, tier]);
 
   const toggleSound = useCallback(() => {
     const muted = fishingSound.toggleMute();
@@ -160,30 +189,10 @@ export default function PlayfairFishingGame({
   };
 
   const handleReplay = () => {
+    onClearSnapshot?.();
     setLevelSolved(false);
     onReplayNewQuestion && onReplayNewQuestion();
   };
-
-  const soundToggleButton = (
-    <button
-      className="fg-btn-icon"
-      onClick={toggleSound}
-      title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
-      style={{
-        background: 'rgba(255,255,255,0.08)',
-        border: '1px solid rgba(255,255,255,0.2)',
-        borderRadius: '8px',
-        color: '#fff',
-        padding: '4px 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '1rem',
-      }}
-    >
-      {isMuted ? String.fromCodePoint(0x1F507) : String.fromCodePoint(0x1F50A)}
-    </button>
-  );
 
   const animationRef = useRef(null);
   const feedbackTimer = useRef(null);
@@ -204,6 +213,7 @@ export default function PlayfairFishingGame({
   const revealRule = !isHard && (normTier === 'easy' || normTier === 'medium' || misses >= 2);
 
   const startGame = () => {
+    onClearSnapshot?.();
     fishingSound.unlockAudio();
     fishingSound.playBgm();
     setPhase('playing');
@@ -218,16 +228,21 @@ export default function PlayfairFishingGame({
     setFishList(makeFishForPair(pairData[0].plainPair, matrix, tier));
   };
 
+  const prevLevelIdRef = useRef(levelData.id || `${levelData.plaintext || ''}-${levelData.pairCiphertext || ''}`);
   useEffect(() => {
-    setPhase('ready');
-    setActiveIndex(0);
-    setSolvedPairs(Array(pairData.length).fill(null));
-    setMisses(0);
-    setStreak(0);
-    setLevelSolved(false);
-    setShowExplanation(false);
-    setAttemptsLeft(15);
-    setIsMenuOpen(false);
+    const curId = levelData.id || `${levelData.plaintext || ''}-${levelData.pairCiphertext || ''}`;
+    if (prevLevelIdRef.current && prevLevelIdRef.current !== curId) {
+      prevLevelIdRef.current = curId;
+      setPhase('ready');
+      setActiveIndex(0);
+      setSolvedPairs(Array(pairData.length).fill(null));
+      setMisses(0);
+      setStreak(0);
+      setLevelSolved(false);
+      setShowExplanation(false);
+      setAttemptsLeft(15);
+      setIsMenuOpen(false);
+    }
   }, [levelData, pairData.length]);
 
   useEffect(() => {
@@ -270,6 +285,7 @@ export default function PlayfairFishingGame({
       setStreak((value) => value + 1);
       showFeedback(`${candidate} is correct. ${currentRuleHint}`, 'success');
       if (activeIndex >= pairData.length - 1) {
+        onClearSnapshot?.();
         fishingSound.stopBgm();
         fishingSound.playSfx('win');
         setLevelSolved(true);
@@ -559,8 +575,15 @@ export default function PlayfairFishingGame({
       <PauseMenu
         open={isMenuOpen}
         onResume={() => setIsMenuOpen(false)}
-        onTutorial={() => { setIsMenuOpen(false); setPhase('ready'); }}
-        onExit={onBackToStages}
+        onTutorial={() => {
+          onClearSnapshot?.();
+          setIsMenuOpen(false);
+          setPhase('ready');
+        }}
+        onExit={() => {
+          onClearSnapshot?.();
+          onBackToStages();
+        }}
       />
     </div>
   );

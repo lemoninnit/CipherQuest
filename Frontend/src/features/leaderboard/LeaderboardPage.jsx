@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardChromeContext } from '../layout/DashboardLayout';
 import { leaderboardApi } from '../../api/cipherQuestApi';
@@ -19,10 +19,13 @@ const zeroPad = (n) => {
 
 export default function LeaderboardPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout } = useAuth();
   const { openSettings } = useContext(DashboardChromeContext);
 
-  const [scope, setScope] = useState('overall');
+  const urlScope = searchParams.get('scope')?.toLowerCase();
+  const scope = SCOPE_OPTIONS.some((opt) => opt.id === urlScope) ? urlScope : 'overall';
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [leaderboardData, setLeaderboardData] = useState({ topUsers: [], currentUserEntry: null });
@@ -57,8 +60,8 @@ export default function LeaderboardPage() {
 
   const handleScopeChange = (newScope) => {
     if (newScope === scope) return;
-    setScope(newScope);
     setLoading(true);
+    setSearchParams(newScope === 'overall' ? {} : { scope: newScope }, { replace: true });
   };
 
   const handleRetry = () => {

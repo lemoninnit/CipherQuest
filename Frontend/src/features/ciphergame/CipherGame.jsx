@@ -152,12 +152,15 @@ export default function CipherGame() {
     const sharedProps = {
       levelData,
       tier,
+      snapshot: currentStage.snapshot,
       onBackToStages: backToStages,
       onVerifySubmit: completeStage,
       onReplayNewQuestion: replayCurrentStage,
       onStartStageTimer: startStageTimer,
       // SCORING SYSTEM: games call this when the player fails (streak reset)
       onStageFail: failStage,
+      onSaveSnapshot: game.saveSnapshot,
+      onClearSnapshot: game.clearSnapshot,
     };
 
     let gameComponent = null;

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
@@ -10,6 +11,7 @@ import { fishingSound } from '../../core/engine/fishingSound';
 import { caesarDecryptChar } from '../../core/engine/caesar';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
+import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 
 /* ─── Caesar math ─── */
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -86,19 +88,31 @@ const generateCaesarFishValues = (targetShift, currentShift, difficulty = 'easy'
   return result.sort(() => Math.random() - 0.5);
 };
 
-export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion, onStartStageTimer }) {
+export default function CaesarFishingGame({
+  levelData,
+  tier,
+  snapshot,
+  onVerifySubmit,
+  onBackToStages,
+  onReplayNewQuestion,
+  onStartStageTimer,
+  onSaveSnapshot,
+  onClearSnapshot,
+}) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
   const words         = levelData.plaintext.split(' ');
   const cipherSegs    = levelData.ciphertext.split(' ');
   const getInitialShift = () => 0;
 
+  const hasSnapshot = Boolean(snapshot?.gameState && snapshot.gameState.phase === 'playing');
+
   /* ── state ── */
-  const [phase, setPhase]                     = useState('ready');
+  const [phase, setPhase]                     = useState(() => (hasSnapshot ? 'playing' : 'ready'));
   const [isOperationLoading, setIsOperationLoading] = useState(false);
-  const [activeShifts, setActiveShifts]       = useState(() => cipherSegs.map(() => getInitialShift()));
-  const [targetSegIdx, setTargetSegIdx]       = useState(0);
-  const [attemptsLeft, setAttemptsLeft]       = useState(15);
+  const [activeShifts, setActiveShifts]       = useState(() => (hasSnapshot && Array.isArray(snapshot.gameState.activeShifts) ? snapshot.gameState.activeShifts : cipherSegs.map(() => getInitialShift())));
+  const [targetSegIdx, setTargetSegIdx]       = useState(() => (hasSnapshot && typeof snapshot.gameState.targetSegIdx === 'number' ? snapshot.gameState.targetSegIdx : 0));
+  const [attemptsLeft, setAttemptsLeft]       = useState(() => (hasSnapshot && typeof snapshot.gameState.attemptsLeft === 'number' ? snapshot.gameState.attemptsLeft : 15));
   const [levelSolved, setLevelSolved]         = useState(false);
   const [basketShake, setBasketShake]         = useState(false);
   const [floatingXp, setFloatingXp]           = useState(null);
@@ -110,14 +124,28 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const [caughtFish, setCaughtFish]           = useState(null);
   const [splash, setSplash]                   = useState({ show: false, x: 0, y: 0 });
   const [showExplanation, setShowExplanation] = useState(false);
-  const [chumCount, setChumCount]             = useState(3);
-  const [isMenuOpen, setIsMenuOpen]           = useState(false);
+  const [chumCount, setChumCount]             = useState(() => (hasSnapshot && typeof snapshot.gameState.chumCount === 'number' ? snapshot.gameState.chumCount : 3));
+  const [isMenuOpen, setIsMenuOpen]           = useState(() => (hasSnapshot ? true : false));
   const [rodFacingRight, setRodFacingRight]   = useState(false);
   const [isMuted, setIsMuted]                 = useState(false);
   const [rodTip, setRodTip]                   = useState({ x: 110, y: 55 });
   const [laneHeight, setLaneHeight]           = useState(500);
   const animationRef = useRef(null);
   const swimLaneRef = useRef(null);        // the swim-lane container div
+  const prevLevelIdRef = useRef(levelData.id || `${levelData.plaintext}-${levelData.ciphertext}`);
+
+  const isRunning = phase === 'playing' && !levelSolved;
+  useStageSnapshotAutoSaver(
+    onSaveSnapshot,
+    useCallback(() => ({
+      phase: 'playing',
+      activeShifts,
+      targetSegIdx,
+      attemptsLeft,
+      chumCount,
+    }), [activeShifts, targetSegIdx, attemptsLeft, chumCount]),
+    isRunning
+  );
 
   useEffect(() => {
     return () => {
@@ -142,27 +170,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     onToggleFullscreen: toggleFullscreen,
     onToggleMute: toggleSound,
   });
-
-  const soundToggleButton = (
-    <button
-      className="fg-btn-icon"
-      onClick={toggleSound}
-      title={isMuted ? "Unmute Sound" : "Mute Sound"}
-      style={{
-        background: 'rgba(255, 255, 255, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '8px',
-        color: '#fff',
-        padding: '4px 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '1rem'
-      }}
-    >
-      {isMuted ? '🔇' : '🔊'}
-    </button>
-  );
 
   /* ── ESC key to toggle pause menu ── */
   useEffect(() => {
@@ -226,40 +233,8 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
   const activePlainVal = charToIdx(activePlainChar);
   const isActiveSolved = isLetterSolved(activeTarget);
 
-  /* ── start game ── */
-  const startGame = () => {
-    fishingSound.unlockAudio();
-    fishingSound.playBgm();
-    setActiveShifts(cipherSegs.map(() => getInitialShift()));
-    setTargetSegIdx(0);
-    setAttemptsLeft(15);
-    setChumCount(3);
-    setLevelSolved(false);
-    setPhase('playing');
-    spawnFish();
-    spawnBubbles();
-  };
-
-  /* ── reset on levelData change ── */
-  useEffect(() => {
-    setPhase('ready');
-    setIsMenuOpen(false);
-    setActiveShifts(cipherSegs.map(() => getInitialShift()));
-  }, [levelData]);
-
-  /* ── detect solve ── */
-  useEffect(() => {
-    if (phase !== 'playing') return;
-    if (allCorrect && !levelSolved) {
-      setLevelSolved(true);
-      fishingSound.stopBgm();
-      fishingSound.playSfx('win');
-    }
-    if (!allCorrect && levelSolved) setLevelSolved(false);
-  }, [activeShifts, allCorrect]);
-
   /* ── fish physics ── */
-  const spawnFish = () => {
+  const spawnFish = useCallback(() => {
     const list = [];
     const targetShift = normalizeShift(levelData.targetShifts?.[0] ?? 0);
     const currentShift = basketShift;
@@ -289,9 +264,9 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
       });
     }
     setFishList(list);
-  };
+  }, [basketShift, levelData.targetShifts, tier]);
 
-  const spawnBubbles = () => {
+  const spawnBubbles = useCallback(() => {
     const list = [];
     for (let i = 0; i < 15; i++) {
       list.push({
@@ -302,7 +277,53 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
       });
     }
     setBubbles(list);
+  }, []);
+
+  /* ── start game ── */
+  const startGame = () => {
+    onClearSnapshot?.();
+    fishingSound.unlockAudio();
+    fishingSound.playBgm();
+    setActiveShifts(cipherSegs.map(() => getInitialShift()));
+    setTargetSegIdx(0);
+    setAttemptsLeft(15);
+    setChumCount(3);
+    setLevelSolved(false);
+    setPhase('playing');
+    spawnFish();
+    spawnBubbles();
   };
+
+  /* ── reset on levelData change ── */
+  useEffect(() => {
+    const curId = levelData.id || `${levelData.plaintext}-${levelData.ciphertext}`;
+    if (prevLevelIdRef.current !== curId) {
+      prevLevelIdRef.current = curId;
+      setPhase('ready');
+      setIsMenuOpen(false);
+      setActiveShifts(cipherSegs.map(() => getInitialShift()));
+    }
+  }, [levelData, cipherSegs, getInitialShift]);
+
+  /* ── spawn fish when resuming or starting ── */
+  useEffect(() => {
+    if (phase === 'playing' && !isMenuOpen && fishList.length === 0) {
+      spawnFish();
+      spawnBubbles();
+    }
+  }, [phase, isMenuOpen, fishList.length, spawnFish, spawnBubbles]);
+
+  /* ── detect solve ── */
+  useEffect(() => {
+    if (phase !== 'playing') return;
+    if (allCorrect && !levelSolved) {
+      onClearSnapshot?.();
+      setLevelSolved(true);
+      fishingSound.stopBgm();
+      fishingSound.playSfx('win');
+    }
+    if (!allCorrect && levelSolved) setLevelSolved(false);
+  }, [activeShifts, allCorrect, levelSolved, onClearSnapshot, phase]);
 
   useEffect(() => {
     if (phase !== 'playing' || isMenuOpen || levelSolved) return;
@@ -821,10 +842,14 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
         open={isMenuOpen}
         onResume={() => setIsMenuOpen(false)}
         onTutorial={() => {
+          onClearSnapshot?.();
           setIsMenuOpen(false);
           setPhase('ready');
         }}
-        onExit={onBackToStages}
+        onExit={() => {
+          onClearSnapshot?.();
+          onBackToStages();
+        }}
       />
     </div>
   );

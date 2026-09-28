@@ -1,12 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import '../sprint/CipherSprint.css';
 import '../../CipherGame.css';
 import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
-import FullscreenButton from '../../ui/FullscreenButton';
+import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 import PauseMenu from '../../ui/PauseMenu';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
@@ -85,10 +85,13 @@ const makeDecoyPairs = (correctPair, count, matrix) => {
 export default function PlayfairSprint({
   levelData,
   tier,
+  snapshot,
   onVerifySubmit,
   onBackToStages,
   onReplayNewQuestion,
   onStartStageTimer,
+  onSaveSnapshot,
+  onClearSnapshot,
 }) {
   const matrix = levelData.matrix;
 
@@ -117,25 +120,39 @@ export default function PlayfairSprint({
 
   const { hintIndices, maskedIndices } = useMemoLevelMeta(pairData, tier, levelData);
 
+  const hasSnapshot = Boolean(
+    snapshot?.gameState &&
+      (snapshot.gameState.sprintStep === 'running' || snapshot.gameState.phase === 'playing')
+  );
+
   /* ───────────────────────────────────────────────
      Game state (visual — allowed to trigger renders)
      ─────────────────────────────────────────────── */
-  const [sprintStep, setSprintStep] = useState('ready');
-  const [roundPhase, setRoundPhase] = useState('briefing');
-  const [currentMaskIndex, setCurrentMaskIndex] = useState(0);
-  const [runnerLane, setRunnerLane] = useState(1);
+  const [sprintStep, setSprintStep] = useState(() => (hasSnapshot ? 'running' : 'ready'));
+  const [roundPhase, setRoundPhase] = useState(() => (hasSnapshot ? (snapshot.gameState.roundPhase || 'briefing') : 'briefing'));
+  const [currentMaskIndex, setCurrentMaskIndex] = useState(() => (hasSnapshot && typeof snapshot.gameState.currentMaskIndex === 'number' ? snapshot.gameState.currentMaskIndex : 0));
+  const [runnerLane, setRunnerLane] = useState(() => (hasSnapshot && typeof snapshot.gameState.runnerLane === 'number' ? snapshot.gameState.runnerLane : 1));
   const [coins, setCoins] = useState([]);
   const [slimes, setSlimes] = useState([]);
   const [pickedPair, setPickedPair] = useState(null);
   const [pickedLane, setPickedLane] = useState(null);
   const [correctLane, setCorrectLane] = useState(1);
-  const [attempts, setAttempts] = useState([]);
+  const [attempts, setAttempts] = useState(() => (hasSnapshot && Array.isArray(snapshot.gameState.attempts) ? snapshot.gameState.attempts : []));
   const [crashMessage] = useState('');
   const [resolvedStatus, setResolvedStatus] = useState(null); // 'correct' | 'wrong' | 'missed'
   const [resolvedBannerText, setResolvedBannerText] = useState('');
-  const [solvedLetters, setSolvedLetters] = useState({});
+  const [solvedLetters, setSolvedLetters] = useState(() => {
+    if (hasSnapshot && snapshot.gameState.solvedLetters) {
+      return { ...snapshot.gameState.solvedLetters };
+    }
+    const initialSolved = {};
+    hintIndices.forEach((idx) => {
+      initialSolved[idx] = pairData[idx]?.plainPair;
+    });
+    return initialSolved;
+  });
   const [isCrashing, setIsCrashing] = useState(false);
-  const [lives, setLives] = useState(5);
+  const [lives, setLives] = useState(() => (hasSnapshot && typeof snapshot.gameState.lives === 'number' ? snapshot.gameState.lives : 5));
   const [laneChangeEffect, setLaneChangeEffect] = useState(null);
   const [speedLines, setSpeedLines] = useState(() => {
     const list = [];
@@ -151,8 +168,8 @@ export default function PlayfairSprint({
     return list;
   });
   const [firstTryForCurrent, setFirstTryForCurrent] = useState(true);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPaused, setIsPaused] = useState(() => (hasSnapshot ? true : false));
+  const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
@@ -165,26 +182,42 @@ export default function PlayfairSprint({
   const [slimeFrame, setSlimeFrame] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
 
+  const isRunning = sprintStep === 'running';
+  useStageSnapshotAutoSaver(
+    onSaveSnapshot,
+    useCallback(() => ({
+      sprintStep: 'running',
+      roundPhase,
+      currentMaskIndex,
+      runnerLane,
+      lives,
+      solvedLetters,
+      attempts,
+    }), [roundPhase, currentMaskIndex, runnerLane, lives, solvedLetters, attempts]),
+    isRunning
+  );
+
   /* ───────────────────────────────────────────────
      Refs — game truth inside RAF loop, timeout tracking
      ─────────────────────────────────────────────── */
   const rafRef = useRef(0);
   const prevLaneRef = useRef(1);
   const isBoostingRef = useRef(false);
-  const runnerLaneRef = useRef(1);
-  const isPausedRef = useRef(false);
+  const runnerLaneRef = useRef(hasSnapshot && typeof snapshot?.gameState?.runnerLane === 'number' ? snapshot.gameState.runnerLane : 1);
+  const isPausedRef = useRef(hasSnapshot ? true : false);
   const isCrashingRef = useRef(false);
-  const isMenuOpenRef = useRef(false);
-  const sprintStepRef = useRef('ready');
-  const roundPhaseRef = useRef('briefing');
-  const currentMaskIndexRef = useRef(0);
+  const isMenuOpenRef = useRef(hasSnapshot ? true : false);
+  const sprintStepRef = useRef(hasSnapshot ? 'running' : 'ready');
+  const roundPhaseRef = useRef(hasSnapshot ? (snapshot?.gameState?.roundPhase || 'briefing') : 'briefing');
+  const currentMaskIndexRef = useRef(hasSnapshot && typeof snapshot?.gameState?.currentMaskIndex === 'number' ? snapshot.gameState.currentMaskIndex : 0);
   const pickedPairRef = useRef(null);
   const pickedLaneRef = useRef(null);
   const correctLaneRef = useRef(1);
   const slimesRef = useRef([]);
-  const attemptsRef = useRef([]);
+  const attemptsRef = useRef(hasSnapshot && Array.isArray(snapshot?.gameState?.attempts) ? snapshot.gameState.attempts : []);
   const hasPickedRef = useRef(false);
-  const prevLevelIdRef = useRef(null);
+  const prevLevelIdRef = useRef(levelData.id || `${levelData.plaintext || ''}-${levelData.pairCiphertext || ''}`);
+  const hasRestoredFromSnapshotRef = useRef(hasSnapshot);
 
   /* Timer tracking refs */
   const feedbackTimeoutRef = useRef(0);
@@ -480,6 +513,7 @@ export default function PlayfairSprint({
           setFirstTryForCurrent(true);
           if (startBriefingPhaseRef.current) startBriefingPhaseRef.current();
         } else {
+          onClearSnapshot?.();
           setSprintStep('finished');
           sprintSound.stopBgm();
           sprintSound.playSfx('win');
@@ -499,6 +533,7 @@ export default function PlayfairSprint({
         const nextLives = prevLives - 1;
         if (nextLives <= 0) {
           startPhaseTimer(() => {
+            onClearSnapshot?.();
             setSprintStep('gameover');
             sprintSound.stopBgm();
             sprintSound.playSfx('lose');
@@ -523,6 +558,7 @@ export default function PlayfairSprint({
     showFeedback,
     triggerShake,
     triggerSpin,
+    onClearSnapshot,
   ]);
 
   /* Link forward refs */
@@ -538,6 +574,7 @@ export default function PlayfairSprint({
      Game flow actions
      ─────────────────────────────────────────────── */
   const handleStartSprint = () => {
+    onClearSnapshot?.();
     sprintSound.unlockAudio();
     sprintSound.playBgm();
     clearAllFXTimeouts();
@@ -565,6 +602,7 @@ export default function PlayfairSprint({
   };
 
   const handleRetryFromCheckpoint = () => {
+    onClearSnapshot?.();
     sprintSound.unlockAudio();
     sprintSound.playBgm();
     clearAllFXTimeouts();
@@ -614,13 +652,31 @@ export default function PlayfairSprint({
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault();
-        setIsMenuOpen((prev) => !prev);
+        setIsMenuOpen((prev) => {
+          const next = !prev;
+          if (!next && hasRestoredFromSnapshotRef.current) {
+            hasRestoredFromSnapshotRef.current = false;
+            sprintSound.unlockAudio();
+            sprintSound.playBgm();
+            startBriefingPhase();
+          }
+          return next;
+        });
         return;
       }
       if (isMenuOpen) return;
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
-        setIsPaused((p) => !p);
+        setIsPaused((p) => {
+          const next = !p;
+          if (!next && hasRestoredFromSnapshotRef.current) {
+            hasRestoredFromSnapshotRef.current = false;
+            sprintSound.unlockAudio();
+            sprintSound.playBgm();
+            startBriefingPhase();
+          }
+          return next;
+        });
         return;
       }
       if (isPausedRef.current) return;
@@ -633,7 +689,26 @@ export default function PlayfairSprint({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sprintStep, isCrashing, isMenuOpen]);
+  }, [sprintStep, isCrashing, isMenuOpen, startBriefingPhase]);
+
+  /* ── reset on levelData change ── */
+  useEffect(() => {
+    const curId = levelData.id || `${levelData.plaintext || ''}-${levelData.pairCiphertext || ''}`;
+    if (prevLevelIdRef.current && prevLevelIdRef.current !== curId) {
+      prevLevelIdRef.current = curId;
+      setSprintStep('ready');
+      setCurrentMaskIndex(0);
+      setLives(5);
+      setAttempts([]);
+      setIsMenuOpen(false);
+      setIsPaused(false);
+      const initialSolved = {};
+      hintIndices.forEach((idx) => {
+        initialSolved[idx] = pairData[idx]?.plainPair;
+      });
+      setSolvedLetters(initialSolved);
+    }
+  }, [levelData, hintIndices, pairData]);
 
   /* ───────────────────────────────────────────────
      Lane-change tilt visual (tracks runnerLane)
@@ -870,27 +945,6 @@ export default function PlayfairSprint({
     onToggleFullscreen: toggleFullscreen,
     onToggleMute: toggleSound,
   });
-
-  const soundToggleButton = (
-    <button
-      className="fg-btn-icon"
-      onClick={toggleSound}
-      title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
-      style={{
-        background: 'rgba(255, 255, 255, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '8px',
-        color: '#fff',
-        padding: '4px 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '1rem',
-      }}
-    >
-      {isMuted ? '🔇' : '🔊'}
-    </button>
-  );
 
   const handleVerifySubmit = () => {
     clearAllFXTimeouts();
@@ -1384,12 +1438,25 @@ export default function PlayfairSprint({
       {/* ───── Shared Pause Menu ───── */}
       <PauseMenu
         open={isMenuOpen}
-        onResume={() => setIsMenuOpen(false)}
+        onResume={() => {
+          setIsMenuOpen(false);
+          setIsPaused(false);
+          if (hasRestoredFromSnapshotRef.current) {
+            hasRestoredFromSnapshotRef.current = false;
+            sprintSound.unlockAudio();
+            sprintSound.playBgm();
+            startBriefingPhase();
+          }
+        }}
         onTutorial={() => {
+          onClearSnapshot?.();
           setIsMenuOpen(false);
           setSprintStep('ready');
         }}
-        onExit={onBackToStages}
+        onExit={() => {
+          onClearSnapshot?.();
+          onBackToStages();
+        }}
       />
     </div>
   );
@@ -1499,7 +1566,7 @@ function CrashPanel({ message, onContinue }) {
    Level metadata hook (memoised)
    ─────────────────────────────────────────────── */
 function useMemoLevelMeta(pairData, tier, levelData) {
-  return React.useMemo(() => {
+  return useMemo(() => {
     const hintIndices = new Set();
     const normTier = String(tier || levelData?.difficulty || 'easy').toLowerCase();
     

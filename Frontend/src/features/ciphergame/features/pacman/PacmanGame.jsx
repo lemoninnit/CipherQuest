@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import './PacmanGame.css';
 import '../../CipherGame.css';
 
@@ -12,6 +12,7 @@ import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingFromDir } from './pacmanWorld';
 import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
+import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 
 const EASY_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -599,7 +600,17 @@ function CaesarCheatSheet({
   );
 }
 
-export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToStages, onReplayNewQuestion, onStartStageTimer }) {
+export default function PacmanGame({
+  levelData,
+  tier,
+  snapshot,
+  onVerifySubmit,
+  onBackToStages,
+  onReplayNewQuestion,
+  onStartStageTimer,
+  onSaveSnapshot,
+  onClearSnapshot,
+}) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
   const isVigenere = !!levelData?.targetKey;
@@ -621,7 +632,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const targetQueueRef = useRef(initialGhostsData.queue);
   const initialGhosts = initialGhostsData.ghosts;
 
-  const maskedIndices = React.useMemo(() => {
+  const maskedIndices = useMemo(() => {
     const indices = [];
     if (!levelData) return indices;
     const isPf = !!levelData.matrix;
@@ -651,30 +662,32 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     return indices;
   }, [levelData, currentTier]);
 
-  const [phase, setPhase] = useState('ready');
+  const hasSnapshot = Boolean(snapshot?.gameState && snapshot.gameState.phase === 'playing');
+
+  const [phase, setPhase] = useState(() => (hasSnapshot ? 'playing' : 'ready'));
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [showTabula, setShowTabula] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
 
-  const [pacman, setPacman] = useState(initialPacman);
+  const [pacman, setPacman] = useState(() => (hasSnapshot && snapshot.gameState.pacman ? snapshot.gameState.pacman : initialPacman));
   const [pacmanDir, setPacmanDir] = useState('NONE');
   const [bufferedDir, setBufferedDir] = useState('NONE');
   const [knightAttacking, setKnightAttacking] = useState(false);
-  const [eatenGhosts, setEatenGhosts] = useState([]); // indices of eaten target letters
-  const [lives, setLives] = useState(5); // 5 hearts
+  const [eatenGhosts, setEatenGhosts] = useState(() => (hasSnapshot && Array.isArray(snapshot.gameState.eatenGhosts) ? snapshot.gameState.eatenGhosts : []));
+  const [lives, setLives] = useState(() => (hasSnapshot && typeof snapshot.gameState.lives === 'number' ? snapshot.gameState.lives : 5));
   const [flashError, setFlashError] = useState(false);
   const [ruleViolation, setRuleViolation] = useState(null);
   const [levelSolved, setLevelSolved] = useState(false);
-  const [activeShiftValue, setActiveShiftValue] = useState(0);
+  const [activeShiftValue, setActiveShiftValue] = useState(() => (hasSnapshot && typeof snapshot.gameState.activeShiftValue === 'number' ? snapshot.gameState.activeShiftValue : 0));
   const [gameOver, setGameOver] = useState(false);
   const [isScreenShaking, setIsScreenShaking] = useState(false);
   const [isInvulnerable, setIsInvulnerable] = useState(false);
 
   // Skill states
-  const [hasSkillCharge, setHasSkillCharge] = useState(false);
-  const [skillActive, setSkillActive] = useState(false);
-  const [skillTimeLeft, setSkillTimeLeft] = useState(0);
+  const [hasSkillCharge, setHasSkillCharge] = useState(() => (hasSnapshot ? Boolean(snapshot.gameState.hasSkillCharge) : false));
+  const [skillActive, setSkillActive] = useState(() => (hasSnapshot ? Boolean(snapshot.gameState.skillActive) : false));
+  const [skillTimeLeft, setSkillTimeLeft] = useState(() => (hasSnapshot ? (snapshot.gameState.skillTimeLeft || 0) : 0));
 
   // Ghosts
   const [ghosts, setGhosts] = useState(initialGhosts);
@@ -693,6 +706,23 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   const invulnerabilityTimerRef = useRef(null);
   const retryBtnRef = useRef(null);
   const autoRecapShownRef = useRef(false);
+
+  const isRunning = phase === 'playing' && !gameOver && !levelSolved;
+  useStageSnapshotAutoSaver(
+    onSaveSnapshot,
+    useCallback(() => ({
+      phase: 'playing',
+      pacman,
+      lives,
+      eatenGhosts,
+      activeShiftValue,
+      hasSkillCharge,
+      skillActive,
+      skillTimeLeft,
+    }), [pacman, lives, eatenGhosts, activeShiftValue, hasSkillCharge, skillActive, skillTimeLeft]),
+    isRunning
+  );
+
   /* ── Focus management for game over modal ── */
   useEffect(() => {
     if (gameOver) {
@@ -709,7 +739,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   useEffect(() => { isInvulnerableRef.current = isInvulnerable; }, [isInvulnerable]);
   useEffect(() => { knightAttackingRef.current = knightAttacking; }, [knightAttacking]);
 
-  const activeSolvingIndex = React.useMemo(() => {
+  const activeSolvingIndex = useMemo(() => {
     if (isCaesar) {
       return maskedIndices[0] ?? 0;
     }
@@ -723,7 +753,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     return -1;
   }, [levelData, eatenGhosts, isCaesar, maskedIndices]);
 
-  const vigenereAlignmentItems = React.useMemo(() => {
+  const vigenereAlignmentItems = useMemo(() => {
     if (!isVigenere || !levelData.plaintext) return [];
     const items = [];
     let letterCounter = 0;
@@ -753,45 +783,50 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
       }
     }
     return items;
-  }, [isVigenere, levelData.plaintext, levelData.ciphertext, levelData.targetKey, eatenGhosts, activeSolvingIndex, levelData]);
+  }, [isVigenere, levelData, eatenGhosts, activeSolvingIndex]);
 
-  const activeSolvingItem = React.useMemo(() => {
+  const activeSolvingItem = useMemo(() => {
     return vigenereAlignmentItems.find((item) => item.isActive) || null;
   }, [vigenereAlignmentItems]);
 
+  const prevLevelIdRef = useRef(levelData?.id || `${levelData?.plaintext || ''}-${levelData?.ciphertext || ''}`);
   useEffect(() => {
-    const normTier = String(tier || levelData?.tier || 'easy').toLowerCase();
-    const grid = getMazeGrid(normTier);
-    activeMazeGridRef.current = grid;
-    const { ghosts: initG, queue: initQ } = generateInitialGhosts(levelData, normTier);
-    targetQueueRef.current = initQ;
-    setPacman(initialPacman);
-    setPacmanDir('NONE');
-    setBufferedDir('NONE');
-    setKnightAttacking(false);
-    setEatenGhosts([]);
-    setLives(5);
-    setFlashError(false);
-    setRuleViolation(null);
-    setLevelSolved(false);
-    setActiveShiftValue(0);
-    setGameOver(false);
-    setHasSkillCharge(false);
-    setSkillActive(false);
-    setSkillTimeLeft(0);
-    setGhosts(initG);
-    setPellets(generateRandomPellets(grid, initG, initialPacman));
-    setPhase('ready');
-    setShowExplanation(false);
-    setIsMenuOpen(false);
-    autoRecapShownRef.current = false;
-    if (invulnerabilityTimerRef.current) {
-      clearTimeout(invulnerabilityTimerRef.current);
-      invulnerabilityTimerRef.current = null;
+    const curId = levelData?.id || `${levelData?.plaintext || ''}-${levelData?.ciphertext || ''}`;
+    if (prevLevelIdRef.current && prevLevelIdRef.current !== curId) {
+      prevLevelIdRef.current = curId;
+      const normTier = String(tier || levelData?.tier || 'easy').toLowerCase();
+      const grid = getMazeGrid(normTier);
+      activeMazeGridRef.current = grid;
+      const { ghosts: initG, queue: initQ } = generateInitialGhosts(levelData, normTier);
+      targetQueueRef.current = initQ;
+      setPacman(initialPacman);
+      setPacmanDir('NONE');
+      setBufferedDir('NONE');
+      setKnightAttacking(false);
+      setEatenGhosts([]);
+      setLives(5);
+      setFlashError(false);
+      setRuleViolation(null);
+      setLevelSolved(false);
+      setActiveShiftValue(0);
+      setGameOver(false);
+      setHasSkillCharge(false);
+      setSkillActive(false);
+      setSkillTimeLeft(0);
+      setGhosts(initG);
+      setPellets(generateRandomPellets(grid, initG, initialPacman));
+      setPhase('ready');
+      setShowExplanation(false);
+      setIsMenuOpen(false);
+      autoRecapShownRef.current = false;
+      if (invulnerabilityTimerRef.current) {
+        clearTimeout(invulnerabilityTimerRef.current);
+        invulnerabilityTimerRef.current = null;
+      }
+      setIsInvulnerable(false);
+      isInvulnerableRef.current = false;
+      pacmanSound.pauseBgm();
     }
-    setIsInvulnerable(false);
-    isInvulnerableRef.current = false;
-    pacmanSound.pauseBgm();
   }, [levelData, tier]);
 
   // Target Ghost Enforcement & Self-Healing loop:
@@ -893,27 +928,6 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
     onToggleFullscreen: toggleFullscreen,
     onToggleMute: toggleSound,
   });
-
-  const soundToggleButton = (
-    <button
-      className="fg-btn-icon"
-      onClick={toggleSound}
-      title={isMuted ? "Unmute Sound" : "Mute Sound"}
-      style={{
-        background: 'rgba(255, 255, 255, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.2)',
-        borderRadius: '8px',
-        color: '#fff',
-        padding: '4px 8px',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: '1rem'
-      }}
-    >
-      {isMuted ? '🔇' : '🔊'}
-    </button>
-  );
 
   const gameLoopRef = useRef(null);
 
@@ -1091,6 +1105,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
           setTimeout(() => {
             if (isCaesar) {
               if (isCorrect) {
+                onClearSnapshot?.();
                 setActiveShiftValue(targetGhostAhead.signedVal ?? targetShift);
                 setLevelSolved(true);
                 setEatenGhosts(maskedIndices);
@@ -1139,6 +1154,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   : [...prevEaten, targetGhostAhead.index];
                 const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
                 if (nextEaten.length === totalTargets) {
+                  onClearSnapshot?.();
                   setLevelSolved(true);
                   pacmanSound.stopBgm();
                   pacmanSound.playSfx('win');
@@ -1284,6 +1300,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
               if (isCaesar) {
                 const isCorrect = ghost.isCorrect;
                 if (isCorrect) {
+                  onClearSnapshot?.();
                   correctGhostEatenThisTick = true;
                   pacmanSound.playSfx('gold');
                   setActiveShiftValue(ghost.signedVal ?? targetShift);
@@ -1331,6 +1348,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                     : [...prevEaten, ghost.index];
                   const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
                   if (nextEaten.length === totalTargets) {
+                    onClearSnapshot?.();
                     setLevelSolved(true);
                     pacmanSound.stopBgm();
                     pacmanSound.playSfx('win');
@@ -1490,6 +1508,7 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
   }, [gameOver, levelSolved, isMenuOpen, phase]);
 
   const handleResetGame = () => {
+    onClearSnapshot?.();
     pacmanSound.stopBgm();
     pacmanSound.unlockAudio();
     pacmanSound.playBgm();
@@ -2247,7 +2266,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
             </button>
             <button
               className="caesar-pause-btn caesar-pause-btn-exit"
-              onClick={onBackToStages}
+              onClick={() => {
+                onClearSnapshot?.();
+                onBackToStages();
+              }}
             >
               <span className="material-symbols-outlined">logout</span>
               <span>Exit Stage</span>
@@ -2316,10 +2338,14 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
         open={isMenuOpen}
         onResume={() => setIsMenuOpen(false)}
         onTutorial={() => {
+          onClearSnapshot?.();
           setIsMenuOpen(false);
           setPhase('ready');
         }}
-        onExit={onBackToStages}
+        onExit={() => {
+          onClearSnapshot?.();
+          onBackToStages();
+        }}
       />
     </div>
   );
