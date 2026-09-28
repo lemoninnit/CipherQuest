@@ -11,13 +11,8 @@ import { fishingSound } from '../../core/engine/fishingSound';
 import { caesarDecryptChar } from '../../core/engine/caesar';
 
 /* ─── Caesar math ─── */
-const caesarShiftChar = (char, shift) => {
-  const code = char.charCodeAt(0);
-  if (code >= 65 && code <= 90) {
-    return String.fromCharCode(((code - 65 + shift) % 26 + 26) % 26 + 65);
-  }
-  return char;
-};
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const charToIdx = (char) => (char && char.charCodeAt(0) >= 65 && char.charCodeAt(0) <= 90 ? char.charCodeAt(0) - 65 : 0);
 
 const normalizeShift = (shift = 0) => ((shift % 26) + 26) % 26;
 
@@ -183,6 +178,45 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
 
   const targetShift = normalizeShift(levelData.targetShifts?.[0] ?? 0);
   const allCorrect = basketShift === targetShift && decryptedSegs.every((dec, i) => dec === words[i]);
+
+  const flatLetterPositions = [];
+  let gIdx = 0;
+  words.forEach((word, wIdx) => {
+    for (let chIdx = 0; chIdx < word.length; chIdx++) {
+      flatLetterPositions.push({
+        globalIdx: gIdx++,
+        wordIdx: wIdx,
+        charIdx: chIdx,
+        plainChar: word[chIdx],
+        cipherChar: cipherSegs[wIdx]?.[chIdx] || '',
+      });
+    }
+  });
+
+  const normTier = String(tier || levelData?.difficulty || '').toLowerCase();
+  const isLetterSolved = (p) => {
+    const maskList = levelData.masks?.[p.wordIdx];
+    const isPrefilled = normTier !== 'hard' && Boolean(maskList?.[p.charIdx]);
+    const segShift = normalizeShift(activeShifts[p.wordIdx] ?? 0);
+    const decChar = decryptedSegs[p.wordIdx]?.[p.charIdx];
+    const isCorrect = segShift !== 0 && decChar === p.plainChar;
+    return isPrefilled || isCorrect;
+  };
+
+  const activeTarget = flatLetterPositions.find(p => !isLetterSolved(p)) || flatLetterPositions[0] || {
+    globalIdx: 0,
+    wordIdx: 0,
+    charIdx: 0,
+    plainChar: 'A',
+    cipherChar: 'A',
+  };
+
+  const activeCipherChar = activeTarget.cipherChar;
+  const activeCipherVal = charToIdx(activeCipherChar);
+  const activeShift = normalizeShift(activeShifts[activeTarget.wordIdx] ?? basketShift);
+  const activePlainChar = activeTarget.plainChar;
+  const activePlainVal = charToIdx(activePlainChar);
+  const isActiveSolved = isLetterSolved(activeTarget);
 
   /* ── start game ── */
   const startGame = () => {
@@ -393,8 +427,6 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
     hookX = rodTipX + (castTarget.x - rodTipX) * castProgress;
     hookY = rodTipY + (castTarget.y - rodTipY) * castProgress;
   }
-
-  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
   /* ════ READY ════ */
   if (phase === 'ready') {
@@ -619,8 +651,9 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
                   </div>
                   <div className="fg-letter-cells">
                     {cipherWord.split('').map((cipherCh, chIdx) => {
-                      const maskList = levelData.masks[wIdx];
-                      const isPrefilled = tier === 'easy' && maskList?.[chIdx];
+                      const maskList = levelData.masks?.[wIdx];
+                      const normTier = String(tier || levelData?.difficulty || '').toLowerCase();
+                      const isPrefilled = normTier !== 'hard' && Boolean(maskList?.[chIdx]);
                       const isCorrect = segShift !== 0 && decWord[chIdx] === word[chIdx];
                       const letterToShow = isPrefilled ? word[chIdx] : (segShift === 0 ? '_' : decWord[chIdx]);
 
@@ -644,15 +677,82 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           <div className="caesar-floating-hint">Hint: “{levelData.hint}”</div>
         </div>
 
-        {/* 2. Floating Caesar Guide (Bottom-Left) */}
-        <div className="caesar-floating-guide">
-          <h3 className="caesar-guide-title">Ceasar Guide</h3>
-          <p className="caesar-guide-desc">
-            The Caesar cipher shifts each letter forward. To decrypt, we reverse the shift to reveal the plaintext.
-          </p>
-          <p className="caesar-guide-tip">
-            Catch fish with + / - modifiers to adjust the Basket Shift until words look readable!
-          </p>
+        {/* 2. Floating Caesar Decryption Arithmetic & A-Z Reference (Bottom-Left) */}
+        <div className="caesar-floating-cheat-sheet vg-fishing-az-panel">
+          <div className="vg-floating-current-slot">
+            <div className="vg-arithmetic-title">
+              Decryption Arithmetic
+            </div>
+          </div>
+
+          {/* Active calculation card */}
+          <div className="vg-fishing-calc-card">
+            <div className="vg-calc-top-row">
+              <span className="vg-calc-label">Active Letter Decryption:</span>
+              <span className="vg-calc-badge">Pos #{activeTarget.globalIdx + 1}</span>
+            </div>
+            <div className="vg-calc-formula-row">
+              <div className="vg-calc-item cipher">
+                <span className="lbl">Cipher</span>
+                <strong>{activeCipherChar}</strong>
+                <span className="val">{activeCipherVal}</span>
+              </div>
+              <span className="vg-calc-op">−</span>
+              <div className="vg-calc-item key">
+                <span className="lbl">Shift</span>
+                <strong>{activeShift}</strong>
+                <span className="val">{activeShift}</span>
+              </div>
+              <span className="vg-calc-op">=</span>
+              <div className="vg-calc-item plain">
+                <span className="lbl">Target</span>
+                <strong style={{ color: 'var(--neon-green)' }}>
+                  {isActiveSolved ? activePlainChar : '?'}
+                </strong>
+                <span
+                  className="val"
+                  style={{ visibility: isActiveSolved ? 'visible' : 'hidden' }}
+                >
+                  {activePlainVal}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* 2-row x 13-col Alphabet grid */}
+          <div className="vg-sprint-alphabet-grid">
+            <div className="vg-alphabet-row">
+              {ALPHABET.slice(0, 13).map((ch, i) => {
+                const isCipher = ch === activeCipherChar;
+                const isKey = i === activeShift;
+                let cellClass = "vg-alphabet-cell";
+                if (isCipher) cellClass += " is-cipher";
+                if (isKey) cellClass += " is-key";
+                return (
+                  <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
+                    <span className="vg-alpha-char">{ch}</span>
+                    <span className="vg-alpha-val">{i}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="vg-alphabet-row">
+              {ALPHABET.slice(13, 26).map((ch, i) => {
+                const val = i + 13;
+                const isCipher = ch === activeCipherChar;
+                const isKey = val === activeShift;
+                let cellClass = "vg-alphabet-cell";
+                if (isCipher) cellClass += " is-cipher";
+                if (isKey) cellClass += " is-key";
+                return (
+                  <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
+                    <span className="vg-alpha-char">{ch}</span>
+                    <span className="vg-alpha-val">{val}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {/* 3. Floating Chum the Waters Button (Bottom-Right, above Basket Key) */}
@@ -678,29 +778,7 @@ export default function CaesarFishingGame({ levelData, tier, onVerifySubmit, onB
           )}
         </div>
 
-        {/* 5. Floating Cipher Cheat Sheet (Top-Left) */}
-        <div className="caesar-floating-cheat-sheet">
-          <div className="caesar-cheat-header">
-            <span className="caesar-cheat-title">Cipher Cheat Sheet</span>
-            <span className="caesar-cheat-badge">Shift {formatShift(currentShift)}</span>
-          </div>
-          <div className="caesar-cheat-body">
-            <div className="caesar-cheat-labels">
-              <span className="caesar-cheat-label-plain">PLAIN</span>
-              <span className="caesar-cheat-label-shift">SHIFT</span>
-            </div>
-            <div className="caesar-cheat-columns">
-              {alphabet.map(ch => (
-                <div key={ch} className="caesar-cheat-col">
-                  <span className="caesar-cheat-plain">{ch}</span>
-                  <span className="caesar-cheat-shifted">{caesarShiftChar(ch, currentShift)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* 6. Floating Secured Victory Panel when level solved */}
+        {/* 5. Floating Secured Victory Panel when level solved */}
         {levelSolved && <VictoryConfetti isPaused={isMenuOpen} />}
         {levelSolved && (
           <div className="caesar-floating-victory-panel">

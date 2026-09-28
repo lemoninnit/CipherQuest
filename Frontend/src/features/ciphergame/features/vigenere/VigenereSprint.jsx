@@ -1649,41 +1649,42 @@ function CrashPanel({ message, onContinue }) {
 function useMemoLevelMeta(levelData, tier) {
   return React.useMemo(() => {
     const hintIndices = new Set();
-    const normTier = String(tier || 'easy').toLowerCase();
-    if (normTier === 'easy' || normTier === 'medium') {
-      const numHints = normTier === 'easy' ? 2 : 1;
-      let hintsFound = 0;
-      for (let i = 0; i < levelData.plaintext.length; i++) {
-        if (
-          levelData.plaintext[i] !== ' ' &&
-          levelData.masks &&
-          levelData.masks[0] &&
-          levelData.masks[0][i]
-        ) {
-          hintIndices.add(i);
-          hintsFound++;
-          if (hintsFound >= numHints) break;
+    const normTier = String(tier || levelData?.difficulty || 'easy').toLowerCase();
+    const plain = levelData?.plaintext || '';
+
+    if (normTier !== 'hard') {
+      const getMask = (idx) => {
+        if (!levelData) return false;
+        if (levelData.fullMask && levelData.fullMask[idx] !== undefined) {
+          return levelData.fullMask[idx];
         }
-      }
-      if (hintsFound < numHints) {
-        for (let i = 0; i < levelData.plaintext.length; i++) {
-          if (levelData.plaintext[i] !== ' ' && !hintIndices.has(i)) {
-            hintIndices.add(i);
-            hintsFound++;
-            if (hintsFound >= numHints) break;
+        let wordStart = 0;
+        const words = plain.split(' ');
+        for (let w = 0; w < words.length; w++) {
+          const word = words[w];
+          if (idx >= wordStart && idx < wordStart + word.length) {
+            return levelData.masks?.[w]?.[idx - wordStart] ?? false;
           }
+          wordStart += word.length + 1;
+        }
+        return false;
+      };
+
+      for (let i = 0; i < plain.length; i++) {
+        if (plain[i] !== ' ' && getMask(i)) {
+          hintIndices.add(i);
         }
       }
     }
 
     const maskedIndices = [];
-    for (let i = 0; i < levelData.plaintext.length; i++) {
-      if (levelData.plaintext[i] !== ' ' && !hintIndices.has(i)) {
+    for (let i = 0; i < plain.length; i++) {
+      if (plain[i] !== ' ' && !hintIndices.has(i)) {
         maskedIndices.push(i);
       }
     }
 
-    const words = levelData.plaintext.split(' ');
+    const words = plain.split(' ');
 
     return { hintIndices, maskedIndices, words };
   }, [levelData, tier]);

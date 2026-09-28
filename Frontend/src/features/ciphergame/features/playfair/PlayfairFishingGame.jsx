@@ -191,7 +191,9 @@ export default function PlayfairFishingGame({
   const solvedCount = solvedPairs.filter(Boolean).length;
   const progress = pairData.length ? solvedCount / pairData.length : 0;
   const currentRuleHint = activePair ? describePlayfairRule(activePair.rule, 'decrypt') : '';
-  const revealRule = tier === 'easy' || misses >= 2;
+  const normTier = String(tier || levelData?.difficulty || '').toLowerCase();
+  const isHard = normTier === 'hard';
+  const revealRule = !isHard && (normTier === 'easy' || normTier === 'medium' || misses >= 2);
 
   const startGame = () => {
     fishingSound.unlockAudio();
@@ -484,12 +486,7 @@ export default function PlayfairFishingGame({
           </div>
         </div>
 
-        {/* 3. Bottom-Left Guide */}
-        <div className="caesar-floating-guide">
-          <h3 className="caesar-guide-title">Playfair Guide</h3>
-          <p className="caesar-guide-desc">Playfair encrypts letter pairs (bigrams) via a 5x5 key matrix. I and J share one cell.</p>
-          <p className="caesar-guide-tip">Row: move left. Col: move up. Rectangle: swap columns.</p>
-        </div>
+
 
         {/* 4. Bottom-Right Stats */}
         <div className="pf-floating-stats-panel">

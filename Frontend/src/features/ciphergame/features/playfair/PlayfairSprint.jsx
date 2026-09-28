@@ -114,7 +114,7 @@ export default function PlayfairSprint({
     [levelData.cipherPairs, matrix]
   );
 
-  const { hintIndices, maskedIndices } = useMemoLevelMeta(pairData, tier);
+  const { hintIndices, maskedIndices } = useMemoLevelMeta(pairData, tier, levelData);
 
   /* ───────────────────────────────────────────────
      Game state (visual — allowed to trigger renders)
@@ -1493,16 +1493,23 @@ function CrashPanel({ message, onContinue }) {
 /* ───────────────────────────────────────────────
    Level metadata hook (memoised)
    ─────────────────────────────────────────────── */
-function useMemoLevelMeta(pairData, tier) {
+function useMemoLevelMeta(pairData, tier, levelData) {
   return React.useMemo(() => {
     const hintIndices = new Set();
-    const normTier = String(tier || 'easy').toLowerCase();
-    if (normTier === 'easy' || normTier === 'medium') {
-      const numHints = normTier === 'easy' ? 2 : 1;
-      if (pairData.length > numHints) {
-        for (let i = 0; i < numHints; i++) {
+    const normTier = String(tier || levelData?.difficulty || 'easy').toLowerCase();
+    
+    if (normTier !== 'hard') {
+      for (let i = 0; i < pairData.length; i++) {
+        const c1 = i * 2;
+        const c2 = i * 2 + 1;
+        const m1 = levelData?.fullMask?.[c1];
+        const m2 = levelData?.fullMask?.[c2];
+        if (m1 === true || m2 === true) {
           hintIndices.add(i);
         }
+      }
+      if (hintIndices.size >= pairData.length && pairData.length > 0) {
+        hintIndices.delete(pairData.length - 1);
       }
     }
 
@@ -1514,5 +1521,5 @@ function useMemoLevelMeta(pairData, tier) {
     }
 
     return { hintIndices, maskedIndices };
-  }, [pairData, tier]);
+  }, [pairData, tier, levelData]);
 }
