@@ -878,37 +878,30 @@ export default function VigenereFishingGame({
           )}
         </div>
 
-        {/* 3. Floating Actions & Keyword Dock (Bottom-Right) */}
-        <div className="vg-fishing-right-dock">
-          {/* Keyword Card */}
-          <div className="vg-right-card vg-keyword-card" title={`Repeating Keyword: ${targetKey}`}>
-            <div className="vg-right-card-header">
-              <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', color: '#ffd700' }}>vpn_key</span>
-              <span className="vg-right-card-title">KEYWORD</span>
-            </div>
-            <div className="vg-right-card-value vg-keyword-val">
-              {targetKey}
-            </div>
-          </div>
+        {/* 3. Bottom-Center Floating Keyword Pill */}
+        <div className="vg-fishing-bottom-keyword" title={`Repeating Keyword: ${targetKey}`}>
+          <span className="vg-pill-lbl">KEYWORD</span>
+          <span className="vg-pill-val">{targetKey}</span>
+        </div>
 
-          {/* Chum the Waters Button */}
-          <button
-            type="button"
-            className="vg-right-card vg-chum-card-btn"
-            onClick={handleChumWaters}
-            disabled={chumCount <= 0 || isCasting}
-            aria-label={`Chum the Waters, ${chumCount} left`}
-            title="Chum the waters to attract letters for the active blank"
-          >
-            <div className="vg-right-card-header">
-              <span className="material-symbols-outlined" style={{ fontSize: '1.05rem', color: 'var(--neon-cyan)' }}>waves</span>
-              <span className="vg-right-card-title">CHUM WATERS</span>
-            </div>
-            <div className="vg-right-card-value vg-chum-val">
-              <span className="vg-chum-count-num">{chumCount}</span>
-              <span className="vg-chum-sublabel">Bait Left</span>
-            </div>
-          </button>
+        {/* 4. Bottom-Right Floating Chum Waters Skill Panel */}
+        <div className={`skill-charge-card fishing-skill-card ${chumCount > 0 ? 'charged' : ''}`}>
+          <div className="skill-charge-title">Chum the Waters</div>
+          <div className="skill-pellet-icon-wrapper">
+            <span className="material-symbols-outlined skill-bolt">waves</span>
+          </div>
+          {chumCount > 0 ? (
+            <button
+              type="button"
+              className="activate-skill-btn"
+              onClick={handleChumWaters}
+              disabled={isCasting}
+            >
+              {isCasting ? 'Chumming...' : `Attract Letters (${chumCount} Left)`}
+            </button>
+          ) : (
+            <div className="skill-hint-label">No chum bait left</div>
+          )}
         </div>
 
         {/* 5. Floating Secured Victory Panel when level solved */}

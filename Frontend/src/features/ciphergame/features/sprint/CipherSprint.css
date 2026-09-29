@@ -1899,7 +1899,9 @@
 /* Bottom-Right Floating Shift Key Clue Card (Image 3) */
 .caesar-floating-basket-card.sprint-clue-card {
   bottom: 18px;
-  right: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  right: auto;
   z-index: 20;
   min-width: 170px;
   padding: 10px 22px;
@@ -2929,7 +2931,9 @@
   }
   .caesar-floating-basket-card.sprint-clue-card {
     bottom: 12px;
-    right: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
     padding: 8px 18px;
   }
   .sprint-r2-bottom-right-group {
@@ -3030,7 +3034,9 @@
   }
   .caesar-floating-basket-card.sprint-clue-card {
     bottom: 8px;
-    right: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
     padding: 6px 14px;
   }
   .sprint-r2-bottom-right-group {

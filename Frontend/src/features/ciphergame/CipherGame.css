@@ -3839,17 +3839,18 @@
   background: rgba(255, 255, 255, 0.03);
 }
 
-/* Floating Basket Shift Key Card (Bottom-Right) */
+/* Floating Basket Shift Key Card (Bottom-Center across games) */
 .caesar-floating-basket-card {
   position: absolute;
-  bottom: 24px;
-  right: 28px;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 20;
-  min-width: 220px;
-  background: rgba(3, 14, 28, 0.82);
-  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  min-width: 170px;
+  background: rgba(3, 14, 28, 0.85);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
   border-radius: 16px;
-  padding: 16px 24px;
+  padding: 10px 22px;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05);
@@ -3857,7 +3858,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
   pointer-events: auto;
+  user-select: none;
 }
 
 .caesar-basket-icon {
@@ -4482,23 +4485,6 @@
   font-style: italic;
 }
 
-.cqs-derive-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.76rem;
-  color: rgba(160, 196, 216, 0.55);
-  line-height: 1.35;
-}
-
-.cqs-derive-steps span {
-  transition: color 0.25s ease;
-}
-
-.cqs-derive-steps span.done {
-  color: var(--neon-green);
-}
 
 /* ── Numeric VALUE row & labels (A=1 … Z=26) ── */
 /* Scoped to .cqs-cheat-sheet so the enlarged sizes win over the shared
@@ -4654,7 +4640,6 @@
   .cqs-ruler-letter { font-size: 0.74rem; }
   .cqs-ruler-num { font-size: 0.64rem; }
   .cqs-derive-hint { font-size: 0.76rem; }
-  .cqs-derive-steps { font-size: 0.7rem; }
   .cqs-progress-label { font-size: 0.66rem; }
   .cqs-progress-value { font-size: 0.84rem; }
 }
@@ -6696,9 +6681,11 @@
 }
 
 /* Bottom-Center Floating Keyword Pill */
+.vg-fishing-bottom-keyword,
 .vigenere-fishing-fullscreen .vg-fishing-bottom-keyword,
 .vigenere-sprint-fullscreen .vg-fishing-bottom-keyword,
-.vg-pacman-fullscreen .vg-fishing-bottom-keyword {
+.vg-pacman-fullscreen .vg-fishing-bottom-keyword,
+.playfair-fullscreen .vg-fishing-bottom-keyword {
   position: absolute;
   bottom: 18px;
   left: 50%;
@@ -6715,11 +6702,10 @@
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 215, 0, 0.22);
   pointer-events: auto;
+  user-select: none;
 }
 
-.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl,
-.vigenere-sprint-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl,
-.vg-pacman-fullscreen .vg-fishing-bottom-keyword .vg-pill-lbl {
+.vg-fishing-bottom-keyword .vg-pill-lbl {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 0.68rem;
   font-weight: 800;
@@ -6728,9 +6714,7 @@
   text-transform: uppercase;
 }
 
-.vigenere-fishing-fullscreen .vg-fishing-bottom-keyword .vg-pill-val,
-.vigenere-sprint-fullscreen .vg-fishing-bottom-keyword .vg-pill-val,
-.vg-pacman-fullscreen .vg-fishing-bottom-keyword .vg-pill-val {
+.vg-fishing-bottom-keyword .vg-pill-val {
   font-family: 'JetBrains Mono', monospace;
   font-size: 1.05rem;
   font-weight: 800;
@@ -6738,6 +6722,44 @@
   letter-spacing: 0.08em;
   text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
+
+/* Fishing & Sprint Skill Card Chrome (Matches Pac-Man Skill Card) */
+.skill-charge-card.fishing-skill-card,
+.skill-charge-card.sprint-skill-card {
+  position: absolute !important;
+  bottom: 18px !important;
+  right: 24px !important;
+  z-index: 20 !important;
+  min-width: 170px !important;
+  max-width: 210px !important;
+  padding: 8px 14px !important;
+  background: rgba(3, 14, 28, 0.88) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.4) !important;
+  border-radius: 14px !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 16px rgba(0, 229, 255, 0.05) !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  text-align: center !important;
+}
+
+.skill-charge-card.fishing-skill-card.charged,
+.skill-charge-card.sprint-skill-card.charged {
+  border-color: #ffd700 !important;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), inset 0 0 14px rgba(255, 215, 0, 0.08) !important;
+}
+
+.skill-charge-card.fishing-skill-card .skill-bolt {
+  font-size: 1.6rem !important;
+  color: var(--neon-cyan) !important;
+}
+
 
 /* Tightened Vigenère Alignment Panel (Bottom-Left) - Centered and Wider-Child Driven */
 .vigenere-fishing-fullscreen .vg-floating-ref-panel,
@@ -7438,42 +7460,4 @@
   margin-top: -16px !important;
 }
 
-/* 2. Dock Skill Freeze in top-right HUD area (zero collision with bottom panels or maze) */
-.skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
-  position: absolute !important;
-  top: 14px !important;
-  bottom: auto !important;
-  right: 22px !important;
-  min-width: 170px !important;
-  max-width: 210px !important;
-  padding: 8px 14px !important;
-  z-index: 22 !important;
-  background: rgba(3, 14, 28, 0.9) !important;
-  border: 1.5px solid rgba(0, 229, 255, 0.45) !important;
-  border-radius: 14px !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 0 12px rgba(0, 229, 255, 0.05) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 3px !important;
-}
-
-@media (max-width: 1440px), (max-height: 850px) {
-  .skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
-    top: 10px !important;
-    right: 14px !important;
-    padding: 6px 12px !important;
-  }
-}
-
-@media (max-height: 760px) {
-  .skill-charge-card.caesar-pacman-skill-card.vg-pacman-skill-card {
-    top: 8px !important;
-    right: 10px !important;
-    padding: 5px 10px !important;
-  }
-}
 

@@ -501,8 +501,6 @@ function CaesarCheatSheet({
   const activePlainVal = charToIdx(activePlainChar);
   const isActiveSolved = isLetterSolved(activeTarget);
 
-  const revealedHintsCount = letterPositions.filter(p => p.isHint).length;
-
   return (
     <div className="caesar-floating-cheat-sheet caesar-pacman-cheat-sheet vg-fishing-az-panel">
       <div className="vg-floating-current-slot">
@@ -588,13 +586,6 @@ function CaesarCheatSheet({
             );
           })}
         </div>
-      </div>
-
-      {/* 3-step hint list under the grid as a compact line */}
-      <div className="cqs-derive-steps" style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', gap: '6px', fontSize: '0.68rem', marginTop: '3px' }}>
-        <span className={revealedHintsCount >= 1 ? 'done' : ''}>① Derive from a pair</span>
-        <span className={revealedHintsCount >= 2 ? 'done' : ''}>② Verify on a 2nd</span>
-        <span>③ Hunt the shift goblin</span>
       </div>
     </div>
   );
@@ -2157,7 +2148,7 @@ export default function PacmanGame({
           )}
 
           {/* 5. Bottom-Right Floating Skill Freeze Charge */}
-          <div className={`skill-charge-card caesar-pacman-skill-card ${isVigenere ? 'vg-pacman-skill-card' : ''} ${hasSkillCharge ? 'charged' : ''} ${skillActive ? 'active' : ''}`}>
+          <div className={`skill-charge-card caesar-pacman-skill-card ${hasSkillCharge ? 'charged' : ''} ${skillActive ? 'active' : ''}`}>
             <div className="skill-charge-title">Skill Freeze Charge</div>
             <div className="skill-pellet-icon-wrapper">
               <span className="material-symbols-outlined skill-bolt">flash_on</span>

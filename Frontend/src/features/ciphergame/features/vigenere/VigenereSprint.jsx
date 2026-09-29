@@ -1459,6 +1459,12 @@ export default function VigenereSprint({
             </div>
           </div>
 
+          {/* 3. Bottom-Center Floating Keyword Pill */}
+          <div className="vg-fishing-bottom-keyword" title={`Repeating Keyword: ${targetKey}`}>
+            <span className="vg-pill-lbl">KEYWORD</span>
+            <span className="vg-pill-val">{targetKey}</span>
+          </div>
+
           {/* 4. Floating Action / Outcome Panels */}
           {sprintStep === 'finished' && <VictoryConfetti isPaused={isMenuOpen} />}
           {sprintStep === 'finished' && (

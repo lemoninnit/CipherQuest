@@ -577,28 +577,31 @@ export default function PlayfairFishingGame({
           </div>
         </div>
 
-        {/* Keyword Card (Bottom-Right) */}
-        <div className="caesar-floating-cheat-sheet pf-keyword-card pf-keyword-bottom-right">
-          <div className="playfair-cheat-header">
-            <span className="playfair-cheat-title">KEYWORD</span>
-          </div>
-          <div className="pf-keyword-value">
-            {levelData.key || levelData.keyword || 'BEACH'}
-          </div>
+        {/* 3. Bottom-Center Floating Keyword Pill */}
+        <div className="vg-fishing-bottom-keyword" title={`Keyword: ${levelData.key || levelData.keyword || 'BEACH'}`}>
+          <span className="vg-pill-lbl">KEYWORD</span>
+          <span className="vg-pill-val">{levelData.key || levelData.keyword || 'BEACH'}</span>
         </div>
 
-        {/* Floating Chum the Waters Button (Bottom-Right, above the Keyword Card) */}
-        <button
-          type="button"
-          className="caesar-floating-chum-btn"
-          onClick={handleChumWaters}
-          disabled={chumCount <= 0 || isCasting}
-          aria-label={`Chum the Waters, ${chumCount} left`}
-          title="Scatter a fresh shoal of candidate pairs"
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>waves</span>
-          Chum the Waters ({chumCount} left)
-        </button>
+        {/* 4. Bottom-Right Floating Chum Waters Skill Panel */}
+        <div className={`skill-charge-card fishing-skill-card ${chumCount > 0 ? 'charged' : ''}`}>
+          <div className="skill-charge-title">Chum the Waters</div>
+          <div className="skill-pellet-icon-wrapper">
+            <span className="material-symbols-outlined skill-bolt">waves</span>
+          </div>
+          {chumCount > 0 ? (
+            <button
+              type="button"
+              className="activate-skill-btn"
+              onClick={handleChumWaters}
+              disabled={isCasting}
+            >
+              {isCasting ? 'Chumming...' : `Scatter Pairs (${chumCount} Left)`}
+            </button>
+          ) : (
+            <div className="skill-hint-label">No chum bait left</div>
+          )}
+        </div>
 
         {feedback && <div className={`pf-feedback ${feedback.tone}`}>{feedback.message}</div>}
 

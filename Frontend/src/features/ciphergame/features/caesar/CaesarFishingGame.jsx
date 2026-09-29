@@ -811,18 +811,7 @@ export default function CaesarFishingGame({
           </div>
         </div>
 
-        {/* 3. Floating Chum the Waters Button (Bottom-Right, above Basket Key) */}
-        <button
-          className="caesar-floating-chum-btn"
-          onClick={handleChumWaters}
-          disabled={chumCount <= 0 || isCasting}
-          aria-label={`Chum the Waters, ${chumCount} left`}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>waves</span>
-          Chum the Waters ({chumCount} left)
-        </button>
-
-        {/* 4. Floating Basket Shift Key Card (Bottom-Right) */}
+        {/* 3. Bottom-Center Floating Basket Shift Key Card */}
         <div className={`caesar-floating-basket-card ${basketShake ? 'shake' : ''}`}>
           <div className="caesar-basket-icon">🧺</div>
           <div className="caesar-basket-badge">{formatShift(currentShift)}</div>
@@ -831,6 +820,26 @@ export default function CaesarFishingGame({
             <div className="fg-xp-pop-indicator" style={{ left: `${floatingXp.x}%`, top: `${floatingXp.y}%` }}>
               +{floatingXp.amount} XP
             </div>
+          )}
+        </div>
+
+        {/* 4. Bottom-Right Floating Chum Waters Skill Panel */}
+        <div className={`skill-charge-card fishing-skill-card ${chumCount > 0 ? 'charged' : ''}`}>
+          <div className="skill-charge-title">Chum the Waters</div>
+          <div className="skill-pellet-icon-wrapper">
+            <span className="material-symbols-outlined skill-bolt">waves</span>
+          </div>
+          {chumCount > 0 ? (
+            <button
+              type="button"
+              className="activate-skill-btn"
+              onClick={handleChumWaters}
+              disabled={isCasting}
+            >
+              {isCasting ? 'Chumming...' : `Attract Letters (${chumCount} Left)`}
+            </button>
+          ) : (
+            <div className="skill-hint-label">No chum bait left</div>
           )}
         </div>
 
