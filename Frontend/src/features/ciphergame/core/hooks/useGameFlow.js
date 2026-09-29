@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect, no-unused-vars, react-hooks/exhaustive-deps */
+/* eslint-disable no-unused-vars, react-hooks/exhaustive-deps */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthContext";
@@ -43,6 +43,20 @@ const convertBackendProgress = (backendMap) => {
       );
     }
   }
+  return result;
+};
+
+const mergeProgress = (localProg, backendProg) => {
+  if (!backendProg) return localProg || defaultProgress();
+  const base = localProg || defaultProgress();
+  const result = defaultProgress();
+  VALID_CATEGORIES.forEach((cat) => {
+    VALID_DIFFICULTIES.forEach((diff) => {
+      const localArr = base[cat]?.[diff] || [];
+      const backendArr = backendProg[cat]?.[diff] || [];
+      result[cat][diff] = Array.from(new Set([...localArr, ...backendArr]));
+    });
+  });
   return result;
 };
 
@@ -145,15 +159,16 @@ export function useGameFlow() {
   const getUserId = () => user?.id || user?.userId || user?.username || 'anonymous';
 
   const [progress, setProgress] = useState(() => {
-    const map = user?.progress || user?.progressMap;
-    if (map) return convertBackendProgress(map);
+    let localSaved = null;
     try {
       const saved = localStorage.getItem("cipher_progress_v2");
-      if (saved) return JSON.parse(saved);
+      if (saved) localSaved = JSON.parse(saved);
     } catch (_e) {
       /* ignore storage error */
     }
-    return defaultProgress();
+    const map = user?.progress || user?.progressMap;
+    const backendProg = map ? convertBackendProgress(map) : null;
+    return mergeProgress(localSaved, backendProg);
   });
 
   // Keep progress in sync when user updates
@@ -161,21 +176,31 @@ export function useGameFlow() {
     if (user) {
       const map = user.progress || user.progressMap;
       if (map) {
-        setProgress(convertBackendProgress(map));
+        const backendProg = convertBackendProgress(map);
+        setProgress((prev) => {
+          const merged = mergeProgress(prev, backendProg);
+          try {
+            localStorage.setItem("cipher_progress_v2", JSON.stringify(merged));
+          } catch (_e) {
+            /* ignore storage error */
+          }
+          return merged;
+        });
       }
     }
   }, [user]);
 
   const initialProg = (() => {
-    const map = user?.progress || user?.progressMap;
-    if (map) return convertBackendProgress(map);
+    let localSaved = null;
     try {
       const saved = localStorage.getItem("cipher_progress_v2");
-      if (saved) return JSON.parse(saved);
+      if (saved) localSaved = JSON.parse(saved);
     } catch (_e) {
       /* ignore storage error */
     }
-    return defaultProgress();
+    const map = user?.progress || user?.progressMap;
+    const backendProg = map ? convertBackendProgress(map) : null;
+    return mergeProgress(localSaved, backendProg);
   })();
   const initialParsed = parseUrlParams(location.search, location.state, initialProg);
   const initialUid = user?.id || user?.userId || user?.username || 'anonymous';
@@ -208,14 +233,43 @@ export function useGameFlow() {
   });
   const stageSessionIdRef = useRef(initialSnapshot?.stageSessionId ?? null);
   const lastFailedSessionRef = useRef(null);
+  const completingStageIdRef = useRef(null);
+  const completeRunTokenRef = useRef(0);
   const [stageResult, setStageResult] = useState(null);
   const [leaderboardStage, setLeaderboardStage] = useState(null);
   const [stageFailNotice, setStageFailNotice] = useState(null);
   const [completionModalData, setCompletionModalData] = useState(null);
 
+  // Stable refs for tracking latest state without triggering cascading effect re-runs
+  const progressRef = useRef(progress);
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
+
+  const stageResultRef = useRef(stageResult);
+  useEffect(() => {
+    stageResultRef.current = stageResult;
+  }, [stageResult]);
+
+  const currentStageRef = useRef(currentStage);
+  useEffect(() => {
+    currentStageRef.current = currentStage;
+  }, [currentStage]);
+
+  const stageStartedAtRef = useRef(stageStartedAt);
+  useEffect(() => {
+    stageStartedAtRef.current = stageStartedAt;
+  }, [stageStartedAt]);
+
   // Sync state with URL / history popstate
   useEffect(() => {
-    const parsed = parseUrlParams(location.search, location.state, progress);
+    // If the score modal is currently open, do not touch or rebuild currentStage
+    if (stageResultRef.current) {
+      return;
+    }
+
+    const currentProg = progressRef.current;
+    const parsed = parseUrlParams(location.search, location.state, currentProg);
 
     if (parsed.isLockedRedirect) {
       if (parsed.category && parsed.difficulty) {
@@ -234,21 +288,23 @@ export function useGameFlow() {
     const uid = getUserId();
 
     if (parsed.category && parsed.difficulty && typeof parsed.stageIndex === 'number') {
-      const snapshot = loadStageSnapshot(uid, parsed.category, parsed.difficulty, parsed.stageIndex);
-      if (snapshot) {
-        stageSessionIdRef.current = snapshot.stageSessionId ?? null;
-        setStageStartedAt(Date.now() - (snapshot.elapsedMs || 0));
-      }
-
       setCurrentStage((prev) => {
+        // Return existing stage instance if already on the requested stage
         if (
           prev?.category === parsed.category &&
           prev?.difficulty === parsed.difficulty &&
-          prev?.stageIndex === parsed.stageIndex &&
-          !snapshot
+          prev?.stageIndex === parsed.stageIndex
         ) {
           return prev;
         }
+
+        // Only load snapshot when initializing a new stage object
+        const snapshot = loadStageSnapshot(uid, parsed.category, parsed.difficulty, parsed.stageIndex);
+        if (snapshot) {
+          stageSessionIdRef.current = snapshot.stageSessionId ?? null;
+          setStageStartedAt(Date.now() - (snapshot.elapsedMs || 0));
+        }
+
         return createStageObject(
           parsed.category,
           parsed.difficulty,
@@ -260,7 +316,7 @@ export function useGameFlow() {
     } else {
       setCurrentStage(null);
     }
-  }, [location.search, progress]);
+  }, [location.search]);
 
   const isUnlocked = (cat, diff) => {
     return isTierUnlocked(cat, diff, progress);
@@ -292,9 +348,11 @@ export function useGameFlow() {
   };
 
   const saveSnapshot = useCallback((gameState) => {
-    if (!currentStage) return false;
-    const { category: cat, difficulty: diff, stageIndex, levelData } = currentStage;
-    const elapsed = stageStartedAt ? Math.max(0, Date.now() - stageStartedAt) : 0;
+    const stage = currentStageRef.current;
+    if (!stage) return false;
+    const { category: cat, difficulty: diff, stageIndex, levelData } = stage;
+    const started = stageStartedAtRef.current;
+    const elapsed = started ? Math.max(0, Date.now() - started) : 0;
     const uid = getUserId();
     return saveStageSnapshot(uid, {
       category: cat,
@@ -305,16 +363,19 @@ export function useGameFlow() {
       elapsedMs: elapsed,
       gameState,
     });
-  }, [currentStage, stageStartedAt, user]);
+  }, [user]);
 
   const clearSnapshot = useCallback(() => {
-    if (!currentStage) return;
-    const { category: cat, difficulty: diff, stageIndex } = currentStage;
+    const stage = currentStageRef.current;
+    if (!stage) return;
+    const { category: cat, difficulty: diff, stageIndex } = stage;
     const uid = getUserId();
     clearStageSnapshot(uid, cat, diff, stageIndex);
-  }, [currentStage, user]);
+  }, [user]);
 
   const startStage = (cat, diff, stageIndex, options = {}) => {
+    completingStageIdRef.current = null;
+    completeRunTokenRef.current++;
     const uid = getUserId();
     clearStageSnapshot(uid, cat, diff, stageIndex);
 
@@ -352,7 +413,19 @@ export function useGameFlow() {
   const completeStage = async () => {
     if (!currentStage) return;
     const { category: cat, difficulty: diff, stageIndex, id } = currentStage;
+    const stageId = `${cat}-${diff}-${stageIndex}`;
+
+    // Re-entrancy guard: if already completing this stage, log and bail immediately
+    if (completingStageIdRef.current === stageId) {
+      console.warn(`[completeStage] Duplicate completion call ignored for stage: ${stageId}`);
+      return;
+    }
+    completingStageIdRef.current = stageId;
+    const currentRunToken = ++completeRunTokenRef.current;
+
     const uid = getUserId();
+    
+    // Clear stage snapshot immediately before async calls or score modal display
     clearStageSnapshot(uid, cat, diff, stageIndex);
 
     let scoreResult = null;
@@ -365,6 +438,12 @@ export function useGameFlow() {
         console.warn("Scoring complete failed, using local scoring:", err.message);
       }
     }
+
+    // Check if this run has been cancelled/superceded by user navigation
+    if (completeRunTokenRef.current !== currentRunToken) {
+      return;
+    }
+
     if (!scoreResult) {
       const currentStreak = Number(user?.gameStreak) || 0;
       const newStreak = currentStreak + 1;
@@ -388,7 +467,6 @@ export function useGameFlow() {
     setStageResult({ ...scoreResult, category: cat, difficulty: diff, stageIndex });
 
     // Optimistically record stage completion synchronously so next stage unlocks immediately
-    const stageId = `${cat}-${diff}-${stageIndex}`;
     setProgress((prev) => {
       const catProg = prev[cat] || { easy: [], medium: [], hard: [] };
       const diffArr = catProg[diff] || [];
@@ -401,24 +479,13 @@ export function useGameFlow() {
       };
       try {
         localStorage.setItem("cipher_progress_v2", JSON.stringify(next));
-      } catch (e) {
+      } catch (_e) {
         /* ignore storage error */
       }
       return next;
     });
 
-    try {
-      const response = await userApi.saveProgress(cat, diff, stageIndex);
-      if (response && response.progressMap) {
-        setProgress(convertBackendProgress(response.progressMap));
-      }
-      if (refreshProfile) {
-        await refreshProfile();
-      }
-    } catch (err) {
-      console.warn("Could not save progress to backend, using local progress:", err.message);
-    }
-
+    // Set tier completion modal synchronously BEFORE network awaits so it cannot be late-resurrected
     if (stageIndex === 4) {
       const cipherNames = { caesar: 'Caesar', vigenere: 'Vigenère', playfair: 'Playfair' };
       const cipherName = cipherNames[cat] || 'Cipher';
@@ -460,12 +527,48 @@ export function useGameFlow() {
 
     setCurrentStage(null);
     setLoadingTargetStage(null);
+
+    // Background asynchronous persistence — check token before writing state
+    try {
+      try {
+        const response = await userApi.saveProgress(cat, diff, stageIndex);
+        if (completeRunTokenRef.current === currentRunToken && response && response.progressMap) {
+          const backendProg = convertBackendProgress(response.progressMap);
+          setProgress((prev) => {
+            const merged = mergeProgress(prev, backendProg);
+            try {
+              localStorage.setItem("cipher_progress_v2", JSON.stringify(merged));
+            } catch (_e) {
+              /* ignore storage error */
+            }
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.warn("Could not save progress to backend, using local progress:", err.message);
+      }
+
+      if (refreshProfile) {
+        try {
+          await refreshProfile();
+        } catch (err) {
+          console.warn("Could not refresh profile after stage completion (ignoring):", err.message);
+        }
+      }
+    } finally {
+      if (completingStageIdRef.current === stageId && completeRunTokenRef.current === currentRunToken) {
+        completingStageIdRef.current = null;
+      }
+    }
   };
 
   const handleContinueNextDifficulty = () => {
     if (!completionModalData) return;
     const { category: cat, nextDifficulty } = completionModalData;
+    completingStageIdRef.current = null;
+    completeRunTokenRef.current++;
     setCompletionModalData(null);
+    setStageResult(null);
     if (nextDifficulty) {
       setDifficulty(nextDifficulty);
       startStage(cat, nextDifficulty, 0, { replace: true });
@@ -475,7 +578,10 @@ export function useGameFlow() {
   };
 
   const handleCloseCompletionModal = () => {
+    completingStageIdRef.current = null;
+    completeRunTokenRef.current++;
     setCompletionModalData(null);
+    setStageResult(null);
     goToCategories();
   };
 
@@ -552,6 +658,8 @@ export function useGameFlow() {
   const dismissStageResult = () => setStageResult(null);
 
   const returnToRoadmap = (cat, diff) => {
+    completingStageIdRef.current = null;
+    completeRunTokenRef.current++;
     const targetCat = cat || category;
     const targetDiff = diff || difficulty;
     if (currentStage) {
@@ -563,7 +671,6 @@ export function useGameFlow() {
     setCurrentStage(null);
     setLoadingTargetStage(null);
     setStageResult(null);
-    setCompletionModalData(null);
     setLeaderboardStage(null);
     if (targetCat && targetDiff) {
       navigate(`/dashboard/ciphergame?category=${targetCat}&difficulty=${targetDiff}`, { replace: true });
@@ -575,6 +682,8 @@ export function useGameFlow() {
   };
 
   const goToCategories = () => {
+    completingStageIdRef.current = null;
+    completeRunTokenRef.current++;
     if (currentStage) {
       const uid = getUserId();
       clearStageSnapshot(uid, currentStage.category, currentStage.difficulty, currentStage.stageIndex);
@@ -583,12 +692,15 @@ export function useGameFlow() {
     setDifficulty(null);
     setCurrentStage(null);
     setLoadingTargetStage(null);
+    setStageResult(null);
     setCompletionModalData(null);
     setLeaderboardStage(null);
     navigate('/dashboard');
   };
 
   const selectCategory = (cat) => {
+    completingStageIdRef.current = null;
+    completeRunTokenRef.current++;
     if (currentStage) {
       const uid = getUserId();
       clearStageSnapshot(uid, currentStage.category, currentStage.difficulty, currentStage.stageIndex);
@@ -597,12 +709,15 @@ export function useGameFlow() {
     setDifficulty(null);
     setCurrentStage(null);
     setLoadingTargetStage(null);
+    setStageResult(null);
     setCompletionModalData(null);
     setLeaderboardStage(null);
     navigate(`/dashboard/ciphergame?category=${cat}`);
   };
 
   const selectDifficulty = (diff) => {
+    completingStageIdRef.current = null;
+    completeRunTokenRef.current++;
     if (currentStage) {
       const uid = getUserId();
       clearStageSnapshot(uid, currentStage.category, currentStage.difficulty, currentStage.stageIndex);
@@ -610,12 +725,15 @@ export function useGameFlow() {
     setDifficulty(diff);
     setCurrentStage(null);
     setLoadingTargetStage(null);
+    setStageResult(null);
     setCompletionModalData(null);
     setLeaderboardStage(null);
     navigate(`/dashboard/ciphergame?category=${category}&difficulty=${diff}`);
   };
 
   const backToDifficulty = () => {
+    completingStageIdRef.current = null;
+    completeRunTokenRef.current++;
     if (currentStage) {
       const uid = getUserId();
       clearStageSnapshot(uid, currentStage.category, currentStage.difficulty, currentStage.stageIndex);
@@ -623,6 +741,7 @@ export function useGameFlow() {
     setDifficulty(null);
     setCurrentStage(null);
     setLoadingTargetStage(null);
+    setStageResult(null);
     setCompletionModalData(null);
     setLeaderboardStage(null);
     if (category) {
@@ -633,12 +752,15 @@ export function useGameFlow() {
   };
 
   const backToStages = () => {
+    completingStageIdRef.current = null;
+    completeRunTokenRef.current++;
     if (currentStage) {
       const uid = getUserId();
       clearStageSnapshot(uid, currentStage.category, currentStage.difficulty, currentStage.stageIndex);
     }
     setCurrentStage(null);
     setLoadingTargetStage(null);
+    setStageResult(null);
     setCompletionModalData(null);
     setLeaderboardStage(null);
     if (category && difficulty) {
