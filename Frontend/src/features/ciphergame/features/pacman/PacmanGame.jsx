@@ -1950,50 +1950,106 @@ export default function PacmanGame({
               levelData={levelData}
             />
           ) : isVigenere ? (
-            <div className="vg-floating-ref-panel vg-pacman-ref-panel">
-              <div className="vg-floating-ref-title">Vigenère Alignment</div>
-              <div className="vg-formula-badge">Plain = (Cipher − Key + 26) mod 26</div>
-              <button
-                type="button"
-                className="vg-tabula-modal-btn vg-tabula-btn-compact"
-                onClick={() => setShowTabula(true)}
-                title="Open Interactive Tabula Recta"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '0.8rem' }}>grid_on</span>
-                <span>Tabula Recta</span>
-              </button>
-
-              <div className="vg-alignment-body">
-                <div className="vg-alignment-labels">
-                  <div>CIPHER</div>
-                  <div>KEY</div>
-                  <div style={{ color: 'var(--neon-green)' }}>PLAIN</div>
+            <div className="vg-floating-key-panel vg-fishing-az-panel vg-pacman-az-panel">
+              <div className="vg-floating-current-slot">
+                <div className="vg-arithmetic-title-stacked">
+                  <span className="vg-arithmetic-title-line">DECRYPTION</span>
+                  <span className="vg-arithmetic-title-line">ARITHMETIC</span>
                 </div>
-                <div className="vg-alignment-container">
-                  {vigenereAlignmentItems.map((item) => {
-                    if (item.isSpace) {
-                      return <div key={item.id} className="vg-alignment-space" />;
-                    }
+                <button
+                  type="button"
+                  className="vg-tabula-modal-btn vg-tabula-btn-compact"
+                  onClick={() => setShowTabula(true)}
+                  title="Open Interactive Tabula Recta"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>grid_on</span>
+                  <span>Tabula Recta</span>
+                </button>
+              </div>
+
+              {/* Dedicated active calculation card */}
+              <div className="vg-fishing-calc-card">
+                <div className="vg-calc-top-row">
+                  <span className="vg-calc-label">ACTIVE LETTER DECRYPTION</span>
+                </div>
+                <div className="vg-calc-formula-row">
+                  <div className="vg-calc-item cipher">
+                    <span className="lbl">Cipher</span>
+                    <strong>{activeSolvingItem ? activeSolvingItem.cipherChar : '-'}</strong>
+                    <span className="val">{activeSolvingItem ? charToIdx(activeSolvingItem.cipherChar) : 0}</span>
+                  </div>
+                  <span className="vg-calc-op">−</span>
+                  <div className="vg-calc-item key">
+                    <span className="lbl">Key</span>
+                    <strong>{activeSolvingItem ? activeSolvingItem.keyChar : '-'}</strong>
+                    <span className="val">{activeSolvingItem ? activeSolvingItem.shiftVal : 0}</span>
+                  </div>
+                  <span className="vg-calc-op">=</span>
+                  <div className={`vg-calc-item plain ${activeSolvingItem && activeSolvingItem.isSolved ? 'is-solved' : ''}`}>
+                    <span className="lbl">Target</span>
+                    <strong style={{ color: activeSolvingItem && activeSolvingItem.isSolved ? 'var(--neon-green)' : '#ffffff' }}>
+                      {activeSolvingItem && activeSolvingItem.isSolved ? activeSolvingItem.plainChar : '?'}
+                    </strong>
+                    <span
+                      className="val"
+                      style={{ visibility: activeSolvingItem && activeSolvingItem.isSolved ? 'visible' : 'hidden' }}
+                    >
+                      {activeSolvingItem ? (charToIdx(activeSolvingItem.cipherChar) - activeSolvingItem.shiftVal + 26) % 26 : 0}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Calculate prompt line */}
+                <div className="vg-calc-help-row">
+                  {activeSolvingItem && activeSolvingItem.isSolved ? (
+                    <span className="vg-calc-help-text solved">
+                      ✅ Solved: {charToIdx(activeSolvingItem.cipherChar)} − {activeSolvingItem.shiftVal} = {(charToIdx(activeSolvingItem.cipherChar) - activeSolvingItem.shiftVal + 26) % 26} ({activeSolvingItem.plainChar})
+                    </span>
+                  ) : activeSolvingItem && (charToIdx(activeSolvingItem.cipherChar) - activeSolvingItem.shiftVal < 0) ? (
+                    <span className="vg-calc-help-text wrap-around">
+                      ⚠️ Wrap-Around: Calculate ({charToIdx(activeSolvingItem.cipherChar)} − {activeSolvingItem.shiftVal} + 26) = <strong>?</strong>
+                    </span>
+                  ) : (
+                    <span className="vg-calc-help-text normal">
+                      💡 Calculate: {activeSolvingItem ? charToIdx(activeSolvingItem.cipherChar) : 0} − {activeSolvingItem ? activeSolvingItem.shiftVal : 0} = <strong>?</strong>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* 2-row x 13-col Alphabet grid */}
+              <div className="vg-sprint-alphabet-grid">
+                <div className="vg-alphabet-row">
+                  {alphabet.slice(0, 13).map((ch, i) => {
+                    const isCipher = activeSolvingItem && ch === activeSolvingItem.cipherChar;
+                    const isKey = activeSolvingItem && ch === activeSolvingItem.keyChar;
+                    const isTarget = activeSolvingItem && activeSolvingItem.isSolved && ch === activeSolvingItem.plainChar;
+                    let cellClass = "vg-alphabet-cell";
+                    if (isCipher) cellClass += " is-cipher";
+                    if (isKey) cellClass += " is-key";
+                    if (isTarget) cellClass += " is-target";
                     return (
-                      <div
-                        key={item.id}
-                        className={`vg-alignment-col ${item.isActive ? 'active-slot' : ''}`}
-                        title={`Pos #${item.index + 1}: ${item.cipherChar} (${charToIdx(item.cipherChar)}) − ${item.keyChar} (${charToIdx(item.keyChar)}) = ${item.isSolved ? item.plainChar : '?'}`}
-                      >
-                        <span className="vg-align-cipher">{item.cipherChar}</span>
-                        <span className="vg-align-key">{item.keyChar}</span>
-                        <span
-                          className="vg-align-plain"
-                          style={{
-                            color: item.isSolved
-                              ? 'var(--neon-green)'
-                              : item.isActive
-                              ? 'var(--neon-yellow)'
-                              : '#64748b'
-                          }}
-                        >
-                          {item.isSolved ? item.plainChar : (item.isActive ? '?' : '_')}
-                        </span>
+                      <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
+                        <span className="vg-alpha-char">{ch}</span>
+                        <span className="vg-alpha-val">{i}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="vg-alphabet-row">
+                  {alphabet.slice(13, 26).map((ch, i) => {
+                    const val = i + 13;
+                    const isCipher = activeSolvingItem && ch === activeSolvingItem.cipherChar;
+                    const isKey = activeSolvingItem && ch === activeSolvingItem.keyChar;
+                    const isTarget = activeSolvingItem && activeSolvingItem.isSolved && ch === activeSolvingItem.plainChar;
+                    let cellClass = "vg-alphabet-cell";
+                    if (isCipher) cellClass += " is-cipher";
+                    if (isKey) cellClass += " is-key";
+                    if (isTarget) cellClass += " is-target";
+                    return (
+                      <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
+                        <span className="vg-alpha-char">{ch}</span>
+                        <span className="vg-alpha-val">{val}</span>
                       </div>
                     );
                   })}
@@ -2001,29 +2057,73 @@ export default function PacmanGame({
               </div>
             </div>
           ) : (
-            <div className="pf-floating-matrix-hud pf-floating-ref-panel" style={{ position: 'absolute', bottom: '16px', left: '24px', zIndex: 20, maxWidth: 300, background: 'rgba(3, 14, 28, 0.88)', border: '1.5px solid rgba(0, 229, 255, 0.4)', borderRadius: '16px', padding: '12px 16px', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
-              <div className="pf-matrix-title" style={{ fontSize: '0.82rem', color: 'var(--neon-cyan)', marginBottom: '8px', fontWeight: 'bold', textAlign: 'center' }}>🔲 Key Matrix</div>
-              <div className="pf-matrix" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', maxWidth: '170px', margin: '0 auto' }}>
-                {(levelData.matrix || []).map((row, rowIndex) => row.map((letter, colIndex) => {
-                  const key = `${rowIndex}-${colIndex}`;
-                  const isHighlighted = cipherHighlight.has(key);
-                  return (
-                    <span key={letter} className={isHighlighted ? 'cipher-cell' : ''} style={{ fontSize: '0.8rem', padding: '4px 0', border: isHighlighted ? '1px solid var(--neon-yellow)' : '1px solid rgba(0, 229, 255, 0.1)', background: isHighlighted ? 'rgba(255, 215, 0, 0.15)' : 'rgba(0, 229, 255, 0.03)', color: isHighlighted ? 'var(--neon-yellow)' : '#fff', borderRadius: '6px', textAlign: 'center', fontWeight: 'bold' }}>
-                      {letter}
-                    </span>
-                  );
-                }))}
-              </div>
-              {cipherPair && (
-                <div style={{ marginTop: '8px', textAlign: 'center' }}>
-                  <div className="pf-rule-pill revealed" style={{ margin: '0 auto', fontSize: '0.72rem', fontWeight: 'bold', display: 'inline-block' }}>
-                    {levelData.rules ? levelData.rules[activeIndex] : ''}
-                  </div>
-                  <p className="pf-matrix-note" style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '4px 0 0 0', lineHeight: '1.3' }}>
-                    {describePlayfairRule(levelData.rules ? levelData.rules[activeIndex] : '', 'decrypt')}
-                  </p>
+            <div className="caesar-floating-cheat-sheet sprint-cheat-sheet" style={{ position: 'absolute', bottom: '16px', left: '24px', zIndex: 20, maxWidth: '340px' }}>
+              <div className="vg-floating-current-slot" style={{ marginBottom: '6px' }}>
+                <div className="vg-arithmetic-title-stacked">
+                  <span className="vg-arithmetic-title-line">PLAYFAIR</span>
+                  <span className="vg-arithmetic-title-line">5×5 MATRIX</span>
                 </div>
-              )}
+                <span className="vg-calc-badge">Key: {levelData.key || 'KEY'}</span>
+              </div>
+              <div className="caesar-cheat-body" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', width: '100%' }}>
+                  {(levelData.matrix || []).map((row, rowIndex) => row.map((letter, colIndex) => {
+                    const key = `${rowIndex}-${colIndex}`;
+                    const isHighlighted = cipherHighlight.has(key);
+                    return (
+                      <div
+                        key={`${rowIndex}-${colIndex}`}
+                        style={{
+                          padding: '3px 0',
+                          textAlign: 'center',
+                          fontFamily: 'JetBrains Mono, monospace',
+                          fontSize: '0.82rem',
+                          fontWeight: 800,
+                          borderRadius: '4px',
+                          background: isHighlighted ? 'rgba(0, 229, 255, 0.25)' : 'rgba(255, 255, 255, 0.04)',
+                          color: isHighlighted ? '#00e5ff' : '#cbd5e1',
+                          border: isHighlighted ? '1.5px solid #00e5ff' : '1px solid rgba(255, 255, 255, 0.1)',
+                          boxShadow: isHighlighted ? '0 0 10px rgba(0, 229, 255, 0.5)' : 'none',
+                        }}
+                      >
+                        {letter === 'I' ? 'I/J' : letter}
+                      </div>
+                    );
+                  }))}
+                </div>
+                {cipherPair && (
+                  <div className="vg-fishing-calc-card" style={{ width: '100%' }}>
+                    <div className="vg-calc-top-row">
+                      <span className="vg-calc-label">ACTIVE DIGRAPH DECRYPTION</span>
+                    </div>
+                    <div className="vg-calc-formula-row">
+                      <div className="vg-calc-item cipher">
+                        <span className="lbl">Cipher</span>
+                        <strong style={{ letterSpacing: '2px' }}>{cipherPair}</strong>
+                        <span className="val">DIGRAPH</span>
+                      </div>
+                      <span className="vg-calc-op">→</span>
+                      <div className="vg-calc-item key">
+                        <span className="lbl">Rule</span>
+                        <strong style={{ fontSize: '0.85rem' }}>{levelData.rules ? String(levelData.rules[activeIndex] || 'RULE').toUpperCase() : 'RULE'}</strong>
+                        <span className="val">5×5 MATRIX</span>
+                      </div>
+                      <span className="vg-calc-op">=</span>
+                      <div className="vg-calc-item plain">
+                        <span className="lbl">Target</span>
+                        <strong style={{ letterSpacing: '2px', color: '#ffffff' }}>??</strong>
+                        <span className="val">MYSTERY</span>
+                      </div>
+                    </div>
+
+                    <div className="vg-calc-help-row">
+                      <span className="vg-calc-help-text normal">
+                        💡 Rule: <strong>{describePlayfairRule(levelData.rules ? levelData.rules[activeIndex] : '', 'decrypt')}</strong>
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -2053,89 +2153,6 @@ export default function PacmanGame({
                   </span>
                 </>
               )}
-            </div>
-          )}
-
-          {/* 4b. Bottom-Right Vigenère A-Z Reference Panel */}
-          {isVigenere && (
-            <div className="vg-floating-key-panel vg-fishing-az-panel vg-pacman-az-panel">
-              <div className="vg-floating-current-slot">
-                <div className="vg-arithmetic-title">
-                  Decryption Arithmetic
-                </div>
-                <div className="vg-slot-badge-lg" style={{ fontSize: '0.82rem', padding: '2px 8px' }}>
-                  {vigenereAlignmentItems.filter(item => !item.isSpace && item.isSolved).length}/{vigenereAlignmentItems.filter(item => !item.isSpace).length} Solved
-                </div>
-              </div>
-
-              {/* Dedicated active calculation card */}
-              <div className="vg-fishing-calc-card">
-                <div className="vg-calc-top-row">
-                  <span className="vg-calc-label">Active Letter Decryption:</span>
-                  <span className="vg-calc-badge">Pos #{activeSolvingItem ? activeSolvingItem.index + 1 : 1}</span>
-                </div>
-                <div className="vg-calc-formula-row">
-                  <div className="vg-calc-item cipher">
-                    <span className="lbl">Cipher</span>
-                    <strong>{activeSolvingItem ? activeSolvingItem.cipherChar : '-'}</strong>
-                    <span className="val">{activeSolvingItem ? charToIdx(activeSolvingItem.cipherChar) : 0}</span>
-                  </div>
-                  <span className="vg-calc-op">−</span>
-                  <div className="vg-calc-item key">
-                    <span className="lbl">Key</span>
-                    <strong>{activeSolvingItem ? activeSolvingItem.keyChar : '-'}</strong>
-                    <span className="val">{activeSolvingItem ? activeSolvingItem.shiftVal : 0}</span>
-                  </div>
-                  <span className="vg-calc-op">=</span>
-                  <div className="vg-calc-item plain">
-                    <span className="lbl">Target</span>
-                    <strong style={{ color: 'var(--neon-green)' }}>
-                      {activeSolvingItem && activeSolvingItem.isSolved ? activeSolvingItem.plainChar : '?'}
-                    </strong>
-                    <span
-                      className="val"
-                      style={{ visibility: activeSolvingItem && activeSolvingItem.isSolved ? 'visible' : 'hidden' }}
-                    >
-                      {activeSolvingItem ? (charToIdx(activeSolvingItem.cipherChar) - activeSolvingItem.shiftVal + 26) % 26 : 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 2-row x 13-col Alphabet grid */}
-              <div className="vg-sprint-alphabet-grid">
-                <div className="vg-alphabet-row">
-                  {alphabet.slice(0, 13).map((ch, i) => {
-                    const isCipher = activeSolvingItem && ch === activeSolvingItem.cipherChar;
-                    const isKey = activeSolvingItem && ch === activeSolvingItem.keyChar;
-                    let cellClass = "vg-alphabet-cell";
-                    if (isCipher) cellClass += " is-cipher";
-                    if (isKey) cellClass += " is-key";
-                    return (
-                      <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
-                        <span className="vg-alpha-char">{ch}</span>
-                        <span className="vg-alpha-val">{i}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="vg-alphabet-row">
-                  {alphabet.slice(13, 26).map((ch, i) => {
-                    const val = i + 13;
-                    const isCipher = activeSolvingItem && ch === activeSolvingItem.cipherChar;
-                    const isKey = activeSolvingItem && ch === activeSolvingItem.keyChar;
-                    let cellClass = "vg-alphabet-cell";
-                    if (isCipher) cellClass += " is-cipher";
-                    if (isKey) cellClass += " is-key";
-                    return (
-                      <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
-                        <span className="vg-alpha-char">{ch}</span>
-                        <span className="vg-alpha-val">{val}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           )}
 

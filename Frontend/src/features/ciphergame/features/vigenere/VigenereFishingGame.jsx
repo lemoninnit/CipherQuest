@@ -758,8 +758,9 @@ export default function VigenereFishingGame({
         {/* 2. Floating Reference Panel: Decryption Arithmetic & A-Z Reference (Bottom-Left) */}
         <div className={`vg-floating-key-panel vg-fishing-az-panel ${basketShake ? 'shake' : ''}`}>
           <div className="vg-floating-current-slot">
-            <div className="vg-arithmetic-title">
-              Decryption Arithmetic
+            <div className="vg-arithmetic-title-stacked">
+              <span className="vg-arithmetic-title-line">DECRYPTION</span>
+              <span className="vg-arithmetic-title-line">ARITHMETIC</span>
             </div>
             <button
               type="button"
@@ -775,7 +776,7 @@ export default function VigenereFishingGame({
           {/* Active calculation card */}
           <div className="vg-fishing-calc-card">
             <div className="vg-calc-top-row">
-              <span className="vg-calc-label">Active Letter Decryption</span>
+              <span className="vg-calc-label">ACTIVE LETTER DECRYPTION</span>
             </div>
             <div className="vg-calc-formula-row">
               <div className="vg-calc-item cipher">

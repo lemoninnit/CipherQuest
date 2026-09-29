@@ -502,9 +502,17 @@ export default function PlayfairFishingGame({
         </div>
 
         {/* Key Matrix (Bottom-Left) */}
-        <div className="caesar-floating-cheat-sheet playfair-matrix-card pf-matrix-bottom-left">
-          <div className="playfair-cheat-header">
-            <span className="playfair-cheat-title">PLAYFAIR 5×5 MATRIX</span>
+        <div className="caesar-floating-cheat-sheet playfair-matrix-card pf-matrix-bottom-left" style={{ maxWidth: '360px' }}>
+          <div className="vg-floating-current-slot" style={{ marginBottom: '6px' }}>
+            <div className="vg-arithmetic-title-stacked">
+              <span className="vg-arithmetic-title-line">PLAYFAIR</span>
+              <span className="vg-arithmetic-title-line">5×5 MATRIX</span>
+            </div>
+            {activePair && (
+              <span className="vg-calc-badge" style={{ textTransform: 'uppercase' }}>
+                {activePair.rule || 'RULE'}
+              </span>
+            )}
           </div>
           <div className="playfair-cheat-body">
             <div className="pf-template-matrix-grid">
@@ -525,12 +533,45 @@ export default function PlayfairFishingGame({
               )}
             </div>
             {activePair && (
-              <div className="pf-cheat-active-pair">
-                <span className="pf-cheat-cipher-lbl">CIPHER</span>
-                <span className="pf-cheat-cipher-val">{activePair.cipherPair}</span>
-                <span className="pf-cheat-arrow">to</span>
-                <span className="pf-cheat-plain-lbl">PLAIN</span>
-                <span className="pf-cheat-plain-val">{solvedPairs[activeIndex] ? activePair.plainPair : '??'}</span>
+              <div className="vg-fishing-calc-card" style={{ marginTop: '6px', width: '100%' }}>
+                <div className="vg-calc-top-row">
+                  <span className="vg-calc-label">ACTIVE DIGRAPH DECRYPTION</span>
+                </div>
+                <div className="vg-calc-formula-row">
+                  <div className="vg-calc-item cipher">
+                    <span className="lbl">Cipher</span>
+                    <strong style={{ letterSpacing: '2px' }}>{activePair.cipherPair}</strong>
+                    <span className="val">DIGRAPH</span>
+                  </div>
+                  <span className="vg-calc-op">→</span>
+                  <div className="vg-calc-item key">
+                    <span className="lbl">Rule</span>
+                    <strong style={{ fontSize: '0.85rem' }}>{activePair.rule ? String(activePair.rule).toUpperCase() : 'RULE'}</strong>
+                    <span className="val">5×5 MATRIX</span>
+                  </div>
+                  <span className="vg-calc-op">=</span>
+                  <div className={`vg-calc-item plain ${solvedPairs[activeIndex] ? 'is-solved' : ''}`}>
+                    <span className="lbl">Target</span>
+                    <strong style={{ letterSpacing: '2px', color: solvedPairs[activeIndex] ? 'var(--neon-green)' : '#ffffff' }}>
+                      {solvedPairs[activeIndex] ? activePair.plainPair : '??'}
+                    </strong>
+                    <span className="val">
+                      {solvedPairs[activeIndex] ? 'SOLVED' : 'MYSTERY'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="vg-calc-help-row">
+                  {solvedPairs[activeIndex] ? (
+                    <span className="vg-calc-help-text solved">
+                      ✅ Solved: {activePair.cipherPair} → {activePair.plainPair}
+                    </span>
+                  ) : (
+                    <span className="vg-calc-help-text normal">
+                      💡 Rule: <strong>{currentRuleHint}</strong>
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>

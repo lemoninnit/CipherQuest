@@ -6551,11 +6551,28 @@
   border-radius: 6px;
 }
 
+.vg-arithmetic-title-stacked {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  line-height: 1.15 !important;
+  text-align: left !important;
+}
+
+.vg-arithmetic-title-line {
+  font-family: 'Space Grotesk', sans-serif !important;
+  font-size: 0.78rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
 .vg-calc-formula-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   font-family: 'JetBrains Mono', monospace;
 }
 
@@ -6563,59 +6580,92 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2px 8px;
+  padding: 3px 10px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  min-width: 44px;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  min-width: 48px;
+  box-sizing: border-box;
 }
 
 .vg-calc-item.cipher {
-  border-color: rgba(0, 229, 255, 0.35);
+  border-color: rgba(0, 229, 255, 0.6);
+  background: rgba(0, 229, 255, 0.08);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
 }
 
 .vg-calc-item.key {
-  border-color: rgba(255, 215, 0, 0.35);
+  border-color: rgba(255, 215, 0, 0.6);
+  background: rgba(255, 215, 0, 0.08);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
 }
 
 .vg-calc-item.plain {
-  border-color: rgba(57, 255, 20, 0.35);
-  background: rgba(57, 255, 20, 0.04);
+  border-color: rgba(57, 255, 20, 0.6);
+  background: rgba(57, 255, 20, 0.06);
+  box-shadow: 0 0 8px rgba(57, 255, 20, 0.2);
 }
 
 .vg-calc-item .lbl {
-  font-size: 0.52rem;
-  color: var(--text-muted);
+  font-size: 0.54rem;
+  color: #94a3b8;
   text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .vg-calc-item strong {
-  font-size: 1rem;
+  font-size: 1.15rem;
   color: #fff;
   line-height: 1.1;
+  font-weight: 800;
 }
 
 .vg-calc-item .val {
-  font-size: 0.58rem;
-  color: var(--text-muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.vg-calc-item.cipher .val {
+  color: var(--neon-cyan);
+}
+
+.vg-calc-item.key .val {
+  color: #ffd700;
+}
+
+.vg-calc-item.plain .val {
+  color: var(--neon-green);
 }
 
 .vg-calc-op {
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.6);
   font-weight: bold;
 }
 
 .vg-alphabet-cell.is-cipher {
   border-color: var(--neon-cyan) !important;
-  background: rgba(0, 229, 255, 0.18) !important;
-  box-shadow: 0 0 6px rgba(0, 229, 255, 0.4) !important;
+  background: rgba(0, 229, 255, 0.22) !important;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.5) !important;
+}
+.vg-alphabet-cell.is-cipher .vg-alpha-char {
+  color: var(--neon-cyan) !important;
 }
 
 .vg-alphabet-cell.is-key {
-  border-color: var(--neon-yellow) !important;
-  background: rgba(255, 215, 0, 0.18) !important;
-  box-shadow: 0 0 6px rgba(255, 215, 0, 0.4) !important;
+  border-color: #ffd700 !important;
+  background: rgba(255, 215, 0, 0.22) !important;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5) !important;
+}
+.vg-alphabet-cell.is-key .vg-alpha-char {
+  color: #ffd700 !important;
+}
+
+.vg-alphabet-cell.is-cipher.is-key {
+  border-color: #00e5ff !important;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(255, 215, 0, 0.3)) !important;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.6) !important;
 }
 
 @media (max-width: 1440px), (max-height: 850px) {
@@ -6914,26 +6964,24 @@
 }
 
 /* Tightened Decryption Arithmetic Panel */
-.vigenere-fishing-fullscreen .vg-fishing-az-panel {
-  width: fit-content !important;
-  min-width: 380px !important;
-  max-width: 460px !important;
-  padding: 10px 14px !important;
+.vigenere-fishing-fullscreen .vg-fishing-az-panel,
+.vigenere-sprint-fullscreen .vg-fishing-az-panel,
+.vg-pacman-fullscreen .vg-fishing-az-panel {
+  position: absolute !important;
   bottom: 18px !important;
   left: 24px !important;
   right: auto !important;
-  gap: 6px !important;
-}
-
-.vigenere-sprint-fullscreen .vg-fishing-az-panel,
-.vg-pacman-fullscreen .vg-fishing-az-panel {
+  z-index: 20 !important;
   width: fit-content !important;
   min-width: 360px !important;
   max-width: 440px !important;
   padding: 10px 14px !important;
-  bottom: 18px !important;
-  right: 22px !important;
   gap: 6px !important;
+}
+
+.vigenere-sprint-fullscreen .vg-fishing-az-panel {
+  bottom: 12px !important;
+  left: 20px !important;
 }
 
 .vigenere-fishing-fullscreen .vg-header-actions {
@@ -6943,14 +6991,16 @@
 }
 
 .vg-calc-help-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 4px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px dashed rgba(255, 255, 255, 0.12);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-top: 4px !important;
+  padding: 5px 10px !important;
+  border-radius: 6px !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+  border: 1px dashed rgba(0, 229, 255, 0.35) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .vg-calc-help-text {

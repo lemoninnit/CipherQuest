@@ -1343,81 +1343,7 @@ export default function VigenereSprint({
             )}
           </div>
 
-          {/* 2. Bottom-Left Vigenère Alignment Panel */}
-          <div className="vg-floating-ref-panel vg-sprint-align-panel">
-            <div className="vg-floating-ref-title">Vigenère Alignment</div>
-            <div className="vg-formula-badge">Plain = (Cipher − Key + 26) mod 26</div>
-            <button
-              type="button"
-              className="vg-tabula-modal-btn vg-tabula-btn-compact"
-              onClick={() => setShowTabula(true)}
-              title="Open Interactive Tabula Recta"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '0.8rem' }}>grid_on</span>
-              <span>Tabula Recta</span>
-            </button>
-
-            <div className="vg-alignment-body">
-              <div className="vg-alignment-labels">
-                <div>CIPHER</div>
-                <div>KEY</div>
-                <div style={{ color: 'var(--neon-green)' }}>PLAIN</div>
-              </div>
-              <div className="vg-alignment-container">
-                {levelData.plaintext.split('').map((char, idx) => {
-                  if (char === ' ') {
-                    return <div key={idx} className="vg-alignment-space" />;
-                  }
-                  const cipherCh = levelData.ciphertext[idx] || '';
-                  let nonSpace = 0;
-                  for (let k = 0; k < idx; k++) {
-                    if (levelData.plaintext[k] !== ' ') nonSpace++;
-                  }
-                  const keyCh = targetKey[nonSpace % targetKey.length] || 'A';
-                  const shiftVal = keyCh.charCodeAt(0) - 65;
-                  const isCurrent = idx === currentIdx;
-                  const isSolved = solvedLetters[idx] !== undefined;
-                  const isHint = hintIndices.has(idx);
-
-                  let plainDisplay;
-                  if (isSolved) {
-                    plainDisplay = solvedLetters[idx];
-                  } else if (isHint) {
-                    plainDisplay = char;
-                  } else if (isCurrent) {
-                    plainDisplay = '?';
-                  } else {
-                    plainDisplay = '_';
-                  }
-
-                  return (
-                    <div
-                      key={idx}
-                      className={`vg-alignment-col ${isCurrent ? 'active-slot' : ''}`}
-                      title={`Pos #${idx + 1}: ${cipherCh} (${cipherCh.charCodeAt(0) - 65}) − ${keyCh} (${shiftVal}) = ${isSolved || isHint ? plainDisplay : '?'}`}
-                    >
-                      <span className="vg-align-cipher">{cipherCh}</span>
-                      <span className="vg-align-key">{keyCh}</span>
-                      <span
-                        className="vg-align-plain"
-                        style={{
-                          color: isSolved || isHint
-                            ? 'var(--neon-green)'
-                            : isCurrent
-                            ? 'var(--neon-yellow)'
-                            : '#64748b'
-                        }}
-                      >
-                        {plainDisplay}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* 3. Bottom-Center Floating Keyword Pill */}
+          {/* 2. Bottom-Center Floating Keyword Pill */}
           {targetKey && (
             <div className="vg-fishing-bottom-keyword" title={`Repeating Keyword: ${targetKey}`}>
               <span className="vg-pill-lbl">KEYWORD</span>
@@ -1425,22 +1351,28 @@ export default function VigenereSprint({
             </div>
           )}
 
-          {/* 4. Bottom-Right Decryption Arithmetic & A-Z Reference */}
+          {/* 3. Bottom-Left Decryption Arithmetic & A-Z Reference */}
           <div className="vg-floating-key-panel vg-fishing-az-panel vg-sprint-az-panel">
             <div className="vg-floating-current-slot">
-              <div className="vg-arithmetic-title">
-                Decryption Arithmetic
+              <div className="vg-arithmetic-title-stacked">
+                <span className="vg-arithmetic-title-line">DECRYPTION</span>
+                <span className="vg-arithmetic-title-line">ARITHMETIC</span>
               </div>
-              <div className="vg-slot-badge-lg" style={{ fontSize: '0.82rem', padding: '2px 8px' }}>
-                {Object.keys(solvedLetters).length}/{maskedIndices.length} Solved
-              </div>
+              <button
+                type="button"
+                className="vg-tabula-modal-btn vg-tabula-btn-compact"
+                onClick={() => setShowTabula(true)}
+                title="Open Interactive Tabula Recta"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '0.85rem' }}>grid_on</span>
+                <span>Tabula Recta</span>
+              </button>
             </div>
 
             {/* Active calculation card */}
             <div className="vg-fishing-calc-card">
               <div className="vg-calc-top-row">
-                <span className="vg-calc-label">Active Letter Decryption:</span>
-                <span className="vg-calc-badge">Pos #{currentIdx + 1}</span>
+                <span className="vg-calc-label">ACTIVE LETTER DECRYPTION</span>
               </div>
               <div className="vg-calc-formula-row">
                 <div className="vg-calc-item cipher">
@@ -1455,9 +1387,9 @@ export default function VigenereSprint({
                   <span className="val">{currentShiftKey}</span>
                 </div>
                 <span className="vg-calc-op">=</span>
-                <div className="vg-calc-item plain">
+                <div className={`vg-calc-item plain ${solvedLetters[currentIdx] !== undefined ? 'is-solved' : ''}`}>
                   <span className="lbl">Target</span>
-                  <strong style={{ color: 'var(--neon-green)' }}>
+                  <strong style={{ color: solvedLetters[currentIdx] !== undefined ? 'var(--neon-green)' : '#ffffff' }}>
                     {solvedLetters[currentIdx] !== undefined ? currentTargetChar : '?'}
                   </strong>
                   <span
@@ -1468,6 +1400,23 @@ export default function VigenereSprint({
                   </span>
                 </div>
               </div>
+
+              {/* Calculate prompt line */}
+              <div className="vg-calc-help-row">
+                {solvedLetters[currentIdx] !== undefined ? (
+                  <span className="vg-calc-help-text solved">
+                    ✅ Solved: {currentBatonLetter ? currentBatonLetter.charCodeAt(0) - 65 : 0} − {currentShiftKey} = {currentTargetChar ? currentTargetChar.charCodeAt(0) - 65 : 0} ({currentTargetChar})
+                  </span>
+                ) : (currentBatonLetter && (currentBatonLetter.charCodeAt(0) - 65 - currentShiftKey < 0)) ? (
+                  <span className="vg-calc-help-text wrap-around">
+                    ⚠️ Wrap-Around: Calculate ({currentBatonLetter.charCodeAt(0) - 65} − {currentShiftKey} + 26) = <strong>?</strong>
+                  </span>
+                ) : (
+                  <span className="vg-calc-help-text normal">
+                    💡 Calculate: {currentBatonLetter ? currentBatonLetter.charCodeAt(0) - 65 : 0} − {currentShiftKey} = <strong>?</strong>
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* 2-row x 13-col Alphabet grid */}
@@ -1476,9 +1425,11 @@ export default function VigenereSprint({
                 {ALPHABET.slice(0, 13).map((ch, i) => {
                   const isCipher = ch === currentBatonLetter;
                   const isKey = ch === currentKeyChar;
+                  const isTarget = (solvedLetters[currentIdx] !== undefined) && ch === currentTargetChar;
                   let cellClass = "vg-alphabet-cell";
                   if (isCipher) cellClass += " is-cipher";
                   if (isKey) cellClass += " is-key";
+                  if (isTarget) cellClass += " is-target";
                   return (
                     <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
                       <span className="vg-alpha-char">{ch}</span>
@@ -1492,9 +1443,11 @@ export default function VigenereSprint({
                   const val = i + 13;
                   const isCipher = ch === currentBatonLetter;
                   const isKey = ch === currentKeyChar;
+                  const isTarget = (solvedLetters[currentIdx] !== undefined) && ch === currentTargetChar;
                   let cellClass = "vg-alphabet-cell";
                   if (isCipher) cellClass += " is-cipher";
                   if (isKey) cellClass += " is-key";
+                  if (isTarget) cellClass += " is-target";
                   return (
                     <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
                       <span className="vg-alpha-char">{ch}</span>

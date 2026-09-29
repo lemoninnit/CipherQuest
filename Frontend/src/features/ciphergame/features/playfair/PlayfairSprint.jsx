@@ -1365,12 +1365,15 @@ export default function PlayfairSprint({
           </div>
 
           {/* 2. Bottom-Left Floating 5×5 Matrix Cheat Sheet */}
-          <div className="caesar-floating-cheat-sheet sprint-cheat-sheet" style={{ maxWidth: '340px' }}>
-            <div className="caesar-cheat-header">
-              <span className="caesar-cheat-title">Playfair 5×5 Matrix</span>
-              <span className="caesar-cheat-badge">Key: {levelData.key || 'KEY'}</span>
+          <div className="caesar-floating-cheat-sheet sprint-cheat-sheet" style={{ maxWidth: '360px' }}>
+            <div className="vg-floating-current-slot" style={{ marginBottom: '6px' }}>
+              <div className="vg-arithmetic-title-stacked">
+                <span className="vg-arithmetic-title-line">PLAYFAIR</span>
+                <span className="vg-arithmetic-title-line">5×5 MATRIX</span>
+              </div>
+              <span className="vg-calc-badge">Key: {levelData.key || 'KEY'}</span>
             </div>
-            <div className="caesar-cheat-body" style={{ display: 'flex', flexDirection: 'column', gap: '3px', alignItems: 'center' }}>
+            <div className="caesar-cheat-body" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', width: '100%' }}>
                 {matrix.map((row, rIdx) =>
                   row.map((letter, cIdx) => {
@@ -1400,6 +1403,50 @@ export default function PlayfairSprint({
                   })
                 )}
               </div>
+
+              {/* Active Digraph Calculation Card */}
+              {pairData[currentIdx] && (
+                <div className="vg-fishing-calc-card" style={{ width: '100%' }}>
+                  <div className="vg-calc-top-row">
+                    <span className="vg-calc-label">ACTIVE DIGRAPH DECRYPTION</span>
+                  </div>
+                  <div className="vg-calc-formula-row">
+                    <div className="vg-calc-item cipher">
+                      <span className="lbl">Cipher</span>
+                      <strong style={{ letterSpacing: '2px' }}>{pairData[currentIdx].cipherPair}</strong>
+                      <span className="val">DIGRAPH</span>
+                    </div>
+                    <span className="vg-calc-op">→</span>
+                    <div className="vg-calc-item key">
+                      <span className="lbl">Rule</span>
+                      <strong style={{ fontSize: '0.85rem' }}>{pairData[currentIdx].rule ? String(pairData[currentIdx].rule).toUpperCase() : 'RULE'}</strong>
+                      <span className="val">5×5 MATRIX</span>
+                    </div>
+                    <span className="vg-calc-op">=</span>
+                    <div className={`vg-calc-item plain ${solvedLetters[currentIdx] !== undefined ? 'is-solved' : ''}`}>
+                      <span className="lbl">Target</span>
+                      <strong style={{ letterSpacing: '2px', color: solvedLetters[currentIdx] !== undefined ? 'var(--neon-green)' : '#ffffff' }}>
+                        {solvedLetters[currentIdx] !== undefined ? solvedLetters[currentIdx] : '??'}
+                      </strong>
+                      <span className="val">
+                        {solvedLetters[currentIdx] !== undefined ? 'SOLVED' : 'MYSTERY'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="vg-calc-help-row">
+                    {solvedLetters[currentIdx] !== undefined ? (
+                      <span className="vg-calc-help-text solved">
+                        ✅ Solved: {pairData[currentIdx].cipherPair} → {solvedLetters[currentIdx]}
+                      </span>
+                    ) : (
+                      <span className="vg-calc-help-text normal">
+                        💡 Rule: <strong>{describePlayfairRule(pairData[currentIdx].rule, 'decrypt')}</strong>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
