@@ -477,6 +477,8 @@ function CaesarCheatSheet({
     return list;
   }, [plaintext, ciphertext, levelData]);
 
+  const [selectedGlobalIdx, setSelectedGlobalIdx] = useState(null);
+
   const isLetterSolved = (p) => {
     if (p.isHint) return true;
     if (levelSolved && activeShift !== 0) return true;
@@ -488,18 +490,39 @@ function CaesarCheatSheet({
 
   const totalLetters = letterPositions.length;
   const solvedLettersCount = letterPositions.filter(p => isLetterSolved(p)).length;
-  const activeTarget = letterPositions.find(p => !isLetterSolved(p)) || letterPositions[0] || {
-    globalIdx: 0,
-    charIdx: 0,
-    plainChar: 'A',
-    cipherChar: 'A',
+  const unsolvedPositions = letterPositions.filter(p => !isLetterSolved(p));
+
+  const activeViewingTarget = (selectedGlobalIdx !== null && unsolvedPositions.find(p => p.globalIdx === selectedGlobalIdx))
+    || unsolvedPositions[0]
+    || letterPositions[0]
+    || {
+      globalIdx: 0,
+      charIdx: 0,
+      plainChar: 'A',
+      cipherChar: 'A',
+    };
+
+  const handlePrevPos = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedPositions.length <= 1) return;
+    const currentUnsolvedIdx = unsolvedPositions.findIndex(p => p.globalIdx === activeViewingTarget.globalIdx);
+    const prevIdx = (currentUnsolvedIdx - 1 + unsolvedPositions.length) % unsolvedPositions.length;
+    setSelectedGlobalIdx(unsolvedPositions[prevIdx].globalIdx);
   };
 
-  const activeCipherChar = activeTarget.cipherChar;
-  const activeCipherVal = charToIdx(activeCipherChar);
-  const activePlainChar = activeTarget.plainChar;
-  const activePlainVal = charToIdx(activePlainChar);
-  const isActiveSolved = isLetterSolved(activeTarget);
+  const handleNextPos = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedPositions.length <= 1) return;
+    const currentUnsolvedIdx = unsolvedPositions.findIndex(p => p.globalIdx === activeViewingTarget.globalIdx);
+    const nextIdx = (currentUnsolvedIdx + 1) % unsolvedPositions.length;
+    setSelectedGlobalIdx(unsolvedPositions[nextIdx].globalIdx);
+  };
+
+  const viewingCipherChar = activeViewingTarget.cipherChar;
+  const viewingCipherVal = charToIdx(viewingCipherChar);
+  const viewingPlainChar = activeViewingTarget.plainChar;
+  const viewingPlainVal = charToIdx(viewingPlainChar);
+  const isViewingSolved = isLetterSolved(activeViewingTarget);
 
   return (
     <div className="caesar-floating-cheat-sheet caesar-pacman-cheat-sheet vg-fishing-az-panel">
@@ -523,13 +546,33 @@ function CaesarCheatSheet({
       <div className="vg-fishing-calc-card">
         <div className="vg-calc-top-row">
           <span className="vg-calc-label">Active Letter Decryption:</span>
-          <span className="vg-calc-badge">Pos #{activeTarget.globalIdx + 1}</span>
+          <span className="vg-calc-badge vg-pos-stepper">
+            <button
+              type="button"
+              className="vg-pos-stepper-btn"
+              onClick={handlePrevPos}
+              disabled={unsolvedPositions.length <= 1}
+              aria-label="Previous unsolved position"
+            >
+              ‹
+            </button>
+            <span className="vg-pos-stepper-label">Pos #{activeViewingTarget.globalIdx + 1}</span>
+            <button
+              type="button"
+              className="vg-pos-stepper-btn"
+              onClick={handleNextPos}
+              disabled={unsolvedPositions.length <= 1}
+              aria-label="Next unsolved position"
+            >
+              ›
+            </button>
+          </span>
         </div>
         <div className="vg-calc-formula-row">
           <div className="vg-calc-item cipher">
             <span className="lbl">Cipher</span>
-            <strong>{activeCipherChar}</strong>
-            <span className="val">{activeCipherVal}</span>
+            <strong>{viewingCipherChar}</strong>
+            <span className="val">{viewingCipherVal}</span>
           </div>
           <span className="vg-calc-op">−</span>
           <div className="vg-calc-item key">
@@ -538,18 +581,37 @@ function CaesarCheatSheet({
             <span className="val">{normShift}</span>
           </div>
           <span className="vg-calc-op">=</span>
-          <div className="vg-calc-item plain">
+          <div className={`vg-calc-item plain ${isViewingSolved ? 'is-solved' : ''}`}>
             <span className="lbl">Target</span>
-            <strong style={{ color: 'var(--neon-green)' }}>
-              {isActiveSolved ? activePlainChar : '?'}
+            <strong style={{ color: isViewingSolved ? 'var(--neon-green)' : '#ffffff' }}>
+              {isViewingSolved ? viewingPlainChar : '?'}
             </strong>
             <span
               className="val"
-              style={{ visibility: isActiveSolved ? 'visible' : 'hidden' }}
+              style={{ visibility: isViewingSolved ? 'visible' : 'hidden' }}
             >
-              {activePlainVal}
+              {viewingPlainVal}
             </span>
           </div>
+        </div>
+
+        {/* Smart Calculation Guidance */}
+        <div className="vg-calc-help-row">
+          {!isViewingSolved ? (
+            (viewingCipherVal - normShift < 0) ? (
+              <span className="vg-calc-help-text wrap-around">
+                ⚠️ Wrap-Around: Calculate ({viewingCipherVal} − {normShift} + 26) = <strong>?</strong>
+              </span>
+            ) : (
+              <span className="vg-calc-help-text normal">
+                💡 Calculate: {viewingCipherVal} − {normShift} = <strong>?</strong>
+              </span>
+            )
+          ) : (
+            <span className="vg-calc-help-text solved">
+              ✅ Solved: {viewingCipherChar} ({viewingCipherVal}) − {normShift} {viewingCipherVal - normShift < 0 ? '+ 26 ' : ''}= {viewingPlainChar} ({viewingPlainVal})
+            </span>
+          )}
         </div>
       </div>
 
@@ -557,11 +619,13 @@ function CaesarCheatSheet({
       <div className="vg-sprint-alphabet-grid">
         <div className="vg-alphabet-row">
           {CQS_ALPHABET.slice(0, 13).map((ch, i) => {
-            const isCipher = ch === activeCipherChar;
+            const isCipher = ch === viewingCipherChar;
             const isKey = i === normShift;
+            const isTarget = isViewingSolved && ch === viewingPlainChar;
             let cellClass = "vg-alphabet-cell";
             if (isCipher) cellClass += " is-cipher";
             if (isKey) cellClass += " is-key";
+            if (isTarget) cellClass += " is-target";
             return (
               <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
                 <span className="vg-alpha-char">{ch}</span>
@@ -573,11 +637,13 @@ function CaesarCheatSheet({
         <div className="vg-alphabet-row">
           {CQS_ALPHABET.slice(13, 26).map((ch, i) => {
             const val = i + 13;
-            const isCipher = ch === activeCipherChar;
+            const isCipher = ch === viewingCipherChar;
             const isKey = val === normShift;
+            const isTarget = isViewingSolved && ch === viewingPlainChar;
             let cellClass = "vg-alphabet-cell";
             if (isCipher) cellClass += " is-cipher";
             if (isKey) cellClass += " is-key";
+            if (isTarget) cellClass += " is-target";
             return (
               <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
                 <span className="vg-alpha-char">{ch}</span>
@@ -744,6 +810,8 @@ export default function PacmanGame({
     return -1;
   }, [levelData, eatenGhosts, isCaesar, maskedIndices]);
 
+  const [selectedVgGlobalIdx, setSelectedVgGlobalIdx] = useState(null);
+
   const vigenereAlignmentItems = useMemo(() => {
     if (!isVigenere || !levelData.plaintext) return [];
     const items = [];
@@ -758,10 +826,11 @@ export default function PacmanGame({
         const slot = letterCounter % targetKey.length;
         const keyChar = targetKey[slot] || 'A';
         const shiftVal = charToIdx(keyChar);
-        const isSolved = eatenGhosts.includes(i) || getMask(levelData, i);
+        const isSolved = eatenGhosts.includes(i) || Boolean(getMask(levelData, i));
         const isActive = i === activeSolvingIndex;
         items.push({
           id: `item-${i}`,
+          globalIdx: letterCounter,
           index: i,
           cipherChar: cChar,
           plainChar: pChar,
@@ -779,6 +848,34 @@ export default function PacmanGame({
   const activeSolvingItem = useMemo(() => {
     return vigenereAlignmentItems.find((item) => item.isActive) || null;
   }, [vigenereAlignmentItems]);
+
+  const unsolvedVgItems = useMemo(() => {
+    return vigenereAlignmentItems.filter(item => !item.isSpace && !item.isSolved);
+  }, [vigenereAlignmentItems]);
+
+  const activeViewingVgItem = useMemo(() => {
+    if (selectedVgGlobalIdx !== null) {
+      const found = unsolvedVgItems.find(item => item.globalIdx === selectedVgGlobalIdx);
+      if (found) return found;
+    }
+    return unsolvedVgItems[0] || activeSolvingItem || vigenereAlignmentItems.find(item => !item.isSpace) || null;
+  }, [selectedVgGlobalIdx, unsolvedVgItems, activeSolvingItem, vigenereAlignmentItems]);
+
+  const handlePrevVgPos = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedVgItems.length <= 1) return;
+    const currentUnsolvedIdx = unsolvedVgItems.findIndex(p => p.globalIdx === activeViewingVgItem?.globalIdx);
+    const prevIdx = (currentUnsolvedIdx - 1 + unsolvedVgItems.length) % unsolvedVgItems.length;
+    setSelectedVgGlobalIdx(unsolvedVgItems[prevIdx].globalIdx);
+  };
+
+  const handleNextVgPos = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedVgItems.length <= 1) return;
+    const currentUnsolvedIdx = unsolvedVgItems.findIndex(p => p.globalIdx === activeViewingVgItem?.globalIdx);
+    const nextIdx = (currentUnsolvedIdx + 1) % unsolvedVgItems.length;
+    setSelectedVgGlobalIdx(unsolvedVgItems[nextIdx].globalIdx);
+  };
 
   const prevLevelIdRef = useRef(levelData?.id || `${levelData?.plaintext || ''}-${levelData?.ciphertext || ''}`);
   useEffect(() => {
@@ -1962,47 +2059,68 @@ export default function PacmanGame({
               <div className="vg-fishing-calc-card">
                 <div className="vg-calc-top-row">
                   <span className="vg-calc-label">ACTIVE LETTER DECRYPTION</span>
+                  <span className="vg-calc-badge vg-pos-stepper">
+                    <button
+                      type="button"
+                      className="vg-pos-stepper-btn"
+                      onClick={handlePrevVgPos}
+                      disabled={unsolvedVgItems.length <= 1}
+                      aria-label="Previous unsolved position"
+                    >
+                      ‹
+                    </button>
+                    <span className="vg-pos-stepper-label">Pos #{(activeViewingVgItem?.globalIdx ?? 0) + 1}</span>
+                    <button
+                      type="button"
+                      className="vg-pos-stepper-btn"
+                      onClick={handleNextVgPos}
+                      disabled={unsolvedVgItems.length <= 1}
+                      aria-label="Next unsolved position"
+                    >
+                      ›
+                    </button>
+                  </span>
                 </div>
                 <div className="vg-calc-formula-row">
                   <div className="vg-calc-item cipher">
                     <span className="lbl">Cipher</span>
-                    <strong>{activeSolvingItem ? activeSolvingItem.cipherChar : '-'}</strong>
-                    <span className="val">{activeSolvingItem ? charToIdx(activeSolvingItem.cipherChar) : 0}</span>
+                    <strong>{activeViewingVgItem ? activeViewingVgItem.cipherChar : '-'}</strong>
+                    <span className="val">{activeViewingVgItem ? charToIdx(activeViewingVgItem.cipherChar) : 0}</span>
                   </div>
                   <span className="vg-calc-op">−</span>
                   <div className="vg-calc-item key">
                     <span className="lbl">Key</span>
-                    <strong>{activeSolvingItem ? activeSolvingItem.keyChar : '-'}</strong>
-                    <span className="val">{activeSolvingItem ? activeSolvingItem.shiftVal : 0}</span>
+                    <strong>{activeViewingVgItem ? activeViewingVgItem.keyChar : '-'}</strong>
+                    <span className="val">{activeViewingVgItem ? activeViewingVgItem.shiftVal : 0}</span>
                   </div>
                   <span className="vg-calc-op">=</span>
-                  <div className={`vg-calc-item plain ${activeSolvingItem && activeSolvingItem.isSolved ? 'is-solved' : ''}`}>
+                  <div className={`vg-calc-item plain ${activeViewingVgItem && activeViewingVgItem.isSolved ? 'is-solved' : ''}`}>
                     <span className="lbl">Target</span>
-                    <strong style={{ color: activeSolvingItem && activeSolvingItem.isSolved ? 'var(--neon-green)' : '#ffffff' }}>
-                      {activeSolvingItem && activeSolvingItem.isSolved ? activeSolvingItem.plainChar : '?'}
+                    <strong style={{ color: activeViewingVgItem && activeViewingVgItem.isSolved ? 'var(--neon-green)' : '#ffffff' }}>
+                      {activeViewingVgItem && activeViewingVgItem.isSolved ? activeViewingVgItem.plainChar : '?'}
                     </strong>
                     <span
                       className="val"
-                      style={{ visibility: activeSolvingItem && activeSolvingItem.isSolved ? 'visible' : 'hidden' }}
+                      style={{ visibility: activeViewingVgItem && activeViewingVgItem.isSolved ? 'visible' : 'hidden' }}
                     >
-                      {activeSolvingItem ? (charToIdx(activeSolvingItem.cipherChar) - activeSolvingItem.shiftVal + 26) % 26 : 0}
+                      {activeViewingVgItem ? (charToIdx(activeViewingVgItem.cipherChar) - activeViewingVgItem.shiftVal + 26) % 26 : 0}
                     </span>
                   </div>
                 </div>
 
                 {/* Calculate prompt line */}
                 <div className="vg-calc-help-row">
-                  {activeSolvingItem && activeSolvingItem.isSolved ? (
+                  {activeViewingVgItem && activeViewingVgItem.isSolved ? (
                     <span className="vg-calc-help-text solved">
-                      ✅ Solved: {charToIdx(activeSolvingItem.cipherChar)} − {activeSolvingItem.shiftVal} = {(charToIdx(activeSolvingItem.cipherChar) - activeSolvingItem.shiftVal + 26) % 26} ({activeSolvingItem.plainChar})
+                      ✅ Solved: {activeViewingVgItem.cipherChar} ({charToIdx(activeViewingVgItem.cipherChar)}) − {activeViewingVgItem.keyChar} ({activeViewingVgItem.shiftVal}) {charToIdx(activeViewingVgItem.cipherChar) - activeViewingVgItem.shiftVal < 0 ? '+ 26 ' : ''}= {activeViewingVgItem.plainChar} ({(charToIdx(activeViewingVgItem.cipherChar) - activeViewingVgItem.shiftVal + 26) % 26})
                     </span>
-                  ) : activeSolvingItem && (charToIdx(activeSolvingItem.cipherChar) - activeSolvingItem.shiftVal < 0) ? (
+                  ) : activeViewingVgItem && (charToIdx(activeViewingVgItem.cipherChar) - activeViewingVgItem.shiftVal < 0) ? (
                     <span className="vg-calc-help-text wrap-around">
-                      ⚠️ Wrap-Around: Calculate ({charToIdx(activeSolvingItem.cipherChar)} − {activeSolvingItem.shiftVal} + 26) = <strong>?</strong>
+                      ⚠️ Wrap-Around: Calculate ({charToIdx(activeViewingVgItem.cipherChar)} − {activeViewingVgItem.shiftVal} + 26) = <strong>?</strong>
                     </span>
                   ) : (
                     <span className="vg-calc-help-text normal">
-                      💡 Calculate: {activeSolvingItem ? charToIdx(activeSolvingItem.cipherChar) : 0} − {activeSolvingItem ? activeSolvingItem.shiftVal : 0} = <strong>?</strong>
+                      💡 Calculate: {activeViewingVgItem ? charToIdx(activeViewingVgItem.cipherChar) : 0} − {activeViewingVgItem ? activeViewingVgItem.shiftVal : 0} = <strong>?</strong>
                     </span>
                   )}
                 </div>
@@ -2012,9 +2130,9 @@ export default function PacmanGame({
               <div className="vg-sprint-alphabet-grid">
                 <div className="vg-alphabet-row">
                   {alphabet.slice(0, 13).map((ch, i) => {
-                    const isCipher = activeSolvingItem && ch === activeSolvingItem.cipherChar;
-                    const isKey = activeSolvingItem && ch === activeSolvingItem.keyChar;
-                    const isTarget = activeSolvingItem && activeSolvingItem.isSolved && ch === activeSolvingItem.plainChar;
+                    const isCipher = activeViewingVgItem && ch === activeViewingVgItem.cipherChar;
+                    const isKey = activeViewingVgItem && ch === activeViewingVgItem.keyChar;
+                    const isTarget = activeViewingVgItem && activeViewingVgItem.isSolved && ch === activeViewingVgItem.plainChar;
                     let cellClass = "vg-alphabet-cell";
                     if (isCipher) cellClass += " is-cipher";
                     if (isKey) cellClass += " is-key";
@@ -2030,9 +2148,9 @@ export default function PacmanGame({
                 <div className="vg-alphabet-row">
                   {alphabet.slice(13, 26).map((ch, i) => {
                     const val = i + 13;
-                    const isCipher = activeSolvingItem && ch === activeSolvingItem.cipherChar;
-                    const isKey = activeSolvingItem && ch === activeSolvingItem.keyChar;
-                    const isTarget = activeSolvingItem && activeSolvingItem.isSolved && ch === activeSolvingItem.plainChar;
+                    const isCipher = activeViewingVgItem && ch === activeViewingVgItem.cipherChar;
+                    const isKey = activeViewingVgItem && ch === activeViewingVgItem.keyChar;
+                    const isTarget = activeViewingVgItem && activeViewingVgItem.isSolved && ch === activeViewingVgItem.plainChar;
                     let cellClass = "vg-alphabet-cell";
                     if (isCipher) cellClass += " is-cipher";
                     if (isKey) cellClass += " is-key";

@@ -227,6 +227,8 @@ export default function CaesarFishingGame({
   });
 
   const normTier = String(tier || levelData?.difficulty || '').toLowerCase();
+  const [selectedGlobalIdx, setSelectedGlobalIdx] = useState(null);
+
   const isLetterSolved = (p) => {
     const maskList = levelData.masks?.[p.wordIdx];
     const isPrefilled = normTier !== 'hard' && Boolean(maskList?.[p.charIdx]);
@@ -236,20 +238,40 @@ export default function CaesarFishingGame({
     return isPrefilled || isCorrect;
   };
 
-  const activeTarget = flatLetterPositions.find(p => !isLetterSolved(p)) || flatLetterPositions[0] || {
-    globalIdx: 0,
-    wordIdx: 0,
-    charIdx: 0,
-    plainChar: 'A',
-    cipherChar: 'A',
+  const unsolvedPositions = flatLetterPositions.filter(p => !isLetterSolved(p));
+  const activeViewingTarget = (selectedGlobalIdx !== null && unsolvedPositions.find(p => p.globalIdx === selectedGlobalIdx))
+    || unsolvedPositions[0]
+    || flatLetterPositions[0]
+    || {
+      globalIdx: 0,
+      wordIdx: 0,
+      charIdx: 0,
+      plainChar: 'A',
+      cipherChar: 'A',
+    };
+
+  const handlePrevPos = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedPositions.length <= 1) return;
+    const currentUnsolvedIdx = unsolvedPositions.findIndex(p => p.globalIdx === activeViewingTarget.globalIdx);
+    const prevIdx = (currentUnsolvedIdx - 1 + unsolvedPositions.length) % unsolvedPositions.length;
+    setSelectedGlobalIdx(unsolvedPositions[prevIdx].globalIdx);
   };
 
-  const activeCipherChar = activeTarget.cipherChar;
-  const activeCipherVal = charToIdx(activeCipherChar);
-  const activeShift = normalizeShift(activeShifts[activeTarget.wordIdx] ?? basketShift);
-  const activePlainChar = activeTarget.plainChar;
-  const activePlainVal = charToIdx(activePlainChar);
-  const isActiveSolved = isLetterSolved(activeTarget);
+  const handleNextPos = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedPositions.length <= 1) return;
+    const currentUnsolvedIdx = unsolvedPositions.findIndex(p => p.globalIdx === activeViewingTarget.globalIdx);
+    const nextIdx = (currentUnsolvedIdx + 1) % unsolvedPositions.length;
+    setSelectedGlobalIdx(unsolvedPositions[nextIdx].globalIdx);
+  };
+
+  const viewingCipherChar = activeViewingTarget.cipherChar;
+  const viewingCipherVal = charToIdx(viewingCipherChar);
+  const viewingShift = normalizeShift(activeShifts[activeViewingTarget.wordIdx] ?? basketShift);
+  const viewingPlainChar = activeViewingTarget.plainChar;
+  const viewingPlainVal = charToIdx(viewingPlainChar);
+  const isViewingSolved = isLetterSolved(activeViewingTarget);
 
   /* ── fish physics ── */
   const spawnFish = useCallback(() => {
@@ -745,33 +767,72 @@ export default function CaesarFishingGame({
           <div className="vg-fishing-calc-card">
             <div className="vg-calc-top-row">
               <span className="vg-calc-label">Active Letter Decryption:</span>
-              <span className="vg-calc-badge">Pos #{activeTarget.globalIdx + 1}</span>
+              <span className="vg-calc-badge vg-pos-stepper">
+                <button
+                  type="button"
+                  className="vg-pos-stepper-btn"
+                  onClick={handlePrevPos}
+                  disabled={unsolvedPositions.length <= 1}
+                  aria-label="Previous unsolved position"
+                >
+                  ‹
+                </button>
+                <span className="vg-pos-stepper-label">Pos #{activeViewingTarget.globalIdx + 1}</span>
+                <button
+                  type="button"
+                  className="vg-pos-stepper-btn"
+                  onClick={handleNextPos}
+                  disabled={unsolvedPositions.length <= 1}
+                  aria-label="Next unsolved position"
+                >
+                  ›
+                </button>
+              </span>
             </div>
             <div className="vg-calc-formula-row">
               <div className="vg-calc-item cipher">
                 <span className="lbl">Cipher</span>
-                <strong>{activeCipherChar}</strong>
-                <span className="val">{activeCipherVal}</span>
+                <strong>{viewingCipherChar}</strong>
+                <span className="val">{viewingCipherVal}</span>
               </div>
               <span className="vg-calc-op">−</span>
               <div className="vg-calc-item key">
                 <span className="lbl">Shift</span>
-                <strong>{activeShift}</strong>
-                <span className="val">{activeShift}</span>
+                <strong>{viewingShift}</strong>
+                <span className="val">{viewingShift}</span>
               </div>
               <span className="vg-calc-op">=</span>
-              <div className="vg-calc-item plain">
+              <div className={`vg-calc-item plain ${isViewingSolved ? 'is-solved' : ''}`}>
                 <span className="lbl">Target</span>
-                <strong style={{ color: 'var(--neon-green)' }}>
-                  {isActiveSolved ? activePlainChar : '?'}
+                <strong style={{ color: isViewingSolved ? 'var(--neon-green)' : '#ffffff' }}>
+                  {isViewingSolved ? viewingPlainChar : '?'}
                 </strong>
                 <span
                   className="val"
-                  style={{ visibility: isActiveSolved ? 'visible' : 'hidden' }}
+                  style={{ visibility: isViewingSolved ? 'visible' : 'hidden' }}
                 >
-                  {activePlainVal}
+                  {viewingPlainVal}
                 </span>
               </div>
+            </div>
+
+            {/* Smart Calculation Guidance */}
+            <div className="vg-calc-help-row">
+              {!isViewingSolved ? (
+                (viewingCipherVal - viewingShift < 0) ? (
+                  <span className="vg-calc-help-text wrap-around">
+                    ⚠️ Wrap-Around: Calculate ({viewingCipherVal} − {viewingShift} + 26) = <strong>?</strong>
+                  </span>
+                ) : (
+                  <span className="vg-calc-help-text normal">
+                    💡 Calculate: {viewingCipherVal} − {viewingShift} = <strong>?</strong>
+                  </span>
+                )
+              ) : (
+                <span className="vg-calc-help-text solved">
+                  ✅ Solved: {viewingCipherChar} ({viewingCipherVal}) − {viewingShift} {viewingCipherVal - viewingShift < 0 ? '+ 26 ' : ''}= {viewingPlainChar} ({viewingPlainVal})
+                </span>
+              )}
             </div>
           </div>
 
@@ -779,11 +840,13 @@ export default function CaesarFishingGame({
           <div className="vg-sprint-alphabet-grid">
             <div className="vg-alphabet-row">
               {ALPHABET.slice(0, 13).map((ch, i) => {
-                const isCipher = ch === activeCipherChar;
-                const isKey = i === activeShift;
+                const isCipher = ch === viewingCipherChar;
+                const isKey = i === viewingShift;
+                const isTarget = isViewingSolved && ch === viewingPlainChar;
                 let cellClass = "vg-alphabet-cell";
                 if (isCipher) cellClass += " is-cipher";
                 if (isKey) cellClass += " is-key";
+                if (isTarget) cellClass += " is-target";
                 return (
                   <div key={ch} className={cellClass} title={`${ch} = ${i}`}>
                     <span className="vg-alpha-char">{ch}</span>
@@ -795,11 +858,13 @@ export default function CaesarFishingGame({
             <div className="vg-alphabet-row">
               {ALPHABET.slice(13, 26).map((ch, i) => {
                 const val = i + 13;
-                const isCipher = ch === activeCipherChar;
-                const isKey = val === activeShift;
+                const isCipher = ch === viewingCipherChar;
+                const isKey = val === viewingShift;
+                const isTarget = isViewingSolved && ch === viewingPlainChar;
                 let cellClass = "vg-alphabet-cell";
                 if (isCipher) cellClass += " is-cipher";
                 if (isKey) cellClass += " is-key";
+                if (isTarget) cellClass += " is-target";
                 return (
                   <div key={ch} className={cellClass} title={`${ch} = ${val}`}>
                     <span className="vg-alpha-char">{ch}</span>

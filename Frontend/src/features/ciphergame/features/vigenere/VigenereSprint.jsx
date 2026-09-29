@@ -34,6 +34,8 @@ const vigenereDecryptChar = (cipherChar, keyShift) => {
   return cipherChar;
 };
 
+const charToIdx = (c) => (c ? c.toUpperCase().charCodeAt(0) - 65 : 0);
+
 const getRandomDecoys = (correctChar, count, tier = 'easy') => {
   const normTier = String(tier || 'easy').toLowerCase();
   const radius = normTier === 'easy' ? 4 : normTier === 'medium' ? 5 : 6;
@@ -245,6 +247,72 @@ export default function VigenereSprint({
   }
   const currentShiftKey = (levelData.targetShifts && levelData.targetShifts[charIdxInText % levelData.targetShifts.length]) ?? 0;
   const currentKeyChar = targetKey[charIdxInText % targetKey.length] || 'A';
+
+  const [selectedGlobalIdx, setSelectedGlobalIdx] = useState(null);
+
+  const letterPositions = useMemo(() => {
+    if (!levelData.plaintext) return [];
+    const list = [];
+    let count = 0;
+    for (let i = 0; i < levelData.plaintext.length; i++) {
+      const p = levelData.plaintext[i];
+      if (p !== ' ') {
+        const slot = count % targetKey.length;
+        const kChar = targetKey[slot] || 'A';
+        const sVal = (levelData.targetShifts && levelData.targetShifts[count % levelData.targetShifts.length]) ?? charToIdx(kChar);
+        list.push({
+          globalIdx: count,
+          charIdx: i,
+          plainChar: p,
+          cipherChar: levelData.ciphertext[i] || '',
+          keyChar: kChar,
+          shiftVal: sVal,
+        });
+        count++;
+      }
+    }
+    return list;
+  }, [levelData, targetKey]);
+
+  const isPositionSolved = (p) => solvedLetters[p.charIdx] !== undefined;
+  const unsolvedPositions = letterPositions.filter(p => !isPositionSolved(p));
+
+  const activeTargetPos = letterPositions.find(p => p.charIdx === currentIdx) || letterPositions[0] || {
+    globalIdx: 0,
+    charIdx: 0,
+    plainChar: 'A',
+    cipherChar: 'A',
+    keyChar: 'A',
+    shiftVal: 0,
+  };
+
+  const activeViewingTarget = (selectedGlobalIdx !== null && unsolvedPositions.find(p => p.globalIdx === selectedGlobalIdx))
+    || unsolvedPositions[0]
+    || activeTargetPos;
+
+  const handlePrevPos = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedPositions.length <= 1) return;
+    const currentUnsolvedIdx = unsolvedPositions.findIndex(p => p.globalIdx === activeViewingTarget.globalIdx);
+    const prevIdx = (currentUnsolvedIdx - 1 + unsolvedPositions.length) % unsolvedPositions.length;
+    setSelectedGlobalIdx(unsolvedPositions[prevIdx].globalIdx);
+  };
+
+  const handleNextPos = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedPositions.length <= 1) return;
+    const currentUnsolvedIdx = unsolvedPositions.findIndex(p => p.globalIdx === activeViewingTarget.globalIdx);
+    const nextIdx = (currentUnsolvedIdx + 1) % unsolvedPositions.length;
+    setSelectedGlobalIdx(unsolvedPositions[nextIdx].globalIdx);
+  };
+
+  const viewingCipherChar = activeViewingTarget.cipherChar;
+  const viewingCipherVal = charToIdx(viewingCipherChar);
+  const viewingKeyChar = activeViewingTarget.keyChar;
+  const viewingShiftKey = activeViewingTarget.shiftVal;
+  const viewingPlainChar = activeViewingTarget.plainChar;
+  const viewingPlainVal = charToIdx(viewingPlainChar);
+  const isViewingSolved = isPositionSolved(activeViewingTarget);
 
   const orangeSlimeSrc = `/assets/sprint/obstacle/obstacle1/SlimeOrange_${PAD5(slimeFrame)}.png`;
   const basicSlimeSrc = `/assets/sprint/obstacle/obstacle2/SlimeBasic_${PAD5(slimeFrame)}.png`;
@@ -1373,47 +1441,68 @@ export default function VigenereSprint({
             <div className="vg-fishing-calc-card">
               <div className="vg-calc-top-row">
                 <span className="vg-calc-label">ACTIVE LETTER DECRYPTION</span>
+                <span className="vg-calc-badge vg-pos-stepper">
+                  <button
+                    type="button"
+                    className="vg-pos-stepper-btn"
+                    onClick={handlePrevPos}
+                    disabled={unsolvedPositions.length <= 1}
+                    aria-label="Previous unsolved position"
+                  >
+                    ‹
+                  </button>
+                  <span className="vg-pos-stepper-label">Pos #{activeViewingTarget.globalIdx + 1}</span>
+                  <button
+                    type="button"
+                    className="vg-pos-stepper-btn"
+                    onClick={handleNextPos}
+                    disabled={unsolvedPositions.length <= 1}
+                    aria-label="Next unsolved position"
+                  >
+                    ›
+                  </button>
+                </span>
               </div>
               <div className="vg-calc-formula-row">
                 <div className="vg-calc-item cipher">
                   <span className="lbl">Cipher</span>
-                  <strong>{currentBatonLetter || '-'}</strong>
-                  <span className="val">{currentBatonLetter ? currentBatonLetter.charCodeAt(0) - 65 : 0}</span>
+                  <strong>{viewingCipherChar || '-'}</strong>
+                  <span className="val">{viewingCipherVal}</span>
                 </div>
                 <span className="vg-calc-op">−</span>
                 <div className="vg-calc-item key">
                   <span className="lbl">Key</span>
-                  <strong>{currentKeyChar || '-'}</strong>
-                  <span className="val">{currentShiftKey}</span>
+                  <strong>{viewingKeyChar || '-'}</strong>
+                  <span className="val">{viewingShiftKey}</span>
                 </div>
                 <span className="vg-calc-op">=</span>
-                <div className={`vg-calc-item plain ${solvedLetters[currentIdx] !== undefined ? 'is-solved' : ''}`}>
+                <div className={`vg-calc-item plain ${isViewingSolved ? 'is-solved' : ''}`}>
                   <span className="lbl">Target</span>
-                  <strong style={{ color: solvedLetters[currentIdx] !== undefined ? 'var(--neon-green)' : '#ffffff' }}>
-                    {solvedLetters[currentIdx] !== undefined ? currentTargetChar : '?'}
+                  <strong style={{ color: isViewingSolved ? 'var(--neon-green)' : '#ffffff' }}>
+                    {isViewingSolved ? viewingPlainChar : '?'}
                   </strong>
                   <span
                     className="val"
-                    style={{ visibility: solvedLetters[currentIdx] !== undefined ? 'visible' : 'hidden' }}
+                    style={{ visibility: isViewingSolved ? 'visible' : 'hidden' }}
                   >
-                    {currentTargetChar ? currentTargetChar.charCodeAt(0) - 65 : 0}
+                    {viewingPlainVal}
                   </span>
                 </div>
               </div>
 
               {/* Calculate prompt line */}
               <div className="vg-calc-help-row">
-                {solvedLetters[currentIdx] !== undefined ? (
+                {isViewingSolved ? (
                   <span className="vg-calc-help-text solved">
-                    ✅ Solved: {currentBatonLetter ? currentBatonLetter.charCodeAt(0) - 65 : 0} − {currentShiftKey} = {currentTargetChar ? currentTargetChar.charCodeAt(0) - 65 : 0} ({currentTargetChar})
+                    ✅ Solved: {viewingCipherChar} ({viewingCipherVal}) − {viewingKeyChar} ({viewingShiftKey}) {viewingCipherVal - viewingShiftKey < 0 ? '+ 26 ' : ''}= {viewingPlainChar} ({viewingPlainVal})
                   </span>
-                ) : (currentBatonLetter && (currentBatonLetter.charCodeAt(0) - 65 - currentShiftKey < 0)) ? (
+                ) : (viewingCipherVal - viewingShiftKey < 0) ? (
                   <span className="vg-calc-help-text wrap-around">
-                    ⚠️ Wrap-Around: Calculate ({currentBatonLetter.charCodeAt(0) - 65} − {currentShiftKey} + 26) = <strong>?</strong>
+                    ⚠️ Wrap-Around: Calculate ({viewingCipherVal} − {viewingShiftKey} + 26) = <strong>?</strong>
                   </span>
                 ) : (
                   <span className="vg-calc-help-text normal">
-                    💡 Calculate: {currentBatonLetter ? currentBatonLetter.charCodeAt(0) - 65 : 0} − {currentShiftKey} = <strong>?</strong>
+                    💡 Calculate: {viewingCipherVal} − {viewingShiftKey} = <strong>?</strong>
                   </span>
                 )}
               </div>
@@ -1423,9 +1512,9 @@ export default function VigenereSprint({
             <div className="vg-sprint-alphabet-grid">
               <div className="vg-alphabet-row">
                 {ALPHABET.slice(0, 13).map((ch, i) => {
-                  const isCipher = ch === currentBatonLetter;
-                  const isKey = ch === currentKeyChar;
-                  const isTarget = (solvedLetters[currentIdx] !== undefined) && ch === currentTargetChar;
+                  const isCipher = ch === viewingCipherChar;
+                  const isKey = ch === viewingKeyChar;
+                  const isTarget = isViewingSolved && ch === viewingPlainChar;
                   let cellClass = "vg-alphabet-cell";
                   if (isCipher) cellClass += " is-cipher";
                   if (isKey) cellClass += " is-key";
@@ -1441,9 +1530,9 @@ export default function VigenereSprint({
               <div className="vg-alphabet-row">
                 {ALPHABET.slice(13, 26).map((ch, i) => {
                   const val = i + 13;
-                  const isCipher = ch === currentBatonLetter;
-                  const isKey = ch === currentKeyChar;
-                  const isTarget = (solvedLetters[currentIdx] !== undefined) && ch === currentTargetChar;
+                  const isCipher = ch === viewingCipherChar;
+                  const isKey = ch === viewingKeyChar;
+                  const isTarget = isViewingSolved && ch === viewingPlainChar;
                   let cellClass = "vg-alphabet-cell";
                   if (isCipher) cellClass += " is-cipher";
                   if (isKey) cellClass += " is-key";

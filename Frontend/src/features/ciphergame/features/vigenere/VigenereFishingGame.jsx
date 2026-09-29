@@ -162,6 +162,8 @@ export default function VigenereFishingGame({
   const animationRef = useRef(null);
   const prevLevelIdRef = useRef(levelData.id || `${levelData.plaintext}-${levelData.ciphertext}`);
 
+  const [selectedGlobalIdx, setSelectedGlobalIdx] = useState(null);
+
   const currentTarget = flatLetterPositions[activeTargetIdx] || flatLetterPositions[0] || {
     wordIdx: 0,
     charIdx: 0,
@@ -173,9 +175,38 @@ export default function VigenereFishingGame({
     keyShift: 0,
   };
   const currentTargetPlain = currentTarget.plainChar;
-  const currentCipherChar = currentTarget.cipherChar;
-  const currentKeyChar = currentTarget.keyChar;
-  const currentKeyShift = currentTarget.keyShift;
+
+  const isPositionSolved = (p) => Boolean(revealedMasks[p.wordIdx]?.[p.charIdx]);
+  const unsolvedPositions = flatLetterPositions.filter(p => !isPositionSolved(p));
+
+  const activeViewingTarget = (selectedGlobalIdx !== null && unsolvedPositions.find(p => p.globalIdx === selectedGlobalIdx))
+    || unsolvedPositions[0]
+    || currentTarget
+    || flatLetterPositions[0];
+
+  const handlePrevPos = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedPositions.length <= 1) return;
+    const currentUnsolvedIdx = unsolvedPositions.findIndex(p => p.globalIdx === activeViewingTarget.globalIdx);
+    const prevIdx = (currentUnsolvedIdx - 1 + unsolvedPositions.length) % unsolvedPositions.length;
+    setSelectedGlobalIdx(unsolvedPositions[prevIdx].globalIdx);
+  };
+
+  const handleNextPos = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedPositions.length <= 1) return;
+    const currentUnsolvedIdx = unsolvedPositions.findIndex(p => p.globalIdx === activeViewingTarget.globalIdx);
+    const nextIdx = (currentUnsolvedIdx + 1) % unsolvedPositions.length;
+    setSelectedGlobalIdx(unsolvedPositions[nextIdx].globalIdx);
+  };
+
+  const viewingCipherChar = activeViewingTarget.cipherChar;
+  const viewingCipherVal = charToIdx(viewingCipherChar);
+  const viewingKeyChar = activeViewingTarget.keyChar;
+  const viewingKeyShift = activeViewingTarget.keyShift;
+  const viewingPlainChar = activeViewingTarget.plainChar;
+  const viewingPlainVal = charToIdx(viewingPlainChar);
+  const isViewingSolved = isPositionSolved(activeViewingTarget);
 
   // Running out of attempts loses the stage and costs one session heart.
   // Declared BEFORE the snapshot saver so `gameOver` is in scope there.
@@ -777,56 +808,77 @@ export default function VigenereFishingGame({
           <div className="vg-fishing-calc-card">
             <div className="vg-calc-top-row">
               <span className="vg-calc-label">ACTIVE LETTER DECRYPTION</span>
+              <span className="vg-calc-badge vg-pos-stepper">
+                <button
+                  type="button"
+                  className="vg-pos-stepper-btn"
+                  onClick={handlePrevPos}
+                  disabled={unsolvedPositions.length <= 1}
+                  aria-label="Previous unsolved position"
+                >
+                  ‹
+                </button>
+                <span className="vg-pos-stepper-label">Pos #{activeViewingTarget.globalIdx + 1}</span>
+                <button
+                  type="button"
+                  className="vg-pos-stepper-btn"
+                  onClick={handleNextPos}
+                  disabled={unsolvedPositions.length <= 1}
+                  aria-label="Next unsolved position"
+                >
+                  ›
+                </button>
+              </span>
             </div>
             <div className="vg-calc-formula-row">
               <div className="vg-calc-item cipher">
                 <span className="lbl">Cipher</span>
-                <strong>{currentCipherChar}</strong>
-                <span className="val">{charToIdx(currentCipherChar)}</span>
+                <strong>{viewingCipherChar}</strong>
+                <span className="val">{viewingCipherVal}</span>
               </div>
               <span className="vg-calc-op">−</span>
               <div className="vg-calc-item key">
                 <span className="lbl">Key</span>
-                <strong>{currentKeyChar}</strong>
-                <span className="val">{currentKeyShift}</span>
+                <strong>{viewingKeyChar}</strong>
+                <span className="val">{viewingKeyShift}</span>
               </div>
               <span className="vg-calc-op">=</span>
-              <div className={`vg-calc-item plain ${revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? 'is-solved' : ''}`}>
+              <div className={`vg-calc-item plain ${isViewingSolved ? 'is-solved' : ''}`}>
                 <span className="lbl">Target</span>
-                <strong style={{ color: revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? 'var(--neon-green)' : (hoveredFish ? 'var(--neon-cyan)' : '#ffffff') }}>
-                  {revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx]
-                    ? currentTargetPlain
-                    : (hoveredFish ? hoveredFish.letter : '?')}
+                <strong style={{ color: isViewingSolved ? 'var(--neon-green)' : (hoveredFish && activeViewingTarget.globalIdx === currentTarget.globalIdx ? 'var(--neon-cyan)' : '#ffffff') }}>
+                  {isViewingSolved
+                    ? viewingPlainChar
+                    : (hoveredFish && activeViewingTarget.globalIdx === currentTarget.globalIdx ? hoveredFish.letter : '?')}
                 </strong>
                 <span
                   className="val"
                   style={{
-                    visibility: (revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] || hoveredFish) ? 'visible' : 'hidden',
-                    color: revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? 'var(--neon-green)' : 'var(--neon-cyan)'
+                    visibility: (isViewingSolved || (hoveredFish && activeViewingTarget.globalIdx === currentTarget.globalIdx)) ? 'visible' : 'hidden',
+                    color: isViewingSolved ? 'var(--neon-green)' : 'var(--neon-cyan)'
                   }}
                 >
-                  {revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx]
-                    ? (charToIdx(currentCipherChar) - currentKeyShift + 26) % 26
-                    : (hoveredFish ? charToIdx(hoveredFish.letter) : '?')}
+                  {isViewingSolved
+                    ? (viewingCipherVal - viewingKeyShift + 26) % 26
+                    : (hoveredFish && activeViewingTarget.globalIdx === currentTarget.globalIdx ? charToIdx(hoveredFish.letter) : '?')}
                 </span>
               </div>
             </div>
 
-            {/* Smart Calculation Guidance (Challenge without spoiling answers) */}
+            {/* Smart Calculation Guidance */}
             <div className="vg-calc-help-row">
-              {!revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] ? (
-                (charToIdx(currentCipherChar) - currentKeyShift < 0) ? (
+              {!isViewingSolved ? (
+                (viewingCipherVal - viewingKeyShift < 0) ? (
                   <span className="vg-calc-help-text wrap-around">
-                    ⚠️ Wrap-Around: Calculate ({charToIdx(currentCipherChar)} − {currentKeyShift} + 26) = <strong>?</strong>
+                    ⚠️ Wrap-Around: Calculate ({viewingCipherVal} − {viewingKeyShift} + 26) = <strong>?</strong>
                   </span>
                 ) : (
                   <span className="vg-calc-help-text normal">
-                    💡 Calculate: {charToIdx(currentCipherChar)} − {currentKeyShift} = <strong>?</strong>
+                    💡 Calculate: {viewingCipherVal} − {viewingKeyShift} = <strong>?</strong>
                   </span>
                 )
               ) : (
                 <span className="vg-calc-help-text solved">
-                  ✅ Solved: {currentCipherChar} ({charToIdx(currentCipherChar)}) − {currentKeyChar} ({currentKeyShift}) {charToIdx(currentCipherChar) - currentKeyShift < 0 ? '+ 26 ' : ''}= {currentTargetPlain} ({(charToIdx(currentCipherChar) - currentKeyShift + 26) % 26})
+                  ✅ Solved: {viewingCipherChar} ({viewingCipherVal}) − {viewingKeyChar} ({viewingKeyShift}) {viewingCipherVal - viewingKeyShift < 0 ? '+ 26 ' : ''}= {viewingPlainChar} ({viewingPlainVal})
                 </span>
               )}
             </div>
@@ -836,9 +888,9 @@ export default function VigenereFishingGame({
           <div className="vg-sprint-alphabet-grid">
             <div className="vg-alphabet-row">
               {ALPHABET.slice(0, 13).map((ch, i) => {
-                const isCipher = ch === currentCipherChar;
-                const isKey = ch === currentKeyChar;
-                const isTarget = revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] && ch === currentTargetPlain;
+                const isCipher = ch === viewingCipherChar;
+                const isKey = ch === viewingKeyChar;
+                const isTarget = isViewingSolved && ch === viewingPlainChar;
                 let cellClass = "vg-alphabet-cell";
                 if (isCipher) cellClass += " is-cipher";
                 if (isKey) cellClass += " is-key";
@@ -854,9 +906,9 @@ export default function VigenereFishingGame({
             <div className="vg-alphabet-row">
               {ALPHABET.slice(13, 26).map((ch, i) => {
                 const val = i + 13;
-                const isCipher = ch === currentCipherChar;
-                const isKey = ch === currentKeyChar;
-                const isTarget = revealedMasks[currentTarget.wordIdx]?.[currentTarget.charIdx] && ch === currentTargetPlain;
+                const isCipher = ch === viewingCipherChar;
+                const isKey = ch === viewingKeyChar;
+                const isTarget = isViewingSolved && ch === viewingPlainChar;
                 let cellClass = "vg-alphabet-cell";
                 if (isCipher) cellClass += " is-cipher";
                 if (isKey) cellClass += " is-key";
