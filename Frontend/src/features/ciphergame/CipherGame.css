@@ -7497,12 +7497,168 @@
 }
 
 /* ==========================================================================
-   Vigenère Pac-Man: Board Clearance & Top-Right Skill Freeze Card
+   Playfair Universal UI: Digraph Cells & Split Guide Panels
    ========================================================================== */
 
-/* 1. Lift maze board slightly in Vigenère Pac-Man for full clearance */
-.pacman-layout.vg-pacman-fullscreen .pacman-fullscreen-board-area {
-  margin-top: -16px !important;
+.fg-letter-cell.pf-digraph-cell {
+  min-width: 58px !important;
+  width: auto !important;
+  padding: 0 10px !important;
 }
+
+.fg-letter-cell.pf-digraph-cell .fg-cell-ciphertext {
+  letter-spacing: 2px !important;
+  font-size: 0.74rem !important;
+}
+
+.fg-letter-cell.pf-digraph-cell .fg-cell-plaintext {
+  letter-spacing: 2px !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+}
+
+.fg-letter-cell.pf-digraph-cell.active-target {
+  border-color: rgba(0, 229, 255, 0.9) !important;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.4) !important;
+  animation: pf-active-pulse 1.4s infinite alternate;
+}
+
+@keyframes pf-active-pulse {
+  0% {
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+    border-color: rgba(0, 229, 255, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 18px rgba(0, 229, 255, 0.7);
+    border-color: rgba(0, 229, 255, 1);
+  }
+}
+
+.pf-bottom-left-group {
+  position: absolute !important;
+  bottom: 20px !important;
+  left: 24px !important;
+  top: auto !important;
+  right: auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  gap: 12px !important;
+  z-index: 20 !important;
+  pointer-events: auto !important;
+}
+
+.pf-bottom-left-group .pf-matrix-panel,
+.pf-bottom-left-group .pf-digraph-panel {
+  position: static !important;
+  top: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  right: auto !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  background: rgba(3, 16, 26, 0.94) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.35) !important;
+  border-radius: 12px !important;
+  padding: 10px 14px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 14px rgba(0, 229, 255, 0.1) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  box-sizing: border-box !important;
+}
+
+.pf-bottom-left-group .pf-matrix-panel {
+  width: 215px !important;
+  min-width: 200px !important;
+  max-width: 230px !important;
+  flex: 0 0 auto !important;
+}
+
+.pf-bottom-left-group .pf-digraph-panel {
+  width: 340px !important;
+  min-width: 300px !important;
+  max-width: 360px !important;
+  flex: 0 0 auto !important;
+}
+
+.pf-bottom-left-group .vg-fishing-calc-card {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  height: 100% !important;
+}
+
+.pf-bottom-left-group .playfair-cheat-body {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.pf-template-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  width: 100%;
+}
+
+.pf-template-cell {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 34px;
+  max-height: 34px;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #ffffff;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.84rem;
+  transition: all 0.15s ease-in-out;
+  box-sizing: border-box;
+}
+
+.pf-template-cell.active {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1.5px solid #00f0ff;
+  color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.45), inset 0 0 6px rgba(0, 240, 255, 0.2);
+  text-shadow: 0 0 8px #00f0ff;
+}
+
+.pf-hint-char {
+  color: var(--neon-green) !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.7) !important;
+}
+
+@media (max-height: 800px), (max-width: 1400px) {
+  .pf-bottom-left-group {
+    bottom: 12px !important;
+    left: 16px !important;
+    gap: 8px !important;
+  }
+  .pf-bottom-left-group .pf-matrix-panel {
+    width: 195px !important;
+    min-width: 180px !important;
+    padding: 8px 10px !important;
+  }
+  .pf-bottom-left-group .pf-digraph-panel {
+    width: 300px !important;
+    min-width: 280px !important;
+    padding: 8px 10px !important;
+  }
+}
+
 
 

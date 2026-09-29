@@ -267,6 +267,55 @@ export default function PlayfairSprint({
   const currentRule = currentPairObj.rule ?? 'rectangle';
   const currentRuleDesc = describePlayfairRule(currentRule);
 
+  const [selectedViewingIndex, setSelectedViewingIndex] = useState(null);
+
+  const unsolvedIndices = useMemo(() => {
+    return pairData
+      .map((_, idx) => idx)
+      .filter((idx) => solvedLetters[idx] === undefined);
+  }, [pairData, solvedLetters]);
+
+  const viewingIndex = (selectedViewingIndex !== null && unsolvedIndices.includes(selectedViewingIndex))
+    ? selectedViewingIndex
+    : (unsolvedIndices.includes(currentIdx) ? currentIdx : (unsolvedIndices[0] ?? currentIdx));
+
+  const viewingPair = pairData[viewingIndex] || pairData[0] || {
+    index: 0,
+    cipherPair: '',
+    plainPair: '',
+    rule: 'RULE',
+    cipherPositions: [],
+  };
+
+  const isViewingSolved = solvedLetters[viewingIndex] !== undefined;
+  const viewingRuleHint = viewingPair ? describePlayfairRule(viewingPair.rule, 'decrypt') : '';
+
+  const handlePrevViewingPair = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedIndices.length <= 1) return;
+    const currentPos = unsolvedIndices.indexOf(viewingIndex);
+    const prevPos = (currentPos - 1 + unsolvedIndices.length) % unsolvedIndices.length;
+    setSelectedViewingIndex(unsolvedIndices[prevPos]);
+  };
+
+  const handleNextViewingPair = (e) => {
+    e?.stopPropagation?.();
+    if (unsolvedIndices.length <= 1) return;
+    const currentPos = unsolvedIndices.indexOf(viewingIndex);
+    const nextPos = (currentPos + 1) % unsolvedIndices.length;
+    setSelectedViewingIndex(unsolvedIndices[nextPos]);
+  };
+
+  const viewingCipherPair = viewingPair.cipherPair || '';
+  const isLetterHighlighted = (letter) => {
+    if (!viewingCipherPair) return false;
+    return (
+      viewingCipherPair.includes(letter) ||
+      (letter === 'I' && viewingCipherPair.includes('J')) ||
+      (letter === 'J' && viewingCipherPair.includes('I'))
+    );
+  };
+
   const orangeSlimeSrc = `/assets/sprint/obstacle/obstacle1/SlimeOrange_${PAD5(slimeFrame)}.png`;
   const basicSlimeSrc = `/assets/sprint/obstacle/obstacle2/SlimeBasic_${PAD5(slimeFrame)}.png`;
 
@@ -1334,120 +1383,164 @@ export default function PlayfairSprint({
 
           {/* ───── Floating Overlays ───── */}
 
-          {/* 1. Top-Center Floating Word Panel */}
-          <div className="sprint-r2-word-panel">
-            <div className="sprint-r2-word-title">Decrypt Message "{levelData.pairCiphertext || levelData.ciphertext}"</div>
-            <div className="sprint-r2-letters-row" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
-              {pairData.map((pair, idx) => {
-                const isMasked = !hintIndices.has(idx);
-                const isCurrentActive = isMasked && idx === currentIdx && sprintStep === 'running';
-                const isSolved = solvedLetters[idx] !== undefined;
-                const plainPairStr = isSolved ? solvedLetters[idx] : '__';
+          {/* 1. Top-Center Word Progress Header */}
+          <div className="caesar-floating-word-panel vg-sprint-word-panel">
+            <div className="caesar-floating-segment-card is-active">
+              <div className="fg-letter-cells">
+                {pairData.map((pair, idx) => {
+                  const isMasked = !hintIndices.has(idx);
+                  const isCurrentActive = isMasked && idx === currentIdx && sprintStep === 'running';
+                  const isSolved = solvedLetters[idx] !== undefined;
+                  const hasHint0 = levelData?.fullMask?.[idx * 2] === true;
+                  const hasHint1 = levelData?.fullMask?.[idx * 2 + 1] === true;
 
-                return (
-                  <div
-                    key={idx}
-                    className={`sprint-r2-letter-box ${isSolved ? 'solved' : ''} ${isCurrentActive ? 'active' : ''}`}
-                    style={{ width: '58px', minWidth: '58px' }}
-                    title={`Cipher: ${pair.cipherPair} → Plain: ${isSolved ? pair.plainPair : '??'}`}
-                  >
-                    <span className="sprint-r2-box-cipher">{pair.cipherPair}</span>
-                    <span className="sprint-r2-box-plain" style={{ fontSize: '1.05rem', letterSpacing: '1px' }}>{plainPairStr}</span>
-                  </div>
-                );
-              })}
+                  let cellClass = "fg-letter-cell pf-digraph-cell";
+                  if (isSolved || !isMasked) {
+                    cellClass += " correct-plain";
+                  } else if (isCurrentActive) {
+                    cellClass += " active-target";
+                  }
+
+                  return (
+                    <div
+                      key={idx}
+                      className={cellClass}
+                      title={`Cipher: ${pair.cipherPair} → Plain: ${isSolved ? pair.plainPair : '??'}`}
+                    >
+                      <span className="fg-cell-ciphertext">{pair.cipherPair}</span>
+                      <span className="fg-cell-plaintext">
+                        {isSolved ? (
+                          pair.plainPair
+                        ) : (
+                          <>
+                            {hasHint0 ? <span className="pf-hint-char">{pair.plainPair[0]}</span> : '_'}
+                            {hasHint1 ? <span className="pf-hint-char">{pair.plainPair[1]}</span> : '_'}
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             {levelData.hint && (
-              <div className="sprint-r2-word-hint" style={{ marginTop: '4px' }}>
-                🔑 Key: "{levelData.key}" · Hint: "{levelData.hint}"
+              <div className="caesar-floating-hint">
+                💡 Hint: <strong>"{levelData.hint}"</strong>
               </div>
             )}
           </div>
 
-          {/* 2. Bottom-Left Floating 5×5 Matrix Cheat Sheet */}
-          <div className="caesar-floating-cheat-sheet sprint-cheat-sheet" style={{ maxWidth: '360px' }}>
-            <div className="vg-floating-current-slot" style={{ marginBottom: '6px' }}>
-              <div className="vg-arithmetic-title-stacked">
-                <span className="vg-arithmetic-title-line">PLAYFAIR</span>
-                <span className="vg-arithmetic-title-line">5×5 MATRIX</span>
+          {/* 2. Unified Playfair Bottom-Left Group (Matrix + Decryption Panel) */}
+          <div className="pf-bottom-left-group">
+            {/* 5x5 Matrix Panel */}
+            <div className="caesar-floating-cheat-sheet pf-matrix-panel">
+              <div className="vg-floating-current-slot" style={{ marginBottom: '6px' }}>
+                <div className="vg-arithmetic-title-stacked">
+                  <span className="vg-arithmetic-title-line">PLAYFAIR</span>
+                  <span className="vg-arithmetic-title-line">5×5 MATRIX</span>
+                </div>
+                <span className="vg-calc-badge">Key: {levelData.key || 'KEY'}</span>
               </div>
-              <span className="vg-calc-badge">Key: {levelData.key || 'KEY'}</span>
+              <div className="caesar-cheat-body playfair-cheat-body">
+                <div className="pf-template-matrix-grid">
+                  {matrix.map((row, rIdx) =>
+                    row.map((letter, cIdx) => {
+                      const isHighlighted = isLetterHighlighted(letter);
+                      return (
+                        <div
+                          key={`${rIdx}-${cIdx}`}
+                          className={`pf-template-cell${isHighlighted ? ' active' : ''}`}
+                        >
+                          {letter === 'I' ? 'I/J' : letter}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="caesar-cheat-body" style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', width: '100%' }}>
-                {matrix.map((row, rIdx) =>
-                  row.map((letter, cIdx) => {
-                    const isHighlighted =
-                      currentBatonPair.includes(letter) ||
-                      (letter === 'I' && currentBatonPair.includes('J')) ||
-                      (letter === 'J' && currentBatonPair.includes('I'));
-                    return (
-                      <div
-                        key={`${rIdx}-${cIdx}`}
-                        style={{
-                          padding: '3px 0',
-                          textAlign: 'center',
-                          fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: '0.82rem',
-                          fontWeight: 800,
-                          borderRadius: '4px',
-                          background: isHighlighted ? 'rgba(0, 229, 255, 0.25)' : 'rgba(255, 255, 255, 0.04)',
-                          color: isHighlighted ? '#00e5ff' : '#cbd5e1',
-                          border: isHighlighted ? '1.5px solid #00e5ff' : '1px solid rgba(255, 255, 255, 0.1)',
-                          boxShadow: isHighlighted ? '0 0 10px rgba(0, 229, 255, 0.5)' : 'none',
-                        }}
-                      >
-                        {letter === 'I' ? 'I/J' : letter}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
 
-              {/* Active Digraph Calculation Card */}
-              {pairData[currentIdx] && (
-                <div className="vg-fishing-calc-card" style={{ width: '100%' }}>
+            {/* Active Digraph Decryption Panel */}
+            {viewingPair && (
+              <div className="caesar-floating-cheat-sheet pf-digraph-panel">
+                <div className="vg-fishing-calc-card">
                   <div className="vg-calc-top-row">
                     <span className="vg-calc-label">ACTIVE DIGRAPH DECRYPTION</span>
+                    <span className="vg-calc-badge vg-pos-stepper">
+                      <button
+                        type="button"
+                        className="vg-pos-stepper-btn"
+                        onClick={handlePrevViewingPair}
+                        disabled={unsolvedIndices.length <= 1}
+                        aria-label="Previous unsolved pair"
+                      >
+                        ‹
+                      </button>
+                      <span className="vg-pos-stepper-label">Pair #{viewingIndex + 1}</span>
+                      <button
+                        type="button"
+                        className="vg-pos-stepper-btn"
+                        onClick={handleNextViewingPair}
+                        disabled={unsolvedIndices.length <= 1}
+                        aria-label="Next unsolved pair"
+                      >
+                        ›
+                      </button>
+                    </span>
                   </div>
                   <div className="vg-calc-formula-row">
                     <div className="vg-calc-item cipher">
                       <span className="lbl">Cipher</span>
-                      <strong style={{ letterSpacing: '2px' }}>{pairData[currentIdx].cipherPair}</strong>
+                      <strong style={{ letterSpacing: '2px' }}>{viewingPair.cipherPair}</strong>
                       <span className="val">DIGRAPH</span>
                     </div>
                     <span className="vg-calc-op">→</span>
                     <div className="vg-calc-item key">
                       <span className="lbl">Rule</span>
-                      <strong style={{ fontSize: '0.85rem' }}>{pairData[currentIdx].rule ? String(pairData[currentIdx].rule).toUpperCase() : 'RULE'}</strong>
+                      <strong style={{ fontSize: '0.85rem' }}>{viewingPair.rule ? String(viewingPair.rule).toUpperCase() : 'RULE'}</strong>
                       <span className="val">5×5 MATRIX</span>
                     </div>
                     <span className="vg-calc-op">=</span>
-                    <div className={`vg-calc-item plain ${solvedLetters[currentIdx] !== undefined ? 'is-solved' : ''}`}>
+                    <div className={`vg-calc-item plain ${isViewingSolved ? 'is-solved' : ''}`}>
                       <span className="lbl">Target</span>
-                      <strong style={{ letterSpacing: '2px', color: solvedLetters[currentIdx] !== undefined ? 'var(--neon-green)' : '#ffffff' }}>
-                        {solvedLetters[currentIdx] !== undefined ? solvedLetters[currentIdx] : '??'}
+                      <strong style={{ letterSpacing: '2px', color: isViewingSolved ? 'var(--neon-green)' : '#ffffff' }}>
+                        {isViewingSolved ? (
+                          viewingPair.plainPair
+                        ) : (
+                          <>
+                            {levelData.fullMask?.[viewingIndex * 2] ? (
+                              <span className="pf-hint-char">{viewingPair.plainPair[0]}</span>
+                            ) : (
+                              '?'
+                            )}
+                            {levelData.fullMask?.[viewingIndex * 2 + 1] ? (
+                              <span className="pf-hint-char">{viewingPair.plainPair[1]}</span>
+                            ) : (
+                              '?'
+                            )}
+                          </>
+                        )}
                       </strong>
                       <span className="val">
-                        {solvedLetters[currentIdx] !== undefined ? 'SOLVED' : 'MYSTERY'}
+                        {isViewingSolved ? 'SOLVED' : 'MYSTERY'}
                       </span>
                     </div>
                   </div>
 
                   <div className="vg-calc-help-row">
-                    {solvedLetters[currentIdx] !== undefined ? (
+                    {isViewingSolved ? (
                       <span className="vg-calc-help-text solved">
-                        ✅ Solved: {pairData[currentIdx].cipherPair} → {solvedLetters[currentIdx]}
+                        ✅ Solved: {viewingPair.cipherPair} → {viewingPair.plainPair}
                       </span>
                     ) : (
                       <span className="vg-calc-help-text normal">
-                        💡 Rule: <strong>{describePlayfairRule(pairData[currentIdx].rule, 'decrypt')}</strong>
+                        💡 Rule: <strong>{viewingRuleHint}</strong>
                       </span>
                     )}
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* 3. Bottom-Right Floating Key Clue Card */}

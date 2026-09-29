@@ -2417,6 +2417,34 @@ export function getPlayfairLevelData(difficulty, stageIndex) {
   return buildPlayfairLevel(data.plain, data.key, stageIndex, difficulty, data.hint, data.keyClue, data.lesson);
 }
 
+function makePlayfairMask(pairs, difficulty) {
+  const totalLetters = pairs.length * 2;
+  const mask = Array(totalLetters).fill(false);
+  const normDiff = String(difficulty || 'easy').toLowerCase();
+
+  if (normDiff === 'hard' || pairs.length === 0) {
+    return mask;
+  }
+
+  const hintFraction = normDiff === 'easy' ? 0.6 : 0.4;
+  let targetHintPairCount = Math.max(1, Math.round(pairs.length * hintFraction));
+  if (pairs.length > 1 && targetHintPairCount >= pairs.length) {
+    targetHintPairCount = pairs.length - 1;
+  }
+
+  const pairIndices = Array.from({ length: pairs.length }, (_, i) => i);
+  const shuffledPairIndices = [...pairIndices].sort(() => Math.random() - 0.5);
+  const hintedPairIndices = shuffledPairIndices.slice(0, targetHintPairCount);
+
+  hintedPairIndices.forEach((pairIdx) => {
+    const pickFirst = Math.random() < 0.5;
+    const revealedLetterIdx = pickFirst ? pairIdx * 2 : pairIdx * 2 + 1;
+    mask[revealedLetterIdx] = true;
+  });
+
+  return mask;
+}
+
 function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, lesson) {
   const matrix = generatePlayfairMatrix(key);
   const pairs = preparePlayfairDigraphs(plain);
@@ -2445,9 +2473,7 @@ function buildPlayfairLevel(plain, key, stageIndex, difficulty, hint, keyClue, l
     }
   }
   
-  const reveal = difficulty === 'easy' ? 0.6 : difficulty === 'medium' ? 0.5 : 0;
-  const minRevealed = difficulty === 'hard' ? 0 : 1;
-  const mask = makeMask(plain, reveal, minRevealed);
+  const mask = makePlayfairMask(pairs, difficulty);
   const words = plain.split(' ');
   const masks = [];
   let currentMaskIdx = 0;

@@ -1031,14 +1031,7 @@
   font-size: 0.95rem;
 }
 
-/* Position Playfair 5x5 Matrix at Bottom-Left */
-.pf-matrix-bottom-left {
-  position: absolute !important;
-  bottom: 24px !important;
-  left: 24px !important;
-  top: auto !important;
-  z-index: 20 !important;
-}
+/* Bottom-Left group handles Playfair matrix and digraph cards side-by-side */
 
 /* Floating Keyword Card (Bottom-Right)
  *
