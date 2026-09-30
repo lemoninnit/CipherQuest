@@ -58,6 +58,11 @@ export const userApi = {
     request('POST', '/users/progress', { cipherType, difficultyTier, levelIndex }),
   deductAttempt:  ()                      => request('POST', '/users/attempts/deduct'),
   getBadges:      ()                      => request('GET',    '/users/badges'),
+  // Tutorial preferences ("Don't show this again" per cipher category).
+  // Both endpoints return { "caesar": bool, "vigenere": bool, "playfair": bool }.
+  getTutorialPreferences:  ()             => request('GET',  '/users/preferences/tutorial'),
+  saveTutorialPreference: (cipherType, dismissed) =>
+    request('POST', '/users/preferences/tutorial', { cipherType, dismissed }),
 };
 
 export const fishingApi = {
