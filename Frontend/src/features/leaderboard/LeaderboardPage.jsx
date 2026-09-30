@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { DashboardChromeContext } from '../layout/DashboardLayout';
 import { leaderboardApi } from '../../api/cipherQuestApi';
+import { formatCompletionTime } from '../ciphergame/core/engine/scoring';
 import './LeaderboardPage.css';
 
 const SCOPE_OPTIONS = [
@@ -15,6 +16,61 @@ const SCOPE_OPTIONS = [
 const zeroPad = (n) => {
   const num = Number(n) || 0;
   return num < 10 ? `0${num}` : `${num}`;
+};
+
+/**
+ * Formats an ACCUMULATED duration for the "total" half of the TIME column.
+ * Totals accumulate across every cleared stage in the scope, so they can run
+ * well past an hour (45 stages on Overall) — hours are therefore only shown
+ * when actually needed, keeping the cell compact: "MM:SS" under an hour,
+ * "HH:MM:SS" above it.
+ */
+const formatTotalDuration = (ms) => {
+  const total = Math.max(0, Math.floor(Number(ms) || 0));
+  const hours = Math.floor(total / 3600000);
+  const minutes = Math.floor((total % 3600000) / 60000);
+  const seconds = Math.floor((total % 60000) / 1000);
+  return hours > 0
+    ? `${zeroPad(hours)}:${zeroPad(minutes)}:${zeroPad(seconds)}`
+    : `${zeroPad(minutes)}:${zeroPad(seconds)}`;
+};
+
+/**
+ * TIME cell - two clearly labelled rows so the numbers are self-explanatory
+ * without a legend:
+ *   BEST  - fastest single stage cleared in the current scope
+ *   TOTAL - sum of the personal bests of every stage cleared in the scope
+ *
+ * Renders an em dash when the operative has no timed completion in this scope;
+ * a null means "not recorded", never 0:00.000.
+ */
+const TimeCell = ({ bestTimeMs, totalTimeMs }) => {
+  const hasTime = bestTimeMs != null || totalTimeMs != null;
+  if (!hasTime) {
+    return (
+      <div className="col-time lb-time-empty" title="No timed stage cleared in this scope yet">
+        <span className="lb-time-dash">&mdash;</span>
+        <span className="lb-time-hint">No times yet</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="col-time">
+      <span className="lb-time-row" title="Fastest single stage cleared in this scope">
+        <span className="lb-time-key">Best</span>
+        <span className="lb-time-primary">
+          {bestTimeMs != null ? formatCompletionTime(bestTimeMs) : '—'}
+        </span>
+      </span>
+      <span className="lb-time-row" title="Sum of your personal best times across every stage cleared in this scope">
+        <span className="lb-time-key">Total</span>
+        <span className="lb-time-secondary">
+          {totalTimeMs != null ? formatTotalDuration(totalTimeMs) : '—'}
+        </span>
+      </span>
+    </div>
+  );
 };
 
 export default function LeaderboardPage() {
@@ -347,6 +403,9 @@ export default function LeaderboardPage() {
                         <div className="lb-podium-subline">
                           MASTERY {rank2.mastery || 0}% &bull; {rank2.streak || 0} {rank2.streak === 1 ? 'DAY' : 'DAYS'}
                         </div>
+                        <div className="lb-podium-time" title="Fastest single stage cleared in this scope">
+                          {rank2.bestTimeMs != null ? formatCompletionTime(rank2.bestTimeMs) : '—'}
+                        </div>
                       </>
                     ) : (
                       <div className="lb-podium-empty-step">
@@ -376,6 +435,9 @@ export default function LeaderboardPage() {
                         <div className="lb-podium-points gold-points">{rank1.points.toLocaleString()}</div>
                         <div className="lb-podium-subline">
                           MASTERY {rank1.mastery || 0}% &bull; {rank1.streak || 0} {rank1.streak === 1 ? 'DAY' : 'DAYS'}
+                        </div>
+                        <div className="lb-podium-time" title="Fastest single stage cleared in this scope">
+                          {rank1.bestTimeMs != null ? formatCompletionTime(rank1.bestTimeMs) : '—'}
                         </div>
                       </>
                     ) : (
@@ -407,6 +469,9 @@ export default function LeaderboardPage() {
                         <div className="lb-podium-subline">
                           MASTERY {rank3.mastery || 0}% &bull; {rank3.streak || 0} {rank3.streak === 1 ? 'DAY' : 'DAYS'}
                         </div>
+                        <div className="lb-podium-time" title="Fastest single stage cleared in this scope">
+                          {rank3.bestTimeMs != null ? formatCompletionTime(rank3.bestTimeMs) : '—'}
+                        </div>
                       </>
                     ) : (
                       <div className="lb-podium-empty-step">
@@ -420,12 +485,20 @@ export default function LeaderboardPage() {
 
                 {/* 3. Ranked Table (Rank 4 to 10) */}
                 <div className="lb-table-wrap">
+                  {/* Column headers carry a plain-English tooltip so no legend
+                      is needed to understand what each metric means. */}
                   <div className="lb-table-header">
-                    <div className="col-rank">RANK</div>
-                    <div className="col-player">OPERATIVE</div>
-                    <div className="col-points">POINTS</div>
-                    <div className="col-mastery">MASTERY</div>
-                    <div className="col-streak">STREAK</div>
+                    <div className="col-rank" title="Your position in this scope">RANK</div>
+                    <div className="col-player" title="Operative username">OPERATIVE</div>
+                    <div className="col-points" title="Total points earned in this scope">POINTS</div>
+                    <div className="col-mastery" title="Percentage of stages cleared in this scope">MASTERY</div>
+                    <div
+                      className="col-time"
+                      title="Best: fastest single stage cleared here. Total: sum of your best times for every stage cleared here."
+                    >
+                      TIME
+                    </div>
+                    <div className="col-streak" title="Consecutive login days">STREAK</div>
                   </div>
 
                   <div className="lb-table-body">
@@ -457,6 +530,7 @@ export default function LeaderboardPage() {
                             </div>
                             <span className="lb-mastery-percent">{item.mastery || 0}%</span>
                           </div>
+                          <TimeCell bestTimeMs={item.bestTimeMs} totalTimeMs={item.totalTimeMs} />
                           <div className="col-streak">
                             <span className={`lb-streak-val ${item.streak > 0 ? 'active' : 'muted'}`}>
                               <svg className="lb-flame-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
@@ -502,6 +576,10 @@ export default function LeaderboardPage() {
                           </div>
                           <span className="lb-mastery-percent">{currentUserEntry.mastery || 0}%</span>
                         </div>
+                        <TimeCell
+                          bestTimeMs={currentUserEntry.bestTimeMs}
+                          totalTimeMs={currentUserEntry.totalTimeMs}
+                        />
                         <div className="col-streak">
                           <span className={`lb-streak-val ${currentUserEntry.streak > 0 ? 'active' : 'muted'}`}>
                             <svg className="lb-flame-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">

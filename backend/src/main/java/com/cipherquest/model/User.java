@@ -13,7 +13,7 @@ import java.util.List;
  *
  * DAY 1 CHANGES:
  *  - Added `attempts` (site-wide attempt counter, default 3, range 0-3)
- *  - Added `cooldownEndTime` (set to now+4h when attempts hit 0; cleared on refill)
+ *  - Added `cooldownEndTime` (set to now+3m when attempts hit 0; cleared on refill)
  *  - Added relationships to UserProgress and UserBadge
  *
  * NOTE: `hearts` in Pac-Man and `shoeTokens` in Sprint are in-game lives
@@ -118,7 +118,7 @@ public class User {
 
     /**
      * When non-null and in the future, the user is locked out from starting new levels.
-     * Set to LocalDateTime.now().plusHours(4) when attempts hits 0.
+     * Set to LocalDateTime.now().plusMinutes(3) when attempts hits 0.
      * Cleared (set to null) when the cooldown expires on next profile fetch.
      */
     @Column(name = "cooldown_end_time")

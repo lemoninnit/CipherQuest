@@ -8,6 +8,7 @@ import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 import PauseMenu from '../../ui/PauseMenu';
+import { StageLostCard } from '../../ui/StageLostScreen';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { sprintSound } from '../sprint/sprintSound';
@@ -161,6 +162,10 @@ export default function VigenereSprint({
   onStartStageTimer,
   onSaveSnapshot,
   onClearSnapshot,
+  onStageFail,
+  // Authoritative post-loss heart state, so the losing screen shows the
+  // server's answer rather than the profile value still in flight.
+  stageLoss,
 }) {
   const {
     containerRef: fsContainerRef,
@@ -182,6 +187,20 @@ export default function VigenereSprint({
      Game state (visual)
      ─────────────────────────────────────────────── */
   const [sprintStep, setSprintStep] = useState(() => (hasSnapshot ? 'running' : 'ready'));
+
+  /* Report the stage loss exactly once per run: this resets the streak and
+     spends ONE server session heart. The runner's in-game lives are a
+     separate, client-side economy and never reach the server. */
+  const stageFailReportedRef = useRef(false);
+  useEffect(() => {
+    if (sprintStep !== 'gameover') {
+      stageFailReportedRef.current = false;
+      return;
+    }
+    if (stageFailReportedRef.current) return;
+    stageFailReportedRef.current = true;
+    onStageFail?.({ showNotice: false });
+  }, [sprintStep, onStageFail]);
   const [currentMaskIndex, setCurrentMaskIndex] = useState(() => (hasSnapshot && typeof snapshot.gameState.currentMaskIndex === 'number' ? snapshot.gameState.currentMaskIndex : 0));
   const [runnerLane, setRunnerLane] = useState(() => (hasSnapshot && typeof snapshot.gameState.runnerLane === 'number' ? snapshot.gameState.runnerLane : 1));
   const [coins, setCoins] = useState([]);
@@ -492,38 +511,6 @@ export default function VigenereSprint({
     nextSlimeDelayRef.current = 3400 + Math.random() * 1200;
   };
 
-  const handleRetryFromCheckpoint = () => {
-    onClearSnapshot?.();
-    sprintSound.unlockAudio();
-    sprintSound.playBgm();
-    clearAllFXTimeouts();
-    setLives(5);
-    setIsPaused(false);
-    setIsMenuOpen(false);
-    setSprintStep('running');
-    sprintStepRef.current = 'running';
-
-    const curMaskIdx = currentMaskIndexRef.current;
-    const curIdx = maskedIndices[curMaskIdx] ?? 0;
-    const curTargetChar = levelData.plaintext[curIdx] || 'A';
-
-    const initialCoins = [];
-    const d1 = createRandomDiamond(curTargetChar, initialCoins, 0, 80, tier);
-    initialCoins.push(d1);
-    const d2 = createRandomDiamond(curTargetChar, initialCoins, 1, 125, tier);
-    initialCoins.push(d2);
-
-    const initialSlimes = [createRandomSlime(2, 170)];
-
-    setCoins(initialCoins);
-    coinsRef.current = initialCoins;
-    setSlimes(initialSlimes);
-    slimesRef.current = initialSlimes;
-
-    lastDiamondSpawnTimeRef.current = performance.now();
-    lastSlimeSpawnTimeRef.current = performance.now();
-    nextDiamondDelayRef.current = 1800 + Math.random() * 800;
-    nextSlimeDelayRef.current = 3400 + Math.random() * 1200;
   };
 
   /* ───────────────────────────────────────────────
@@ -1317,7 +1304,7 @@ export default function VigenereSprint({
 
           {sprintStep === 'gameover' && (
             <div className="caesar-floating-failure-panel">
-              <GameOverPanel onRetry={handleRetryFromCheckpoint} />
+              <GameOverPanel stageLoss={stageLoss} onExit={onBackToStages} />
             </div>
           )}
         </div>
@@ -1426,20 +1413,21 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   );
 }
 
-function GameOverPanel({ onRetry }) {
+function GameOverPanel({ stageLoss, onExit }) {
+  // The shared losing screen owns the wording, the heart display, the lockout
+  // countdown and the single action. `compact` drops the card's own chrome
+  // because the sprint board already renders a bordered modal around it.
   return (
-    <>
-      <h3 className="caesar-failure-title">SYSTEM FAILURE!</h3>
-      <p className="caesar-failure-desc">
-        Runner collided with too many obstacles and ran out of lives.
-      </p>
-      <button
-        className="fg-btn fg-btn-danger"
-        onClick={onRetry}
-      >
-        Try Again
-      </button>
-    </>
+    <StageLostCard
+      compact
+      reason="Your runner hit too many obstacles and ran out of lives."
+      heartsLeft={stageLoss?.heartsLeft ?? null}
+      maxHearts={stageLoss?.maxHearts ?? 3}
+      lockedOut={stageLoss?.lockedOut ?? false}
+      cooldownEndTime={stageLoss?.cooldownEndTime ?? null}
+      totalScore={stageLoss?.totalScore ?? null}
+      onExit={onExit}
+    />
   );
 }
 

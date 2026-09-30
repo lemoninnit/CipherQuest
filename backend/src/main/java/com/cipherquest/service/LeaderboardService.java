@@ -20,6 +20,12 @@ import java.util.stream.Collectors;
  * - Overall mastery = (completed stages ÷ 45) × 100%.
  * - Per-cipher mastery = (cipher completed stages ÷ 15) × 100%.
  * - Points correspond directly to the user's XP.
+ *
+ * Time metrics are scope-aware and recomputed on every request:
+ * - bestTimeMs  = fastest single cleared stage within the requested scope.
+ * - totalTimeMs = sum of the personal best times of every cleared stage in scope.
+ * A cipher scope therefore reports only that cipher's times, while "overall"
+ * aggregates all three.
  */
 @Service
 @RequiredArgsConstructor
@@ -27,6 +33,22 @@ public class LeaderboardService {
 
     private final UserRepository userRepository;
     private final UserProgressRepository userProgressRepository;
+
+    /** Fastest and accumulated stage time for one operative within a scope. */
+    private record TimeStats(Long bestTimeMs, Long totalTimeMs) {}
+
+    /**
+     * Converts an aggregate row (userId, MIN(bestTimeMs), SUM(bestTimeMs)) into
+     * TimeStats. MIN/SUM over an all-NULL group yields null, and the query
+     * already filters out untimed rows — so a null here simply means the
+     * operative has no timed completion in this scope and stays unranked for time.
+     */
+    private static TimeStats toTimeStats(Object best, Object total) {
+        return new TimeStats(
+                best == null ? null : ((Number) best).longValue(),
+                total == null ? null : ((Number) total).longValue()
+        );
+    }
 
     @Transactional(readOnly = true)
     public GlobalLeaderboardResponse getLeaderboard(String scope, String currentUsername) {
@@ -36,6 +58,10 @@ public class LeaderboardService {
 
         // Derive completed stage counts per user ID from UserProgress
         Map<Long, Integer> stageCounts = new HashMap<>();
+        // Time metrics are recomputed per scope so the same entry reflects the
+        // requested filter (overall aggregates all ciphers, a cipher scope
+        // aggregates only that cipher).
+        Map<Long, TimeStats> timeStats = new HashMap<>();
         int maxStages;
 
         if ("overall".equals(normalizedScope)) {
@@ -46,6 +72,9 @@ public class LeaderboardService {
                 int count = ((Number) row[1]).intValue();
                 stageCounts.put(userId, count);
             }
+            for (Object[] row : userProgressRepository.bestAndTotalTimeOverallPerUser()) {
+                timeStats.put(((Number) row[0]).longValue(), toTimeStats(row[1], row[2]));
+            }
         } else {
             maxStages = 15;
             String cipherKey = normalizedScope.toUpperCase();
@@ -54,6 +83,9 @@ public class LeaderboardService {
                 Long userId = ((Number) row[0]).longValue();
                 int count = ((Number) row[1]).intValue();
                 stageCounts.put(userId, count);
+            }
+            for (Object[] row : userProgressRepository.bestAndTotalTimeByCipherPerUser(cipherKey)) {
+                timeStats.put(((Number) row[0]).longValue(), toTimeStats(row[1], row[2]));
             }
         }
 
@@ -89,13 +121,18 @@ public class LeaderboardService {
             // Compute mastery percentage (integer 0-100)
             int mastery = Math.min(100, (int) Math.round((completed * 100.0) / maxStages));
 
+            // Scope-specific time metrics (null when nothing timed in this scope)
+            TimeStats times = timeStats.get(u.getId());
+
             GlobalLeaderboardEntry entry = new GlobalLeaderboardEntry(
                 rank,
                 u.getUsername(),
                 u.getXp(),
                 mastery,
                 u.getStreak(),
-                isCurrent
+                isCurrent,
+                times == null ? null : times.bestTimeMs(),
+                times == null ? null : times.totalTimeMs()
             );
 
             if (rank <= 10) {

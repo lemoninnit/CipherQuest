@@ -9,7 +9,7 @@ import './DashboardHome.css';
 
 const DashboardHome = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshProfile } = useAuth();
   const { openSettings } = useContext(DashboardChromeContext);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialCategory, setTutorialCategory] = useState('caesar');
@@ -18,13 +18,17 @@ const DashboardHome = () => {
 
   // Handle Quit
   const handleStartQuestNav = () => {
+    // SESSION HEART GATE: with no hearts left, Start Quest must not open a
+    // cipher at all - the lockout banner already explains why.
+    if (isLockedOut) {
+      return;
+    }
     if (window.location.pathname !== '/dashboard') {
       navigate('/dashboard');
     } else if (activeCardId) {
       navigate(`/dashboard/ciphergame?category=${activeCardId}`, { state: { category: activeCardId } });
     }
   };
-
   const handleQuit = () => {
     if (window.confirm("Are you sure you want to quit and sign out?")) {
       logout();
@@ -61,6 +65,19 @@ const DashboardHome = () => {
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
   }, [user?.onCooldown, user?.cooldownEndTime]);
+
+  // Re-sync the profile when the dashboard is shown, so the heart counter and
+  // lockout state always reflect the server rather than a value cached before
+  // the last stage loss. Also re-check when the tab regains focus, since the
+  // cooldown can expire while the player is on another tab.
+  useEffect(() => {
+    if (!refreshProfile) return;
+    refreshProfile().catch(() => { /* offline */ });
+
+    const onFocus = () => { refreshProfile().catch(() => { /* offline */ }); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [refreshProfile]);
 
   // Calculate Progress per Cipher
   const getCipherProgress = (cipherId) => {
@@ -120,7 +137,12 @@ const DashboardHome = () => {
   const xpPct = Math.min(100, Math.round((xpInCurrentLevel / 1000) * 100));
 
   // Hearts calculation
-  const attemptsLeft = user?.attempts ?? 3;
+  // SESSION HEARTS (server-side). A heart is spent whenever a stage is lost.
+  // Mirrors the server rule (UserProgressService.isLockedOut): no heart means
+  // no stage may be started, in ANY cipher.
+  const attemptsLeft = Math.max(0, Number(user?.attempts) || 0);
+  const MAX_HEARTS = 3;
+  const isLockedOut = attemptsLeft <= 0 || Boolean(user?.onCooldown);
   const earnedBadgesCount = user?.earnedBadges?.length ?? 0;
 
   const cardsData = [
@@ -310,15 +332,20 @@ const DashboardHome = () => {
 
         {/* Top-Right HUD Badge */}
         <div className="dh-hud-badge">
-          {user?.onCooldown ? (
-            <div className="dh-hud-item cooldown" title="4-Hour Attempt Cooldown Active">
+          {/* SESSION HEARTS: always show the true count, and add the cooldown
+              countdown as a separate chip so the player can still see how many
+              hearts they have while locked out. */}
+          <div
+            className={attemptsLeft <= 0 ? 'dh-hud-item empty' : 'dh-hud-item'}
+            title={`${attemptsLeft} of ${MAX_HEARTS} session hearts remaining`}
+          >
+            <span className="dh-hud-icon">❤️</span>
+            <span>{attemptsLeft} / {MAX_HEARTS}</span>
+          </div>
+          {user?.onCooldown && (
+            <div className="dh-hud-item cooldown" title="Missions resume when the timer ends">
               <span className="dh-hud-icon">⏳</span>
               <span>{cooldownRemaining || 'COOLDOWN'}</span>
-            </div>
-          ) : (
-            <div className="dh-hud-item" title="Remaining Session Hearts">
-              <span className="dh-hud-icon">❤️</span>
-              <span>{attemptsLeft} / 3</span>
             </div>
           )}
           <div className="dh-hud-divider" />
@@ -343,7 +370,12 @@ const DashboardHome = () => {
       <div className="dh-lobby-content">
         {/* Vertical Left Menu (Original clean text format, untouched) */}
         <nav className="dh-side-menu">
-          <button className="dh-menu-item primary" onClick={handleStartQuestNav}>
+          <button
+            className={`dh-menu-item primary ${isLockedOut ? 'is-disabled' : ''}`}
+            onClick={handleStartQuestNav}
+            aria-disabled={isLockedOut}
+            title={isLockedOut ? 'No session hearts left - all stages are locked' : undefined}
+          >
             Start Quest
           </button>
           <button className="dh-menu-item" onClick={() => navigate('/dashboard/leaderboard')}>
@@ -363,8 +395,24 @@ const DashboardHome = () => {
           </button>
         </nav>
 
-        {/* Center Section: Cards */}
         <div className="dh-center-section">
+          {/* SESSION HEART GATE: with no hearts left, every cipher is locked.
+              Shown persistently so the state is obvious, not just on click. */}
+          {isLockedOut && (
+            <div className="dh-hearts-locked-banner" role="status">
+              <span className="material-symbols-outlined dh-hearts-locked-icon">heart_broken</span>
+              <div className="dh-hearts-locked-copy">
+                <strong>No session hearts left</strong>
+                <span>
+                  {user?.onCooldown && cooldownRemaining
+                    ? `Every stage is locked. Hearts refill in ${cooldownRemaining}.`
+                    : 'Every stage in every cipher is locked until your hearts refill.'}
+                </span>
+              </div>
+              <span className="dh-hearts-locked-count">0 / {MAX_HEARTS}</span>
+            </div>
+          )}
+
           {/* Cards Row */}
           <div
             className="dh-cards-row"
@@ -389,12 +437,21 @@ const DashboardHome = () => {
                   onFocus={() => setActiveCardId(card.id)}
                   onClick={() => {
                     setActiveCardId(card.id);
+                    if (isLockedOut) {
+                      // SESSION HEART GATE: no hearts means no stage, in any
+                      // cipher. Explain it here instead of failing silently
+                      // further down the roadmap.
+                      return;
+                    }
                     navigate(`/dashboard/ciphergame?category=${card.id}`, { state: { category: card.id, showTutorial: true } });
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                       e.preventDefault();
                       setActiveCardId(card.id);
+                      if (isLockedOut) {
+                        return;
+                      }
                       navigate(`/dashboard/ciphergame?category=${card.id}`, { state: { category: card.id, showTutorial: true } });
                     }
                   }}
@@ -464,4 +521,4 @@ const DashboardHome = () => {
   );
 };
 
-export default DashboardHome;
+export default DashboardHome;

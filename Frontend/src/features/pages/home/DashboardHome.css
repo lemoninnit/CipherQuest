@@ -274,6 +274,84 @@
 }
 
 /* Center Section: Cards */
+/* SESSION HEART GATE: shown on the lobby while no session heart remains.
+   Every cipher is locked then, so the state is stated up front instead of
+   the player discovering it on a dead click. */
+.dh-hearts-locked-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin-bottom: 18px;
+  padding: 14px 18px;
+  background: rgba(255, 159, 28, 0.12);
+  border: 1px solid rgba(255, 159, 28, 0.5);
+  border-radius: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  color: #ffd8a8;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+.dh-hearts-locked-icon {
+  flex-shrink: 0;
+  font-size: 26px;
+  color: #ff9f1c;
+}
+
+.dh-hearts-locked-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dh-hearts-locked-copy strong {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #ffc98a;
+}
+
+.dh-hearts-locked-copy span {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: rgba(255, 216, 168, 0.85);
+}
+
+.dh-hearts-locked-count {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 159, 28, 0.45);
+  border-radius: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 800;
+  color: #ffc146;
+}
+
+/* Zero hearts in the HUD: keep the chip visible but clearly spent. */
+.dh-hud-item.empty {
+  color: #ff8fa3;
+}
+
+.dh-hud-item.empty .dh-hud-icon {
+  opacity: 0.45;
+  filter: grayscale(1);
+/* SESSION HEART GATE: Start Quest is inert while every stage is locked. */
+.dh-menu-item.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+
+.dh-menu-item.is-disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+}
+
 .dh-center-section {
   display: flex;
   flex-direction: column;
@@ -671,4 +749,4 @@
     animation: none !important;
     transition: none !important;
   }
-}
+}

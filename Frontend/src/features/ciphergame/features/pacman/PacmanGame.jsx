@@ -7,6 +7,7 @@ import GameHudBar from '../../ui/GameHudBar';
 import StageLoadingScreen from '../../ui/StageLoadingScreen';
 import { pacmanSound } from './pacmanSound';
 import PauseMenu from '../../ui/PauseMenu';
+import StageLostScreen from '../../ui/StageLostScreen';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { facingFromDir } from './pacmanWorld';
@@ -662,6 +663,10 @@ export default function PacmanGame({
   onStartStageTimer,
   onSaveSnapshot,
   onClearSnapshot,
+  onStageFail,
+  // Authoritative post-loss heart state, so the losing screen shows the
+  // server's answer rather than the profile value still in flight.
+  stageLoss,
 }) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -756,7 +761,6 @@ export default function PacmanGame({
   const isInvulnerableRef = useRef(isInvulnerable);
   const knightAttackingRef = useRef(false);
   const invulnerabilityTimerRef = useRef(null);
-  const retryBtnRef = useRef(null);
   const autoRecapShownRef = useRef(false);
 
   const isRunning = phase === 'playing' && !gameOver && !levelSolved;
@@ -775,12 +779,20 @@ export default function PacmanGame({
     isRunning
   );
 
-  /* ── Focus management for game over modal ── */
+  /* Report the loss exactly once. Focus is StageLostScreen's own job. */
+  const stageFailReportedRef = useRef(false);
   useEffect(() => {
-    if (gameOver) {
-      setTimeout(() => retryBtnRef.current?.focus(), 50);
+    if (!gameOver) {
+      // A fresh run may lose again, so allow one report per game over.
+      stageFailReportedRef.current = false;
+      return;
     }
-  }, [gameOver]);
+    if (stageFailReportedRef.current) return;
+    stageFailReportedRef.current = true;
+    // Reports the stage loss: streak reset + exactly one server session
+    // heart spent. Pac-Man's in-game lives never reach the server.
+    onStageFail?.({ showNotice: false });
+  }, [gameOver, onStageFail]);
 
   useEffect(() => { pacmanRef.current = pacman; }, [pacman]);
   useEffect(() => { ghostsRef.current = ghosts; }, [ghosts]);
@@ -1713,37 +1725,6 @@ export default function PacmanGame({
 
     return () => clearInterval(spawnTimer);
   }, [gameOver, levelSolved, isMenuOpen, phase]);
-
-  const handleResetGame = () => {
-    onClearSnapshot?.();
-    pacmanSound.stopBgm();
-    pacmanSound.unlockAudio();
-    pacmanSound.playBgm();
-    const normTier = String(tier || levelData?.tier || 'easy').toLowerCase();
-    const grid = getMazeGrid(normTier);
-    activeMazeGridRef.current = grid;
-    const { ghosts: resetG, queue: resetQ } = generateInitialGhosts(levelData, normTier);
-    targetQueueRef.current = resetQ;
-    setPacman(initialPacman);
-    setPacmanDir('NONE');
-    setBufferedDir('NONE');
-    setKnightAttacking(false);
-    setEatenGhosts([]);
-    setLives(5);
-    setGameOver(false);
-    setLevelSolved(false);
-    setActiveShiftValue(0);
-    setHasSkillCharge(false);
-    setSkillActive(false);
-    setSkillTimeLeft(0);
-    setRuleViolation(null);
-    setGhosts(resetG);
-    setIsScreenShaking(false);
-    setIsInvulnerable(false);
-    isInvulnerableRef.current = false;
-    autoRecapShownRef.current = false;
-    setPellets(generateRandomPellets(grid, resetG, initialPacman));
-  };
 
   const beginExplanation = () => {
     pacmanSound.stopBgm();
@@ -2696,37 +2677,22 @@ export default function PacmanGame({
         </div>
       </div>
 
-      {/* Game Over modal overlay */}
+      {/* Game Over modal overlay - no retry: losing the stage is final and
+          costs one server session heart (reported via onStageFail). */}
       {gameOver && (
-        <div
-          className="caesar-pause-overlay pacman-gameover-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="pacman-gameover-title"
-        >
-          <div className="caesar-pause-card pacman-gameover-card">
-            <h2 id="pacman-gameover-title" className="caesar-pause-title">GAME OVER</h2>
-            <p className="pacman-gameover-text">Pac-Man has run out of cryptographic operational hearts.</p>
-            <button
-              ref={retryBtnRef}
-              className="caesar-pause-btn caesar-pause-btn-resume"
-              onClick={handleResetGame}
-            >
-              <span className="material-symbols-outlined">restart_alt</span>
-              <span>Retry Level</span>
-            </button>
-            <button
-              className="caesar-pause-btn caesar-pause-btn-exit"
-              onClick={() => {
-                onClearSnapshot?.();
-                onBackToStages();
-              }}
-            >
-              <span className="material-symbols-outlined">logout</span>
-              <span>Exit Stage</span>
-            </button>
-          </div>
-        </div>
+        <StageLostScreen
+          open
+          reason="You ran out of lives in the maze."
+          heartsLeft={stageLoss?.heartsLeft ?? null}
+          maxHearts={stageLoss?.maxHearts ?? 3}
+          lockedOut={stageLoss?.lockedOut ?? false}
+          cooldownEndTime={stageLoss?.cooldownEndTime ?? null}
+          totalScore={stageLoss?.totalScore ?? null}
+          onExit={() => {
+            onClearSnapshot?.();
+            onBackToStages();
+          }}
+        />
       )}
 
       {/* Tabula Recta Modal for Vigenère Mode */}
