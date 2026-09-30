@@ -181,7 +181,62 @@
   cursor: not-allowed;
 }
 
+/* Inline field-level feedback (e.g. Access Cipher confirmation) */
+.register-field-error,
+.register-field-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.register-field-error {
+  color: #fca5a5;
+}
+
+.register-field-success {
+  color: #5eead4;
+}
+
+.register-field-error .material-symbols-outlined,
+.register-field-success .material-symbols-outlined {
+  flex-shrink: 0;
+}
+
+/* Invalid confirm field gets a soft red edge so it reads as a field problem
+   rather than a page-level failure. The shared focus rule uses !important, so
+   the error styling has to match that or it would vanish on focus. */
+.input-wrapper:has(input[aria-invalid='true']) {
+  border-color: rgba(239, 68, 68, 0.55) !important;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.25) !important;
+}
+
 /* Footer */
+/* The form gained a fourth field, so on short laptop viewports the card can
+   outgrow the viewport and hide the submit button. Tighten the vertical rhythm
+   rather than letting the form scroll out of reach. */
+@media (max-height: 780px) {
+  .register-form-section {
+    align-items: flex-start;
+    padding: 24px;
+  }
+
+  .register-card {
+    padding: 28px;
+  }
+
+  .register-header {
+    margin-bottom: 20px;
+  }
+
+  .register-form {
+    gap: 14px;
+  }
+}
+
 .register-footer {
   text-align: center;
   margin-top: 24px;

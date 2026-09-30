@@ -1,0 +1,36 @@
+/* Sign-out dialog body copy. The dialog chrome itself is ConfirmDialog.css. */
+
+.sd-lead {
+  margin: 0 0 14px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: rgba(232, 244, 248, 0.78);
+}
+
+.sd-saved {
+  list-style: none;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+  display: grid;
+  gap: 8px;
+}
+
+.sd-saved li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.83rem;
+  line-height: 1.4;
+  color: rgba(232, 244, 248, 0.9);
+}
+
+.sd-saved .material-symbols-outlined {
+  flex: none;
+  font-size: 1.05rem;
+  color: #22c55e;
+  font-variation-settings: 'FILL' 1;
+}

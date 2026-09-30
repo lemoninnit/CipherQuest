@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import useSignOut from '../../../components/useSignOut';
 import { DashboardChromeContext } from '../../layout/DashboardLayout';
 import CaesarTutorialModal from '../../ciphergame/features/caesar/CaesarTutorialModal';
 import VigenereTutorialModal from '../../ciphergame/features/vigenere/VigenereTutorialModal';
@@ -9,7 +10,8 @@ import './DashboardHome.css';
 
 const DashboardHome = () => {
   const navigate = useNavigate();
-  const { user, logout, refreshProfile } = useAuth();
+  const { user, refreshProfile } = useAuth();
+  const { signOut, dialog: signOutDialog } = useSignOut();
   const { openSettings } = useContext(DashboardChromeContext);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialCategory, setTutorialCategory] = useState('caesar');
@@ -27,12 +29,6 @@ const DashboardHome = () => {
       navigate('/dashboard');
     } else if (activeCardId) {
       navigate(`/dashboard/ciphergame?category=${activeCardId}`, { state: { category: activeCardId } });
-    }
-  };
-  const handleQuit = () => {
-    if (window.confirm("Are you sure you want to quit and sign out?")) {
-      logout();
-      navigate('/');
     }
   };
 
@@ -390,10 +386,12 @@ const DashboardHome = () => {
           <button className="dh-menu-item" onClick={openSettings}>
             Settings
           </button>
-          <button className="dh-menu-item danger" onClick={handleQuit}>
-            Quit
+          <button className="dh-menu-item danger" onClick={signOut}>
+            Sign out
           </button>
         </nav>
+
+        {signOutDialog}
 
         <div className="dh-center-section">
           {/* SESSION HEART GATE: with no hearts left, every cipher is locked.

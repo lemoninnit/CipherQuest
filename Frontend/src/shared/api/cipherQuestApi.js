@@ -19,12 +19,18 @@ async function request(method, path, body) {
 }
 
 export const authApi = {
-  register: (username, email, password) =>
-    request('POST', '/auth/register', { username, email, password }),
+  // confirmPassword is required by the server: without it a mistyped Access
+  // Cipher would create an account the operative can never log back into.
+  register: (username, email, password, confirmPassword) =>
+    request('POST', '/auth/register', { username, email, password, confirmPassword }),
   login: (username, password) =>
     request('POST', '/auth/login', { username, password }),
-  resetPassword: (username, email, newPassword) =>
-    request('POST', '/auth/reset-password', { username, email, newPassword }),
+  resetPassword: (username, email, newPassword, confirmPassword) =>
+    request('POST', '/auth/reset-password', { username, email, newPassword, confirmPassword }),
+  // Signed-in variant. The server re-verifies `currentPassword` even though the
+  // JWT is valid, so a borrowed session cannot rotate the credential.
+  changePassword: (currentPassword, newPassword, confirmPassword) =>
+    request('PUT', '/users/me/password', { currentPassword, newPassword, confirmPassword }),
 };
 
 export const userApi = {

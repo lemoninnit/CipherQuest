@@ -2,6 +2,9 @@ import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { userApi } from '../../api/cipherQuestApi';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import ChangePasswordDialog from '../../components/ChangePasswordDialog';
+import useSignOut from '../../components/useSignOut';
 import './DashboardLayout.css';
 
 export const DashboardChromeContext = React.createContext({ openSettings: () => {} });
@@ -10,7 +13,21 @@ const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { signOut, dialog: signOutDialog } = useSignOut();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+
+  // Account deletion is irreversible, so it gets a real dialog (with a pending
+  // state and an inline error) instead of window.confirm + window.alert. The
+  // native pair gave the player no idea which button they had just pressed and
+  // reported failures in a popup the rest of the app cannot style.
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState(null);
+
+  // Changing your Access Cipher while signed in. Kept as its own dialog rather
+  // than a route so it opens over Settings without losing the player's place.
+  const [changePwOpen, setChangePwOpen] = React.useState(false);
+  const [changePwDone, setChangePwDone] = React.useState(false);
 
   const IMMERSIVE_ROUTES = ['/dashboard', '/dashboard/ciphergame', '/dashboard/leaderboard', '/dashboard/badges'];
   const immersive = IMMERSIVE_ROUTES.includes(location.pathname);
@@ -25,23 +42,58 @@ const DashboardLayout = ({ children }) => {
   const openSettings = React.useCallback(() => setSettingsOpen(true), []);
   const contextValue = React.useMemo(() => ({ openSettings }), [openSettings]);
 
+  // Signing out from the Settings modal must also close the modal, otherwise
+  // the sign-out dialog appears on top of a settings panel that then re-renders
+  // behind it once the session is gone.
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    setSettingsOpen(false);
+    signOut();
+  };
+
+  const openChangePassword = () => {
+    setChangePwDone(false);
+    setChangePwOpen(true);
+  };
+
+  const closeChangePassword = () => {
+    setChangePwOpen(false);
+    setChangePwDone(false);
+  };
+
+  // On success the dialog closes and Settings confirms it in place, so the
+  // player is told the change landed without being thrown back to a login page
+  // they never asked to leave.
+  const handlePasswordChanged = () => {
+    setChangePwOpen(false);
+    setChangePwDone(true);
+  };
+
+  const openDeleteDialog = () => {
+    setDeleteError(null);
+    setDeleteOpen(true);
+  };
+
+  const closeDeleteDialog = () => {
+    if (deleting) return;
+    setDeleteOpen(false);
+    setDeleteError(null);
   };
 
   const handleDeleteAccount = async () => {
-    const confirmed = window.confirm(
-      "WARNING: Are you sure you want to permanently decommission this agent profile?\n\nThis will purge all associated logs, XP progress, fishing seasons, and cast results from our databases. This action CANNOT be undone."
-    );
-    if (!confirmed) return;
-
+    setDeleting(true);
+    setDeleteError(null);
     try {
       await userApi.deleteAccount();
+      setDeleteOpen(false);
+      setSettingsOpen(false);
       logout();
-      navigate('/');
+      navigate('/', { replace: true });
     } catch (err) {
-      alert("Error decommissioning agent profile: " + err.message);
+      // Kept inside the dialog instead of window.alert: the player keeps their
+      // place and can retry or back out without a second popup.
+      setDeleteError(err?.message || 'Could not reach the server. Please try again.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -174,6 +226,22 @@ const DashboardLayout = ({ children }) => {
                 <h3>🔐 Security & Session</h3>
                 <div className="setting-row">
                   <div>
+                    <div className="setting-label">Change Access Cipher</div>
+                    <div className="setting-desc">Update the password you use to sign in</div>
+                  </div>
+                  <button className="settings-change-pw-btn" onClick={openChangePassword}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>lock_reset</span>
+                    Change
+                  </button>
+                </div>
+                {changePwDone && (
+                  <div className="settings-inline-success" role="status">
+                    <span className="material-symbols-outlined" aria-hidden="true">check_circle</span>
+                    Access Cipher updated. Use it next time you sign in.
+                  </div>
+                )}
+                <div className="setting-row">
+                  <div>
                     <div className="setting-label">Session Control</div>
                     <div className="setting-desc">Sign out from this terminal securely</div>
                   </div>
@@ -192,7 +260,7 @@ const DashboardLayout = ({ children }) => {
                     <div className="setting-label">Decommission Profile</div>
                     <div className="setting-desc">Permanently purge your operative account and delete all data in fishing seasons & cast results</div>
                   </div>
-                  <button className="settings-delete-btn" onClick={handleDeleteAccount}>
+                  <button className="settings-delete-btn" onClick={openDeleteDialog}>
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete_forever</span>
                     Purge
                   </button>
@@ -203,6 +271,52 @@ const DashboardLayout = ({ children }) => {
         </div>
       )}
     </div>
+
+      {/* Session / account dialogs. Mounted outside the settings modal so they
+          survive it closing, and so either can be raised from it. */}
+      {signOutDialog}
+
+      <ChangePasswordDialog
+        open={changePwOpen}
+        onClose={closeChangePassword}
+        onChanged={handlePasswordChanged}
+      />
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onConfirm={handleDeleteAccount}
+        onCancel={closeDeleteDialog}
+        title="Delete your account?"
+        description={
+          user?.username
+            ? `This permanently deletes ${user.username} and everything attached to it.`
+            : 'This permanently deletes your account and everything attached to it.'
+        }
+        icon="delete_forever"
+        tone="danger"
+        confirmLabel="Delete my account"
+        cancelLabel="Keep my account"
+        busy={deleting}
+        busyLabel="Deleting…"
+      >
+        <ul className="cd-permanent-list">
+          <li>Every stage you have cleared</li>
+          <li>All badges, XP and your total score</li>
+          <li>Session hearts and leaderboard entries</li>
+        </ul>
+
+        {deleteError && (
+          <p className="cd-error" role="alert">
+            <span className="material-symbols-outlined" aria-hidden="true">error</span>
+            {deleteError}
+          </p>
+        )}
+
+        <p className="cd-irreversible">
+          This cannot be undone. If you just want to sign out for now, cancel and
+          use <strong>Sign out</strong> instead — your progress is kept.
+        </p>
+      </ConfirmDialog>
   </DashboardChromeContext.Provider>
   );
 };
