@@ -60,17 +60,14 @@ const mergeProgress = (localProg, backendProg) => {
   return result;
 };
 
+// Every tier is selectable from the Difficulty Selector (all three tier cards
+// render as playable, with no padlock), so the flow must not bounce a tier
+// selection back to the selector screen. Progression is instead gated per
+// stage inside a tier by isStageUnlocked: stage 1 is always open and each
+// later stage requires the previous one to be cleared.
 export const isTierUnlocked = (cat, diff, prog) => {
   if (!cat || !VALID_CATEGORIES.includes(cat)) return false;
-  if (diff === 'easy') return true;
-  const catProg = prog?.[cat] || { easy: [], medium: [], hard: [] };
-  if (diff === 'medium') {
-    return (catProg.easy || []).length >= 5;
-  }
-  if (diff === 'hard') {
-    return (catProg.medium || []).length >= 5;
-  }
-  return false;
+  return VALID_DIFFICULTIES.includes(diff);
 };
 
 export const isStageUnlocked = (cat, diff, stageIndex, prog) => {
