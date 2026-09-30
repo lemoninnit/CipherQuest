@@ -60,6 +60,38 @@
 .fg-header.fg-header-ready .fg-header-left {
   pointer-events: auto !important;
 }
+
+/* ── In-stage HUD: Menu button + stage name on the left, meters on the right.
+      The stage name is left-aligned (never centred) so it cannot overlap the
+      scoring / hearts / attempts cluster, and truncates on narrow viewports. ── */
+.fg-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.fg-header-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  pointer-events: none;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+}
+.fg-header-right {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.fg-header .cq-back-btn,
+.fg-header .fg-btn-back-nav {
+  flex: 0 0 auto;
+}
 .fg-header-category {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 1.4rem;
