@@ -563,6 +563,26 @@
   transition: left 0.18s linear, top 0.18s linear;
 }
 
+.tier-medium .knight-actor,
+.tier-medium .goblin-actor {
+  transform: scale(0.88);
+}
+
+.tier-hard .knight-actor,
+.tier-hard .goblin-actor {
+  transform: scale(0.8);
+}
+
+.tier-medium .gold-pellet-sheet,
+.tier-medium .circle-pellet-badge {
+  transform: scale(0.88);
+}
+
+.tier-hard .gold-pellet-sheet,
+.tier-hard .circle-pellet-badge {
+  transform: scale(0.8);
+}
+
 /* Container positioning for moving sprites (used by JS inline left/top) */
 .pacman-sprite-absolute {
   position: absolute;

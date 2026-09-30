@@ -7791,25 +7791,27 @@
 /* Playfair Sprint Specific Compact Styles (below bottom lane walkway) */
 .pf-bottom-left-group.pf-sprint-group,
 .pf-sprint-group.pf-bottom-left-group {
-  bottom: 24px !important;
-  left: 24px !important;
+  bottom: 10px !important;
+  left: 16px !important;
+  gap: 8px !important;
+  z-index: 20 !important;
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-matrix-panel,
 .pf-bottom-left-group.pf-sprint-group .pf-digraph-panel {
-  padding: 12px !important;
+  padding: 6px 10px !important;
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-matrix-panel {
-  width: 175px !important;
-  min-width: 165px !important;
-  max-width: 185px !important;
+  width: 165px !important;
+  min-width: 150px !important;
+  max-width: 175px !important;
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-digraph-panel {
-  width: 330px !important;
-  min-width: 300px !important;
-  max-width: 350px !important;
+  width: 270px !important;
+  min-width: 245px !important;
+  max-width: 285px !important;
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-template-matrix-grid {
@@ -7817,19 +7819,19 @@
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-template-cell {
-  width: 26px !important;
-  height: 22px !important;
-  max-width: 26px !important;
-  max-height: 22px !important;
-  min-width: 26px !important;
-  min-height: 22px !important;
-  font-size: 0.76rem !important;
+  width: 24px !important;
+  height: 20px !important;
+  max-width: 24px !important;
+  max-height: 20px !important;
+  min-width: 24px !important;
+  min-height: 20px !important;
+  font-size: 0.74rem !important;
   border-radius: 4px !important;
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-trace-block {
-  font-size: 11px !important;
-  padding: 6px 8px !important;
+  font-size: 10.5px !important;
+  padding: 4px 6px !important;
   gap: 1px !important;
 }
 
@@ -7850,6 +7852,122 @@
     padding: 8px 10px !important;
   }
 }
+
+/* ==========================================================================
+   Pacman Fullscreen: Dedicated Guide Placement & Zero Maze Overlap Relayout
+   ========================================================================== */
+.caesar-pacman-fullscreen .pf-bottom-left-group {
+  bottom: 12px !important;
+  left: 14px !important;
+  gap: 8px !important;
+  z-index: 20 !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-matrix-panel {
+  width: 175px !important;
+  min-width: 160px !important;
+  max-width: 185px !important;
+  padding: 6px 10px !important;
+  border-radius: 10px !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-matrix-panel .pf-template-cell {
+  max-width: 25px !important;
+  max-height: 25px !important;
+  font-size: 0.78rem !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-digraph-panel {
+  width: 270px !important;
+  min-width: 245px !important;
+  max-width: 285px !important;
+  padding: 6px 10px !important;
+  border-radius: 10px !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-calc-formula-row {
+  margin: 3px 0 !important;
+  gap: 4px !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-calc-box {
+  padding: 3px 6px !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-calc-box .val {
+  font-size: 0.9rem !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-trace-block {
+  font-size: 0.68rem !important;
+  line-height: 1.25 !important;
+  padding: 4px 6px !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-trace-line {
+  margin-bottom: 1px !important;
+}
+
+/* Medium Tier Pacman Relayout */
+.caesar-pacman-fullscreen.tier-medium .pf-bottom-left-group .pf-matrix-panel {
+  width: 170px !important;
+  min-width: 155px !important;
+  padding: 5px 8px !important;
+}
+
+.caesar-pacman-fullscreen.tier-medium .pf-bottom-left-group .pf-digraph-panel {
+  width: 260px !important;
+  min-width: 240px !important;
+  padding: 5px 8px !important;
+}
+
+.caesar-pacman-fullscreen.tier-medium .vg-fishing-az-panel {
+  min-width: 320px !important;
+  max-width: 380px !important;
+  padding: 8px 12px !important;
+  bottom: 12px !important;
+  left: 14px !important;
+}
+
+.caesar-pacman-fullscreen.tier-medium .caesar-floating-cheat-sheet.caesar-pacman-cheat-sheet {
+  bottom: 12px !important;
+  left: 14px !important;
+  padding: 6px 10px !important;
+}
+
+/* Hard Tier Pacman Relayout */
+.caesar-pacman-fullscreen.tier-hard .pf-bottom-left-group .pf-matrix-panel {
+  width: 160px !important;
+  min-width: 145px !important;
+  padding: 5px 7px !important;
+}
+
+.caesar-pacman-fullscreen.tier-hard .pf-bottom-left-group .pf-matrix-panel .pf-template-cell {
+  max-width: 22px !important;
+  max-height: 22px !important;
+  font-size: 0.72rem !important;
+}
+
+.caesar-pacman-fullscreen.tier-hard .pf-bottom-left-group .pf-digraph-panel {
+  width: 248px !important;
+  min-width: 230px !important;
+  padding: 5px 7px !important;
+}
+
+.caesar-pacman-fullscreen.tier-hard .vg-fishing-az-panel {
+  min-width: 295px !important;
+  max-width: 345px !important;
+  padding: 6px 10px !important;
+  bottom: 10px !important;
+  left: 12px !important;
+}
+
+.caesar-pacman-fullscreen.tier-hard .caesar-floating-cheat-sheet.caesar-pacman-cheat-sheet {
+  bottom: 10px !important;
+  left: 12px !important;
+  padding: 5px 8px !important;
+}
+
 
 
 

@@ -619,8 +619,10 @@ export default function PacmanGame({ levelData, tier, onVerifySubmit, onBackToSt
                   const nextEaten = prevEaten.includes(ghost.index)
                     ? prevEaten
                     : [...prevEaten, ghost.index];
-                  const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
-                  if (nextEaten.length === totalTargets) {
+                  const allDone = isPlayfair
+                    ? (maskedIndices.length > 0 && maskedIndices.every((idx) => nextEaten.includes(idx)))
+                    : nextEaten.length === maskedIndices.length;
+                  if (allDone) {
                     setLevelSolved(true);
                     pacmanSound.stopBgm();
                     pacmanSound.playSfx('win');
