@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import useSignOut from '../../components/useSignOut';
 import { DashboardChromeContext } from '../layout/DashboardLayout';
 import { leaderboardApi } from '../../api/cipherQuestApi';
 import { formatCompletionTime } from '../ciphergame/core/engine/scoring';
@@ -76,7 +77,8 @@ const TimeCell = ({ bestTimeMs, totalTimeMs }) => {
 export default function LeaderboardPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { signOut, dialog: signOutDialog } = useSignOut();
   const { openSettings } = useContext(DashboardChromeContext);
 
   const urlScope = searchParams.get('scope')?.toLowerCase();
@@ -139,13 +141,6 @@ export default function LeaderboardPage() {
       .finally(() => {
         setLoading(false);
       });
-  };
-
-  const handleQuit = () => {
-    if (window.confirm('Are you sure you want to quit and sign out?')) {
-      logout();
-      navigate('/');
-    }
   };
 
   const topUsers = leaderboardData.topUsers;
@@ -322,10 +317,12 @@ export default function LeaderboardPage() {
           <button className="dh-menu-item" onClick={openSettings}>
             Settings
           </button>
-          <button className="dh-menu-item danger" onClick={handleQuit}>
-            Quit
+          <button className="dh-menu-item danger" onClick={signOut}>
+            Sign out
           </button>
         </nav>
+
+        {signOutDialog}
 
         {/* Center Section: Leaderboard Console */}
         <div className="lb-center-section">

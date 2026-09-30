@@ -53,6 +53,14 @@ public class UserService {
 
     @Transactional
     public AuthResponse register(RegisterRequest req) {
+        // The client checks this too, but the client is not trusted: without a
+        // server-side comparison a mistyped Access Cipher would create an
+        // account the operative can never log back into. Checked first so a
+        // typo costs no database round-trips.
+        if (!req.password().equals(req.confirmPassword())) {
+            throw new IllegalArgumentException("Access Ciphers do not match. Please try again.");
+        }
+
         if (userRepository.existsByUsername(req.username())) {
             throw new IllegalArgumentException("Username already taken: " + req.username());
         }
@@ -93,6 +101,11 @@ public class UserService {
 
     @Transactional
     public void resetPassword(ResetPasswordRequest req) {
+        // Checked before any lookup so a typo costs nothing.
+        if (!req.newPasswordsMatch()) {
+            throw new IllegalArgumentException("Access Ciphers do not match. Please try again.");
+        }
+
         User user = userRepository.findByUsername(req.username())
                 .orElseThrow(() -> new UsernameNotFoundException("Operative ID not found: " + req.username()));
 
@@ -100,7 +113,47 @@ public class UserService {
             throw new IllegalArgumentException("Comms Channel (Email) does not match the registered Operative ID");
         }
 
-        user.setPassword(passwordEncoder.encode(req.newPassword()));
+        applyNewPassword(user, req.newPassword());
+    }
+
+    /**
+     * Changes the Access Cipher of a signed-in operative.
+     *
+     * <p>The current cipher is re-verified here even though the caller already
+     * holds a valid JWT. That is deliberate: a stolen or borrowed session would
+     * otherwise be enough to permanently lock the real owner out, because the
+     * forgot-password reset needs the comms channel and the owner may not have
+     * access to that mailbox. Re-verification means an attacker can read the
+     * profile but cannot rotate the credential.
+     */
+    @Transactional
+    public void changePassword(String username, ChangePasswordRequest req) {
+        if (!req.newPasswordsMatch()) {
+            throw new IllegalArgumentException("New Access Ciphers do not match. Please try again.");
+        }
+
+        User user = findByUsername(username);
+
+        if (!passwordEncoder.matches(req.currentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Current Access Cipher is incorrect.");
+        }
+
+        // Re-submitting the same cipher is almost always a mis-click, and
+        // reporting success would leave the operative thinking they hardened
+        // their account when nothing changed.
+        if (passwordEncoder.matches(req.newPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("New Access Cipher must be different from the current one.");
+        }
+
+        applyNewPassword(user, req.newPassword());
+    }
+
+    /**
+     * Single place a password hash is ever written, so no future caller can
+     * accidentally persist a cipher without encoding it.
+     */
+    private void applyNewPassword(User user, String rawNewPassword) {
+        user.setPassword(passwordEncoder.encode(rawNewPassword));
         userRepository.save(user);
     }
 

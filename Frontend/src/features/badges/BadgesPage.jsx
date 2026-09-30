@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import useSignOut from '../../components/useSignOut';
 import { DashboardChromeContext } from '../layout/DashboardLayout';
 import { userApi } from '../../api/cipherQuestApi';
 import './BadgesPage.css';
@@ -215,7 +216,8 @@ const getProgressCounts = (user) => {
 
 export default function BadgesPage() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { signOut, dialog: signOutDialog } = useSignOut();
   const { openSettings } = useContext(DashboardChromeContext);
 
   const [unlockedBadgeIds, setUnlockedBadgeIds] = useState(null); // null = initial loading state
@@ -317,13 +319,6 @@ export default function BadgesPage() {
   const totalBadges = OFFICIAL_BADGES.length;
   const progressPercent = Math.min(100, Math.round((totalUnlocked / totalBadges) * 100));
 
-  const handleQuit = () => {
-    if (window.confirm('Are you sure you want to quit and sign out?')) {
-      logout();
-      navigate('/');
-    }
-  };
-
   const categories = [
     { key: 'Caesar Cipher', label: 'Caesar Cipher', subtitle: 'Substitution Cipher Mastery' },
     { key: 'Vigenère Cipher', label: 'Vigenère Cipher', subtitle: 'Polyalphabetic Keyed Cipher Mastery' },
@@ -422,10 +417,12 @@ export default function BadgesPage() {
           <button className="dh-menu-item" onClick={openSettings}>
             Settings
           </button>
-          <button className="dh-menu-item danger" onClick={handleQuit}>
-            Quit
+          <button className="dh-menu-item danger" onClick={signOut}>
+            Sign out
           </button>
         </nav>
+
+        {signOutDialog}
 
         {/* Center Section: AAA Badges Hero Gallery */}
         <div className="bd-center-section scrollbar-hide">

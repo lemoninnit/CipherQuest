@@ -40,6 +40,24 @@ public class UserController {
         return ResponseEntity.ok(userService.getProfile(userDetails.getUsername()));
     }
 
+    /**
+     * Change the signed-in operative's Access Cipher.
+     *
+     * PUT /api/users/me/password
+     * Body: { "currentPassword": "...", "newPassword": "...", "confirmPassword": "..." }
+     *
+     * The username is taken from the JWT, never from the request body — a body
+     * username would let one authenticated caller rotate another account's
+     * cipher.
+     */
+    @PutMapping("/me/password")
+    public ResponseEntity<ApiResponse> changeMyPassword(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody ChangePasswordRequest req) {
+        userService.changePassword(userDetails.getUsername(), req);
+        return ResponseEntity.ok(new ApiResponse(true, "Access Cipher updated successfully."));
+    }
+
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteMyAccount(
             @AuthenticationPrincipal UserDetails userDetails) {

@@ -5,21 +5,36 @@ import './ResetPasswordPage.css';
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: '', email: '', newPassword: '' });
+  const [form, setForm] = useState({ username: '', email: '', newPassword: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [confirmTouched, setConfirmTouched] = useState(false);
 
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === 'newPassword' || name === 'confirmPassword') setError('');
+  };
+
+  // Catch a mismatch before spending a request; the server re-checks it.
+  const confirmMismatch =
+    form.confirmPassword.length > 0 && form.confirmPassword !== form.newPassword;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (form.confirmPassword !== form.newPassword) {
+      setError('Access Ciphers do not match. Please re-enter them to confirm.');
+      return;
+    }
     setLoading(true);
     setError('');
     setSuccess('');
     try {
-      const data = await authApi.resetPassword(form.username, form.email, form.newPassword);
+      const data = await authApi.resetPassword(
+        form.username, form.email, form.newPassword, form.confirmPassword);
       setSuccess(data.message || 'Access Cipher updated successfully!');
       setTimeout(() => {
         navigate('/');
@@ -163,6 +178,44 @@ const ResetPasswordPage = () => {
                   </span>
                 </button>
               </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="reset-confirm-password">Confirm New Access Cipher</label>
+              <div className="input-wrapper neon-glow-focus has-toggle">
+                <div className="input-icon">
+                  <span className="material-symbols-outlined icon-20">verified_user</span>
+                </div>
+                <input
+                  id="reset-confirm-password"
+                  required
+                  name="confirmPassword"
+                  placeholder="Re-enter new cipher"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={form.confirmPassword}
+                  onChange={onChange}
+                  onBlur={() => setConfirmTouched(true)}
+                  minLength={6}
+                  disabled={loading}
+                  autoComplete="new-password"
+                  aria-invalid={confirmMismatch && confirmTouched}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}
+                  aria-pressed={showConfirmPassword}
+                  onClick={() => setShowConfirmPassword((visible) => !visible)}
+                  disabled={loading}
+                >
+                  <span className="material-symbols-outlined icon-20">
+                    {showConfirmPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
+              </div>
+              {confirmMismatch && confirmTouched && (
+                <p className="reset-error" role="alert">Access Ciphers do not match.</p>
+              )}
             </div>
 
             <button type="submit" className="submit-btn" disabled={loading}>

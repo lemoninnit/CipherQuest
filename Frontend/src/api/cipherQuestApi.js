@@ -29,7 +29,15 @@ async function request(method, path, body) {
     const data = text ? JSON.parse(text) : {};
 
     if (!res.ok) {
-      const msg = data && data.message ? data.message : `HTTP ${res.status}`;
+      // Bean-validation failures come back as a { field: message } map rather
+      // than the usual { message } envelope, so fall back to the first field
+      // error instead of showing a bare "HTTP 400".
+      const msg = data && data.message
+        ? data.message
+        : (data && typeof data === 'object' && !Array.isArray(data)
+            ? Object.values(data).find((v) => typeof v === 'string')
+            : null)
+          || `HTTP ${res.status}`;
       // Attach the status so callers can react to specific outcomes that the
       // message alone cannot convey (e.g. 409 = session-heart lockout).
       const error = new Error(msg);
@@ -49,13 +57,50 @@ async function request(method, path, body) {
   }
 }
 
+// Minimum length enforced by the backend (@Size(min = 6) on every cipher
+// DTO). Kept here so the meter and the server cannot disagree about what
+// counts as long enough.
+export const MIN_CIPHER_LENGTH = 6;
+
+/**
+ * Rates an Access Cipher from 0–4 and lists which rules it still fails.
+ *
+ * Guidance only — the server enforces length, never composition, so this must
+ * not block submission. "Add a number" is a nudge, not a gate, and telling a
+ * player their cipher failed a rule the server never checks would be a lie.
+ */
+export function assessCipher(value) {
+  const cipher = value ?? '';
+  const rules = [
+    { id: 'length',   label: `At least ${MIN_CIPHER_LENGTH} characters`, met: cipher.length >= MIN_CIPHER_LENGTH },
+    { id: 'letter',   label: 'Contains a letter',                      met: /[a-z]/i.test(cipher) },
+    { id: 'number',   label: 'Contains a number',                       met: /\d/.test(cipher) },
+    { id: 'symbol',   label: 'Contains a symbol',                       met: /[^A-Za-z0-9]/.test(cipher) },
+  ];
+
+  const met = rules.filter((rule) => rule.met).length;
+
+  // Only score once the cipher is long enough to be worth scoring, so the bar
+  // does not sit at "Weak" for an empty field and look like a red warning.
+  if (cipher.length === 0) return { score: 0, label: '', rules, met };
+
+  const labels = ['Very weak', 'Weak', 'Fair', 'Good', 'Strong'];
+  return { score: met, label: labels[met], rules, met };
+}
+
 export const authApi = {
-  register: (username, email, password) =>
-    request('POST', '/auth/register', { username, email, password }),
+  // confirmPassword is required by the server: without it a mistyped Access
+  // Cipher would create an account the operative can never log back into.
+  register: (username, email, password, confirmPassword) =>
+    request('POST', '/auth/register', { username, email, password, confirmPassword }),
   login: (username, password) =>
     request('POST', '/auth/login', { username, password }),
-  resetPassword: (username, email, newPassword) =>
-    request('POST', '/auth/reset-password', { username, email, newPassword }),
+  resetPassword: (username, email, newPassword, confirmPassword) =>
+    request('POST', '/auth/reset-password', { username, email, newPassword, confirmPassword }),
+  // Signed-in variant. The server re-verifies `currentPassword` even though the
+  // JWT is valid, so a borrowed session cannot rotate the credential.
+  changePassword: (currentPassword, newPassword, confirmPassword) =>
+    request('PUT', '/users/me/password', { currentPassword, newPassword, confirmPassword }),
 };
 
 export const userApi = {
