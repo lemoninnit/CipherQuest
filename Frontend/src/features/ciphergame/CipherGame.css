@@ -5087,14 +5087,56 @@
   pointer-events: auto !important;
 }
 
-/* Losing a stage (game over) is now rendered by ONE component for every game:
-   ui/StageLostScreen. Its styles live in StageLostScreen.css.
+/* Game Over Modal Enhancements */
+.pacman-gameover-card {
+  min-width: 340px;
+  max-width: 420px;
+  text-align: center;
+}
 
-   The old per-game rules that used to sit here are gone on purpose:
-   .pacman-gameover-card / .pacman-gameover-text / .pacman-gameover-overlay and
-   .fishing-gameover-hearts / -locked / -score all belonged to hand-rolled
-   game-over cards that said the same thing five different ways. Losing now
-   looks and reads the same in Pac-Man, the fishing games and the sprints. */
+.pacman-gameover-text {
+  font-family: 'Space Grotesk', sans-serif;
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  margin: 0 0 20px;
+}
+
+/* Fishing stage-fail: session heart cost line (see useFishingStageFail) */
+.fishing-gameover-hearts {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: -10px 0 20px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fda4af;
+}
+
+.fishing-gameover-hearts .material-symbols-outlined {
+  font-size: 1.1rem;
+  animation: fishing-heart-loss 0.9s ease-out;
+}
+
+@keyframes fishing-heart-loss {
+  0%   { transform: scale(1.5); }
+  40%  { transform: scale(0.9); }
+  70%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* Scoring consequences restated on the overlay, because the global
+   StageFailNotice is suppressed (onStageFail({ showNotice: false })). */
+.fishing-gameover-score {
+  margin: 0 0 20px;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.62);
+  text-align: center;
+}
 
 /* Floating Victory Panel */
 .caesar-floating-victory-panel.caesar-pacman-victory-panel {
@@ -5339,32 +5381,6 @@
 
 .cq-cleared-badge-text {
   color: #e2e8f0;
-}
-
-/* SESSION HEARTS: roadmap lockout banner.
-   Shown when no session heart remains: every stage in every cipher is
-   locked then, so the roadmap says so before the player clicks a node. */
-.cq-hearts-locked-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-  padding: 10px 14px;
-  background: rgba(255, 159, 28, 0.1);
-  border: 1px solid rgba(255, 159, 28, 0.45);
-  border-radius: 12px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1.45;
-  color: #ffd8a8;
-  text-align: left;
-}
-
-.cq-hearts-locked-banner .material-symbols-outlined {
-  flex-shrink: 0;
-  font-size: 18px;
-  color: #ff9f1c;
 }
 
 /* 2. Path Container & Track */
@@ -7775,25 +7791,27 @@
 /* Playfair Sprint Specific Compact Styles (below bottom lane walkway) */
 .pf-bottom-left-group.pf-sprint-group,
 .pf-sprint-group.pf-bottom-left-group {
-  bottom: 24px !important;
-  left: 24px !important;
+  bottom: 10px !important;
+  left: 16px !important;
+  gap: 8px !important;
+  z-index: 20 !important;
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-matrix-panel,
 .pf-bottom-left-group.pf-sprint-group .pf-digraph-panel {
-  padding: 12px !important;
+  padding: 6px 10px !important;
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-matrix-panel {
-  width: 175px !important;
-  min-width: 165px !important;
-  max-width: 185px !important;
+  width: 165px !important;
+  min-width: 150px !important;
+  max-width: 175px !important;
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-digraph-panel {
-  width: 330px !important;
-  min-width: 300px !important;
-  max-width: 350px !important;
+  width: 270px !important;
+  min-width: 245px !important;
+  max-width: 285px !important;
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-template-matrix-grid {
@@ -7801,19 +7819,19 @@
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-template-cell {
-  width: 26px !important;
-  height: 22px !important;
-  max-width: 26px !important;
-  max-height: 22px !important;
-  min-width: 26px !important;
-  min-height: 22px !important;
-  font-size: 0.76rem !important;
+  width: 24px !important;
+  height: 20px !important;
+  max-width: 24px !important;
+  max-height: 20px !important;
+  min-width: 24px !important;
+  min-height: 20px !important;
+  font-size: 0.74rem !important;
   border-radius: 4px !important;
 }
 
 .pf-bottom-left-group.pf-sprint-group .pf-trace-block {
-  font-size: 11px !important;
-  padding: 6px 8px !important;
+  font-size: 10.5px !important;
+  padding: 4px 6px !important;
   gap: 1px !important;
 }
 
@@ -7835,6 +7853,120 @@
   }
 }
 
+/* ==========================================================================
+   Pacman Fullscreen: Dedicated Guide Placement & Zero Maze Overlap Relayout
+   ========================================================================== */
+.caesar-pacman-fullscreen .pf-bottom-left-group {
+  bottom: 12px !important;
+  left: 14px !important;
+  gap: 8px !important;
+  z-index: 20 !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-matrix-panel {
+  width: 175px !important;
+  min-width: 160px !important;
+  max-width: 185px !important;
+  padding: 6px 10px !important;
+  border-radius: 10px !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-matrix-panel .pf-template-cell {
+  max-width: 25px !important;
+  max-height: 25px !important;
+  font-size: 0.78rem !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-digraph-panel {
+  width: 270px !important;
+  min-width: 245px !important;
+  max-width: 285px !important;
+  padding: 6px 10px !important;
+  border-radius: 10px !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-calc-formula-row {
+  margin: 3px 0 !important;
+  gap: 4px !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-calc-box {
+  padding: 3px 6px !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-calc-box .val {
+  font-size: 0.9rem !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-trace-block {
+  font-size: 0.68rem !important;
+  line-height: 1.25 !important;
+  padding: 4px 6px !important;
+}
+
+.caesar-pacman-fullscreen .pf-bottom-left-group .pf-trace-line {
+  margin-bottom: 1px !important;
+}
+
+/* Medium Tier Pacman Relayout */
+.caesar-pacman-fullscreen.tier-medium .pf-bottom-left-group .pf-matrix-panel {
+  width: 170px !important;
+  min-width: 155px !important;
+  padding: 5px 8px !important;
+}
+
+.caesar-pacman-fullscreen.tier-medium .pf-bottom-left-group .pf-digraph-panel {
+  width: 260px !important;
+  min-width: 240px !important;
+  padding: 5px 8px !important;
+}
+
+.caesar-pacman-fullscreen.tier-medium .vg-fishing-az-panel {
+  min-width: 320px !important;
+  max-width: 380px !important;
+  padding: 8px 12px !important;
+  bottom: 12px !important;
+  left: 14px !important;
+}
+
+.caesar-pacman-fullscreen.tier-medium .caesar-floating-cheat-sheet.caesar-pacman-cheat-sheet {
+  bottom: 12px !important;
+  left: 14px !important;
+  padding: 6px 10px !important;
+}
+
+/* Hard Tier Pacman Relayout */
+.caesar-pacman-fullscreen.tier-hard .pf-bottom-left-group .pf-matrix-panel {
+  width: 160px !important;
+  min-width: 145px !important;
+  padding: 5px 7px !important;
+}
+
+.caesar-pacman-fullscreen.tier-hard .pf-bottom-left-group .pf-matrix-panel .pf-template-cell {
+  max-width: 22px !important;
+  max-height: 22px !important;
+  font-size: 0.72rem !important;
+}
+
+.caesar-pacman-fullscreen.tier-hard .pf-bottom-left-group .pf-digraph-panel {
+  width: 248px !important;
+  min-width: 230px !important;
+  padding: 5px 7px !important;
+}
+
+.caesar-pacman-fullscreen.tier-hard .vg-fishing-az-panel {
+  min-width: 295px !important;
+  max-width: 345px !important;
+  padding: 6px 10px !important;
+  bottom: 10px !important;
+  left: 12px !important;
+}
+
+.caesar-pacman-fullscreen.tier-hard .caesar-floating-cheat-sheet.caesar-pacman-cheat-sheet {
+  bottom: 10px !important;
+  left: 12px !important;
+  padding: 5px 8px !important;
+}
 /* ── Failure Panel (Matches Victory Panel Size & Style) ── */
 .caesar-floating-failure-panel {
   position: absolute;

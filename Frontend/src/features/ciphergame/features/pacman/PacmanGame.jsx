@@ -909,6 +909,26 @@ export default function PacmanGame({
       .filter((idx) => !playfairPairsData[idx]?.isSolved);
   }, [playfairPairsData]);
 
+  const isAllSolved = useMemo(() => {
+    if (isCaesar) return levelSolved;
+    if (isPlayfair) {
+      return playfairPairsData.length > 0 && playfairPairsData.every((p) => p.isSolved);
+    }
+    if (isVigenere) {
+      return maskedIndices.length > 0 && maskedIndices.every((idx) => eatenGhosts.includes(idx));
+    }
+    return false;
+  }, [isCaesar, levelSolved, isPlayfair, playfairPairsData, isVigenere, maskedIndices, eatenGhosts]);
+
+  useEffect(() => {
+    if (isAllSolved && !levelSolved && phase === 'playing') {
+      onClearSnapshot?.();
+      setLevelSolved(true);
+      pacmanSound.stopBgm();
+      pacmanSound.playSfx('win');
+    }
+  }, [isAllSolved, levelSolved, phase, onClearSnapshot]);
+
   const activePfSolvingIdx = useMemo(() => {
     const found = playfairPairsData.findIndex(p => !p.isSolved);
     return found !== -1 ? found : 0;
@@ -1055,7 +1075,7 @@ export default function PacmanGame({
     if (!levelData) return;
     if (isCaesar) return;
 
-    const requiredTargets = getRequiredTargetItems(levelData);
+    const requiredTargets = getRequiredTargetItems(levelData, currentTier);
     const unsolvedTargets = requiredTargets.filter(item => !eatenGhosts.includes(item.index));
 
     if (unsolvedTargets.length === 0) return;
@@ -1371,8 +1391,10 @@ export default function PacmanGame({
                 const nextEaten = prevEaten.includes(targetGhostAhead.index)
                   ? prevEaten
                   : [...prevEaten, targetGhostAhead.index];
-                const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
-                if (nextEaten.length === totalTargets) {
+                const allDone = isPlayfair
+                  ? (maskedIndices.length > 0 && maskedIndices.every((idx) => nextEaten.includes(idx)))
+                  : nextEaten.length === maskedIndices.length;
+                if (allDone) {
                   onClearSnapshot?.();
                   setLevelSolved(true);
                   pacmanSound.stopBgm();
@@ -1565,8 +1587,10 @@ export default function PacmanGame({
                   const nextEaten = prevEaten.includes(ghost.index)
                     ? prevEaten
                     : [...prevEaten, ghost.index];
-                  const totalTargets = isPlayfair ? levelData.pairs.length : maskedIndices.length;
-                  if (nextEaten.length === totalTargets) {
+                  const allDone = isPlayfair
+                    ? (maskedIndices.length > 0 && maskedIndices.every((idx) => nextEaten.includes(idx)))
+                    : nextEaten.length === maskedIndices.length;
+                  if (allDone) {
                     onClearSnapshot?.();
                     setLevelSolved(true);
                     pacmanSound.stopBgm();
@@ -1879,15 +1903,17 @@ export default function PacmanGame({
     const mazeGrid = activeMazeGrid;
     const numRows = mazeGrid.length;
     const numCols = mazeGrid[0].length;
+    const cellSize = currentTier === 'hard' ? 36 : currentTier === 'medium' ? 40 : 46;
 
     return (
       <div 
-        className={`maze-grid size-larger ${flashError ? 'flash-error' : ''} ${isScreenShaking ? 'screen-shake' : ''}`}
+        className={`maze-grid size-larger tier-${currentTier} ${flashError ? 'flash-error' : ''} ${isScreenShaking ? 'screen-shake' : ''}`}
         style={{
-          gridTemplateColumns: `repeat(${numCols}, 46px)`,
-          gridTemplateRows: `repeat(${numRows}, 46px)`,
-          width: `${numCols * 46}px`,
-          height: `${numRows * 46}px`
+          '--pacman-cell-size': `${cellSize}px`,
+          gridTemplateColumns: `repeat(${numCols}, ${cellSize}px)`,
+          gridTemplateRows: `repeat(${numRows}, ${cellSize}px)`,
+          width: `${numCols * cellSize}px`,
+          height: `${numRows * cellSize}px`
         }}
       >
         {/* Static grid board paths and walls */}
@@ -1896,7 +1922,7 @@ export default function PacmanGame({
             let cellClass = "maze-cell";
             if (cellVal === 1) cellClass += " wall";
             else cellClass += " path";
-            return <div key={`bg-${rIdx}-${cIdx}`} className={cellClass}></div>;
+            return <div key={`bg-${rIdx}-${cIdx}`} className={cellClass} style={{ width: `${cellSize}px`, height: `${cellSize}px` }}></div>;
           })
         )}
 
@@ -1904,8 +1930,10 @@ export default function PacmanGame({
       <div 
         className={`pacman-sprite-absolute ${isInvulnerable ? 'invulnerable-blink' : ''}`}
         style={{
-          left: `${pacman.col * 46}px`,
-          top: `${pacman.row * 46}px`
+          width: `${cellSize}px`,
+          height: `${cellSize}px`,
+          left: `${pacman.col * cellSize}px`,
+          top: `${pacman.row * cellSize}px`
         }}
       >
         <div className="knight-actor">
@@ -1932,8 +1960,10 @@ export default function PacmanGame({
             key={ghost.id}
             className={`ghost-sprite-absolute ${isVulnerable ? 'vulnerable' : ''}`}
             style={{
-              left: `${ghost.col * 46}px`,
-              top: `${ghost.row * 46}px`
+              width: `${cellSize}px`,
+              height: `${cellSize}px`,
+              left: `${ghost.col * cellSize}px`,
+              top: `${ghost.row * cellSize}px`
             }}
           >
               <div className="goblin-actor">
@@ -1952,8 +1982,10 @@ export default function PacmanGame({
             key={pellet.id}
             className="pellet-entity"
             style={{
-              left: `${pellet.col * 46}px`,
-              top: `${pellet.row * 46}px`
+              width: `${cellSize}px`,
+              height: `${cellSize}px`,
+              left: `${pellet.col * cellSize}px`,
+              top: `${pellet.row * cellSize}px`
             }}
           >
             {pellet.isSkill ? (
@@ -1992,7 +2024,7 @@ export default function PacmanGame({
         onToggleMute={toggleSound}
       />
 
-      <div className={`pacman-layout caesar-pacman-fullscreen ${isVigenere ? 'vg-pacman-fullscreen' : ''}`}>
+      <div className={`pacman-layout caesar-pacman-fullscreen tier-${currentTier} ${isVigenere ? 'vg-pacman-fullscreen' : ''} ${isPlayfair ? 'pf-pacman-fullscreen' : ''}`}>
         <div className="pacman-fullscreen-stage">
           {/* 1. Centered Maze Board Area */}
           <div className="pacman-fullscreen-board-area">

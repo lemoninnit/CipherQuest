@@ -55,6 +55,7 @@ export default function GameHudBar({
             pointerEvents: 'none',
             zIndex: 5,
           }}
+          title={`${title}${stage != null ? ` — Stage ${stage}` : ''}${tier ? ` (${tier.toUpperCase()})` : ''}`}
         >
           {title} {stage != null && `— Stage ${stage}`} {tier && `(${tier.toUpperCase()})`}
         </div>
