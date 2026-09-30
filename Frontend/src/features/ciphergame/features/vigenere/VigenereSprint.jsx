@@ -1366,14 +1366,11 @@ export default function VigenereSprint({
       {/* ───── Shared Pause Menu ───── */}
       <PauseMenu
         open={isMenuOpen}
+        cipherType="vigenere"
+        gameType="sprint"
         onResume={() => {
           setIsMenuOpen(false);
           setIsPaused(false);
-        }}
-        onTutorial={() => {
-          onClearSnapshot?.();
-          setIsMenuOpen(false);
-          setSprintStep('ready');
         }}
         onExit={() => {
           onClearSnapshot?.();

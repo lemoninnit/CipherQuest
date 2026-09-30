@@ -202,6 +202,22 @@
   pointer-events: none;
 }
 
+/* Expanded 2-Column Layout for Tutorial Panel */
+.dh-lobby-content.dh-lobby-content-expanded {
+  grid-template-columns: minmax(160px, 200px) 1fr;
+  gap: clamp(20px, 2.4vw, 36px);
+  align-items: stretch;
+}
+
+.dh-lobby-content.dh-lobby-content-expanded::after {
+  display: none;
+  content: none;
+}
+
+.dh-lobby-content.dh-lobby-content-expanded .dh-side-menu {
+  align-self: center;
+}
+
 /* Vertical Left Menu (Original Clean Text-Only Design) */
 .dh-side-menu {
   display: flex;

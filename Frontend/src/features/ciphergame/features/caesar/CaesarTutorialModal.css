@@ -103,6 +103,50 @@
   text-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
 }
 
+/* Category switcher tabs inside tutorial modal */
+.cq-tut-category-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 4px 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 229, 255, 0.22);
+}
+
+.cq-tut-cat-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cq-tut-cat-tab .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.cq-tut-cat-tab:hover {
+  color: #e2f1f8;
+  background: rgba(0, 229, 255, 0.1);
+  border-color: rgba(0, 229, 255, 0.3);
+}
+
+.cq-tut-cat-tab.active {
+  background: rgba(0, 229, 255, 0.2);
+  border-color: rgba(0, 229, 255, 0.5);
+  color: #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+}
+
 .cq-tut-skip-btn {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.12);

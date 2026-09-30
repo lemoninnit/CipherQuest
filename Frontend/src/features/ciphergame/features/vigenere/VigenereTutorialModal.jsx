@@ -148,7 +148,14 @@ const DECRYPT_CIPHER = ['M', 'P', 'R', 'W', 'O', 'E'];
 const DECRYPT_KEY = ['L', 'E', 'M', 'O', 'N', 'L'];
 const DECRYPT_PLAIN = ['A', 'T', 'T', 'A', 'C', 'K'];
 
-export default function VigenereTutorialModal({ isOpen, onClose, onComplete, skipButtonText = 'Skip Tutorial' }) {
+export default function VigenereTutorialModal({
+  isOpen,
+  onClose,
+  onComplete,
+  skipButtonText = 'Skip Tutorial',
+  activeCategory = 'vigenere',
+  onCategoryChange,
+}) {
   const { user, refreshProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -556,6 +563,35 @@ export default function VigenereTutorialModal({ isOpen, onClose, onComplete, ski
               <h2>{stepData.subtitle}</h2>
             </div>
           </div>
+
+          {onCategoryChange && (
+            <div className="cq-tut-category-tabs">
+              <button
+                type="button"
+                className={`cq-tut-cat-tab ${activeCategory === 'caesar' ? 'active' : ''}`}
+                onClick={() => onCategoryChange('caesar')}
+              >
+                <span className="material-symbols-outlined">lock</span>
+                <span>Caesar</span>
+              </button>
+              <button
+                type="button"
+                className={`cq-tut-cat-tab ${activeCategory === 'vigenere' || !activeCategory ? 'active' : ''}`}
+                onClick={() => onCategoryChange('vigenere')}
+              >
+                <span className="material-symbols-outlined">grid_view</span>
+                <span>Vigenère</span>
+              </button>
+              <button
+                type="button"
+                className={`cq-tut-cat-tab ${activeCategory === 'playfair' ? 'active' : ''}`}
+                onClick={() => onCategoryChange('playfair')}
+              >
+                <span className="material-symbols-outlined">grid_on</span>
+                <span>Playfair</span>
+              </button>
+            </div>
+          )}
 
           <div className="cq-tut-header-actions">
             <label className="cq-tut-dont-show-checkbox">

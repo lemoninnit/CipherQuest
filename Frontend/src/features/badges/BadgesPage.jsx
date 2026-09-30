@@ -402,7 +402,7 @@ export default function BadgesPage() {
       <div className="bd-content-layout">
         {/* Vertical Left Menu */}
         <nav className="dh-side-menu bd-side-menu">
-          <button className="dh-menu-item" onClick={() => navigate('/dashboard/ciphergame')}>
+          <button className="dh-menu-item" onClick={() => navigate('/dashboard')}>
             Start Quest
           </button>
           <button className="dh-menu-item" onClick={() => navigate('/dashboard/leaderboard')}>
@@ -411,7 +411,7 @@ export default function BadgesPage() {
           <button className="dh-menu-item primary" onClick={() => {}}>
             Badges
           </button>
-          <button className="dh-menu-item" onClick={() => setShowTutorial(true)}>
+          <button className="dh-menu-item" onClick={() => navigate('/dashboard?tab=tutorial')}>
             Tutorial
           </button>
           <button className="dh-menu-item" onClick={openSettings}>

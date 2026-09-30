@@ -1,0 +1,584 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CIPHERQUEST REDESIGNED LOBBY TUTORIAL (OPTION A DESIGN SPEC)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cq-tut-container {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 16px);
+  background: rgba(3, 14, 28, 0.78);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 18px;
+  padding: clamp(14px, 1.8vh, 20px) clamp(20px, 2.2vw, 32px);
+  box-sizing: border-box;
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.65), 0 0 35px rgba(0, 229, 255, 0.08);
+  animation: cqTutFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cqTutFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Top Header Row: Centered Cipher Switcher Capsule & Right Subtitle ── */
+.cq-tut-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 100%;
+  flex-shrink: 0;
+  padding-bottom: 2px;
+}
+
+.cq-tut-cipher-capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(2, 10, 20, 0.9);
+  border: 1.5px solid rgba(0, 229, 255, 0.35);
+  border-radius: 24px;
+  padding: 3px 5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.cq-tut-cipher-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  padding: 5px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.cq-tut-cipher-btn:hover:not(.active) {
+  color: #ffffff;
+  background: rgba(0, 229, 255, 0.1);
+}
+
+.cq-tut-cipher-btn.active {
+  background: #00e5ff;
+  color: #020d1a;
+  font-weight: 800;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+}
+
+.cq-tut-cipher-subline {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'JetBrains Mono', 'Space Grotesk', monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: rgba(125, 211, 252, 0.85);
+  text-transform: uppercase;
+}
+
+/* ── Main 2-Column Grid ── */
+.cq-tut-columns {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(20px, 2.8vw, 40px);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  transition: opacity 0.12s ease;
+}
+
+.cq-tut-columns.transitioning {
+  opacity: 0.25;
+}
+
+.cq-tut-col {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.4vh, 14px);
+  min-height: 0;
+}
+
+.cq-tut-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.cq-tut-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cq-tut-num-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #00e5ff;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+}
+
+.cq-tut-col-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.22rem, 1.45vw, 1.5rem);
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+}
+
+/* ── Game Text Tabs (Right Column Header) ── */
+.cq-tut-game-tabs {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.cq-game-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #94a3b8;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 2px 4px 4px 4px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.cq-game-tab-btn:hover:not(.active) {
+  color: #ffffff;
+}
+
+.cq-game-tab-btn.active {
+  color: #ffffff;
+  border-bottom-color: #00e5ff;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+}
+
+/* ── Formula Block (Left Column) ── */
+.cq-tut-formula-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cq-tut-formula-math {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.35rem, 1.7vw, 1.75rem);
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 16px rgba(0, 229, 255, 0.35);
+}
+
+.cq-tut-formula-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.cq-legend-item strong {
+  margin-right: 3px;
+}
+
+.cq-legend-item.color-cyan strong {
+  color: #00e5ff;
+}
+
+.cq-legend-item.color-amber strong {
+  color: #ff9f1c;
+}
+
+.cq-legend-item.color-white strong {
+  color: #ffffff;
+}
+
+/* ── A-Z Letter Strip ── */
+.cq-tut-strip-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cq-tut-strip-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.cq-tut-strip-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #00e5ff;
+  background: rgba(0, 229, 255, 0.15);
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+.cq-tut-az-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.cq-tut-az-row {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 3px;
+  width: 100%;
+}
+
+.cq-az-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 18, 38, 0.8);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 4px;
+  padding: 5px 2px;
+  transition: all 0.15s ease;
+  min-width: 0;
+}
+
+.cq-az-char {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(11px, 0.95vw, 13.5px);
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.cq-az-idx {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(8.5px, 0.72vw, 10px);
+  color: rgba(148, 163, 184, 0.85);
+  line-height: 1;
+  margin-top: 2px;
+  font-weight: 600;
+}
+
+.cq-az-tile.highlight-cyan {
+  border: 1.5px solid #00e5ff;
+  background: rgba(0, 229, 255, 0.25);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+}
+
+.cq-az-tile.highlight-cyan .cq-az-char {
+  color: #00e5ff;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+}
+
+.cq-az-tile.highlight-cyan .cq-az-idx {
+  color: #00e5ff;
+  font-weight: 800;
+}
+
+.cq-az-tile.highlight-amber {
+  border: 1.5px solid #ff9f1c;
+  background: rgba(255, 159, 28, 0.25);
+  box-shadow: 0 0 12px rgba(255, 159, 28, 0.5);
+}
+
+.cq-az-tile.highlight-amber .cq-az-char {
+  color: #ff9f1c;
+  text-shadow: 0 0 8px rgba(255, 159, 28, 0.6);
+}
+
+.cq-az-tile.highlight-amber .cq-az-idx {
+  color: #ff9f1c;
+  font-weight: 800;
+}
+
+.cq-az-tile.highlight-emerald {
+  border: 1.5px solid #34d399;
+  background: rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+}
+
+.cq-az-tile.highlight-emerald .cq-az-char {
+  color: #34d399;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.cq-az-tile.highlight-emerald .cq-az-idx {
+  color: #34d399;
+  font-weight: 800;
+}
+
+/* ── Playfair Rules Grid ── */
+.cq-tut-rules-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cq-tut-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.cq-rule-card {
+  background: rgba(5, 18, 38, 0.8);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 8px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cq-rule-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #00e5ff;
+}
+
+.cq-rule-desc {
+  font-size: 0.76rem;
+  color: #e2e8f0;
+  line-height: 1.35;
+}
+
+/* ── 3 Short Steps Side by Side ── */
+.cq-tut-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-top: 2px;
+}
+
+.cq-step-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cq-step-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #00e5ff;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cq-step-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.cq-step-desc {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* ── Examples Row (Directly Under 3 Steps) ── */
+.cq-tut-examples-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+  padding-top: 2px;
+}
+
+.cq-ex-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(5, 18, 38, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.cq-ex-input {
+  color: #00e5ff;
+  font-weight: 800;
+}
+
+.cq-ex-calc {
+  color: #e2e8f0;
+}
+
+.cq-ex-output {
+  color: #ff9f1c;
+  font-weight: 800;
+}
+
+/* ── Right Column: Goal Banner ── */
+.cq-tut-goal-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1.5px solid rgba(16, 185, 129, 0.35);
+  border-radius: 8px;
+  padding: 9px 14px;
+  color: #d1fae5;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.cq-goal-icon {
+  color: #34d399;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+
+.cq-goal-text strong {
+  color: #34d399;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+}
+
+/* ── Right Column: Controls Section ── */
+.cq-section-heading {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: #7dd3fc;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.cq-controls-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.cq-ctrl-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  background: rgba(5, 18, 38, 0.8);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px 8px;
+}
+
+.cq-ctrl-key {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-bottom: 2.5px solid rgba(255, 255, 255, 0.45);
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.cq-ctrl-desc {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.3;
+}
+
+/* ── Right Column: Walkthrough Section ── */
+.cq-walkthrough-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cq-walkthrough-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.cq-walk-badge {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.2);
+  border: 1.5px solid #00e5ff;
+  color: #00e5ff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.cq-walk-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cq-walk-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.cq-walk-desc {
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 960px) {
+  .cq-tut-columns {
+    grid-template-columns: 1fr;
+  }
+}

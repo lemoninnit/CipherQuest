@@ -1331,12 +1331,9 @@ export default function CipherSprint({
       {/* ───── Shared Pause Menu ───── */}
       <PauseMenu
         open={isMenuOpen}
+        cipherType="caesar"
+        gameType="sprint"
         onResume={() => setIsMenuOpen(false)}
-        onTutorial={() => {
-          onClearSnapshot?.();
-          setIsMenuOpen(false);
-          setSprintStep('ready');
-        }}
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();

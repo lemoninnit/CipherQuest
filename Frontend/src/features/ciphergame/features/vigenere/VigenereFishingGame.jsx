@@ -1050,12 +1050,9 @@ export default function VigenereFishingGame({
       {/* Shared Pause Menu */}
       <PauseMenu
         open={isMenuOpen}
+        cipherType="vigenere"
+        gameType="fishing"
         onResume={() => setIsMenuOpen(false)}
-        onTutorial={() => {
-          onClearSnapshot?.();
-          setIsMenuOpen(false);
-          setPhase('ready');
-        }}
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();

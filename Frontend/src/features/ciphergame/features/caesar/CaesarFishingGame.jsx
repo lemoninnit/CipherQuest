@@ -947,12 +947,9 @@ export default function CaesarFishingGame({
       {/* Shared Pause Menu */}
       <PauseMenu
         open={isMenuOpen}
+        cipherType="caesar"
+        gameType="fishing"
         onResume={() => setIsMenuOpen(false)}
-        onTutorial={() => {
-          onClearSnapshot?.();
-          setIsMenuOpen(false);
-          setPhase('ready');
-        }}
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();

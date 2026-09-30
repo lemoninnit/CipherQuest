@@ -1,0 +1,559 @@
+/* ═══════════════════════════════════════════════════════════════════
+   GAME TUTORIAL MODAL (PAUSE MENU) — 2 SIDE-BY-SIDE PANELS
+   Left Panel: How to Solve (Cipher Decryption Guide)
+   Right Panel: How to Play (Game Walkthrough & Win Condition)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cq-tut-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(1, 6, 15, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 16px;
+  animation: cqTutFadeIn 0.22s ease-out;
+  box-sizing: border-box;
+}
+
+@keyframes cqTutFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cq-tut-modal-container {
+  background: rgba(3, 14, 28, 0.97);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 1180px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.9),
+    0 0 45px rgba(0, 229, 255, 0.22),
+    inset 0 0 25px rgba(0, 229, 255, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ─── Header ─── */
+.cq-tut-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  background: rgba(0, 229, 255, 0.03);
+  flex-shrink: 0;
+}
+
+.cq-tut-modal-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cq-tut-modal-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cq-tut-modal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.cq-tut-modal-badge.tag-cipher {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: #00e5ff;
+}
+
+.cq-tut-modal-badge.tag-game {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #34d399;
+}
+
+.cq-tut-modal-title {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.4);
+}
+
+.cq-tut-modal-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: #e2f1f8;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.cq-tut-modal-back-btn:hover {
+  background: rgba(0, 229, 255, 0.18);
+  border-color: rgba(0, 229, 255, 0.6);
+  color: #ffffff;
+  transform: translateX(-2px);
+}
+
+/* ─── Active Synergy Mission Tip ─── */
+.cq-tut-synergy-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  font-size: 0.85rem;
+  color: #d1fae5;
+  flex-shrink: 0;
+}
+
+.cq-tut-synergy-text {
+  line-height: 1.4;
+}
+
+.cq-tut-synergy-text strong {
+  color: #00e5ff;
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Dual Grid Layout ─── */
+.cq-tut-dual-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 18px 24px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ─── Panel Containers ─── */
+.cq-tut-panel {
+  display: flex;
+  flex-direction: column;
+  background: rgba(5, 20, 38, 0.6);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 14px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.cq-tut-panel-header {
+  padding: 12px 18px;
+  background: rgba(0, 229, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.15);
+  flex-shrink: 0;
+}
+
+.cq-tut-panel-play .cq-tut-panel-header {
+  background: rgba(16, 185, 129, 0.05);
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.cq-tut-panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cq-tut-panel-icon {
+  font-size: 1.8rem;
+}
+
+.icon-cyan {
+  color: #00e5ff;
+}
+
+.icon-emerald {
+  color: #34d399;
+}
+
+.icon-small {
+  font-size: 1.05rem;
+  vertical-align: middle;
+}
+
+.cq-tut-panel-kicker {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: rgba(220, 240, 255, 0.6);
+  display: block;
+}
+
+.cq-tut-panel-heading {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.cq-tut-panel-content {
+  padding: 16px 18px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Custom Scrollbar */
+.cq-tut-panel-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cq-tut-panel-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.cq-tut-panel-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.3);
+  border-radius: 4px;
+}
+
+.cq-tut-panel-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.55);
+}
+
+/* ─── Reusable Card Elements ─── */
+.cq-tut-card {
+  background: rgba(1, 10, 20, 0.65);
+  border: 1px solid rgba(0, 229, 255, 0.14);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cq-tut-card-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #00e5ff;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cq-tut-card-text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: #cce3f0;
+}
+
+/* Formula Box */
+.cq-tut-formula-box {
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.cq-tut-formula-box code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #00e5ff;
+  letter-spacing: 0.04em;
+}
+
+.cq-tut-formula-explanation {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(200, 225, 245, 0.7);
+  font-style: italic;
+  line-height: 1.4;
+}
+
+/* Matrix Rules */
+.cq-tut-matrix-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cq-tut-matrix-rule-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.cq-tut-matrix-rule-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.84rem;
+  color: #e2f1f8;
+  margin-bottom: 3px;
+}
+
+.cq-tut-matrix-rule-desc {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: #94a3b8;
+}
+
+/* Step by step list */
+.cq-tut-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cq-tut-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.cq-tut-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  color: #00e5ff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cq-tut-step-num.step-num-green {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #34d399;
+}
+
+.cq-tut-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cq-tut-step-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.cq-tut-step-desc {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+/* Decryption Examples */
+.cq-tut-examples-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cq-tut-example-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  overflow-x: auto;
+}
+
+.cq-tut-ex-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(2, 10, 20, 0.8);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 4px;
+  padding: 2px 6px;
+  min-width: 44px;
+}
+
+.ex-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: rgba(200, 225, 245, 0.5);
+}
+
+.ex-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: #e2f1f8;
+}
+
+.cq-tut-ex-arrow {
+  color: rgba(0, 229, 255, 0.6);
+  font-weight: 700;
+}
+
+/* Controls list */
+.cq-tut-controls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cq-tut-control-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+}
+
+.cq-tut-keycap {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #f8fafc;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cq-tut-action-desc {
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+
+/* Tips list */
+.cq-tut-tips-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+.cq-tut-tips-list li {
+  margin-bottom: 4px;
+}
+
+.text-amber {
+  color: #f59e0b !important;
+}
+
+.text-cyan {
+  color: #00e5ff !important;
+}
+
+.text-emerald {
+  color: #34d399 !important;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+/* ─── Footer ─── */
+.cq-tut-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 24px;
+  border-top: 1px solid rgba(0, 229, 255, 0.15);
+  background: rgba(0, 229, 255, 0.02);
+  flex-shrink: 0;
+}
+
+.cq-tut-footer-close-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.15) 0%, rgba(0, 180, 216, 0.25) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.45);
+  color: #ffffff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.94rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.18);
+}
+
+.cq-tut-footer-close-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.25) 0%, rgba(0, 180, 216, 0.4) 100%);
+  border-color: rgba(0, 229, 255, 0.8);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+/* ─── Responsive Breakdown ─── */
+@media (max-width: 860px) {
+  .cq-tut-dual-grid {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+
+  .cq-tut-panel {
+    max-height: 380px;
+  }
+
+  .cq-tut-modal-container {
+    max-height: 95vh;
+  }
+}

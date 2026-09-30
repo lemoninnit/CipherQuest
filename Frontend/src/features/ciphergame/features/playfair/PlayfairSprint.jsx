@@ -1562,14 +1562,11 @@ export default function PlayfairSprint({
       {/* ───── Shared Pause Menu ───── */}
       <PauseMenu
         open={isMenuOpen}
+        cipherType="playfair"
+        gameType="sprint"
         onResume={() => {
           setIsMenuOpen(false);
           setIsPaused(false);
-        }}
-        onTutorial={() => {
-          onClearSnapshot?.();
-          setIsMenuOpen(false);
-          setSprintStep('ready');
         }}
         onExit={() => {
           onClearSnapshot?.();

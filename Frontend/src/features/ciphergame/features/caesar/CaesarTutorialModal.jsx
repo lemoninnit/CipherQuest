@@ -141,7 +141,14 @@ const PLAIN_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 // 5-letter target cipher word for Step 5: "D S S O H" (Decrypts to "A P P L E" when Key = 3)
 const STEP5_CIPHER_WORD = ['D', 'S', 'S', 'O', 'H'];
 
-export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipButtonText = 'Skip Tutorial' }) {
+export default function CaesarTutorialModal({
+  isOpen,
+  onClose,
+  onComplete,
+  skipButtonText = 'Skip Tutorial',
+  activeCategory = 'caesar',
+  onCategoryChange,
+}) {
   const { user, refreshProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [shiftKey, setShiftKey] = useState(3);
@@ -497,6 +504,35 @@ export default function CaesarTutorialModal({ isOpen, onClose, onComplete, skipB
               <h2>{stepData.subtitle}</h2>
             </div>
           </div>
+
+          {onCategoryChange && (
+            <div className="cq-tut-category-tabs">
+              <button
+                type="button"
+                className={`cq-tut-cat-tab ${activeCategory === 'caesar' || !activeCategory ? 'active' : ''}`}
+                onClick={() => onCategoryChange('caesar')}
+              >
+                <span className="material-symbols-outlined">lock</span>
+                <span>Caesar</span>
+              </button>
+              <button
+                type="button"
+                className={`cq-tut-cat-tab ${activeCategory === 'vigenere' ? 'active' : ''}`}
+                onClick={() => onCategoryChange('vigenere')}
+              >
+                <span className="material-symbols-outlined">grid_view</span>
+                <span>Vigenère</span>
+              </button>
+              <button
+                type="button"
+                className={`cq-tut-cat-tab ${activeCategory === 'playfair' ? 'active' : ''}`}
+                onClick={() => onCategoryChange('playfair')}
+              >
+                <span className="material-symbols-outlined">grid_on</span>
+                <span>Playfair</span>
+              </button>
+            </div>
+          )}
 
           <div className="cq-tut-header-actions">
             <label className="cq-tut-dont-show-checkbox">

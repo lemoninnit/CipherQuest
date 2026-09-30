@@ -985,12 +985,9 @@ export default function PlayfairFishingGame({
 
       <PauseMenu
         open={isMenuOpen}
+        cipherType="playfair"
+        gameType="fishing"
         onResume={() => setIsMenuOpen(false)}
-        onTutorial={() => {
-          onClearSnapshot?.();
-          setIsMenuOpen(false);
-          setPhase('ready');
-        }}
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();

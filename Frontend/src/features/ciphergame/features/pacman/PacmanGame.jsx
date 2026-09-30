@@ -2753,12 +2753,9 @@ export default function PacmanGame({
       {/* Shared Pause Menu */}
       <PauseMenu
         open={isMenuOpen}
+        cipherType={isPlayfair ? 'playfair' : (isVigenere ? 'vigenere' : 'caesar')}
+        gameType="pacman"
         onResume={() => setIsMenuOpen(false)}
-        onTutorial={() => {
-          onClearSnapshot?.();
-          setIsMenuOpen(false);
-          setPhase('ready');
-        }}
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();

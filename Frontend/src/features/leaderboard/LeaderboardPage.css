@@ -13,10 +13,9 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: space-between;
   box-sizing: border-box;
-  padding: clamp(12px, 1.8vh, 20px) clamp(20px, 3vw, 40px);
-  gap: clamp(10px, 1.5vh, 16px);
+  padding: clamp(18px, 2.4vh, 28px) clamp(24px, 3.5vw, 48px);
   font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
   color: #ffffff;
 }
@@ -72,21 +71,18 @@
   box-sizing: border-box;
 }
 
-/* ── Console Glass Card: Fills Vertical & Horizontal Space ── */
+/* ── Console Wrapper: Seamless Lobby Background Integration ── */
 .lb-console-card {
   width: 100%;
   height: 100%;
   min-height: 0;
-  background: linear-gradient(165deg, rgba(8, 26, 48, 0.92) 0%, rgba(4, 14, 28, 0.98) 100%);
-  border: 1.5px solid rgba(0, 229, 255, 0.35);
-  border-radius: 20px;
-  box-shadow:
-    0 16px 45px rgba(0, 0, 0, 0.65),
-    0 0 35px rgba(0, 229, 255, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: clamp(14px, 1.8vh, 22px) clamp(20px, 2.2vw, 32px);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -94,41 +90,13 @@
   overflow: hidden;
 }
 
-/* ── 1. Top Header Row (Left Title & Subline, Right Scope Filter Pills) ── */
+/* ── 1. Top Header Row (Right Scope Filter Pills) ── */
 .lb-card-header-row {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   width: 100%;
   flex-shrink: 0;
-}
-
-.lb-header-title-block {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  text-align: left;
-}
-
-.lb-main-title {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(22px, 2.2vw, 27px);
-  font-weight: 800;
-  color: #ffffff;
-  margin: 0;
-  letter-spacing: -0.01em;
-  text-shadow: 0 0 18px rgba(0, 229, 255, 0.5), 0 2px 6px rgba(0, 0, 0, 0.8);
-  line-height: 1.15;
-}
-
-.lb-season-subline {
-  font-family: 'JetBrains Mono', 'Space Grotesk', monospace;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: #7dd3fc;
-  opacity: 0.75;
-  text-transform: uppercase;
 }
 
 /* ── Scope Filter Pills ── */
@@ -811,12 +779,8 @@
 
 /* ── Screen Resolution Adaptations (1366x768, 1280x720, 1024x768) ── */
 @media (max-height: 800px) {
-  .lb-lobby {
-    padding: 10px 24px;
-    gap: 10px;
-  }
   .lb-console-card {
-    padding: 12px 20px;
+    padding: 0;
     gap: 8px;
   }
   .lb-main-title {

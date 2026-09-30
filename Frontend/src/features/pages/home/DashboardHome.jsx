@@ -1,25 +1,31 @@
 import { useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import useSignOut from '../../../components/useSignOut';
 import { DashboardChromeContext } from '../../layout/DashboardLayout';
-import CaesarTutorialModal from '../../ciphergame/features/caesar/CaesarTutorialModal';
-import VigenereTutorialModal from '../../ciphergame/features/vigenere/VigenereTutorialModal';
-import PlayfairTutorialModal from '../../ciphergame/features/playfair/PlayfairTutorialModal';
+import LobbyTutorialPanel from './LobbyTutorialPanel';
 import './DashboardHome.css';
 
 const DashboardHome = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, refreshProfile } = useAuth();
   const { signOut, dialog: signOutDialog } = useSignOut();
   const { openSettings } = useContext(DashboardChromeContext);
-  const [showTutorial, setShowTutorial] = useState(false);
-  const [tutorialCategory, setTutorialCategory] = useState('caesar');
+
+  const activeTab = searchParams.get('tab') === 'tutorial' ? 'tutorial' : 'quest';
+  const [selectedTutorialCipher, setSelectedTutorialCipher] = useState(
+    searchParams.get('category') || 'caesar'
+  );
   const [activeCardId, setActiveCardId] = useState(null);
   const [cooldownRemaining, setCooldownRemaining] = useState('');
 
-  // Handle Quit
+  // Handle Quit / Start Quest
   const handleStartQuestNav = () => {
+    if (activeTab === 'tutorial') {
+      setSearchParams({});
+      return;
+    }
     // SESSION HEART GATE: with no hearts left, Start Quest must not open a
     // cipher at all - the lockout banner already explains why.
     if (isLockedOut) {
@@ -363,11 +369,11 @@ const DashboardHome = () => {
       </header>
 
       {/* Main Content Area */}
-      <div className="dh-lobby-content">
-        {/* Vertical Left Menu (Original clean text format, untouched) */}
+      <div className={`dh-lobby-content ${activeTab === 'tutorial' ? 'dh-lobby-content-expanded' : ''}`}>
+        {/* Vertical Left Menu */}
         <nav className="dh-side-menu">
           <button
-            className={`dh-menu-item primary ${isLockedOut ? 'is-disabled' : ''}`}
+            className={`dh-menu-item ${activeTab === 'quest' ? 'primary' : ''} ${isLockedOut ? 'is-disabled' : ''}`}
             onClick={handleStartQuestNav}
             aria-disabled={isLockedOut}
             title={isLockedOut ? 'No session hearts left - all stages are locked' : undefined}
@@ -380,7 +386,14 @@ const DashboardHome = () => {
           <button className="dh-menu-item" onClick={() => navigate('/dashboard/badges')}>
             Badges
           </button>
-          <button className="dh-menu-item" onClick={() => setShowTutorial(true)}>
+          <button
+            className={`dh-menu-item ${activeTab === 'tutorial' ? 'primary' : ''}`}
+            onClick={() => {
+              const cat = activeCardId || selectedTutorialCipher || 'caesar';
+              setSelectedTutorialCipher(cat);
+              setSearchParams({ tab: 'tutorial', category: cat });
+            }}
+          >
             Tutorial
           </button>
           <button className="dh-menu-item" onClick={openSettings}>
@@ -393,128 +406,112 @@ const DashboardHome = () => {
 
         {signOutDialog}
 
-        <div className="dh-center-section">
-          {/* SESSION HEART GATE: with no hearts left, every cipher is locked.
-              Shown persistently so the state is obvious, not just on click. */}
-          {isLockedOut && (
-            <div className="dh-hearts-locked-banner" role="status">
-              <span className="material-symbols-outlined dh-hearts-locked-icon">heart_broken</span>
-              <div className="dh-hearts-locked-copy">
-                <strong>No session hearts left</strong>
-                <span>
-                  {user?.onCooldown && cooldownRemaining
-                    ? `Every stage is locked. Hearts refill in ${cooldownRemaining}.`
-                    : 'Every stage in every cipher is locked until your hearts refill.'}
-                </span>
+        {/* Dynamic Center Area: Either Tutorial Panel or 3 Quest Cards */}
+        {activeTab === 'tutorial' ? (
+          <LobbyTutorialPanel
+            initialCipher={selectedTutorialCipher}
+            onClose={() => setSearchParams({})}
+          />
+        ) : (
+          <div className="dh-center-section">
+            {/* SESSION HEART GATE: with no hearts left, every cipher is locked.
+                Shown persistently so the state is obvious, not just on click. */}
+            {isLockedOut && (
+              <div className="dh-hearts-locked-banner" role="status">
+                <span className="material-symbols-outlined dh-hearts-locked-icon">heart_broken</span>
+                <div className="dh-hearts-locked-copy">
+                  <strong>No session hearts left</strong>
+                  <span>
+                    {user?.onCooldown && cooldownRemaining
+                      ? `Every stage is locked. Hearts refill in ${cooldownRemaining}.`
+                      : 'Every stage in every cipher is locked until your hearts refill.'}
+                  </span>
+                </div>
+                <span className="dh-hearts-locked-count">0 / {MAX_HEARTS}</span>
               </div>
-              <span className="dh-hearts-locked-count">0 / {MAX_HEARTS}</span>
-            </div>
-          )}
+            )}
 
-          {/* Cards Row */}
-          <div
-            className="dh-cards-row"
-            onMouseLeave={() => setActiveCardId(null)}
-            onBlur={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget)) {
-                setActiveCardId(null);
-              }
-            }}
-          >
-            {cardsData.map((card) => {
-              const isExpanded = card.id === activeCardId;
-              const { totalCompleted, percentage } = card.prog;
+            {/* Cards Row */}
+            <div
+              className="dh-cards-row"
+              onMouseLeave={() => setActiveCardId(null)}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) {
+                  setActiveCardId(null);
+                }
+              }}
+            >
+              {cardsData.map((card) => {
+                const isExpanded = card.id === activeCardId;
+                const { totalCompleted, percentage } = card.prog;
 
-              return (
-                <div
-                  key={card.id}
-                  role="button"
-                  tabIndex={0}
-                  className={`dh-quest-card ${isExpanded ? 'active' : ''}`}
-                  onMouseEnter={() => setActiveCardId(card.id)}
-                  onFocus={() => setActiveCardId(card.id)}
-                  onClick={() => {
-                    setActiveCardId(card.id);
-                    if (isLockedOut) {
-                      // SESSION HEART GATE: no hearts means no stage, in any
-                      // cipher. Explain it here instead of failing silently
-                      // further down the roadmap.
-                      return;
-                    }
-                    navigate(`/dashboard/ciphergame?category=${card.id}`, { state: { category: card.id, showTutorial: true } });
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
+                return (
+                  <div
+                    key={card.id}
+                    role="button"
+                    tabIndex={0}
+                    className={`dh-quest-card ${isExpanded ? 'active' : ''}`}
+                    onMouseEnter={() => setActiveCardId(card.id)}
+                    onFocus={() => setActiveCardId(card.id)}
+                    onClick={() => {
                       setActiveCardId(card.id);
                       if (isLockedOut) {
                         return;
                       }
                       navigate(`/dashboard/ciphergame?category=${card.id}`, { state: { category: card.id, showTutorial: true } });
-                    }
-                  }}
-                >
-                  <div className="dh-card-art-panel">
-                    {card.svg}
-                  </div>
-                  <div className="dh-card-body">
-                    <div className="dh-card-title-row">
-                      <h3 className="dh-card-title">{card.title}</h3>
-                      <span className="dh-card-progress-pill">{totalCompleted}/15</span>
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveCardId(card.id);
+                        if (isLockedOut) {
+                          return;
+                        }
+                        navigate(`/dashboard/ciphergame?category=${card.id}`, { state: { category: card.id, showTutorial: true } });
+                      }
+                    }}
+                  >
+                    <div className="dh-card-art-panel">
+                      {card.svg}
                     </div>
-
-                    {/* Sleek Mini Progress Bar */}
-                    <div className="dh-card-mini-progress">
-                      <div className="dh-card-mini-progress-outer">
-                        <div
-                          className="dh-card-mini-progress-inner"
-                          style={{ width: `${percentage}%` }}
-                        />
+                    <div className="dh-card-body">
+                      <div className="dh-card-title-row">
+                        <h3 className="dh-card-title">{card.title}</h3>
+                        <span className="dh-card-progress-pill">{totalCompleted}/15</span>
                       </div>
-                      <span className="dh-card-mini-progress-text">{percentage}% Complete</span>
+
+                      {/* Sleek Mini Progress Bar */}
+                      <div className="dh-card-mini-progress">
+                        <div className="dh-card-mini-progress-outer">
+                          <div
+                            className="dh-card-mini-progress-inner"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <span className="dh-card-mini-progress-text">{percentage}% Complete</span>
+                      </div>
+
+                      <p className="dh-card-desc">{card.desc}</p>
+
+                      <button
+                        className="dh-card-show-tutorial-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTutorialCipher(card.id);
+                          setSearchParams({ tab: 'tutorial', category: card.id });
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>help_outline</span>
+                        <span>Show Tutorial</span>
+                      </button>
                     </div>
-
-                    <p className="dh-card-desc">{card.desc}</p>
-
-                    <button
-                      className="dh-card-show-tutorial-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTutorialCategory(card.id);
-                        setShowTutorial(true);
-                      }}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>help_outline</span>
-                      <span>Show Tutorial</span>
-                    </button>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
-
-      {/* Tutorial Modals for Dashboard in-place view */}
-      {tutorialCategory === 'vigenere' ? (
-        <VigenereTutorialModal
-          isOpen={showTutorial}
-          onClose={() => setShowTutorial(false)}
-          skipButtonText="Close Tutorial"
-        />
-      ) : tutorialCategory === 'playfair' ? (
-        <PlayfairTutorialModal
-          isOpen={showTutorial}
-          onClose={() => setShowTutorial(false)}
-          skipButtonText="Close Tutorial"
-        />
-      ) : (
-        <CaesarTutorialModal
-          isOpen={showTutorial}
-          onClose={() => setShowTutorial(false)}
-          skipButtonText="Close Tutorial"
-        />
-      )}
     </div>
   );
 };

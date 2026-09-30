@@ -155,7 +155,14 @@ const DIGRAPH_PRESETS = [
   { label: 'ATTACK', raw: 'ATTACK', pairs: ['AT', 'TA', 'CK'] }
 ];
 
-export default function PlayfairTutorialModal({ isOpen, onClose, onComplete, skipButtonText = 'Skip Tutorial' }) {
+export default function PlayfairTutorialModal({
+  isOpen,
+  onClose,
+  onComplete,
+  skipButtonText = 'Skip Tutorial',
+  activeCategory = 'playfair',
+  onCategoryChange,
+}) {
   const { user, refreshProfile } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -556,6 +563,35 @@ export default function PlayfairTutorialModal({ isOpen, onClose, onComplete, ski
               <h2>{stepData.subtitle}</h2>
             </div>
           </div>
+
+          {onCategoryChange && (
+            <div className="cq-tut-category-tabs">
+              <button
+                type="button"
+                className={`cq-tut-cat-tab ${activeCategory === 'caesar' ? 'active' : ''}`}
+                onClick={() => onCategoryChange('caesar')}
+              >
+                <span className="material-symbols-outlined">lock</span>
+                <span>Caesar</span>
+              </button>
+              <button
+                type="button"
+                className={`cq-tut-cat-tab ${activeCategory === 'vigenere' ? 'active' : ''}`}
+                onClick={() => onCategoryChange('vigenere')}
+              >
+                <span className="material-symbols-outlined">grid_view</span>
+                <span>Vigenère</span>
+              </button>
+              <button
+                type="button"
+                className={`cq-tut-cat-tab ${activeCategory === 'playfair' || !activeCategory ? 'active' : ''}`}
+                onClick={() => onCategoryChange('playfair')}
+              >
+                <span className="material-symbols-outlined">grid_on</span>
+                <span>Playfair</span>
+              </button>
+            </div>
+          )}
 
           <div className="cq-tut-header-actions">
             <label className="cq-tut-dont-show-checkbox">

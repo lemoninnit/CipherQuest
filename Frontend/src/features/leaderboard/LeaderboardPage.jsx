@@ -302,7 +302,7 @@ export default function LeaderboardPage() {
       <div className="dh-lobby-content lb-content-layout">
         {/* Vertical Left Menu */}
         <nav className="dh-side-menu">
-          <button className="dh-menu-item" onClick={() => navigate('/dashboard/ciphergame')}>
+          <button className="dh-menu-item" onClick={() => navigate('/dashboard')}>
             Start Quest
           </button>
           <button className="dh-menu-item primary" onClick={() => {}}>
@@ -311,7 +311,7 @@ export default function LeaderboardPage() {
           <button className="dh-menu-item" onClick={() => navigate('/dashboard/badges')}>
             Badges
           </button>
-          <button className="dh-menu-item" onClick={() => setShowTutorial(true)}>
+          <button className="dh-menu-item" onClick={() => navigate('/dashboard?tab=tutorial')}>
             Tutorial
           </button>
           <button className="dh-menu-item" onClick={openSettings}>
@@ -327,15 +327,8 @@ export default function LeaderboardPage() {
         {/* Center Section: Leaderboard Console */}
         <div className="lb-center-section">
           <div className="lb-console-card">
-            {/* 1. Header Row (Left Title & Subtitle, Right Scope Pills) */}
+            {/* 1. Header Row (Right Scope Filter Pills) */}
             <div className="lb-card-header-row">
-              <div className="lb-header-title-block">
-                <h2 className="lb-main-title">Global Leaderboard</h2>
-                <div className="lb-season-subline">
-                  SEASON 1 &bull; {topUsers.length} {topUsers.length === 1 ? 'OPERATIVE' : 'OPERATIVES'} RANKED
-                </div>
-              </div>
-
               {/* Scope Pills */}
               <div className="lb-scope-pills" role="tablist" aria-label="Leaderboard Scope Filter">
                 {SCOPE_OPTIONS.map((opt) => (
