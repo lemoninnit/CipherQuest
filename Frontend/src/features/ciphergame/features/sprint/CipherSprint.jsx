@@ -22,9 +22,11 @@ const DIAMOND_HITBOX_HALF = 3.8;
 const SLIME_HITBOX_HALF = 4.2;
 const SPAWN_X = 112;
 
-// Minimum horizontal gaps to prevent overlap at any speed
-const MIN_SAME_LANE_GAP = 30; // % of track width between entities in the same lane
-const MIN_ANY_LANE_GAP = 12;  // % of track width stagger across any lane
+// Minimum horizontal gaps to prevent overlap and guarantee safe lane switching
+const MIN_SAME_LANE_GAP = 36; // % of track width between entities in the same lane
+const MIN_ANY_LANE_GAP = 18;  // % of track width stagger across any lane
+const MIN_SLIME_GAP = 28;     // % horizontal buffer specifically between slimes/monsters and diamonds
+const CLUSTER_WINDOW = 35;    // % window where at least 1 lane MUST remain completely open
 
 const PAD5 = (n) => String(n).padStart(5, '0');
 
@@ -57,16 +59,47 @@ const getMask = (levelData, idx) => {
 };
 
 /**
- * Returns lanes where the nearest existing entity is at least minGap behind spawnX.
+ * Returns lanes where:
+ * 1) Same-lane clearance is at least minGap behind spawnX.
+ * 2) Entities in adjacent/all lanes maintain adequate clearance, especially around monsters.
+ * 3) Spawning here does not cause all 3 lanes to be blocked within the CLUSTER_WINDOW.
  */
-const getAvailableLanes = (existingCoins, existingSlimes, minGap = MIN_SAME_LANE_GAP, spawnX = SPAWN_X) => {
+const getAvailableLanes = (existingCoins, existingSlimes, minGap = MIN_SAME_LANE_GAP, spawnX = SPAWN_X, isSlime = false) => {
   const all = [...existingCoins, ...existingSlimes];
   const lanes = [0, 1, 2];
+
+  // Find which lanes already have entities in the spawn cluster [spawnX - CLUSTER_WINDOW, spawnX + 10]
+  const clusterEntities = all.filter((e) => e.x >= spawnX - CLUSTER_WINDOW);
+  const occupiedClusterLanes = new Set(clusterEntities.map((e) => e.lane));
+
   return lanes.filter((lane) => {
+    // 1. Same-lane clearance check
     const laneEntities = all.filter((e) => e.lane === lane);
-    if (laneEntities.length === 0) return true;
-    const maxLaneX = Math.max(...laneEntities.map((e) => e.x));
-    return spawnX - maxLaneX >= minGap;
+    if (laneEntities.length > 0) {
+      const maxLaneX = Math.max(...laneEntities.map((e) => e.x));
+      const requiredSameGap = isSlime ? Math.max(minGap, 40) : minGap;
+      if (spawnX - maxLaneX < requiredSameGap) return false;
+    }
+
+    // 2. Slime-to-Diamond & Diamond-to-Slime cross-lane spacing check
+    if (isSlime) {
+      // If spawning a slime, ensure any diamond in ANY lane is at least MIN_SLIME_GAP away
+      const nearbyDiamonds = existingCoins.filter((c) => Math.abs(spawnX - c.x) < MIN_SLIME_GAP);
+      if (nearbyDiamonds.length > 0) return false;
+    } else {
+      // If spawning a diamond, ensure any slime in ANY lane is at least MIN_SLIME_GAP away
+      const nearbySlimes = existingSlimes.filter((s) => Math.abs(spawnX - s.x) < MIN_SLIME_GAP);
+      if (nearbySlimes.length > 0) return false;
+    }
+
+    // 3. Safe passage guarantee: Spawning here must NOT cause all 3 lanes to be occupied in the cluster
+    const wouldOccupy = new Set(occupiedClusterLanes);
+    wouldOccupy.add(lane);
+    if (wouldOccupy.size >= 3) {
+      return false; // Guarantee at least 1 lane is always completely clear!
+    }
+
+    return true;
   });
 };
 
@@ -423,12 +456,12 @@ export default function CipherSprint({
 
     // Staggered initial placements with guaranteed spacing
     const initialCoins = [];
-    const d1 = createRandomDiamond(0, targetShiftRef.current, initialCoins, 0, 75);
+    const d1 = createRandomDiamond(0, targetShiftRef.current, initialCoins, 0, 80);
     initialCoins.push(d1);
-    const d2 = createRandomDiamond(0, targetShiftRef.current, initialCoins, 1, 105);
+    const d2 = createRandomDiamond(0, targetShiftRef.current, initialCoins, 1, 125);
     initialCoins.push(d2);
 
-    const initialSlimes = [createRandomSlime(2, 135)];
+    const initialSlimes = [createRandomSlime(2, 170)];
 
     setCoins(initialCoins);
     coinsRef.current = initialCoins;
@@ -437,8 +470,8 @@ export default function CipherSprint({
 
     lastDiamondSpawnTimeRef.current = performance.now();
     lastSlimeSpawnTimeRef.current = performance.now();
-    nextDiamondDelayRef.current = 1500 + Math.random() * 800;
-    nextSlimeDelayRef.current = 2600 + Math.random() * 1200;
+    nextDiamondDelayRef.current = 1800 + Math.random() * 800;
+    nextSlimeDelayRef.current = 3400 + Math.random() * 1200;
   };
 
   /* ───────────────────────────────────────────────
@@ -480,9 +513,11 @@ export default function CipherSprint({
       }
       if (isPausedRef.current) return;
 
-      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') {
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W' || e.code === 'KeyW' || e.code === 'ArrowUp') {
+        e.preventDefault();
         setRunnerLane((prev) => Math.max(0, prev - 1));
-      } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') {
+      } else if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S' || e.code === 'KeyS' || e.code === 'ArrowDown') {
+        e.preventDefault();
         setRunnerLane((prev) => Math.min(2, prev + 1));
       }
     };
@@ -522,7 +557,7 @@ export default function CipherSprint({
         return;
       }
 
-      const speed = isBoostingRef.current ? BASE_SPEED * BOOST_MULT : BASE_SPEED;
+      const speed = BASE_SPEED;
       const lane = runnerLaneRef.current;
       const target = targetShiftRef.current;
       const now = performance.now();
@@ -530,8 +565,7 @@ export default function CipherSprint({
       /* Speed lines */
       setSpeedLines((prevLines) =>
         prevLines.map((line) => {
-          const lineSpeed = isBoostingRef.current ? line.speed * 4 : line.speed;
-          let nextX = line.x - lineSpeed * 0.4;
+          let nextX = line.x - line.speed * 0.4;
           if (nextX < -15) nextX = 115;
           return { ...line, x: nextX };
         })
@@ -583,7 +617,6 @@ export default function CipherSprint({
           setSprintStep('finished');
           sprintSound.stopBgm();
           sprintSound.playSfx('win');
-          triggerBoost(2000);
           showFeedback('✨ Shift Matched! Target Decrypted!', '#22c55e', 15, 1500);
           return;
         } else {
@@ -648,11 +681,12 @@ export default function CipherSprint({
             coinsRef.current,
             slimesRef.current,
             MIN_SAME_LANE_GAP,
-            SPAWN_X
+            SPAWN_X,
+            false
           );
           if (availableLanes.length > 0) {
             lastDiamondSpawnTimeRef.current = now;
-            nextDiamondDelayRef.current = 1400 + Math.random() * 1000;
+            nextDiamondDelayRef.current = 1800 + Math.random() * 1000;
             const chosenLane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
             const newDiamond = createRandomDiamond(
               activeShiftRef.current,
@@ -670,17 +704,25 @@ export default function CipherSprint({
 
       // Spawn slime if interval elapsed and global stagger condition is satisfied
       if (now - lastSlimeSpawnTimeRef.current >= nextSlimeDelayRef.current) {
-        if (SPAWN_X - maxOverallX >= MIN_ANY_LANE_GAP) {
+        if (SPAWN_X - maxOverallX >= MIN_SLIME_GAP) {
           const availableLanes = getAvailableLanes(
             coinsRef.current,
             slimesRef.current,
             MIN_SAME_LANE_GAP,
-            SPAWN_X
+            SPAWN_X,
+            true
           );
-          if (availableLanes.length > 0) {
+          // Avoid spawning slimes right next to another recent slime in the same lane
+          const slimeLanes = availableLanes.filter((lane) => {
+            const recentSlimes = slimesRef.current.filter((s) => s.x >= SPAWN_X - 45);
+            return !recentSlimes.some((s) => s.lane === lane);
+          });
+          const candidateLanes = slimeLanes.length > 0 ? slimeLanes : availableLanes;
+
+          if (candidateLanes.length > 0) {
             lastSlimeSpawnTimeRef.current = now;
-            nextSlimeDelayRef.current = 2400 + Math.random() * 1600;
-            const chosenLane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
+            nextSlimeDelayRef.current = 3200 + Math.random() * 1800;
+            const chosenLane = candidateLanes[Math.floor(Math.random() * candidateLanes.length)];
             const newSlime = createRandomSlime(chosenLane, SPAWN_X);
             slimesRef.current = [...slimesRef.current, newSlime];
             setSlimes(slimesRef.current);
@@ -776,7 +818,7 @@ export default function CipherSprint({
   let runnerAnim = 'idle';
   if (sprintStep === 'gameover') runnerAnim = 'death';
   else if (isPaused || isMenuOpen || sprintStep === 'finished') runnerAnim = 'idle';
-  else if (laneChangeEffect !== null || isBoosting) runnerAnim = 'jump';
+  else if (laneChangeEffect !== null) runnerAnim = 'jump';
   else if (sprintStep === 'running') runnerAnim = 'run';
 
   const isSolved = sprintStep === 'finished' || normalizeShift(activeShift) === targetShift;
@@ -1279,7 +1321,7 @@ export default function CipherSprint({
           )}
 
           {sprintStep === 'gameover' && (
-            <div className="caesar-floating-rule-violation sprint-floating-action-modal">
+            <div className="caesar-floating-failure-panel">
               <GameOverPanel stageLoss={stageLoss} onExit={onBackToStages} />
             </div>
           )}
@@ -1312,7 +1354,7 @@ function FinishedPanel({ onVerifySubmit, onReplayNewQuestion }) {
   return (
     <>
       <h3 className="caesar-victory-title">STAGE SECURED!</h3>
-      <p className="caesar-victory-desc">Shift key identified and word decrypted successfully.</p>
+      <p className="caesar-victory-desc">All segments decrypted successfully.</p>
       <button className="fg-btn fg-btn-primary" onClick={onVerifySubmit}>
         Verify & Submit
       </button>
@@ -1342,3 +1384,4 @@ function GameOverPanel({ stageLoss, onExit }) {
     />
   );
 }
+
