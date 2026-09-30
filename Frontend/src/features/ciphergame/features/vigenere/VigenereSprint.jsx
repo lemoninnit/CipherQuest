@@ -511,8 +511,6 @@ export default function VigenereSprint({
     nextSlimeDelayRef.current = 3400 + Math.random() * 1200;
   };
 
-  };
-
   /* ───────────────────────────────────────────────
      Fullscreen keybind
      ─────────────────────────────────────────────── */
