@@ -32,7 +32,18 @@ public class UserProgressService {
 
     private static final int LEVELS_PER_TIER = 5;
     private static final int MAX_ATTEMPTS    = 3;
-    private static final int COOLDOWN_HOURS  = 4;
+
+    /**
+     * How long a depleted operative waits before their hearts come back.
+     *
+     * Kept short on purpose: the cooldown exists to stop a losing streak from
+     * being farmed, not to punish the player. Three minutes is long enough to
+     * step away and change tactics, short enough that "locked out" never reads
+     * as a dead end. Exposed as a constant (rather than inlined) so the message
+     * shown to a locked-out player and the clock actually enforcing it can
+     * never drift apart.
+     */
+    private static final int COOLDOWN_MINUTES = 3;
 
     private static final List<String> CIPHERS      = List.of("CAESAR", "VIGENERE", "PLAYFAIR");
     private static final List<String> DIFFICULTIES = List.of("EASY", "MEDIUM", "HARD");
@@ -59,9 +70,160 @@ public class UserProgressService {
     // ── Attempt system ────────────────────────────────────────────────
 
     /**
-     * Deduct one site-wide attempt.
-     * Called ONLY when a player submits a WRONG final answer on a level.
-     * NOT called for in-game Pac-Man lives or Sprint shoe tokens.
+     * A player is on cooldown while the stored cooldown end time is still in
+     * the future. Shared by the profile DTO and the stage-start gate so the
+     * value rendered in the HUD and the value the server enforces can never
+     * disagree.
+     */
+    public static boolean isOnCooldown(User user) {
+        return user.getCooldownEndTime() != null
+                && LocalDateTime.now().isBefore(user.getCooldownEndTime());
+    }
+
+    /**
+     * The single source of truth for "may this operative start a stage right
+     * now?".
+     *
+     * Zero hearts always locks play, even if the cooldown clock is somehow
+     * missing or already elapsed: the rule is "no heart, no stage from ANY
+     * cipher", so the heart count is checked as well as the timer. A positive
+     * count with no running cooldown is always playable.
+     */
+    public static boolean isLockedOut(User user) {
+        return user.getAttempts() <= 0 || isOnCooldown(user);
+    }
+
+    /** Max hearts a player can hold — the denominator of the HUD "x / 3". */
+    public static int maxHearts() {
+        return MAX_ATTEMPTS;
+    }
+
+    /**
+     * Consumes one session heart and starts the cooldown once the last heart is
+     * spent. Returns true when a heart was actually consumed.
+     */
+    private boolean consumeHeart(User user) {
+        if (user.getAttempts() <= 0) return false;
+        user.setAttempts(user.getAttempts() - 1);
+        if (user.getAttempts() == 0) {
+            user.setCooldownEndTime(LocalDateTime.now().plusMinutes(COOLDOWN_MINUTES));
+        }
+        return true;
+    }
+
+    /**
+     * SESSION HEART GATE — the server is the authority on whether an operative
+     * may make progress on a stage.
+     *
+     * Auto-refills first, so an elapsed cooldown never keeps blocking play. The
+     * refill is persisted before the check, otherwise a player who waited out
+     * the cooldown would stay locked until some unrelated request saved them.
+     */
+    @Transactional
+    public void assertNotOnCooldown(Long userId) {
+        User user = findUser(userId);
+        autoRefillIfExpired(user);
+        userRepository.save(user);
+        checkNotLockedOut(user);
+    }
+
+    /**
+     * Throws when the operative has no session heart left. Shared by the
+     * stage-start gate and the progress endpoint so a client cannot claim a
+     * stage completion simply by skipping the scoring session.
+     */
+    private void checkNotLockedOut(User user) {
+        if (isLockedOut(user)) {
+            throw new IllegalStateException(
+                    "All session hearts are spent. Missions resume in " + formatRemainingCooldown(user) + ".");
+        }
+    }
+
+    /**
+     * Human-readable time until missions resume, e.g. "2m 41s".
+     *
+     * Falls back to the full window when the clock is missing but the hearts
+     * are still zero, so the message never reads as "under a minute" for a
+     * player who is actually locked out. Renders hours only when the window is
+     * genuinely longer than an hour, so the normal 3-minute cooldown stays
+     * short and readable instead of being padded into "0h 3m".
+     */
+    private static String formatRemainingCooldown(User user) {
+        if (user.getCooldownEndTime() == null) return COOLDOWN_MINUTES + "m";
+        long seconds = java.time.Duration.between(LocalDateTime.now(), user.getCooldownEndTime()).getSeconds();
+        if (seconds <= 0) return "under a minute";
+
+        long minutes = seconds / 60;
+        long remainder = seconds % 60;
+        if (minutes < 60) {
+            return remainder == 0 ? minutes + "m" : minutes + "m " + remainder + "s";
+        }
+        long hours = minutes / 60;
+        minutes = minutes % 60;
+        return minutes == 0 ? hours + "h" : hours + "h " + minutes + "m";
+    }
+
+    /**
+     * SESSION HEART SPENDING — called by the scoring system when a stage is
+     * lost, so losing a stage always costs exactly one server heart no matter
+     * which cipher or mini-game produced the loss.
+     *
+     * This is deliberately the ONLY way a stage loss spends a heart. The
+     * client used to call POST /users/attempts/deduct itself, which let an
+     * in-game attempt counter and the server heart counter drift apart (and let
+     * a modified client skip the cost entirely). Server-side session hearts and
+     * in-game attempts are now separate concerns: in-game lives/tokens/casts
+     * never touch this counter, only a finished stage attempt does.
+     *
+     * Auto-refills an expired cooldown first so a stale zero never keeps an
+     * operative locked, and clamps at zero so a repeated report can never make
+     * the counter negative.
+     *
+     * @return the heart state AFTER the deduction
+     */
+    @Transactional
+    public HeartState consumeHeartForStageLoss(Long userId) {
+        User user = findUser(userId);
+        autoRefillIfExpired(user);
+        consumeHeart(user);
+        userRepository.save(user);
+        return heartState(user);
+    }
+
+    /** Current heart state, for responses that need to report it to a client. */
+    public HeartState heartState(Long userId) {
+        return heartState(findUser(userId));
+    }
+
+    private static HeartState heartState(User user) {
+        return new HeartState(
+                user.getAttempts(),
+                MAX_ATTEMPTS,
+                isLockedOut(user),
+                user.getCooldownEndTime()
+        );
+    }
+
+    /**
+     * Snapshot of the server-side session-heart counter.
+     *
+     * attempts       – hearts remaining
+     * maxAttempts    – hearts a full player holds (3)
+     * lockedOut      – true when no stage may be started at all
+     * cooldownEndTime – when the hearts refill, or null if not on cooldown
+     */
+    public record HeartState(int attempts, int maxAttempts, boolean lockedOut, LocalDateTime cooldownEndTime) {}
+
+    /**
+     * Manually spend one session heart.
+     *
+     * NOT the stage-loss path any more — a lost stage spends its heart through
+     * consumeHeartForStageLoss, driven by the scoring system. This endpoint
+     * remains for explicitly manual spends and is kept idempotent-safe (it
+     * clamps at zero and never restarts a running cooldown).
+     *
+     * In-game attempts (Pac-Man lives, Sprint tokens, fishing casts) must never
+     * call this: they are a separate, client-side economy.
      *
      * Returns updated profile so the frontend can refresh state.
      */
@@ -69,13 +231,7 @@ public class UserProgressService {
     public UserProfileDto deductAttempt(Long userId) {
         User user = findUser(userId);
         autoRefillIfExpired(user);
-
-        if (user.getAttempts() > 0) {
-            user.setAttempts(user.getAttempts() - 1);
-            if (user.getAttempts() == 0) {
-                user.setCooldownEndTime(LocalDateTime.now().plusHours(COOLDOWN_HOURS));
-            }
-        }
+        consumeHeart(user);
         userRepository.save(user);
         return buildProfileDto(user);
     }
@@ -131,6 +287,14 @@ public class UserProgressService {
 
         validateCipherAndDifficulty(cipher, difficulty);
         assertTierUnlocked(userId, cipher, difficulty);
+
+        // Session-heart gate: claiming a stage completion is the other way to
+        // bank progress, so it must respect the cooldown too. The scoring path
+        // bypasses this method (it calls awardForCompletion directly), so an
+        // already-scored completion is never blocked by a later refill check.
+        autoRefillIfExpired(user);
+        userRepository.save(user);
+        checkNotLockedOut(user);
 
         awardForCompletion(userId, cipher, difficulty, req.levelIndex());
 
@@ -311,8 +475,7 @@ public class UserProgressService {
         List<String> badges = badgeRepository.findByUserId(userId)
                 .stream().map(UserBadge::getBadgeType).collect(Collectors.toList());
         Map<String, Map<String, List<Integer>>> progressMap = buildProgressMap(userId);
-        boolean onCooldown = user.getCooldownEndTime() != null
-                && LocalDateTime.now().isBefore(user.getCooldownEndTime());
+        boolean onCooldown = isOnCooldown(user);
         Map<String, Boolean> tutorialDismissed = Map.of(
             "caesar", user.isTutorialDismissedCaesar(),
             "vigenere", user.isTutorialDismissedVigenere(),

@@ -1,0 +1,267 @@
+/* ── THE LOSING SCREEN ──────────────────────────────────────────────────────
+   One visual language for every stage loss. Deliberately calmer than the
+   "GAME OVER / STAGE COMPROMISED" shout caps it replaces: the player just lost,
+   so the screen should read as clear and calm rather than punishing.
+
+   `sls-panel` is only a positioning/click shield - the card does the styling,
+   so the same card drops into the sprint games' in-board modal unchanged. */
+
+.sls-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(20, 3, 6, 0.84);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: sls-fade-in 0.2s ease-out;
+}
+
+@keyframes sls-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.sls-panel {
+  width: min(420px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.sls-card {
+  background: rgba(28, 8, 14, 0.97);
+  border: 1px solid rgba(255, 0, 127, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 0 40px rgba(255, 0, 127, 0.18);
+  padding: 22px;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  animation: sls-pop-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+/* The sprint games already wrap the card in a bordered, padded modal, so the
+   nested card drops its own chrome to avoid a box-inside-a-box. */
+.sls-card-compact {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  animation: none;
+}
+
+@keyframes sls-pop-in {
+  from { transform: scale(0.94); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.sls-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.sls-icon {
+  flex: none;
+  font-size: 1.9rem;
+  line-height: 1.1;
+  color: #ff007f;
+  font-variation-settings: 'FILL' 1;
+}
+
+.sls-title {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+
+.sls-reason {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+/* ── Hearts: the cost, shown at a glance ────────────────────────────────── */
+
+.sls-hearts {
+  text-align: center;
+  padding: 14px 12px;
+  border-radius: 14px;
+  background: rgba(255, 0, 127, 0.07);
+  border: 1px solid rgba(255, 0, 127, 0.25);
+  margin-bottom: 16px;
+}
+
+.sls-hearts.is-locked {
+  background: rgba(255, 159, 28, 0.08);
+  border-color: rgba(255, 159, 28, 0.4);
+}
+
+.sls-hearts-row {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+
+.sls-heart {
+  font-size: 1.7rem;
+  line-height: 1;
+  color: #ff007f;
+  font-variation-settings: 'FILL' 1;
+}
+
+.sls-heart.is-spent {
+  color: rgba(255, 255, 255, 0.16);
+}
+
+.sls-hearts-text {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fda4af;
+}
+
+.sls-hearts.is-locked .sls-hearts-text {
+  color: #ffd8a8;
+}
+
+/* ── Lockout: what the wait actually is, with a live countdown ──────────── */
+
+.sls-wait {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 159, 28, 0.1);
+  border: 1px solid rgba(255, 159, 28, 0.4);
+  margin-bottom: 16px;
+}
+
+.sls-wait-icon {
+  flex: none;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: #ff9f1c;
+}
+
+.sls-wait-body { min-width: 0; }
+
+.sls-wait-title {
+  margin: 0 0 2px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffd8a8;
+}
+
+.sls-wait-timer {
+  margin: 2px 0 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #ff9f1c;
+}
+
+.sls-wait-text {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: rgba(255, 216, 168, 0.85);
+}
+
+/* ── What actually changed ──────────────────────────────────────────────── */
+
+.sls-facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.sls-fact {
+  text-align: center;
+  padding: 10px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sls-fact dt {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+}
+
+.sls-fact dd {
+  margin: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.sls-fact dd.sls-fact-kept { color: #ffd700; }
+
+.sls-fact-kept span {
+  display: block;
+  margin-top: 2px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 215, 0, 0.75);
+}
+
+/* ── The one action ──────────────────────────────────────────────────────── */
+
+.sls-note {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.sls-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 18px;
+  border: none;
+  border-radius: 12px;
+  background: #ff007f;
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.sls-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.1);
+}
+
+.sls-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 420px) {
+  .sls-facts { grid-template-columns: 1fr; }
+  .sls-card { padding: 18px; }
+}

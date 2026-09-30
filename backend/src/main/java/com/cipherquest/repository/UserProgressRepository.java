@@ -48,6 +48,26 @@ public interface UserProgressRepository extends JpaRepository<UserProgress, Long
     @Query("SELECT p.user.id, COUNT(p) FROM UserProgress p WHERE UPPER(p.cipherType) = UPPER(:cipherType) GROUP BY p.user.id")
     List<Object[]> countCompletedByCipherPerUser(@Param("cipherType") String cipherType);
 
+    // ── Leaderboard time metrics ──────────────────────────────────────
+    // Derived from UserProgress.bestTimeMs — the operative's fastest time on
+    // each CLEARED stage. Summing personal bests (rather than every attempt)
+    // keeps replays from inflating a total, and keeps the time metric on the
+    // same completion source as the mastery/stage-count figures.
+    // Rows with no recorded time yet are excluded, so operators without a
+    // timed completion are simply absent rather than reported as 0.
+
+    /** best (fastest) and total time per user across ALL ciphers. */
+    @Query("SELECT p.user.id, MIN(p.bestTimeMs), SUM(p.bestTimeMs) " +
+           "FROM UserProgress p WHERE p.bestTimeMs IS NOT NULL GROUP BY p.user.id")
+    List<Object[]> bestAndTotalTimeOverallPerUser();
+
+    /** best (fastest) and total time per user for a single cipher. */
+    @Query("SELECT p.user.id, MIN(p.bestTimeMs), SUM(p.bestTimeMs) " +
+           "FROM UserProgress p " +
+           "WHERE p.bestTimeMs IS NOT NULL AND UPPER(p.cipherType) = UPPER(:cipherType) " +
+           "GROUP BY p.user.id")
+    List<Object[]> bestAndTotalTimeByCipherPerUser(@Param("cipherType") String cipherType);
+
     // ── Scoring System: per-stage leaderboard lookups ─────────────────
 
     /** All progress rows for one stage (used by per-stage leaderboards). */

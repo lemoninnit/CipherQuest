@@ -62,6 +62,7 @@ public class ScoringController {
     /**
      * Register a stage failure.
      * Streak -> 0, multiplier -> 1.00, total score preserved, no records updated.
+     * Costs the player exactly ONE server session heart (see FailStageResponse).
      */
     @PostMapping("/fail/{sessionId}")
     public ResponseEntity<FailStageResponse> failStage(
