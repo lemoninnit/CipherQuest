@@ -348,6 +348,16 @@
   white-space: nowrap;
 }
 
+/* Fastest stage time shown beneath the podium mastery/streak subline */
+.lb-podium-time {
+  font-family: 'JetBrains Mono', 'Space Grotesk', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(56, 224, 255, 0.8);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
 /* Empty podium step slot */
 .lb-podium-empty-step {
   display: flex;
@@ -386,7 +396,7 @@
 
 .lb-table-header {
   display: grid;
-  grid-template-columns: 65px 1fr 140px 180px 90px;
+  grid-template-columns: 65px 1fr 120px 150px 130px 90px;
   padding: 6px 16px;
   font-family: 'JetBrains Mono', 'Space Grotesk', monospace;
   font-size: 10px;
@@ -422,7 +432,7 @@
 
 .lb-table-row {
   display: grid;
-  grid-template-columns: 65px 1fr 140px 180px 90px;
+  grid-template-columns: 65px 1fr 120px 150px 130px 90px;
   align-items: center;
   padding: clamp(7px, 1vh, 10px) 16px;
   background: rgba(6, 18, 36, 0.55);
@@ -540,7 +550,77 @@
   min-width: 32px;
 }
 
-/* ── Streak ── */
+
+/* ── TIME column ---------------------------------------------------
+   Fastest stage (primary) + summed personal bests (secondary).
+   Each value carries a short "Best" / "Total" key so the column reads
+   clearly on its own, without needing a separate legend. */
+.col-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  font-family: 'JetBrains Mono', 'Space Grotesk', monospace;
+  line-height: 1.25;
+}
+
+.lb-time-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.lb-time-key {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.75);
+  min-width: 30px;
+}
+
+.lb-time-primary {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: rgba(56, 224, 255, 0.9);
+  white-space: nowrap;
+}
+
+.lb-time-secondary {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(148, 163, 184, 0.85);
+  white-space: nowrap;
+}
+
+/* No timed completion recorded in this scope: "not recorded", not zero */
+.lb-time-empty {
+  gap: 1px;
+  color: rgba(148, 163, 184, 0.5);
+}
+
+.lb-time-empty .lb-time-dash {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.lb-time-empty .lb-time-hint {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(148, 163, 184, 0.65);
+}
+
+/* Keep the current operative fastest time as prominent as the leaders. */
+.lb-table-row.is-current .lb-time-primary {
+  color: #38e0ff;
+}
+
 .col-streak {
   display: flex;
   align-items: center;
@@ -817,7 +897,7 @@
 
   .lb-table-header,
   .lb-table-row {
-    grid-template-columns: 45px 1fr 80px 120px 60px;
+    grid-template-columns: 45px 1fr 80px 110px 105px 60px;
     font-size: 12px;
     padding: 6px 10px;
   }

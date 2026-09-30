@@ -1,5 +1,15 @@
+import { useAuth } from '../../../../context/AuthContext';
+
 export default function StageRoadmap({ game, onOpenTutorial }) {
   const { category, difficulty, progress, startStage, backToDifficulty } = game;
+  const { user } = useAuth();
+
+  // SESSION HEARTS: with none left, EVERY stage in EVERY cipher is locked.
+  // Mirrors the server rule (UserProgressService.isLockedOut) so the roadmap
+  // says so up front instead of only after a refused click.
+  const heartCount = Number(user?.attempts) || 0;
+  const isLockedOut = heartCount <= 0;
+
   const catProg = progress[category] || { easy: [], medium: [], hard: [] };
   const completed = catProg[difficulty] || [];
 
@@ -61,6 +71,17 @@ export default function StageRoadmap({ game, onOpenTutorial }) {
               {completed.length} / 5 Operations Cleared
             </span>
           </div>
+
+          {/* SESSION HEARTS: no heart means no stage, in ANY cipher. */}
+          {isLockedOut && (
+            <div className="cq-hearts-locked-banner" role="status">
+              <span className="material-symbols-outlined">heart_broken</span>
+              <span>
+                No session hearts left. Every stage in every cipher stays locked
+                until your hearts refill.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

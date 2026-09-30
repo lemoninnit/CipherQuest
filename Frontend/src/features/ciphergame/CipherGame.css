@@ -5087,56 +5087,14 @@
   pointer-events: auto !important;
 }
 
-/* Game Over Modal Enhancements */
-.pacman-gameover-card {
-  min-width: 340px;
-  max-width: 420px;
-  text-align: center;
-}
+/* Losing a stage (game over) is now rendered by ONE component for every game:
+   ui/StageLostScreen. Its styles live in StageLostScreen.css.
 
-.pacman-gameover-text {
-  font-family: 'Space Grotesk', sans-serif;
-  color: #cbd5e1;
-  font-size: 0.95rem;
-  line-height: 1.45;
-  margin: 0 0 20px;
-}
-
-/* Fishing stage-fail: session heart cost line (see useFishingStageFail) */
-.fishing-gameover-hearts {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: -10px 0 20px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #fda4af;
-}
-
-.fishing-gameover-hearts .material-symbols-outlined {
-  font-size: 1.1rem;
-  animation: fishing-heart-loss 0.9s ease-out;
-}
-
-@keyframes fishing-heart-loss {
-  0%   { transform: scale(1.5); }
-  40%  { transform: scale(0.9); }
-  70%  { transform: scale(1.15); }
-  100% { transform: scale(1); }
-}
-
-/* Scoring consequences restated on the overlay, because the global
-   StageFailNotice is suppressed (onStageFail({ showNotice: false })). */
-.fishing-gameover-score {
-  margin: 0 0 20px;
-  font-size: 0.74rem;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.62);
-  text-align: center;
-}
+   The old per-game rules that used to sit here are gone on purpose:
+   .pacman-gameover-card / .pacman-gameover-text / .pacman-gameover-overlay and
+   .fishing-gameover-hearts / -locked / -score all belonged to hand-rolled
+   game-over cards that said the same thing five different ways. Losing now
+   looks and reads the same in Pac-Man, the fishing games and the sprints. */
 
 /* Floating Victory Panel */
 .caesar-floating-victory-panel.caesar-pacman-victory-panel {
@@ -5381,6 +5339,32 @@
 
 .cq-cleared-badge-text {
   color: #e2e8f0;
+}
+
+/* SESSION HEARTS: roadmap lockout banner.
+   Shown when no session heart remains: every stage in every cipher is
+   locked then, so the roadmap says so before the player clicks a node. */
+.cq-hearts-locked-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 159, 28, 0.1);
+  border: 1px solid rgba(255, 159, 28, 0.45);
+  border-radius: 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: #ffd8a8;
+  text-align: left;
+}
+
+.cq-hearts-locked-banner .material-symbols-outlined {
+  flex-shrink: 0;
+  font-size: 18px;
+  color: #ff9f1c;
 }
 
 /* 2. Path Container & Track */
@@ -7853,4 +7837,4 @@
 
 
 
-
+

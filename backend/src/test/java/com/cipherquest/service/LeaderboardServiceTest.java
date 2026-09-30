@@ -160,4 +160,67 @@ public class LeaderboardServiceTest {
         // Verify Player14 is NOT in top 10
         assertTrue(response.topUsers().stream().noneMatch(u -> u.username().equals("Player14")));
     }
+
+    // ── Time duration metrics (scope-aware) ────────────────────────────
+
+    @Test
+    public void testOverallScopeUsesAllCipherTimes() {
+        User alice = User.builder().id(1L).username("Alice").xp(900).streak(4).build();
+        User bob   = User.builder().id(2L).username("Bob").xp(100).streak(1).build();
+        when(userRepository.findAll()).thenReturn(Arrays.asList(alice, bob));
+        when(userProgressRepository.countTotalCompletedPerUser()).thenReturn(Collections.emptyList());
+
+        // Alice: best 12_345ms, total 60_000ms. Bob: no timed completions at all.
+        List<Object[]> times = new ArrayList<>();
+        times.add(new Object[]{1L, 12345L, 60000L});
+        when(userProgressRepository.bestAndTotalTimeOverallPerUser()).thenReturn(times);
+
+        GlobalLeaderboardResponse response = leaderboardService.getLeaderboard("overall", "Alice");
+
+        GlobalLeaderboardEntry aliceEntry = response.currentUserEntry();
+        assertEquals(Long.valueOf(12345L), aliceEntry.bestTimeMs());
+        assertEquals(Long.valueOf(60000L), aliceEntry.totalTimeMs());
+
+        // An operative with no timed completions must report null, not 0.
+        GlobalLeaderboardEntry bobEntry = response.topUsers().stream()
+                .filter(u -> u.username().equals("Bob")).findFirst().orElseThrow();
+        assertNull(bobEntry.bestTimeMs());
+        assertNull(bobEntry.totalTimeMs());
+
+        // Overall scope must not consult the per-cipher query.
+        Mockito.verify(userProgressRepository, Mockito.never())
+                .bestAndTotalTimeByCipherPerUser(Mockito.anyString());
+    }
+
+    @Test
+    public void testPerCipherScopeUsesCipherScopedTimes() {
+        User alice = User.builder().id(1L).username("Alice").xp(900).streak(4).build();
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(alice));
+        when(userProgressRepository.countCompletedByCipherPerUser("VIGENERE")).thenReturn(Collections.emptyList());
+
+        List<Object[]> times = new ArrayList<>();
+        times.add(new Object[]{1L, 30000L, 95000L});
+        when(userProgressRepository.bestAndTotalTimeByCipherPerUser("VIGENERE")).thenReturn(times);
+
+        GlobalLeaderboardResponse response = leaderboardService.getLeaderboard("vigenere", "Alice");
+
+        // Times come from the Vigenère slice only, not the overall aggregate.
+        assertEquals(Long.valueOf(30000L), response.currentUserEntry().bestTimeMs());
+        assertEquals(Long.valueOf(95000L), response.currentUserEntry().totalTimeMs());
+        Mockito.verify(userProgressRepository).bestAndTotalTimeByCipherPerUser("VIGENERE");
+        Mockito.verify(userProgressRepository, Mockito.never()).bestAndTotalTimeOverallPerUser();
+    }
+
+    @Test
+    public void testNoTimedCompletionsYieldsNullTimes() {
+        User solo = User.builder().id(1L).username("Solo").xp(10).streak(0).build();
+        when(userRepository.findAll()).thenReturn(Collections.singletonList(solo));
+        when(userProgressRepository.countTotalCompletedPerUser()).thenReturn(Collections.emptyList());
+        when(userProgressRepository.bestAndTotalTimeOverallPerUser()).thenReturn(Collections.emptyList());
+
+        GlobalLeaderboardResponse response = leaderboardService.getLeaderboard("overall", "Solo");
+
+        assertNull(response.topUsers().get(0).bestTimeMs());
+        assertNull(response.topUsers().get(0).totalTimeMs());
+    }
 }

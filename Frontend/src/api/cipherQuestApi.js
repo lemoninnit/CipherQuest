@@ -30,13 +30,22 @@ async function request(method, path, body) {
 
     if (!res.ok) {
       const msg = data && data.message ? data.message : `HTTP ${res.status}`;
-      throw new Error(msg);
+      // Attach the status so callers can react to specific outcomes that the
+      // message alone cannot convey (e.g. 409 = session-heart lockout).
+      const error = new Error(msg);
+      error.status = res.status;
+      throw error;
     }
     return data;
   } catch (err) {
-    if (err.name === 'AbortError') throw new Error('Network timeout: backend did not respond');
-    // map typical network failure into a friendlier message
-    throw new Error(err.message || 'Network error: could not reach backend');
+    if (err.name === 'AbortError') {
+      throw new Error('Network timeout: backend did not respond', { cause: err });
+    }
+    // map typical network failure into a friendlier message, keeping the HTTP
+    // status (if any) so callers can still branch on 409 / 404 / etc.
+    const error = new Error(err.message || 'Network error: could not reach backend', { cause: err });
+    if (err.status != null) error.status = err.status;
+    throw error;
   }
 }
 

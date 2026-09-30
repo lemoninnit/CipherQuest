@@ -1,73 +1,36 @@
-import { useEffect, useRef } from 'react';
+import StageLostScreen from './StageLostScreen';
 import '../CipherGame.css';
 
 /**
- * GAME OVER overlay for the fishing games, shown when attempts run out.
+ * GAME OVER overlay for the fishing games, shown when in-game attempts run out.
  *
- * Deliberately reuses the existing pause/game-over classes from
- * CipherGame.css so the failure UX matches Pac-Man's overlay instead of
- * introducing a fourth visual language.
+ * All of the wording, the heart display, the lockout countdown and the single
+ * "what now" action live in StageLostScreen, which every cipher shares. This
+ * file only supplies the fishing-specific reason line and the exit target, so
+ * losing a stage reads identically no matter which game produced it.
  *
- * @param {boolean} open      Whether the overlay is visible.
- * @param {number}  heartsLost Session hearts deducted (currently always 1).
- * @param {Function} onRetry  Restart the same stage.
- * @param {Function} onExit   Leave to the stage list.
+ * NO RETRY BY DESIGN: losing a stage is final for that attempt. The server has
+ * already spent one session heart (ScoringService.failStage) and the stage
+ * session is closed, so the only way forward is back to the roadmap. Offering a
+ * retry here used to hand the player an unscored re-roll of a lost stage.
+ *
+ * @param {boolean} open        Whether the overlay is visible.
+ * @param {object}  stageLoss   Authoritative post-loss heart state from
+ *                              `failStage` (null until a loss is charged, in
+ *                              which case the live profile is used).
+ * @param {Function} onExit     Leave to the stage roadmap.
  */
-export default function FishingGameOverOverlay({ open, heartsLost = 1, onRetry, onExit }) {
-  const retryBtnRef = useRef(null);
-
-  useEffect(() => {
-    if (open) retryBtnRef.current?.focus();
-  }, [open]);
-
-  if (!open) return null;
-
+export default function FishingGameOverOverlay({ open, stageLoss, onExit }) {
   return (
-    <div
-      className="caesar-pause-overlay pacman-gameover-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="fishing-gameover-title"
-    >
-      <div className="caesar-pause-card pacman-gameover-card">
-        <h2 id="fishing-gameover-title" className="caesar-pause-title">
-          STAGE LOST
-        </h2>
-        <p className="pacman-gameover-text">
-          You ran out of attempts — the pond is gone for good.
-        </p>
-        <p className="fishing-gameover-hearts">
-          <span
-            className="material-symbols-outlined"
-            style={{ fontVariationSettings: "'FILL' 1", color: '#ff007f' }}
-          >
-            favorite
-          </span>
-          <span>
-            {heartsLost === 1 ? '1 heart lost' : `${heartsLost} hearts lost`}
-          </span>
-        </p>
-        {/* The global StageFailNotice is suppressed for this overlay, so its
-            scoring consequences are restated here (spec §7 / §18). */}
-        <p className="fishing-gameover-score">
-          No score awarded · streak reset to 0 · total score preserved
-        </p>
-        <button
-          ref={retryBtnRef}
-          className="caesar-pause-btn caesar-pause-btn-resume"
-          onClick={onRetry}
-        >
-          <span className="material-symbols-outlined">restart_alt</span>
-          <span>Retry Level</span>
-        </button>
-        <button
-          className="caesar-pause-btn caesar-pause-btn-exit"
-          onClick={onExit}
-        >
-          <span className="material-symbols-outlined">logout</span>
-          <span>Exit Stage</span>
-        </button>
-      </div>
-    </div>
+    <StageLostScreen
+      open={open}
+      reason="You ran out of attempts before catching the cipher."
+      heartsLeft={stageLoss?.heartsLeft ?? null}
+      maxHearts={stageLoss?.maxHearts ?? 3}
+      lockedOut={stageLoss?.lockedOut ?? false}
+      cooldownEndTime={stageLoss?.cooldownEndTime ?? null}
+      totalScore={stageLoss?.totalScore ?? null}
+      onExit={onExit}
+    />
   );
 }
