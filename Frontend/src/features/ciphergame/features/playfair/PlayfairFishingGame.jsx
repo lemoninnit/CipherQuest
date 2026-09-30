@@ -255,6 +255,62 @@ export default function PlayfairFishingGame({
   };
 
   const viewingCipherPair = viewingPair.cipherPair || '';
+  const pfMatrixLookup = useMemo(() => {
+    const lookup = {};
+    if (Array.isArray(matrix)) {
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const letter = matrix[r]?.[c];
+          if (letter) {
+            lookup[letter] = { r, c };
+            if (letter === 'I') lookup['J'] = { r, c };
+          }
+        }
+      }
+    }
+    return lookup;
+  }, [matrix]);
+
+  const viewingC1 = viewingPair?.cipherPair?.[0] || '';
+  const viewingC2 = viewingPair?.cipherPair?.[1] || '';
+  const viewingPosA = viewingC1 ? pfMatrixLookup[viewingC1] : null;
+  const viewingPosB = viewingC2 ? pfMatrixLookup[viewingC2] : null;
+
+  let viewingEffectiveRule = (viewingPair?.rule || '').toLowerCase();
+  if (viewingPosA && viewingPosB) {
+    if (viewingPosA.r === viewingPosB.r) viewingEffectiveRule = 'row';
+    else if (viewingPosA.c === viewingPosB.c) viewingEffectiveRule = 'column';
+    else viewingEffectiveRule = 'rectangle';
+  }
+
+  let viewingTargetPosA = null;
+  let viewingTargetPosB = null;
+  if (viewingPosA && viewingPosB) {
+    if (viewingEffectiveRule === 'row') {
+      viewingTargetPosA = { r: viewingPosA.r, c: (viewingPosA.c + 4) % 5 };
+      viewingTargetPosB = { r: viewingPosB.r, c: (viewingPosB.c + 4) % 5 };
+    } else if (viewingEffectiveRule === 'column') {
+      viewingTargetPosA = { r: (viewingPosA.r + 4) % 5, c: viewingPosA.c };
+      viewingTargetPosB = { r: (viewingPosB.r + 4) % 5, c: viewingPosB.c };
+    } else {
+      viewingTargetPosA = { r: viewingPosA.r, c: viewingPosB.c };
+      viewingTargetPosB = { r: viewingPosB.r, c: viewingPosA.c };
+    }
+  }
+
+  const viewingT1Actual = viewingTargetPosA ? (matrix[viewingTargetPosA.r]?.[viewingTargetPosA.c] || viewingPair?.plainPair?.[0] || '?') : (viewingPair?.plainPair?.[0] || '?');
+  const viewingT2Actual = viewingTargetPosB ? (matrix[viewingTargetPosB.r]?.[viewingTargetPosB.c] || viewingPair?.plainPair?.[1] || '?') : (viewingPair?.plainPair?.[1] || '?');
+
+  const viewingHasHint0 = Boolean(levelData.fullMask?.[viewingIndex * 2]);
+  const viewingHasHint1 = Boolean(levelData.fullMask?.[viewingIndex * 2 + 1]);
+
+  const viewingT1Disp = (isViewingSolved || viewingHasHint0) ? viewingT1Actual : '?';
+  const viewingT2Disp = (isViewingSolved || viewingHasHint1) ? viewingT2Actual : '?';
+
+  let viewingRuleChipText = '⇄ RECTANGLE';
+  if (viewingEffectiveRule === 'row') viewingRuleChipText = '← SAME ROW';
+  else if (viewingEffectiveRule === 'column') viewingRuleChipText = '↑ SAME COLUMN';
+
   const isLetterHighlighted = (letter) => {
     if (!viewingCipherPair) return false;
     return (
@@ -596,17 +652,189 @@ export default function PlayfairFishingGame({
               <div className="pf-template-matrix-grid">
                 {matrix.map((row, rowIndex) =>
                   row.map((letter, colIndex) => {
-                    const isHighlighted = isLetterHighlighted(letter);
+                    const isCipherActive = (viewingPosA && viewingPosA.r === rowIndex && viewingPosA.c === colIndex) || (viewingPosB && viewingPosB.r === rowIndex && viewingPosB.c === colIndex);
+                    const isTargetAActive = (isViewingSolved || viewingHasHint0) && viewingTargetPosA && viewingTargetPosA.r === rowIndex && viewingTargetPosA.c === colIndex;
+                    const isTargetBActive = (isViewingSolved || viewingHasHint1) && viewingTargetPosB && viewingTargetPosB.r === rowIndex && viewingTargetPosB.c === colIndex;
+                    const isTargetActive = isTargetAActive || isTargetBActive;
                     const displayLetter = letter === 'I' ? 'I/J' : letter;
+                    let cellClass = 'pf-template-cell';
+                    if (isCipherActive) cellClass += ' cipher-active active';
+                    else if (isTargetActive) cellClass += ' target-active';
+
                     return (
                       <div
                         key={`${rowIndex}-${colIndex}`}
-                        className={`pf-template-cell${isHighlighted ? ' active' : ''}`}
+                        className={cellClass}
                       >
                         {displayLetter}
                       </div>
                     );
                   })
+                )}
+                {(viewingEffectiveRule === 'row' || viewingEffectiveRule === 'column') && viewingPosA && viewingPosB && (
+                  <svg
+                    className="pf-matrix-lines-overlay"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                  >
+                    <defs>
+                      <marker
+                        id="pf-arrow-amber-fishing"
+                        viewBox="0 0 6 6"
+                        refX="5"
+                        refY="3"
+                        markerWidth="4"
+                        markerHeight="4"
+                        orient="auto-start-reverse"
+                      >
+                        <path d="M 0 0 L 6 3 L 0 6 z" fill="#ffc146" />
+                      </marker>
+                    </defs>
+                    {viewingEffectiveRule === 'row' && (
+                      <>
+                        {viewingPosA.c > 0 ? (
+                          <line
+                            x1={(viewingPosA.c + 0.5) * 20}
+                            y1={(viewingPosA.r + 0.5) * 20}
+                            x2={(viewingPosA.c - 1 + 0.5) * 20}
+                            y2={(viewingPosA.r + 0.5) * 20}
+                            stroke="#ffc146"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            markerEnd="url(#pf-arrow-amber-fishing)"
+                          />
+                        ) : (
+                          <>
+                            <line
+                              x1={(viewingPosA.c + 0.5) * 20}
+                              y1={(viewingPosA.r + 0.5) * 20}
+                              x2="0"
+                              y2={(viewingPosA.r + 0.5) * 20}
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                            />
+                            <line
+                              x1="100"
+                              y1={(viewingPosA.r + 0.5) * 20}
+                              x2={(4 + 0.5) * 20}
+                              y2={(viewingPosA.r + 0.5) * 20}
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              markerEnd="url(#pf-arrow-amber-fishing)"
+                            />
+                          </>
+                        )}
+                        {viewingPosB.c > 0 ? (
+                          <line
+                            x1={(viewingPosB.c + 0.5) * 20}
+                            y1={(viewingPosB.r + 0.5) * 20}
+                            x2={(viewingPosB.c - 1 + 0.5) * 20}
+                            y2={(viewingPosB.r + 0.5) * 20}
+                            stroke="#ffc146"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            markerEnd="url(#pf-arrow-amber-fishing)"
+                          />
+                        ) : (
+                          <>
+                            <line
+                              x1={(viewingPosB.c + 0.5) * 20}
+                              y1={(viewingPosB.r + 0.5) * 20}
+                              x2="0"
+                              y2={(viewingPosB.r + 0.5) * 20}
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                            />
+                            <line
+                              x1="100"
+                              y1={(viewingPosB.r + 0.5) * 20}
+                              x2={(4 + 0.5) * 20}
+                              y2={(viewingPosB.r + 0.5) * 20}
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              markerEnd="url(#pf-arrow-amber-fishing)"
+                            />
+                          </>
+                        )}
+                      </>
+                    )}
+                    {viewingEffectiveRule === 'column' && (
+                      <>
+                        {viewingPosA.r > 0 ? (
+                          <line
+                            x1={(viewingPosA.c + 0.5) * 20}
+                            y1={(viewingPosA.r + 0.5) * 20}
+                            x2={(viewingPosA.c + 0.5) * 20}
+                            y2={(viewingPosA.r - 1 + 0.5) * 20}
+                            stroke="#ffc146"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            markerEnd="url(#pf-arrow-amber-fishing)"
+                          />
+                        ) : (
+                          <>
+                            <line
+                              x1={(viewingPosA.c + 0.5) * 20}
+                              y1={(viewingPosA.r + 0.5) * 20}
+                              x2={(viewingPosA.c + 0.5) * 20}
+                              y2="0"
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                            />
+                            <line
+                              x1={(viewingPosA.c + 0.5) * 20}
+                              y1="100"
+                              x2={(viewingPosA.c + 0.5) * 20}
+                              y2={(4 + 0.5) * 20}
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              markerEnd="url(#pf-arrow-amber-fishing)"
+                            />
+                          </>
+                        )}
+                        {viewingPosB.r > 0 ? (
+                          <line
+                            x1={(viewingPosB.c + 0.5) * 20}
+                            y1={(viewingPosB.r + 0.5) * 20}
+                            x2={(viewingPosB.c + 0.5) * 20}
+                            y2={(viewingPosB.r - 1 + 0.5) * 20}
+                            stroke="#ffc146"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            markerEnd="url(#pf-arrow-amber-fishing)"
+                          />
+                        ) : (
+                          <>
+                            <line
+                              x1={(viewingPosB.c + 0.5) * 20}
+                              y1={(viewingPosB.r + 0.5) * 20}
+                              x2={(viewingPosB.c + 0.5) * 20}
+                              y2="0"
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                            />
+                            <line
+                              x1={(viewingPosB.c + 0.5) * 20}
+                              y1="100"
+                              x2={(viewingPosB.c + 0.5) * 20}
+                              y2={(4 + 0.5) * 20}
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              markerEnd="url(#pf-arrow-amber-fishing)"
+                            />
+                          </>
+                        )}
+                      </>
+                    )}
+                  </svg>
                 )}
               </div>
             </div>
@@ -640,32 +868,28 @@ export default function PlayfairFishingGame({
                     </button>
                   </span>
                 </div>
-                <div className="vg-calc-formula-row">
-                  <div className="vg-calc-item cipher">
-                    <span className="lbl">Cipher</span>
-                    <strong style={{ letterSpacing: '2px' }}>{viewingPair.cipherPair}</strong>
-                    <span className="val">DIGRAPH</span>
+                <div className="pf-calc-formula-row">
+                  <div className="pf-calc-box cipher">
+                    <span className="lbl">CIPHER</span>
+                    <strong className="val">{viewingPair.cipherPair}</strong>
                   </div>
-                  <span className="vg-calc-op">→</span>
-                  <div className="vg-calc-item key">
-                    <span className="lbl">Rule</span>
-                    <strong style={{ fontSize: '0.85rem' }}>{viewingPair.rule ? String(viewingPair.rule).toUpperCase() : 'RULE'}</strong>
-                    <span className="val">5×5 MATRIX</span>
+                  <div className="pf-calc-box rule-chip">
+                    <span className="lbl">RULE</span>
+                    <strong className="val">{viewingRuleChipText}</strong>
                   </div>
-                  <span className="vg-calc-op">=</span>
-                  <div className={`vg-calc-item plain ${isViewingSolved ? 'is-solved' : ''}`}>
-                    <span className="lbl">Target</span>
-                    <strong style={{ letterSpacing: '2px', color: isViewingSolved ? 'var(--neon-green)' : '#ffffff' }}>
+                  <div className={`pf-calc-box target ${isViewingSolved ? 'is-solved' : ''}`}>
+                    <span className="lbl">TARGET</span>
+                    <strong className="val">
                       {isViewingSolved ? (
                         viewingPair.plainPair
                       ) : (
                         <>
-                          {levelData.fullMask?.[viewingIndex * 2] ? (
+                          {viewingHasHint0 ? (
                             <span className="pf-hint-char">{viewingPair.plainPair[0]}</span>
                           ) : (
                             '?'
                           )}
-                          {levelData.fullMask?.[viewingIndex * 2 + 1] ? (
+                          {viewingHasHint1 ? (
                             <span className="pf-hint-char">{viewingPair.plainPair[1]}</span>
                           ) : (
                             '?'
@@ -673,22 +897,34 @@ export default function PlayfairFishingGame({
                         </>
                       )}
                     </strong>
-                    <span className="val">
-                      {isViewingSolved ? 'SOLVED' : 'MYSTERY'}
-                    </span>
                   </div>
                 </div>
 
-                <div className="vg-calc-help-row">
-                  {isViewingSolved ? (
-                    <span className="vg-calc-help-text solved">
-                      ✅ Solved: {viewingPair.cipherPair} → {viewingPair.plainPair}
-                    </span>
-                  ) : (
-                    <span className="vg-calc-help-text normal">
-                      💡 Rule: <strong>{viewingRuleHint}</strong>
-                    </span>
-                  )}
+                <div className="pf-trace-block">
+                  <div className="pf-trace-line cipher-line">
+                    {viewingPosA && viewingPosB
+                      ? `${viewingC1} r${viewingPosA.r} c${viewingPosA.c}   ${viewingC2} r${viewingPosB.r} c${viewingPosB.c}`
+                      : `${viewingPair.cipherPair}`}
+                  </div>
+                  <div className="pf-trace-line rule-line">
+                    {viewingEffectiveRule === 'row'
+                      ? `same row (r${viewingPosA?.r ?? 0})`
+                      : viewingEffectiveRule === 'column'
+                      ? `same column (c${viewingPosA?.c ?? 0})`
+                      : 'different row + column'}
+                  </div>
+                  <div className="pf-trace-line rule-line">
+                    {viewingEffectiveRule === 'row'
+                      ? 'same row → wrap around'
+                      : viewingEffectiveRule === 'column'
+                      ? 'same column ↓ wrap around'
+                      : 'rectangle ⇄ swap'}
+                  </div>
+                  <div className="pf-trace-line target-line">
+                    {viewingTargetPosA && viewingTargetPosB
+                      ? `${viewingT1Disp} r${viewingTargetPosA.r} c${viewingTargetPosA.c}   ${viewingT2Disp} r${viewingTargetPosB.r} c${viewingTargetPosB.c}`
+                      : `${viewingT1Disp}${viewingT2Disp}`}
+                  </div>
                 </div>
               </div>
             </div>

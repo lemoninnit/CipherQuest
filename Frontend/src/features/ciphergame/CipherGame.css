@@ -7536,7 +7536,7 @@
 
 .pf-bottom-left-group {
   position: absolute !important;
-  bottom: 20px !important;
+  bottom: 24px !important;
   left: 24px !important;
   top: auto !important;
   right: auto !important;
@@ -7577,9 +7577,9 @@
 }
 
 .pf-bottom-left-group .pf-digraph-panel {
-  width: 340px !important;
-  min-width: 300px !important;
-  max-width: 360px !important;
+  width: 350px !important;
+  min-width: 310px !important;
+  max-width: 380px !important;
   flex: 0 0 auto !important;
 }
 
@@ -7604,6 +7604,7 @@
 }
 
 .pf-template-matrix-grid {
+  position: relative !important;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 4px;
@@ -7628,18 +7629,208 @@
   box-sizing: border-box;
 }
 
-.pf-template-cell.active {
-  background: rgba(0, 240, 255, 0.15);
-  border: 1.5px solid #00f0ff;
-  color: #00f0ff;
-  box-shadow: 0 0 10px rgba(0, 240, 255, 0.45), inset 0 0 6px rgba(0, 240, 255, 0.2);
-  text-shadow: 0 0 8px #00f0ff;
+.pf-template-cell.active,
+.pf-template-cell.cipher-active {
+  background: rgba(0, 229, 255, 0.18) !important;
+  border: 1.5px solid #00e5ff !important;
+  color: #00e5ff !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.5), inset 0 0 6px rgba(0, 229, 255, 0.25) !important;
+  text-shadow: 0 0 8px #00e5ff !important;
+}
+
+.pf-template-cell.target-active {
+  background: rgba(57, 255, 20, 0.18) !important;
+  border: 1.5px solid #39ff14 !important;
+  color: #39ff14 !important;
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.5), inset 0 0 6px rgba(57, 255, 20, 0.25) !important;
+  text-shadow: 0 0 8px #39ff14 !important;
+}
+
+.pf-matrix-lines-overlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 3 !important;
+  overflow: visible !important;
+}
+
+.pf-calc-formula-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin: 4px 0 !important;
+  width: 100% !important;
+}
+
+.pf-calc-box {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+.pf-calc-box.cipher {
+  min-width: 55px !important;
+}
+
+.pf-calc-box.cipher .lbl {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  color: rgba(0, 229, 255, 0.7) !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+}
+
+.pf-calc-box.cipher .val {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  color: #00e5ff !important;
+  letter-spacing: 2px !important;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5) !important;
+  line-height: 1.2 !important;
+}
+
+.pf-calc-box.rule-chip {
+  flex: 1 !important;
+  padding: 4px 8px !important;
+  border: 1.5px solid #ffc146 !important;
+  border-radius: 8px !important;
+  background: rgba(255, 193, 70, 0.08) !important;
+  box-shadow: 0 0 10px rgba(255, 193, 70, 0.15) !important;
+  box-sizing: border-box !important;
+}
+
+.pf-calc-box.rule-chip .lbl {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  color: #ffc146 !important;
+  letter-spacing: 1.5px !important;
+  text-transform: uppercase !important;
+  margin-bottom: 1px !important;
+}
+
+.pf-calc-box.rule-chip .val {
+  font-size: 0.92rem !important;
+  font-weight: 800 !important;
+  color: #ffc146 !important;
+  letter-spacing: 0.5px !important;
+  text-shadow: 0 0 8px rgba(255, 193, 70, 0.4) !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+}
+
+.pf-calc-box.target {
+  min-width: 55px !important;
+}
+
+.pf-calc-box.target .lbl {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  color: rgba(57, 255, 20, 0.7) !important;
+  letter-spacing: 1px !important;
+  text-transform: uppercase !important;
+}
+
+.pf-calc-box.target .val {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  color: #39ff14 !important;
+  letter-spacing: 2px !important;
+  text-shadow: 0 0 10px rgba(57, 255, 20, 0.5) !important;
+  line-height: 1.2 !important;
+}
+
+.pf-trace-block {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  background: rgba(0, 0, 0, 0.35) !important;
+  border: 1px solid rgba(0, 229, 255, 0.15) !important;
+  border-radius: 8px !important;
+  padding: 8px 10px !important;
+  margin-top: 6px !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 11.5px !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.5px !important;
+  box-sizing: border-box !important;
+}
+
+.pf-trace-line.cipher-line {
+  color: #00e5ff !important;
+  font-weight: 700 !important;
+  white-space: pre !important;
+}
+
+.pf-trace-line.rule-line {
+  color: #ffc146 !important;
+  font-weight: 600 !important;
+  white-space: pre !important;
+}
+
+.pf-trace-line.target-line {
+  color: #39ff14 !important;
+  font-weight: 700 !important;
+  text-shadow: 0 0 6px rgba(57, 255, 20, 0.35) !important;
+  white-space: pre !important;
 }
 
 .pf-hint-char {
   color: var(--neon-green) !important;
   font-weight: 800 !important;
   text-shadow: 0 0 10px rgba(57, 255, 20, 0.7) !important;
+}
+
+/* Playfair Sprint Specific Compact Styles (below bottom lane walkway) */
+.pf-bottom-left-group.pf-sprint-group,
+.pf-sprint-group.pf-bottom-left-group {
+  bottom: 24px !important;
+  left: 24px !important;
+}
+
+.pf-bottom-left-group.pf-sprint-group .pf-matrix-panel,
+.pf-bottom-left-group.pf-sprint-group .pf-digraph-panel {
+  padding: 12px !important;
+}
+
+.pf-bottom-left-group.pf-sprint-group .pf-matrix-panel {
+  width: 175px !important;
+  min-width: 165px !important;
+  max-width: 185px !important;
+}
+
+.pf-bottom-left-group.pf-sprint-group .pf-digraph-panel {
+  width: 330px !important;
+  min-width: 300px !important;
+  max-width: 350px !important;
+}
+
+.pf-bottom-left-group.pf-sprint-group .pf-template-matrix-grid {
+  gap: 3px !important;
+}
+
+.pf-bottom-left-group.pf-sprint-group .pf-template-cell {
+  width: 26px !important;
+  height: 22px !important;
+  max-width: 26px !important;
+  max-height: 22px !important;
+  min-width: 26px !important;
+  min-height: 22px !important;
+  font-size: 0.76rem !important;
+  border-radius: 4px !important;
+}
+
+.pf-bottom-left-group.pf-sprint-group .pf-trace-block {
+  font-size: 11px !important;
+  padding: 6px 8px !important;
+  gap: 1px !important;
 }
 
 @media (max-height: 800px), (max-width: 1400px) {
@@ -7659,6 +7850,7 @@
     padding: 8px 10px !important;
   }
 }
+
 
 
 

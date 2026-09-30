@@ -931,6 +931,62 @@ export default function PacmanGame({
   };
 
   const viewingPfCipherPair = viewingPfPair.cipherPair || '';
+  const pfMatrixLookup = useMemo(() => {
+    const lookup = {};
+    if (levelData?.matrix && Array.isArray(levelData.matrix)) {
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const letter = levelData.matrix[r]?.[c];
+          if (letter) {
+            lookup[letter] = { r, c };
+            if (letter === 'I') lookup['J'] = { r, c };
+          }
+        }
+      }
+    }
+    return lookup;
+  }, [levelData?.matrix]);
+
+  const viewingPfC1 = viewingPfPair?.cipherPair?.[0] || '';
+  const viewingPfC2 = viewingPfPair?.cipherPair?.[1] || '';
+  const viewingPfPosA = viewingPfC1 ? pfMatrixLookup[viewingPfC1] : null;
+  const viewingPfPosB = viewingPfC2 ? pfMatrixLookup[viewingPfC2] : null;
+
+  let viewingPfEffectiveRule = (viewingPfPair?.rule || '').toLowerCase();
+  if (viewingPfPosA && viewingPfPosB) {
+    if (viewingPfPosA.r === viewingPfPosB.r) viewingPfEffectiveRule = 'row';
+    else if (viewingPfPosA.c === viewingPfPosB.c) viewingPfEffectiveRule = 'column';
+    else viewingPfEffectiveRule = 'rectangle';
+  }
+
+  let viewingPfTargetPosA = null;
+  let viewingPfTargetPosB = null;
+  if (viewingPfPosA && viewingPfPosB) {
+    if (viewingPfEffectiveRule === 'row') {
+      viewingPfTargetPosA = { r: viewingPfPosA.r, c: (viewingPfPosA.c + 4) % 5 };
+      viewingPfTargetPosB = { r: viewingPfPosB.r, c: (viewingPfPosB.c + 4) % 5 };
+    } else if (viewingPfEffectiveRule === 'column') {
+      viewingPfTargetPosA = { r: (viewingPfPosA.r + 4) % 5, c: viewingPfPosA.c };
+      viewingPfTargetPosB = { r: (viewingPfPosB.r + 4) % 5, c: viewingPfPosB.c };
+    } else {
+      viewingPfTargetPosA = { r: viewingPfPosA.r, c: viewingPfPosB.c };
+      viewingPfTargetPosB = { r: viewingPfPosB.r, c: viewingPfPosA.c };
+    }
+  }
+
+  const viewingPfT1Actual = viewingPfTargetPosA && levelData?.matrix ? (levelData.matrix[viewingPfTargetPosA.r]?.[viewingPfTargetPosA.c] || viewingPfPair?.plainPair?.[0] || '?') : (viewingPfPair?.plainPair?.[0] || '?');
+  const viewingPfT2Actual = viewingPfTargetPosB && levelData?.matrix ? (levelData.matrix[viewingPfTargetPosB.r]?.[viewingPfTargetPosB.c] || viewingPfPair?.plainPair?.[1] || '?') : (viewingPfPair?.plainPair?.[1] || '?');
+
+  const viewingPfHasHint0 = Boolean(levelData?.fullMask?.[viewingPfIndex * 2]);
+  const viewingPfHasHint1 = Boolean(levelData?.fullMask?.[viewingPfIndex * 2 + 1]);
+
+  const viewingPfT1Disp = (viewingPfPair.isSolved || viewingPfHasHint0) ? viewingPfT1Actual : '?';
+  const viewingPfT2Disp = (viewingPfPair.isSolved || viewingPfHasHint1) ? viewingPfT2Actual : '?';
+
+  let viewingPfRuleChipText = '⇄ RECTANGLE';
+  if (viewingPfEffectiveRule === 'row') viewingPfRuleChipText = '← SAME ROW';
+  else if (viewingPfEffectiveRule === 'column') viewingPfRuleChipText = '↑ SAME COLUMN';
+
   const isPfLetterHighlighted = (letter) => {
     if (!viewingPfCipherPair) return false;
     return (
@@ -2225,17 +2281,189 @@ export default function PacmanGame({
                   <div className="pf-template-matrix-grid">
                     {(levelData.matrix || []).map((row, rowIndex) =>
                       row.map((letter, colIndex) => {
-                        const isHighlighted = isPfLetterHighlighted(letter);
+                        const isCipherActive = (viewingPfPosA && viewingPfPosA.r === rowIndex && viewingPfPosA.c === colIndex) || (viewingPfPosB && viewingPfPosB.r === rowIndex && viewingPfPosB.c === colIndex);
+                        const isTargetAActive = (viewingPfPair.isSolved || viewingPfHasHint0) && viewingPfTargetPosA && viewingPfTargetPosA.r === rowIndex && viewingPfTargetPosA.c === colIndex;
+                        const isTargetBActive = (viewingPfPair.isSolved || viewingPfHasHint1) && viewingPfTargetPosB && viewingPfTargetPosB.r === rowIndex && viewingPfTargetPosB.c === colIndex;
+                        const isTargetActive = isTargetAActive || isTargetBActive;
                         const displayLetter = letter === 'I' ? 'I/J' : letter;
+                        let cellClass = 'pf-template-cell';
+                        if (isCipherActive) cellClass += ' cipher-active active';
+                        else if (isTargetActive) cellClass += ' target-active';
+
                         return (
                           <div
                             key={`${rowIndex}-${colIndex}`}
-                            className={`pf-template-cell${isHighlighted ? ' active' : ''}`}
+                            className={cellClass}
                           >
                             {displayLetter}
                           </div>
                         );
                       })
+                    )}
+                    {(viewingPfEffectiveRule === 'row' || viewingPfEffectiveRule === 'column') && viewingPfPosA && viewingPfPosB && (
+                      <svg
+                        className="pf-matrix-lines-overlay"
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                      >
+                        <defs>
+                          <marker
+                            id="pf-arrow-amber-pacman"
+                            viewBox="0 0 6 6"
+                            refX="5"
+                            refY="3"
+                            markerWidth="4"
+                            markerHeight="4"
+                            orient="auto-start-reverse"
+                          >
+                            <path d="M 0 0 L 6 3 L 0 6 z" fill="#ffc146" />
+                          </marker>
+                        </defs>
+                        {viewingPfEffectiveRule === 'row' && (
+                          <>
+                            {viewingPfPosA.c > 0 ? (
+                              <line
+                                x1={(viewingPfPosA.c + 0.5) * 20}
+                                y1={(viewingPfPosA.r + 0.5) * 20}
+                                x2={(viewingPfPosA.c - 1 + 0.5) * 20}
+                                y2={(viewingPfPosA.r + 0.5) * 20}
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                markerEnd="url(#pf-arrow-amber-pacman)"
+                              />
+                            ) : (
+                              <>
+                                <line
+                                  x1={(viewingPfPosA.c + 0.5) * 20}
+                                  y1={(viewingPfPosA.r + 0.5) * 20}
+                                  x2="0"
+                                  y2={(viewingPfPosA.r + 0.5) * 20}
+                                  stroke="#ffc146"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                />
+                                <line
+                                  x1="100"
+                                  y1={(viewingPfPosA.r + 0.5) * 20}
+                                  x2={(4 + 0.5) * 20}
+                                  y2={(viewingPfPosA.r + 0.5) * 20}
+                                  stroke="#ffc146"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  markerEnd="url(#pf-arrow-amber-pacman)"
+                                />
+                              </>
+                            )}
+                            {viewingPfPosB.c > 0 ? (
+                              <line
+                                x1={(viewingPfPosB.c + 0.5) * 20}
+                                y1={(viewingPfPosB.r + 0.5) * 20}
+                                x2={(viewingPfPosB.c - 1 + 0.5) * 20}
+                                y2={(viewingPfPosB.r + 0.5) * 20}
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                markerEnd="url(#pf-arrow-amber-pacman)"
+                              />
+                            ) : (
+                              <>
+                                <line
+                                  x1={(viewingPfPosB.c + 0.5) * 20}
+                                  y1={(viewingPfPosB.r + 0.5) * 20}
+                                  x2="0"
+                                  y2={(viewingPfPosB.r + 0.5) * 20}
+                                  stroke="#ffc146"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                />
+                                <line
+                                  x1="100"
+                                  y1={(viewingPfPosB.r + 0.5) * 20}
+                                  x2={(4 + 0.5) * 20}
+                                  y2={(viewingPfPosB.r + 0.5) * 20}
+                                  stroke="#ffc146"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  markerEnd="url(#pf-arrow-amber-pacman)"
+                                />
+                              </>
+                            )}
+                          </>
+                        )}
+                        {viewingPfEffectiveRule === 'column' && (
+                          <>
+                            {viewingPfPosA.r > 0 ? (
+                              <line
+                                x1={(viewingPfPosA.c + 0.5) * 20}
+                                y1={(viewingPfPosA.r + 0.5) * 20}
+                                x2={(viewingPfPosA.c + 0.5) * 20}
+                                y2={(viewingPfPosA.r - 1 + 0.5) * 20}
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                markerEnd="url(#pf-arrow-amber-pacman)"
+                              />
+                            ) : (
+                              <>
+                                <line
+                                  x1={(viewingPfPosA.c + 0.5) * 20}
+                                  y1={(viewingPfPosA.r + 0.5) * 20}
+                                  x2={(viewingPfPosA.c + 0.5) * 20}
+                                  y2="0"
+                                  stroke="#ffc146"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                />
+                                <line
+                                  x1={(viewingPfPosA.c + 0.5) * 20}
+                                  y1="100"
+                                  x2={(viewingPfPosA.c + 0.5) * 20}
+                                  y2={(4 + 0.5) * 20}
+                                  stroke="#ffc146"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  markerEnd="url(#pf-arrow-amber-pacman)"
+                                />
+                              </>
+                            )}
+                            {viewingPfPosB.r > 0 ? (
+                              <line
+                                x1={(viewingPfPosB.c + 0.5) * 20}
+                                y1={(viewingPfPosB.r + 0.5) * 20}
+                                x2={(viewingPfPosB.c + 0.5) * 20}
+                                y2={(viewingPfPosB.r - 1 + 0.5) * 20}
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                markerEnd="url(#pf-arrow-amber-pacman)"
+                              />
+                            ) : (
+                              <>
+                                <line
+                                  x1={(viewingPfPosB.c + 0.5) * 20}
+                                  y1={(viewingPfPosB.r + 0.5) * 20}
+                                  x2={(viewingPfPosB.c + 0.5) * 20}
+                                  y2="0"
+                                  stroke="#ffc146"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                />
+                                <line
+                                  x1="100"
+                                  y1={(viewingPfPosB.r + 0.5) * 20}
+                                  x2={(4 + 0.5) * 20}
+                                  y2={(viewingPfPosB.r + 0.5) * 20}
+                                  stroke="#ffc146"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  markerEnd="url(#pf-arrow-amber-pacman)"
+                                />
+                              </>
+                            )}
+                          </>
+                        )}
+                      </svg>
                     )}
                   </div>
                 </div>
@@ -2269,32 +2497,28 @@ export default function PacmanGame({
                         </button>
                       </span>
                     </div>
-                    <div className="vg-calc-formula-row">
-                      <div className="vg-calc-item cipher">
-                        <span className="lbl">Cipher</span>
-                        <strong style={{ letterSpacing: '2px' }}>{viewingPfPair.cipherPair}</strong>
-                        <span className="val">DIGRAPH</span>
+                    <div className="pf-calc-formula-row">
+                      <div className="pf-calc-box cipher">
+                        <span className="lbl">CIPHER</span>
+                        <strong className="val">{viewingPfPair.cipherPair}</strong>
                       </div>
-                      <span className="vg-calc-op">→</span>
-                      <div className="vg-calc-item key">
-                        <span className="lbl">Rule</span>
-                        <strong style={{ fontSize: '0.85rem' }}>{viewingPfPair.rule ? String(viewingPfPair.rule).toUpperCase() : 'RULE'}</strong>
-                        <span className="val">5×5 MATRIX</span>
+                      <div className="pf-calc-box rule-chip">
+                        <span className="lbl">RULE</span>
+                        <strong className="val">{viewingPfRuleChipText}</strong>
                       </div>
-                      <span className="vg-calc-op">=</span>
-                      <div className={`vg-calc-item plain ${viewingPfPair.isSolved ? 'is-solved' : ''}`}>
-                        <span className="lbl">Target</span>
-                        <strong style={{ letterSpacing: '2px', color: viewingPfPair.isSolved ? 'var(--neon-green)' : '#ffffff' }}>
+                      <div className={`pf-calc-box target ${viewingPfPair.isSolved ? 'is-solved' : ''}`}>
+                        <span className="lbl">TARGET</span>
+                        <strong className="val">
                           {viewingPfPair.isSolved ? (
                             viewingPfPair.plainPair
                           ) : (
                             <>
-                              {levelData.fullMask?.[viewingPfIndex * 2] ? (
+                              {viewingPfHasHint0 ? (
                                 <span className="pf-hint-char">{viewingPfPair.plainPair[0]}</span>
                               ) : (
                                 '?'
                               )}
-                              {levelData.fullMask?.[viewingPfIndex * 2 + 1] ? (
+                              {viewingPfHasHint1 ? (
                                 <span className="pf-hint-char">{viewingPfPair.plainPair[1]}</span>
                               ) : (
                                 '?'
@@ -2302,22 +2526,34 @@ export default function PacmanGame({
                             </>
                           )}
                         </strong>
-                        <span className="val">
-                          {viewingPfPair.isSolved ? 'SOLVED' : 'MYSTERY'}
-                        </span>
                       </div>
                     </div>
 
-                    <div className="vg-calc-help-row">
-                      {viewingPfPair.isSolved ? (
-                        <span className="vg-calc-help-text solved">
-                          ✅ Solved: {viewingPfPair.cipherPair} → {viewingPfPair.plainPair}
-                        </span>
-                      ) : (
-                        <span className="vg-calc-help-text normal">
-                          💡 Rule: <strong>{describePlayfairRule(viewingPfPair.rule, 'decrypt')}</strong>
-                        </span>
-                      )}
+                    <div className="pf-trace-block">
+                      <div className="pf-trace-line cipher-line">
+                        {viewingPfPosA && viewingPfPosB
+                          ? `${viewingPfC1} r${viewingPfPosA.r} c${viewingPfPosA.c}   ${viewingPfC2} r${viewingPfPosB.r} c${viewingPfPosB.c}`
+                          : `${viewingPfPair.cipherPair}`}
+                      </div>
+                      <div className="pf-trace-line rule-line">
+                        {viewingPfEffectiveRule === 'row'
+                          ? `same row (r${viewingPfPosA?.r ?? 0})`
+                          : viewingPfEffectiveRule === 'column'
+                          ? `same column (c${viewingPfPosA?.c ?? 0})`
+                          : 'different row + column'}
+                      </div>
+                      <div className="pf-trace-line rule-line">
+                        {viewingPfEffectiveRule === 'row'
+                          ? 'same row → wrap around'
+                          : viewingPfEffectiveRule === 'column'
+                          ? 'same column ↓ wrap around'
+                          : 'rectangle ⇄ swap'}
+                      </div>
+                      <div className="pf-trace-line target-line">
+                        {viewingPfTargetPosA && viewingPfTargetPosB
+                          ? `${viewingPfT1Disp} r${viewingPfTargetPosA.r} c${viewingPfTargetPosA.c}   ${viewingPfT2Disp} r${viewingPfTargetPosB.r} c${viewingPfTargetPosB.c}`
+                          : `${viewingPfT1Disp}${viewingPfT2Disp}`}
+                      </div>
                     </div>
                   </div>
                 </div>

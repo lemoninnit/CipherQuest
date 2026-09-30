@@ -13,21 +13,34 @@ import VictoryConfetti from '../../ui/VictoryConfetti';
 import { sprintSound } from '../sprint/sprintSound';
 import {
   transformPlayfairPair,
-  describePlayfairRule,
 } from './PlayfairHelpers';
 
 const BASE_SPEED = 0.22;
 const BOOST_MULT = 1.6;
 const RUNNER_X = 14;
-const DIAMOND_HITBOX_HALF = 2.2;
+const DIAMOND_HITBOX_HALF = 3.8;
 const SLIME_HITBOX_HALF = 4.2;
-const COIN_START_X = 112;
+const SPAWN_X = 112;
 
-const BRIEFING_MS = 2200;
-const LOCKING_MS = 1200;
-const RESOLVED_MS = 1600;
+// Minimum horizontal gaps to prevent overlap at any speed
+const MIN_SAME_LANE_GAP = 30; // % of track width between entities in the same lane
+const MIN_ANY_LANE_GAP = 12;  // % of track width stagger across any lane
 
 const PAD5 = (n) => String(n).padStart(5, '0');
+
+/**
+ * Returns lanes where the nearest existing entity is at least minGap behind spawnX.
+ */
+const getAvailableLanes = (existingCoins, existingSlimes, minGap = MIN_SAME_LANE_GAP, spawnX = SPAWN_X) => {
+  const all = [...existingCoins, ...existingSlimes];
+  const lanes = [0, 1, 2];
+  return lanes.filter((lane) => {
+    const laneEntities = all.filter((e) => e.lane === lane);
+    if (laneEntities.length === 0) return true;
+    const maxLaneX = Math.max(...laneEntities.map((e) => e.x));
+    return spawnX - maxLaneX >= minGap;
+  });
+};
 
 const makeDecoyPairs = (correctPair, count, matrix) => {
   if (!matrix || !correctPair || correctPair.length < 2) {
@@ -66,20 +79,77 @@ const makeDecoyPairs = (correctPair, count, matrix) => {
   }
   
   decoys.delete(correctPair);
-  const candidateArray = Array.from(decoys).filter(p => p !== correctPair);
+  const candidateArray = Array.from(decoys).filter((p) => p !== correctPair);
   if (candidateArray.length >= count) {
     return candidateArray.sort(() => Math.random() - 0.5).slice(0, count);
   }
   
   // Fallback if needed
   const letters = matrix.flat();
-  while (decoys.size < count + 5) {
+  let attempts = 0;
+  while (decoys.size < count + 5 && attempts < 50) {
+    attempts++;
     const first = letters[Math.floor(Math.random() * letters.length)];
     const second = letters[Math.floor(Math.random() * letters.length)];
-    if (first !== second) decoys.add(`${first}${second}`);
+    if (first && second && first !== second) decoys.add(`${first}${second}`);
   }
   decoys.delete(correctPair);
-  return Array.from(decoys).filter(p => p !== correctPair).sort(() => Math.random() - 0.5).slice(0, count);
+  return Array.from(decoys).filter((p) => p !== correctPair).sort(() => Math.random() - 0.5).slice(0, count);
+};
+
+const createRandomDiamond = (correctPair, matrix, existingCoins, lane = 0, startX = SPAWN_X) => {
+  const activeValues = existingCoins.map((c) => c.char);
+  const hasCorrectOnScreen = activeValues.includes(correctPair);
+
+  let chosen;
+  // If correct answer is not on screen yet, 50% chance to spawn it
+  if (!hasCorrectOnScreen && Math.random() < 0.5) {
+    chosen = correctPair;
+  } else {
+    // Generate decoys and filter out already active values and the correct answer
+    const decoys = makeDecoyPairs(correctPair, 12, matrix);
+    const availableDecoys = decoys.filter((d) => d !== correctPair && !activeValues.includes(d));
+    if (availableDecoys.length > 0) {
+      chosen = availableDecoys[Math.floor(Math.random() * availableDecoys.length)];
+    } else if (!hasCorrectOnScreen) {
+      chosen = correctPair;
+    } else {
+      // Fallback: generate a random pair from matrix not in activeValues
+      const letters = (matrix || []).flat();
+      let attempts = 0;
+      let randPair = '';
+      while (attempts < 20) {
+        const c1 = letters[Math.floor(Math.random() * letters.length)] || 'A';
+        const c2 = letters[Math.floor(Math.random() * letters.length)] || 'B';
+        if (c1 !== c2) {
+          const cand = `${c1}${c2}`;
+          if (cand !== correctPair && !activeValues.includes(cand)) {
+            randPair = cand;
+            break;
+          }
+        }
+        attempts++;
+      }
+      chosen = randPair || (decoys[0] ?? 'XY');
+    }
+  }
+
+  return {
+    id: `d-${Date.now()}-${Math.random()}`,
+    lane,
+    char: chosen,
+    value: chosen,
+    x: startX,
+  };
+};
+
+const createRandomSlime = (lane = 0, startX = SPAWN_X) => {
+  return {
+    id: `slime-${Date.now()}-${Math.random()}`,
+    lane,
+    x: startX,
+    hit: false,
+  };
 };
 
 export default function PlayfairSprint({
@@ -126,21 +196,13 @@ export default function PlayfairSprint({
   );
 
   /* ───────────────────────────────────────────────
-     Game state (visual — allowed to trigger renders)
+     Game state (visual)
      ─────────────────────────────────────────────── */
   const [sprintStep, setSprintStep] = useState(() => (hasSnapshot ? 'running' : 'ready'));
-  const [roundPhase, setRoundPhase] = useState(() => (hasSnapshot ? (snapshot.gameState.roundPhase || 'briefing') : 'briefing'));
   const [currentMaskIndex, setCurrentMaskIndex] = useState(() => (hasSnapshot && typeof snapshot.gameState.currentMaskIndex === 'number' ? snapshot.gameState.currentMaskIndex : 0));
   const [runnerLane, setRunnerLane] = useState(() => (hasSnapshot && typeof snapshot.gameState.runnerLane === 'number' ? snapshot.gameState.runnerLane : 1));
   const [coins, setCoins] = useState([]);
   const [slimes, setSlimes] = useState([]);
-  const [pickedPair, setPickedPair] = useState(null);
-  const [pickedLane, setPickedLane] = useState(null);
-  const [correctLane, setCorrectLane] = useState(1);
-  const [attempts, setAttempts] = useState(() => (hasSnapshot && Array.isArray(snapshot.gameState.attempts) ? snapshot.gameState.attempts : []));
-  const [crashMessage] = useState('');
-  const [resolvedStatus, setResolvedStatus] = useState(null); // 'correct' | 'wrong' | 'missed'
-  const [resolvedBannerText, setResolvedBannerText] = useState('');
   const [solvedLetters, setSolvedLetters] = useState(() => {
     if (hasSnapshot && snapshot.gameState.solvedLetters) {
       return { ...snapshot.gameState.solvedLetters };
@@ -151,7 +213,6 @@ export default function PlayfairSprint({
     });
     return initialSolved;
   });
-  const [isCrashing, setIsCrashing] = useState(false);
   const [lives, setLives] = useState(() => (hasSnapshot && typeof snapshot.gameState.lives === 'number' ? snapshot.gameState.lives : 5));
   const [laneChangeEffect, setLaneChangeEffect] = useState(null);
   const [speedLines, setSpeedLines] = useState(() => {
@@ -167,7 +228,6 @@ export default function PlayfairSprint({
     }
     return list;
   });
-  const [firstTryForCurrent, setFirstTryForCurrent] = useState(true);
   const [isPaused, setIsPaused] = useState(() => (hasSnapshot ? true : false));
   const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
   const [isOperationLoading, setIsOperationLoading] = useState(false);
@@ -181,43 +241,51 @@ export default function PlayfairSprint({
   const [isBadgePopping, setIsBadgePopping] = useState(false);
   const [slimeFrame, setSlimeFrame] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
+  const [selectedViewingIndex, setSelectedViewingIndex] = useState(null);
 
   const isRunning = sprintStep === 'running';
   useStageSnapshotAutoSaver(
     onSaveSnapshot,
     useCallback(() => ({
       sprintStep: 'running',
-      roundPhase,
       currentMaskIndex,
       runnerLane,
       lives,
       solvedLetters,
-      attempts,
-    }), [roundPhase, currentMaskIndex, runnerLane, lives, solvedLetters, attempts]),
+    }), [currentMaskIndex, runnerLane, lives, solvedLetters]),
     isRunning
   );
 
+  const toggleSound = useCallback(() => {
+    const muted = sprintSound.toggleMute();
+    setIsMuted(muted);
+  }, []);
+
+  useGameShortcuts({
+    onToggleFullscreen: toggleFullscreen,
+    onToggleMute: toggleSound,
+  });
+
   /* ───────────────────────────────────────────────
-     Refs — game truth inside RAF loop, timeout tracking
+     Refs — game truth inside RAF loop
      ─────────────────────────────────────────────── */
   const rafRef = useRef(0);
   const prevLaneRef = useRef(1);
   const isBoostingRef = useRef(false);
-  const runnerLaneRef = useRef(hasSnapshot && typeof snapshot?.gameState?.runnerLane === 'number' ? snapshot.gameState.runnerLane : 1);
-  const isPausedRef = useRef(hasSnapshot ? true : false);
-  const isCrashingRef = useRef(false);
-  const isMenuOpenRef = useRef(hasSnapshot ? true : false);
-  const sprintStepRef = useRef(hasSnapshot ? 'running' : 'ready');
-  const roundPhaseRef = useRef(hasSnapshot ? (snapshot?.gameState?.roundPhase || 'briefing') : 'briefing');
-  const currentMaskIndexRef = useRef(hasSnapshot && typeof snapshot?.gameState?.currentMaskIndex === 'number' ? snapshot.gameState.currentMaskIndex : 0);
-  const pickedPairRef = useRef(null);
-  const pickedLaneRef = useRef(null);
-  const correctLaneRef = useRef(1);
+  const runnerLaneRef = useRef(1);
+  const isPausedRef = useRef(false);
+  const isMenuOpenRef = useRef(false);
+  const sprintStepRef = useRef('ready');
+  const currentMaskIndexRef = useRef(0);
+  const coinsRef = useRef([]);
   const slimesRef = useRef([]);
-  const attemptsRef = useRef(hasSnapshot && Array.isArray(snapshot?.gameState?.attempts) ? snapshot.gameState.attempts : []);
-  const hasPickedRef = useRef(false);
-  const prevLevelIdRef = useRef(levelData.id || `${levelData.plaintext || ''}-${levelData.pairCiphertext || ''}`);
-  const hasRestoredFromSnapshotRef = useRef(hasSnapshot);
+  const prevLevelIdRef = useRef(null);
+
+  /* Spawner timers */
+  const lastDiamondSpawnTimeRef = useRef(0);
+  const lastSlimeSpawnTimeRef = useRef(0);
+  const nextDiamondDelayRef = useRef(1500);
+  const nextSlimeDelayRef = useRef(2500);
 
   /* Timer tracking refs */
   const feedbackTimeoutRef = useRef(0);
@@ -228,46 +296,22 @@ export default function PlayfairSprint({
   const slimeIntervalRef = useRef(0);
   const badgePopTimeoutRef = useRef(0);
 
-  /* Pausable phase timer refs */
-  const phaseTimeoutRef = useRef(null);
-  const phaseStartTimeRef = useRef(0);
-  const phaseRemainingMsRef = useRef(0);
-  const phaseDurationRef = useRef(BRIEFING_MS);
-  const phaseCallbackRef = useRef(null);
-
-  /* Forward refs for phase transition functions & physics callbacks */
-  const startBriefingPhaseRef = useRef(null);
-  const startChoosingPhaseRef = useRef(null);
-  const resolveChoiceRef = useRef(null);
-  const triggerShakeRef = useRef(null);
-  const showFeedbackRef = useRef(null);
-
-  /* Sync refs whenever state changes — RAF loop reads refs only */
+  /* Sync refs whenever state changes */
   useEffect(() => { isBoostingRef.current = isBoosting; }, [isBoosting]);
   useEffect(() => { runnerLaneRef.current = runnerLane; }, [runnerLane]);
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
-  useEffect(() => { isCrashingRef.current = isCrashing; }, [isCrashing]);
   useEffect(() => { isMenuOpenRef.current = isMenuOpen; }, [isMenuOpen]);
   useEffect(() => { sprintStepRef.current = sprintStep; }, [sprintStep]);
-  useEffect(() => { roundPhaseRef.current = roundPhase; }, [roundPhase]);
   useEffect(() => { currentMaskIndexRef.current = currentMaskIndex; }, [currentMaskIndex]);
-  useEffect(() => { pickedPairRef.current = pickedPair; }, [pickedPair]);
-  useEffect(() => { pickedLaneRef.current = pickedLane; }, [pickedLane]);
-  useEffect(() => { correctLaneRef.current = correctLane; }, [correctLane]);
-  useEffect(() => { attemptsRef.current = attempts; }, [attempts]);
+  useEffect(() => { coinsRef.current = coins; }, [coins]);
   useEffect(() => { slimesRef.current = slimes; }, [slimes]);
 
   /* ───────────────────────────────────────────────
-     Derived (re-compute each render, cheap)
+     Derived values
      ─────────────────────────────────────────────── */
   const currentIdx = maskedIndices[currentMaskIndex] ?? 0;
   const currentPairObj = pairData[currentIdx] || {};
   const currentBatonPair = currentPairObj.cipherPair ?? '';
-  const currentTargetPair = currentPairObj.plainPair ?? '';
-  const currentRule = currentPairObj.rule ?? 'rectangle';
-  const currentRuleDesc = describePlayfairRule(currentRule);
-
-  const [selectedViewingIndex, setSelectedViewingIndex] = useState(null);
 
   const unsolvedIndices = useMemo(() => {
     return pairData
@@ -288,7 +332,6 @@ export default function PlayfairSprint({
   };
 
   const isViewingSolved = solvedLetters[viewingIndex] !== undefined;
-  const viewingRuleHint = viewingPair ? describePlayfairRule(viewingPair.rule, 'decrypt') : '';
 
   const handlePrevViewingPair = (e) => {
     e?.stopPropagation?.();
@@ -306,70 +349,64 @@ export default function PlayfairSprint({
     setSelectedViewingIndex(unsolvedIndices[nextPos]);
   };
 
-  const viewingCipherPair = viewingPair.cipherPair || '';
-  const isLetterHighlighted = (letter) => {
-    if (!viewingCipherPair) return false;
-    return (
-      viewingCipherPair.includes(letter) ||
-      (letter === 'I' && viewingCipherPair.includes('J')) ||
-      (letter === 'J' && viewingCipherPair.includes('I'))
-    );
-  };
+  const pfMatrixLookup = useMemo(() => {
+    const lookup = {};
+    if (Array.isArray(matrix)) {
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const letter = matrix[r]?.[c];
+          if (letter) {
+            lookup[letter] = { r, c };
+            if (letter === 'I') lookup['J'] = { r, c };
+          }
+        }
+      }
+    }
+    return lookup;
+  }, [matrix]);
+
+  const viewingC1 = viewingPair?.cipherPair?.[0] || '';
+  const viewingC2 = viewingPair?.cipherPair?.[1] || '';
+  const viewingPosA = viewingC1 ? pfMatrixLookup[viewingC1] : null;
+  const viewingPosB = viewingC2 ? pfMatrixLookup[viewingC2] : null;
+
+  let viewingEffectiveRule = (viewingPair?.rule || '').toLowerCase();
+  if (viewingPosA && viewingPosB) {
+    if (viewingPosA.r === viewingPosB.r) viewingEffectiveRule = 'row';
+    else if (viewingPosA.c === viewingPosB.c) viewingEffectiveRule = 'column';
+    else viewingEffectiveRule = 'rectangle';
+  }
+
+  let viewingTargetPosA = null;
+  let viewingTargetPosB = null;
+  if (viewingPosA && viewingPosB) {
+    if (viewingEffectiveRule === 'row') {
+      viewingTargetPosA = { r: viewingPosA.r, c: (viewingPosA.c + 4) % 5 };
+      viewingTargetPosB = { r: viewingPosB.r, c: (viewingPosB.c + 4) % 5 };
+    } else if (viewingEffectiveRule === 'column') {
+      viewingTargetPosA = { r: (viewingPosA.r + 4) % 5, c: viewingPosA.c };
+      viewingTargetPosB = { r: (viewingPosB.r + 4) % 5, c: viewingPosB.c };
+    } else {
+      viewingTargetPosA = { r: viewingPosA.r, c: viewingPosB.c };
+      viewingTargetPosB = { r: viewingPosB.r, c: viewingPosA.c };
+    }
+  }
+
+  const viewingT1Actual = viewingTargetPosA ? (matrix[viewingTargetPosA.r]?.[viewingTargetPosA.c] || viewingPair?.plainPair?.[0] || '?') : (viewingPair?.plainPair?.[0] || '?');
+  const viewingT2Actual = viewingTargetPosB ? (matrix[viewingTargetPosB.r]?.[viewingTargetPosB.c] || viewingPair?.plainPair?.[1] || '?') : (viewingPair?.plainPair?.[1] || '?');
+
+  const viewingHasHint0 = Boolean(levelData.fullMask?.[viewingIndex * 2]);
+  const viewingHasHint1 = Boolean(levelData.fullMask?.[viewingIndex * 2 + 1]);
+
+  const viewingT1Disp = (isViewingSolved || viewingHasHint0) ? viewingT1Actual : '?';
+  const viewingT2Disp = (isViewingSolved || viewingHasHint1) ? viewingT2Actual : '?';
+
+  let viewingRuleChipText = '⇄ RECTANGLE';
+  if (viewingEffectiveRule === 'row') viewingRuleChipText = '← SAME ROW';
+  else if (viewingEffectiveRule === 'column') viewingRuleChipText = '↑ SAME COLUMN';
 
   const orangeSlimeSrc = `/assets/sprint/obstacle/obstacle1/SlimeOrange_${PAD5(slimeFrame)}.png`;
   const basicSlimeSrc = `/assets/sprint/obstacle/obstacle2/SlimeBasic_${PAD5(slimeFrame)}.png`;
-
-  /* ───────────────────────────────────────────────
-     Pausable Phase Timer Helpers
-     ─────────────────────────────────────────────── */
-  const clearPhaseTimer = useCallback(() => {
-    if (phaseTimeoutRef.current) window.clearTimeout(phaseTimeoutRef.current);
-    phaseTimeoutRef.current = null;
-    phaseCallbackRef.current = null;
-    phaseRemainingMsRef.current = 0;
-    phaseStartTimeRef.current = 0;
-  }, []);
-
-  const startPhaseTimer = useCallback((callback, durationMs) => {
-    if (phaseTimeoutRef.current) window.clearTimeout(phaseTimeoutRef.current);
-    phaseStartTimeRef.current = Date.now();
-    phaseRemainingMsRef.current = durationMs;
-    phaseDurationRef.current = durationMs;
-    phaseCallbackRef.current = callback;
-    phaseTimeoutRef.current = window.setTimeout(() => {
-      phaseTimeoutRef.current = null;
-      callback();
-    }, durationMs);
-  }, []);
-
-  const pausePhaseTimer = useCallback(() => {
-    if (phaseTimeoutRef.current) {
-      window.clearTimeout(phaseTimeoutRef.current);
-      phaseTimeoutRef.current = null;
-      const elapsed = Date.now() - phaseStartTimeRef.current;
-      phaseRemainingMsRef.current = Math.max(0, phaseRemainingMsRef.current - elapsed);
-    }
-  }, []);
-
-  const resumePhaseTimer = useCallback(() => {
-    if (phaseRemainingMsRef.current > 0 && phaseCallbackRef.current) {
-      phaseStartTimeRef.current = Date.now();
-      const remaining = phaseRemainingMsRef.current;
-      phaseTimeoutRef.current = window.setTimeout(() => {
-        phaseTimeoutRef.current = null;
-        if (phaseCallbackRef.current) phaseCallbackRef.current();
-      }, remaining);
-    }
-  }, []);
-
-  /* Freeze/resume phase timers on pause */
-  useEffect(() => {
-    if (isPaused || isMenuOpen) {
-      pausePhaseTimer();
-    } else if (sprintStep === 'running') {
-      resumePhaseTimer();
-    }
-  }, [isPaused, isMenuOpen, sprintStep, pausePhaseTimer, resumePhaseTimer]);
 
   /* ───────────────────────────────────────────────
      Animation frame intervals (slime)
@@ -408,14 +445,10 @@ export default function PlayfairSprint({
     if (boostTimeoutRef.current)    window.clearTimeout(boostTimeoutRef.current);
     if (shakeTimeoutRef.current)    window.clearTimeout(shakeTimeoutRef.current);
     if (laneTiltTimeoutRef.current) window.clearTimeout(laneTiltTimeoutRef.current);
-    if (phaseTimeoutRef.current)    window.clearTimeout(phaseTimeoutRef.current);
     if (badgePopTimeoutRef.current) window.clearTimeout(badgePopTimeoutRef.current);
     feedbackTimeoutRef.current = spinTimeoutRef.current = boostTimeoutRef.current = 0;
     shakeTimeoutRef.current = laneTiltTimeoutRef.current = badgePopTimeoutRef.current = 0;
     setIsBadgePopping(false);
-    phaseTimeoutRef.current = null;
-    phaseCallbackRef.current = null;
-    phaseRemainingMsRef.current = 0;
   }
 
   const showFeedback = useCallback((text, color, y, ms = 900) => {
@@ -449,177 +482,6 @@ export default function PlayfairSprint({
   }, []);
 
   /* ───────────────────────────────────────────────
-     Phase 1: Briefing
-     ─────────────────────────────────────────────── */
-  const startBriefingPhase = useCallback(() => {
-    clearPhaseTimer();
-    setRoundPhase('briefing');
-    roundPhaseRef.current = 'briefing';
-    hasPickedRef.current = false;
-    setPickedPair(null);
-    pickedPairRef.current = null;
-    setPickedLane(null);
-    pickedLaneRef.current = null;
-    setResolvedStatus(null);
-    setResolvedBannerText('');
-
-    startPhaseTimer(() => {
-      if (startChoosingPhaseRef.current) startChoosingPhaseRef.current();
-    }, BRIEFING_MS);
-  }, [clearPhaseTimer, startPhaseTimer]);
-
-  /* ───────────────────────────────────────────────
-     Phase 2: Choosing
-     ─────────────────────────────────────────────── */
-  const startChoosingPhase = useCallback(() => {
-    clearPhaseTimer();
-    setRoundPhase('choosing');
-    roundPhaseRef.current = 'choosing';
-    hasPickedRef.current = false;
-
-    // Randomize correct lane per round
-    const randLane = Math.floor(Math.random() * 3);
-    correctLaneRef.current = randLane;
-    setCorrectLane(randLane);
-
-    const tempIdx = maskedIndices[currentMaskIndexRef.current] ?? 0;
-    const targetPair = pairData[tempIdx]?.plainPair ?? '';
-    const [decoy1, decoy2] = makeDecoyPairs(targetPair, 2, matrix);
-    const otherLanes = [0, 1, 2].filter((l) => l !== randLane);
-
-    const startX = COIN_START_X;
-    const newCoins = [
-      { id: `c1-${Date.now()}`, lane: randLane, char: targetPair, x: startX, isCorrect: true, picked: false },
-      { id: `c2-${Date.now()}`, lane: otherLanes[0], char: decoy1, x: startX, isCorrect: false, picked: false },
-      { id: `c3-${Date.now()}`, lane: otherLanes[1], char: decoy2, x: startX, isCorrect: false, picked: false },
-    ];
-    setCoins((prev) => [...prev.filter((c) => c.x > -15), ...newCoins]);
-
-    // Spawn obstacle slimes off-screen right, staggered
-    const slimeBaseX = 118;
-    const newSlimes = [
-      { id: `slime-1-${Date.now()}`, lane: otherLanes[0], x: slimeBaseX + 28, hit: false },
-      { id: `slime-2-${Date.now()}`, lane: otherLanes[1], x: slimeBaseX + 58, hit: false },
-    ];
-    setSlimes((prev) => {
-      const combined = [...prev.filter((s) => s.x > -12), ...newSlimes];
-      slimesRef.current = combined;
-      return combined;
-    });
-  }, [clearPhaseTimer, pairData, maskedIndices, matrix]);
-
-  /* ───────────────────────────────────────────────
-     Phase 3: Resolved (immediate on diamond pick or miss)
-     ─────────────────────────────────────────────── */
-  const resolveChoice = useCallback((picked, lane, isCoinCorrect) => {
-    clearPhaseTimer();
-    setRoundPhase('resolved');
-    roundPhaseRef.current = 'resolved';
-    hasPickedRef.current = true;
-    setPickedPair(picked);
-    pickedPairRef.current = picked;
-    setPickedLane(lane);
-    pickedLaneRef.current = lane;
-
-    const tempIdx = maskedIndices[currentMaskIndexRef.current] ?? 0;
-    const cipherP = pairData[tempIdx]?.cipherPair ?? '';
-    const targetPair = pairData[tempIdx]?.plainPair ?? '';
-    const isCorrect = (picked && picked === targetPair) || isCoinCorrect === true;
-
-    setAttempts((prev) => [
-      ...prev,
-      {
-        index: tempIdx,
-        cipherPair: cipherP,
-        keyCollected: picked || 'Missed',
-        correct: isCorrect,
-        firstTry: firstTryForCurrent,
-      },
-    ]);
-
-    if (isCorrect) {
-      setResolvedStatus('correct');
-      sprintSound.playSfx('collect');
-      triggerSpin();
-      triggerBoost(1200);
-      showFeedback('⚡ Correct Digraph! BOOST!', '#22c55e', 10, 1100);
-      // Fill into top word panel visibly in green
-      setSolvedLetters((prev) => ({ ...prev, [tempIdx]: targetPair }));
-
-      const nextMaskIdx = currentMaskIndexRef.current + 1;
-      const nextIdx = maskedIndices[nextMaskIdx];
-      const nextCipher = nextIdx !== undefined ? pairData[nextIdx]?.cipherPair : null;
-      const bannerMsg = nextCipher
-        ? `Direct hit! Now decode '${nextCipher}'!`
-        : `Direct hit! Message Decrypted!`;
-      setResolvedBannerText(bannerMsg);
-
-      startPhaseTimer(() => {
-        const nextIndex = currentMaskIndexRef.current + 1;
-        if (nextIndex < maskedIndices.length) {
-          setCurrentMaskIndex(nextIndex);
-          currentMaskIndexRef.current = nextIndex;
-          setFirstTryForCurrent(true);
-          if (startBriefingPhaseRef.current) startBriefingPhaseRef.current();
-        } else {
-          onClearSnapshot?.();
-          setSprintStep('finished');
-          sprintSound.stopBgm();
-          sprintSound.playSfx('win');
-        }
-      }, RESOLVED_MS);
-    } else {
-      setResolvedStatus(picked ? 'wrong' : 'missed');
-      sprintSound.playSfx('collision');
-      triggerShake();
-      setFirstTryForCurrent(false);
-
-      // Worked answer banner: CF [rule] = HE
-      const workedAnswer = `${cipherP} [${currentRule}] = ${targetPair}`;
-      setResolvedBannerText(workedAnswer);
-
-      setLives((prevLives) => {
-        const nextLives = prevLives - 1;
-        if (nextLives <= 0) {
-          startPhaseTimer(() => {
-            onClearSnapshot?.();
-            setSprintStep('gameover');
-            sprintSound.stopBgm();
-            sprintSound.playSfx('lose');
-          }, RESOLVED_MS);
-        } else {
-          startPhaseTimer(() => {
-            // Re-ask the same digraph from briefing
-            if (startBriefingPhaseRef.current) startBriefingPhaseRef.current();
-          }, RESOLVED_MS);
-        }
-        return nextLives;
-      });
-    }
-  }, [
-    clearPhaseTimer,
-    currentRule,
-    firstTryForCurrent,
-    maskedIndices,
-    pairData,
-    startPhaseTimer,
-    triggerBoost,
-    showFeedback,
-    triggerShake,
-    triggerSpin,
-    onClearSnapshot,
-  ]);
-
-  /* Link forward refs */
-  useEffect(() => {
-    startBriefingPhaseRef.current = startBriefingPhase;
-    startChoosingPhaseRef.current = startChoosingPhase;
-    resolveChoiceRef.current = resolveChoice;
-    triggerShakeRef.current = triggerShake;
-    showFeedbackRef.current = showFeedback;
-  }, [startBriefingPhase, startChoosingPhase, resolveChoice, triggerShake, showFeedback]);
-
-  /* ───────────────────────────────────────────────
      Game flow actions
      ─────────────────────────────────────────────── */
   const handleStartSprint = () => {
@@ -629,16 +491,13 @@ export default function PlayfairSprint({
     clearAllFXTimeouts();
     setCurrentMaskIndex(0);
     currentMaskIndexRef.current = 0;
-    hasPickedRef.current = false;
-    setAttempts([]);
     setLives(5);
-    setFirstTryForCurrent(true);
     setIsPaused(false);
     setIsMenuOpen(false);
     setSprintStep('running');
-    setCoins([]);
-    setSlimes([]);
-    slimesRef.current = [];
+    sprintStepRef.current = 'running';
+
+    const curTargetPair = pairData[maskedIndices[0] ?? 0]?.plainPair ?? '';
 
     // Initialize pre-revealed hints
     const initialSolved = {};
@@ -647,7 +506,24 @@ export default function PlayfairSprint({
     });
     setSolvedLetters(initialSolved);
 
-    startBriefingPhase();
+    // Staggered initial placements with guaranteed spacing
+    const initialCoins = [];
+    const d1 = createRandomDiamond(curTargetPair, matrix, initialCoins, 0, 75, tier);
+    initialCoins.push(d1);
+    const d2 = createRandomDiamond(curTargetPair, matrix, initialCoins, 1, 105, tier);
+    initialCoins.push(d2);
+
+    const initialSlimes = [createRandomSlime(2, 135)];
+
+    setCoins(initialCoins);
+    coinsRef.current = initialCoins;
+    setSlimes(initialSlimes);
+    slimesRef.current = initialSlimes;
+
+    lastDiamondSpawnTimeRef.current = performance.now();
+    lastSlimeSpawnTimeRef.current = performance.now();
+    nextDiamondDelayRef.current = 1500 + Math.random() * 800;
+    nextSlimeDelayRef.current = 2600 + Math.random() * 1200;
   };
 
   const handleRetryFromCheckpoint = () => {
@@ -656,25 +532,31 @@ export default function PlayfairSprint({
     sprintSound.playBgm();
     clearAllFXTimeouts();
     setLives(5);
-    setFirstTryForCurrent(true);
-    setIsCrashing(false);
     setIsPaused(false);
     setIsMenuOpen(false);
-    hasPickedRef.current = false;
-    setCoins([]);
-    setSlimes([]);
-    slimesRef.current = [];
     setSprintStep('running');
-    startBriefingPhase();
-  };
+    sprintStepRef.current = 'running';
 
-  const handleContinueAfterCrash = () => {
-    clearAllFXTimeouts();
-    setIsCrashing(false);
-    setSprintStep('running');
-    setRoundPhase('briefing');
-    roundPhaseRef.current = 'briefing';
-    startBriefingPhase();
+    const curIdx = maskedIndices[currentMaskIndexRef.current] ?? 0;
+    const curTargetPair = pairData[curIdx]?.plainPair ?? '';
+
+    const initialCoins = [];
+    const d1 = createRandomDiamond(curTargetPair, matrix, initialCoins, 0, 75, tier);
+    initialCoins.push(d1);
+    const d2 = createRandomDiamond(curTargetPair, matrix, initialCoins, 1, 105, tier);
+    initialCoins.push(d2);
+
+    const initialSlimes = [createRandomSlime(2, 135)];
+
+    setCoins(initialCoins);
+    coinsRef.current = initialCoins;
+    setSlimes(initialSlimes);
+    slimesRef.current = initialSlimes;
+
+    lastDiamondSpawnTimeRef.current = performance.now();
+    lastSlimeSpawnTimeRef.current = performance.now();
+    nextDiamondDelayRef.current = 1500 + Math.random() * 800;
+    nextSlimeDelayRef.current = 2600 + Math.random() * 1200;
   };
 
   /* ───────────────────────────────────────────────
@@ -693,39 +575,21 @@ export default function PlayfairSprint({
   }, [toggleFullscreen]);
 
   /* ───────────────────────────────────────────────
-     Keyboard steering (free across all round phases)
+     Keyboard steering (free in running state)
      ─────────────────────────────────────────────── */
   useEffect(() => {
-    if (sprintStep !== 'running' || isCrashing) return undefined;
+    if (sprintStep !== 'running') return undefined;
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' || e.code === 'Escape') {
         e.preventDefault();
-        setIsMenuOpen((prev) => {
-          const next = !prev;
-          if (!next && hasRestoredFromSnapshotRef.current) {
-            hasRestoredFromSnapshotRef.current = false;
-            sprintSound.unlockAudio();
-            sprintSound.playBgm();
-            startBriefingPhase();
-          }
-          return next;
-        });
+        setIsMenuOpen((prev) => !prev);
         return;
       }
       if (isMenuOpen) return;
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
-        setIsPaused((p) => {
-          const next = !p;
-          if (!next && hasRestoredFromSnapshotRef.current) {
-            hasRestoredFromSnapshotRef.current = false;
-            sprintSound.unlockAudio();
-            sprintSound.playBgm();
-            startBriefingPhase();
-          }
-          return next;
-        });
+        setIsPaused((p) => !p);
         return;
       }
       if (isPausedRef.current) return;
@@ -738,19 +602,32 @@ export default function PlayfairSprint({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sprintStep, isCrashing, isMenuOpen, startBriefingPhase]);
+  }, [sprintStep, isMenuOpen]);
 
   /* ── reset on levelData change ── */
   useEffect(() => {
     const curId = levelData.id || `${levelData.plaintext || ''}-${levelData.pairCiphertext || ''}`;
     if (prevLevelIdRef.current && prevLevelIdRef.current !== curId) {
       prevLevelIdRef.current = curId;
+      clearAllFXTimeouts();
       setSprintStep('ready');
+      sprintStepRef.current = 'ready';
       setCurrentMaskIndex(0);
+      currentMaskIndexRef.current = 0;
       setLives(5);
-      setAttempts([]);
-      setIsMenuOpen(false);
+      setCoins([]);
+      coinsRef.current = [];
+      setSlimes([]);
+      slimesRef.current = [];
+      setShowExplanation(false);
       setIsPaused(false);
+      setIsMenuOpen(false);
+      setRunnerLane(1);
+      prevLaneRef.current = 1;
+      runnerLaneRef.current = 1;
+      setFeedbackText('');
+      setSelectedViewingIndex(null);
+
       const initialSolved = {};
       hintIndices.forEach((idx) => {
         initialSolved[idx] = pairData[idx]?.plainPair;
@@ -780,16 +657,16 @@ export default function PlayfairSprint({
      ─────────────────────────────────────────────── */
   useEffect(() => {
     if (sprintStep !== 'running') return undefined;
-    if (isCrashing || isPaused || isMenuOpen || showExplanation) return undefined;
+    if (isPaused || isMenuOpen || showExplanation) return undefined;
 
     const updatePhysics = () => {
-      if (isPausedRef.current || isCrashingRef.current || isMenuOpenRef.current || sprintStepRef.current !== 'running') {
+      if (isPausedRef.current || isMenuOpenRef.current || sprintStepRef.current !== 'running') {
         return;
       }
 
       const speed = isBoostingRef.current ? BASE_SPEED * BOOST_MULT : BASE_SPEED;
       const lane = runnerLaneRef.current;
-      const phase = roundPhaseRef.current;
+      const now = performance.now();
 
       /* Speed lines */
       setSpeedLines((prevLines) =>
@@ -801,118 +678,181 @@ export default function PlayfairSprint({
         })
       );
 
-      /* Diamonds continuous movement + collision in choosing phase */
-      setCoins((prevCoins) => {
-        if (prevCoins.length === 0) return prevCoins;
+      /* 1. Diamonds movement & immediate consumption on collision */
+      let collectedDiamond = null;
+      const currentCoins = coinsRef.current;
+      const nextCoins = [];
 
-        let changed = false;
-        let pickedInFrame = null;
-        let allExited = true;
+      for (let i = 0; i < currentCoins.length; i++) {
+        const coin = currentCoins[i];
+        const nextX = coin.x - speed;
 
-        const updated = [];
-        for (let i = 0; i < prevCoins.length; i++) {
-          const coin = prevCoins[i];
-          const nextX = coin.x - speed;
-
-          // Despawn diamonds that scroll off-screen left (below x < -15)
-          if (nextX < -15) {
-            changed = true;
-            continue;
-          }
-
-          if (nextX >= -10) {
-            allExited = false;
-          }
-
-          // Check symmetric collision ONLY in 'choosing' phase and if not picked yet
-          if (
-            phase === 'choosing' &&
-            !pickedInFrame &&
-            !hasPickedRef.current &&
-            Math.abs(nextX - RUNNER_X) <= DIAMOND_HITBOX_HALF &&
-            coin.lane === lane
-          ) {
-            hasPickedRef.current = true;
-            pickedInFrame = coin;
-            changed = true;
-            // Picked diamond stays on track, turns green/red via coin.picked; does NOT vanish
-            updated.push({ ...coin, x: nextX, picked: true });
-            continue;
-          }
-
-          if (nextX !== coin.x) changed = true;
-          updated.push({ ...coin, x: nextX });
+        if (nextX < -15) {
+          continue; // Despawn off-screen left
         }
 
-        if (pickedInFrame) {
-          // Trigger badge pickup pop FX
-          if (badgePopTimeoutRef.current) window.clearTimeout(badgePopTimeoutRef.current);
-          setIsBadgePopping(true);
-          badgePopTimeoutRef.current = window.setTimeout(() => setIsBadgePopping(false), 350);
-
-          if (resolveChoiceRef.current) {
-            resolveChoiceRef.current(pickedInFrame.char, pickedInFrame.lane, pickedInFrame.isCorrect);
-          }
-          return updated;
+        if (
+          !collectedDiamond &&
+          Math.abs(nextX - RUNNER_X) <= DIAMOND_HITBOX_HALF &&
+          coin.lane === lane
+        ) {
+          collectedDiamond = coin;
+          // Consumed immediately: not pushed into nextCoins
+          continue;
         }
 
-        // If all three exited off-screen left with nothing picked in choosing phase -> miss
-        if (allExited && prevCoins.length > 0 && phase === 'choosing' && !hasPickedRef.current) {
-          hasPickedRef.current = true;
-          if (resolveChoiceRef.current) {
-            resolveChoiceRef.current(null, null, false);
+        nextCoins.push({ ...coin, x: nextX });
+      }
+
+      coinsRef.current = nextCoins;
+      setCoins(nextCoins);
+
+      if (collectedDiamond) {
+        if (badgePopTimeoutRef.current) window.clearTimeout(badgePopTimeoutRef.current);
+        setIsBadgePopping(true);
+        badgePopTimeoutRef.current = window.setTimeout(() => setIsBadgePopping(false), 350);
+
+        const curMaskIdx = currentMaskIndexRef.current;
+        const curIdx = maskedIndices[curMaskIdx] ?? 0;
+        const curTargetPair = pairData[curIdx]?.plainPair ?? '';
+
+        if (collectedDiamond.char === curTargetPair) {
+          triggerSpin();
+          sprintSound.playSfx('collect');
+          triggerBoost(1200);
+          showFeedback('⚡ Correct Digraph! BOOST!', '#22c55e', 10, 1100);
+
+          setSolvedLetters((prev) => ({ ...prev, [curIdx]: curTargetPair }));
+
+          const nextMaskIdx = curMaskIdx + 1;
+          if (nextMaskIdx < maskedIndices.length) {
+            setCurrentMaskIndex(nextMaskIdx);
+            currentMaskIndexRef.current = nextMaskIdx;
+            // Clear coins on track to immediately spawn fresh candidates for next pair
+            coinsRef.current = [];
+            setCoins([]);
+            lastDiamondSpawnTimeRef.current = performance.now();
+          } else {
+            onClearSnapshot?.();
+            sprintStepRef.current = 'finished';
+            setSprintStep('finished');
+            sprintSound.stopBgm();
+            sprintSound.playSfx('win');
+            triggerBoost(2000);
+            showFeedback('✨ Message Decrypted! Mission Complete!', '#22c55e', 15, 1500);
+            return;
           }
-          return updated;
-        }
-
-        return changed ? updated : prevCoins;
-      });
-
-      /* Obstacle Slimes movement & collision */
-      if (sprintStepRef.current === 'running' && slimesRef.current.length > 0) {
-        setSlimes((prevSlimes) => {
-          let changed = false;
-          const updated = [];
-          for (let i = 0; i < prevSlimes.length; i++) {
-            const slime = prevSlimes[i];
-            const nextX = slime.x - speed;
-
-            // Despawn below about x < -12
-            if (nextX < -12) {
-              changed = true;
-              continue;
+        } else {
+          triggerShake();
+          sprintSound.playSfx('collision');
+          showFeedback(`❌ Wrong '${collectedDiamond.char}'! -1 Life`, '#ef4444', 20 + collectedDiamond.lane * 30 - 8, 900);
+          setLives((l) => {
+            const next = l - 1;
+            if (next <= 0) {
+              onClearSnapshot?.();
+              sprintStepRef.current = 'gameover';
+              setSprintStep('gameover');
+              sprintSound.stopBgm();
+              sprintSound.playSfx('lose');
             }
+            return next;
+          });
+        }
+      }
 
-            if (
-              !slime.hit &&
-              Math.abs(nextX - RUNNER_X) <= SLIME_HITBOX_HALF &&
-              slime.lane === lane
-            ) {
-              changed = true;
-              if (triggerShakeRef.current) triggerShakeRef.current();
-              sprintSound.playSfx('collision');
-              setLives((l) => {
-                const next = l - 1;
-                if (next <= 0) {
-                  setSprintStep('gameover');
-                  sprintSound.stopBgm();
-                  sprintSound.playSfx('lose');
-                }
-                return next;
-              });
-              if (showFeedbackRef.current) {
-                showFeedbackRef.current('-1 Life! Slime Collision!', '#ef4444', 20 + slime.lane * 30 - 8, 900);
-              }
-              updated.push({ ...slime, x: nextX, hit: true });
-              continue;
+      /* 2. Obstacle Slimes movement & collision */
+      const currentSlimes = slimesRef.current;
+      const nextSlimes = [];
+
+      for (let i = 0; i < currentSlimes.length; i++) {
+        const slime = currentSlimes[i];
+        const nextX = slime.x - speed;
+
+        if (nextX < -15) {
+          continue;
+        }
+
+        if (
+          !slime.hit &&
+          Math.abs(nextX - RUNNER_X) <= SLIME_HITBOX_HALF &&
+          slime.lane === lane
+        ) {
+          triggerShake();
+          sprintSound.playSfx('collision');
+          showFeedback('-1 Life! Slime Collision!', '#ef4444', 20 + slime.lane * 30 - 8, 900);
+          setLives((l) => {
+            const next = l - 1;
+            if (next <= 0) {
+              onClearSnapshot?.();
+              sprintStepRef.current = 'gameover';
+              setSprintStep('gameover');
+              sprintSound.stopBgm();
+              sprintSound.playSfx('lose');
             }
+            return next;
+          });
+          nextSlimes.push({ ...slime, x: nextX, hit: true });
+          continue;
+        }
 
-            if (nextX !== slime.x) changed = true;
-            updated.push({ ...slime, x: nextX });
+        nextSlimes.push({ ...slime, x: nextX });
+      }
+
+      slimesRef.current = nextSlimes;
+      setSlimes(nextSlimes);
+
+      /* 3. Enforced Gap & Staggered Spawning */
+      const allActive = [...coinsRef.current, ...slimesRef.current];
+      const maxOverallX = allActive.length > 0 ? Math.max(...allActive.map((e) => e.x)) : -999;
+
+      // Spawn diamond if interval elapsed and global stagger condition is satisfied
+      if (now - lastDiamondSpawnTimeRef.current >= nextDiamondDelayRef.current) {
+        if (SPAWN_X - maxOverallX >= MIN_ANY_LANE_GAP) {
+          const availableLanes = getAvailableLanes(
+            coinsRef.current,
+            slimesRef.current,
+            MIN_SAME_LANE_GAP,
+            SPAWN_X
+          );
+          if (availableLanes.length > 0) {
+            lastDiamondSpawnTimeRef.current = now;
+            nextDiamondDelayRef.current = 1400 + Math.random() * 1000;
+            const chosenLane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
+            const curMaskIdx = currentMaskIndexRef.current;
+            const curIdx = maskedIndices[curMaskIdx] ?? 0;
+            const curTargetPair = pairData[curIdx]?.plainPair ?? '';
+            const newDiamond = createRandomDiamond(
+              curTargetPair,
+              matrix,
+              coinsRef.current,
+              chosenLane,
+              SPAWN_X,
+              tier
+            );
+            coinsRef.current = [...coinsRef.current, newDiamond];
+            setCoins(coinsRef.current);
           }
-          slimesRef.current = updated;
-          return changed ? updated : prevSlimes;
-        });
+        }
+      }
+
+      // Spawn slime if interval elapsed and global stagger condition is satisfied
+      if (now - lastSlimeSpawnTimeRef.current >= nextSlimeDelayRef.current) {
+        if (SPAWN_X - maxOverallX >= MIN_ANY_LANE_GAP) {
+          const availableLanes = getAvailableLanes(
+            coinsRef.current,
+            slimesRef.current,
+            MIN_SAME_LANE_GAP,
+            SPAWN_X
+          );
+          if (availableLanes.length > 0) {
+            lastSlimeSpawnTimeRef.current = now;
+            nextSlimeDelayRef.current = 2400 + Math.random() * 1600;
+            const chosenLane = availableLanes[Math.floor(Math.random() * availableLanes.length)];
+            const newSlime = createRandomSlime(chosenLane, SPAWN_X);
+            slimesRef.current = [...slimesRef.current, newSlime];
+            setSlimes(slimesRef.current);
+          }
+        }
       }
 
       rafRef.current = requestAnimationFrame(updatePhysics);
@@ -924,43 +864,19 @@ export default function PlayfairSprint({
     };
   }, [
     sprintStep,
-    isCrashing,
     isPaused,
     isMenuOpen,
     showExplanation,
+    showFeedback,
+    triggerBoost,
+    triggerShake,
+    triggerSpin,
+    tier,
+    matrix,
+    maskedIndices,
+    pairData,
+    onClearSnapshot,
   ]);
-
-  /* ───────────────────────────────────────────────
-     Level changes -> reset everything
-     ─────────────────────────────────────────────── */
-  useEffect(() => {
-    const currentLevelId = `${levelData?.level}-${levelData?.pairCiphertext || levelData?.ciphertext}`;
-    if (prevLevelIdRef.current === currentLevelId) {
-      return;
-    }
-    prevLevelIdRef.current = currentLevelId;
-
-    clearAllFXTimeouts();
-    setSprintStep('ready');
-    setRoundPhase('briefing');
-    setCurrentMaskIndex(0);
-    setRunnerLane(1);
-    setCoins([]);
-    setSlimes([]);
-    slimesRef.current = [];
-    setAttempts([]);
-    setResolvedStatus(null);
-    setResolvedBannerText('');
-    setSolvedLetters({});
-    setIsCrashing(false);
-    setLives(5);
-    setFirstTryForCurrent(true);
-    setIsPaused(false);
-    setIsMenuOpen(false);
-    setShowExplanation(false);
-    setFeedbackText('');
-    runnerLaneRef.current = 1;
-  }, [levelData]);
 
   /* ───────────────────────────────────────────────
      Audio — BGM follows the run state (continues playing on space pause)
@@ -982,19 +898,6 @@ export default function PlayfairSprint({
     };
   }, []);
 
-  /* ───────────────────────────────────────────────
-     Audio — mute toggle button
-     ─────────────────────────────────────────────── */
-  const toggleSound = useCallback(() => {
-    const muted = sprintSound.toggleMute();
-    setIsMuted(muted);
-  }, []);
-
-  useGameShortcuts({
-    onToggleFullscreen: toggleFullscreen,
-    onToggleMute: toggleSound,
-  });
-
   const handleVerifySubmit = () => {
     clearAllFXTimeouts();
     sprintSound.stopBgm();
@@ -1009,7 +912,7 @@ export default function PlayfairSprint({
      Runner animation state
      ─────────────────────────────────────────────── */
   let runnerAnim = 'idle';
-  if (sprintStep === 'gameover' || isCrashing) runnerAnim = 'death';
+  if (sprintStep === 'gameover') runnerAnim = 'death';
   else if (isPaused || isMenuOpen || sprintStep === 'finished') runnerAnim = 'idle';
   else if (laneChangeEffect !== null || isBoosting) runnerAnim = 'jump';
   else if (sprintStep === 'running') runnerAnim = 'run';
@@ -1098,14 +1001,16 @@ export default function PlayfairSprint({
                     <span className="cq-dossier-label">KEYWORD</span>
                     <span className="cq-dossier-value yellow-mono">{levelData.key}</span>
                   </div>
-                  <div className="cq-dossier-row">
-                    <span className="cq-dossier-label">HINT</span>
-                    <span className="cq-dossier-value hint-text">{levelData.hint}</span>
-                  </div>
+                  {levelData.hint && (
+                    <div className="cq-dossier-row">
+                      <span className="cq-dossier-label">HINT</span>
+                      <span className="cq-dossier-value hint-text">{levelData.hint}</span>
+                    </div>
+                  )}
                 </div>
                 <p className="cq-dossier-how-it-works">
                   <strong>How it works:</strong>{' '}
-                  Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext digraph calculated using the 5×5 Playfair key matrix. Dodge the obstacle slimes! Decoy digraphs will cause a crash! Press <strong>F</strong> to toggle fullscreen.
+                  Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext digraph calculated using the 5×5 Playfair key matrix. Dodge the obstacle slimes! Decoy digraphs will cost a life! Press <strong>Space</strong> to pause running, and <strong>F</strong> to toggle fullscreen.
                 </p>
                 <button className="cq-dossier-action-btn" onClick={() => { sprintSound.unlockAudio(); setIsOperationLoading(true); }}>
                   Begin operation
@@ -1115,7 +1020,7 @@ export default function PlayfairSprint({
           </div>
         )
       ) : (
-        /* ───── Running / Gameplay Layout (Fullscreen EdgetoEdge) ───── */
+        /* ───── Running / Gameplay Layout (Fullscreen Edge-to-Edge) ───── */
         <div className="caesar-sprint-fullscreen sprint-fullscreen-stage">
           {/* Edge-to-edge 3-lane Track */}
           <div
@@ -1124,7 +1029,7 @@ export default function PlayfairSprint({
               'sprint-track-fullscreen',
               trackShake ? 'shake-track' : '',
               isBoosting && sprintStep === 'running' && !isPaused && !isMenuOpen ? 'is-boosting' : '',
-              (isPaused || isMenuOpen || sprintStep === 'finished' || sprintStep === 'gameover' || sprintStep === 'explanation') ? 'is-paused' : '',
+              (isPaused || isMenuOpen || sprintStep === 'finished' || sprintStep === 'gameover') ? 'is-paused' : '',
             ]
               .filter(Boolean)
               .join(' ')}
@@ -1150,7 +1055,7 @@ export default function PlayfairSprint({
             <div
               className={`sprint-lane lane-0 ${runnerLane === 0 ? 'highlighted' : ''}`}
               onClick={() => {
-                if (sprintStep === 'running' && !isPausedRef.current && (roundPhaseRef.current === 'choosing' || roundPhaseRef.current === 'resolved')) {
+                if (sprintStep === 'running' && !isPausedRef.current && !isMenuOpenRef.current) {
                   setRunnerLane(0);
                 }
               }}
@@ -1161,7 +1066,7 @@ export default function PlayfairSprint({
             <div
               className={`sprint-lane lane-1 ${runnerLane === 1 ? 'highlighted' : ''}`}
               onClick={() => {
-                if (sprintStep === 'running' && !isPausedRef.current && (roundPhaseRef.current === 'choosing' || roundPhaseRef.current === 'resolved')) {
+                if (sprintStep === 'running' && !isPausedRef.current && !isMenuOpenRef.current) {
                   setRunnerLane(1);
                 }
               }}
@@ -1172,7 +1077,7 @@ export default function PlayfairSprint({
             <div
               className={`sprint-lane lane-2 ${runnerLane === 2 ? 'highlighted' : ''}`}
               onClick={() => {
-                if (sprintStep === 'running' && !isPausedRef.current && (roundPhaseRef.current === 'choosing' || roundPhaseRef.current === 'resolved')) {
+                if (sprintStep === 'running' && !isPausedRef.current && !isMenuOpenRef.current) {
                   setRunnerLane(2);
                 }
               }}
@@ -1192,7 +1097,6 @@ export default function PlayfairSprint({
               className={[
                 'sprint-runner-sprite',
                 `lane-${runnerLane}`,
-                isCrashing ? 'crash' : '',
                 isSpinning ? 'spin-effect' : '',
                 isBoosting ? 'boost-trail' : '',
                 laneChangeEffect || '',
@@ -1205,42 +1109,29 @@ export default function PlayfairSprint({
                 className={[
                   'runner-baton-glow',
                   isBadgePopping ? 'badge-pickup' : '',
-                  roundPhase === 'resolved' && resolvedStatus === 'correct' ? 'badge-correct' : '',
-                  roundPhase === 'resolved' && (resolvedStatus === 'wrong' || resolvedStatus === 'missed') ? 'badge-wrong' : '',
                 ]
                   .filter(Boolean)
                   .join(' ')}
               >
-                {sprintStep === 'finished'
-                  ? '✓'
-                  : pickedPair
-                  ? pickedPair
-                  : currentBatonPair}
+                {sprintStep === 'finished' ? '✓' : currentBatonPair}
               </div>
             </div>
 
-            {/* Answer Diamonds (carrying digraphs) */}
+            {/* Answer Diamonds (carrying candidate digraphs) */}
             {sprintStep === 'running' &&
-              coins.map((coin) => {
-                let stateClass = '';
-                if (coin.picked) {
-                  stateClass = coin.isCorrect ? 'correct' : 'wrong';
-                }
-
-                return (
-                  <div
-                    key={coin.id}
-                    className={`sprint-r2-diamond-sprite lane-${coin.lane} ${stateClass}`}
-                    style={{ left: `${coin.x}%` }}
-                  >
-                    <div className="sprint-r2-diamond-inner" style={{ width: '52px', height: '52px' }}>
-                      <span className="sprint-r2-diamond-char" style={{ fontSize: '1.1rem', letterSpacing: '1px' }}>
-                        {coin.char}
-                      </span>
-                    </div>
+              coins.map((coin) => (
+                <div
+                  key={coin.id}
+                  className={`sprint-r2-diamond-sprite lane-${coin.lane}`}
+                  style={{ left: `${coin.x}%` }}
+                >
+                  <div className="sprint-r2-diamond-inner" style={{ width: '52px', height: '52px' }}>
+                    <span className="sprint-r2-diamond-char" style={{ fontSize: '1.1rem', letterSpacing: '1px' }}>
+                      {coin.char}
+                    </span>
                   </div>
-                );
-              })}
+                </div>
+              ))}
 
             {/* Obstacle Slimes (pure obstacles, no letters) */}
             {sprintStep === 'running' &&
@@ -1260,115 +1151,6 @@ export default function PlayfairSprint({
                   </div>
                 );
               })}
-
-            {/* Centre-track Phase Banner & Filling Progress Bar */}
-            {sprintStep === 'running' &&
-              (roundPhase === 'briefing' ||
-                roundPhase === 'locking' ||
-                roundPhase === 'resolved') && (
-                <div
-                  key={`banner-${roundPhase}-${currentMaskIndex}-${firstTryForCurrent}`}
-                  className={[
-                    'sprint-r2-center-banner',
-                    roundPhase === 'resolved'
-                      ? resolvedStatus === 'correct'
-                        ? 'state-correct'
-                        : 'state-wrong'
-                      : roundPhase === 'locking'
-                      ? 'state-locking'
-                      : 'state-briefing',
-                  ].join(' ')}
-                >
-                  {roundPhase === 'briefing' && (
-                    <>
-                      <span className="sprint-r2-panel-tag">DECRYPTION BRIEF · {currentRule.toUpperCase()}</span>
-                      <div className="sprint-r2-banner-title">
-                        Decode Digraph '<strong>{currentBatonPair}</strong>'
-                      </div>
-                      <div className="sprint-r2-math-equation">
-                        <span className="sprint-r2-math-chip cipher">{currentBatonPair}</span>
-                        <span className="sprint-r2-math-op">[{currentRule}]</span>
-                        <span className="sprint-r2-math-op">→</span>
-                        <span className="sprint-r2-math-chip target mystery">??</span>
-                      </div>
-                      <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-                        {currentRuleDesc}
-                      </div>
-                    </>
-                  )}
-
-                  {roundPhase === 'locking' && (
-                    <>
-                      <span className="sprint-r2-panel-tag">SELECTION LOCKED</span>
-                      <div className="sprint-r2-banner-title">
-                        Applying Playfair Matrix Rule
-                      </div>
-                      <div className="sprint-r2-math-equation">
-                        <span className="sprint-r2-math-chip cipher">{currentBatonPair}</span>
-                        <span className="sprint-r2-math-op">[{currentRule}]</span>
-                        <span className="sprint-r2-math-op">=</span>
-                        <span className="sprint-r2-math-chip target locked">{pickedPair || '??'}</span>
-                      </div>
-                    </>
-                  )}
-
-                  {roundPhase === 'resolved' && (
-                    <>
-                      <span
-                        className={`sprint-r2-panel-tag ${
-                          resolvedStatus === 'correct' ? 'correct' : 'wrong'
-                        }`}
-                      >
-                        {resolvedStatus === 'correct'
-                          ? 'DIGRAPH DECRYPTED'
-                          : resolvedStatus === 'missed'
-                          ? 'TARGET MISSED'
-                          : 'DECRYPTION ERROR'}
-                      </span>
-                      <div className="sprint-r2-math-equation">
-                        <span className="sprint-r2-math-chip cipher">{currentBatonPair}</span>
-                        <span className="sprint-r2-math-op">[{currentRule}]</span>
-                        <span className="sprint-r2-math-op">=</span>
-                        <span
-                          className={`sprint-r2-math-chip target ${
-                            resolvedStatus === 'correct' ? 'correct' : 'answer'
-                          }`}
-                        >
-                          {currentTargetPair}
-                        </span>
-                      </div>
-                      <div
-                        className={`sprint-r2-banner-msg ${
-                          resolvedStatus === 'correct' ? 'correct' : 'wrong'
-                        }`}
-                      >
-                        {resolvedBannerText ||
-                          (resolvedStatus === 'correct'
-                            ? 'Direct Hit! Digraph Decrypted!'
-                            : pickedPair
-                            ? `Picked '${pickedPair}' — Correct answer is '${currentTargetPair}'`
-                            : `Missed Diamond — Correct answer is '${currentTargetPair}'`)}
-                      </div>
-                    </>
-                  )}
-
-                  <div className="sprint-r2-progress-bar-container">
-                    <div
-                      key={`fill-${roundPhase}-${currentMaskIndex}-${firstTryForCurrent}`}
-                      className="sprint-r2-progress-fill"
-                      style={{
-                        animation: `sprintR2Progress ${
-                          roundPhase === 'briefing'
-                            ? BRIEFING_MS
-                            : roundPhase === 'locking'
-                            ? LOCKING_MS
-                            : RESOLVED_MS
-                        }ms linear forwards`,
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
 
             {/* Floating feedback */}
             {feedbackText && (
@@ -1431,10 +1213,10 @@ export default function PlayfairSprint({
           </div>
 
           {/* 2. Unified Playfair Bottom-Left Group (Matrix + Decryption Panel) */}
-          <div className="pf-bottom-left-group">
+          <div className="pf-bottom-left-group pf-sprint-group">
             {/* 5x5 Matrix Panel */}
             <div className="caesar-floating-cheat-sheet pf-matrix-panel">
-              <div className="vg-floating-current-slot" style={{ marginBottom: '6px' }}>
+              <div className="vg-floating-current-slot" style={{ marginBottom: '4px' }}>
                 <div className="vg-arithmetic-title-stacked">
                   <span className="vg-arithmetic-title-line">PLAYFAIR</span>
                   <span className="vg-arithmetic-title-line">5×5 MATRIX</span>
@@ -1445,16 +1227,189 @@ export default function PlayfairSprint({
                 <div className="pf-template-matrix-grid">
                   {matrix.map((row, rIdx) =>
                     row.map((letter, cIdx) => {
-                      const isHighlighted = isLetterHighlighted(letter);
+                      const isCipherActive = (viewingPosA && viewingPosA.r === rIdx && viewingPosA.c === cIdx) || (viewingPosB && viewingPosB.r === rIdx && viewingPosB.c === cIdx);
+                      const isTargetAActive = (isViewingSolved || viewingHasHint0) && viewingTargetPosA && viewingTargetPosA.r === rIdx && viewingTargetPosA.c === cIdx;
+                      const isTargetBActive = (isViewingSolved || viewingHasHint1) && viewingTargetPosB && viewingTargetPosB.r === rIdx && viewingTargetPosB.c === cIdx;
+                      const isTargetActive = isTargetAActive || isTargetBActive;
+                      const displayLetter = letter === 'I' ? 'I/J' : letter;
+                      let cellClass = 'pf-template-cell';
+                      if (isCipherActive) cellClass += ' cipher-active active';
+                      else if (isTargetActive) cellClass += ' target-active';
+
                       return (
                         <div
                           key={`${rIdx}-${cIdx}`}
-                          className={`pf-template-cell${isHighlighted ? ' active' : ''}`}
+                          className={cellClass}
                         >
-                          {letter === 'I' ? 'I/J' : letter}
+                          {displayLetter}
                         </div>
                       );
                     })
+                  )}
+                  {(viewingEffectiveRule === 'row' || viewingEffectiveRule === 'column') && viewingPosA && viewingPosB && (
+                    <svg
+                      className="pf-matrix-lines-overlay"
+                      viewBox="0 0 100 100"
+                      preserveAspectRatio="none"
+                    >
+                      <defs>
+                        <marker
+                          id="pf-arrow-amber-sprint"
+                          viewBox="0 0 6 6"
+                          refX="5"
+                          refY="3"
+                          markerWidth="4"
+                          markerHeight="4"
+                          orient="auto-start-reverse"
+                        >
+                          <path d="M 0 0 L 6 3 L 0 6 z" fill="#ffc146" />
+                        </marker>
+                      </defs>
+                      {viewingEffectiveRule === 'row' && (
+                        <>
+                          {viewingPosA.c > 0 ? (
+                            <line
+                              x1={(viewingPosA.c + 0.5) * 20}
+                              y1={(viewingPosA.r + 0.5) * 20}
+                              x2={(viewingPosA.c - 1 + 0.5) * 20}
+                              y2={(viewingPosA.r + 0.5) * 20}
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              markerEnd="url(#pf-arrow-amber-sprint)"
+                            />
+                          ) : (
+                            <>
+                              <line
+                                x1={(viewingPosA.c + 0.5) * 20}
+                                y1={(viewingPosA.r + 0.5) * 20}
+                                x2="0"
+                                y2={(viewingPosA.r + 0.5) * 20}
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                              />
+                              <line
+                                x1="100"
+                                y1={(viewingPosA.r + 0.5) * 20}
+                                x2={(4 + 0.5) * 20}
+                                y2={(viewingPosA.r + 0.5) * 20}
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                markerEnd="url(#pf-arrow-amber-sprint)"
+                              />
+                            </>
+                          )}
+                          {viewingPosB.c > 0 ? (
+                            <line
+                              x1={(viewingPosB.c + 0.5) * 20}
+                              y1={(viewingPosB.r + 0.5) * 20}
+                              x2={(viewingPosB.c - 1 + 0.5) * 20}
+                              y2={(viewingPosB.r + 0.5) * 20}
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              markerEnd="url(#pf-arrow-amber-sprint)"
+                            />
+                          ) : (
+                            <>
+                              <line
+                                x1={(viewingPosB.c + 0.5) * 20}
+                                y1={(viewingPosB.r + 0.5) * 20}
+                                x2="0"
+                                y2={(viewingPosB.r + 0.5) * 20}
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                              />
+                              <line
+                                x1="100"
+                                y1={(viewingPosB.r + 0.5) * 20}
+                                x2={(4 + 0.5) * 20}
+                                y2={(viewingPosB.r + 0.5) * 20}
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                markerEnd="url(#pf-arrow-amber-sprint)"
+                              />
+                            </>
+                          )}
+                        </>
+                      )}
+                      {viewingEffectiveRule === 'column' && (
+                        <>
+                          {viewingPosA.r > 0 ? (
+                            <line
+                              x1={(viewingPosA.c + 0.5) * 20}
+                              y1={(viewingPosA.r + 0.5) * 20}
+                              x2={(viewingPosA.c + 0.5) * 20}
+                              y2={(viewingPosA.r - 1 + 0.5) * 20}
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              markerEnd="url(#pf-arrow-amber-sprint)"
+                            />
+                          ) : (
+                            <>
+                              <line
+                                x1={(viewingPosA.c + 0.5) * 20}
+                                y1={(viewingPosA.r + 0.5) * 20}
+                                x2={(viewingPosA.c + 0.5) * 20}
+                                y2="0"
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                              />
+                              <line
+                                x1={(viewingPosA.c + 0.5) * 20}
+                                y1="100"
+                                x2={(viewingPosA.c + 0.5) * 20}
+                                y2={(4 + 0.5) * 20}
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                markerEnd="url(#pf-arrow-amber-sprint)"
+                              />
+                            </>
+                          )}
+                          {viewingPosB.r > 0 ? (
+                            <line
+                              x1={(viewingPosB.c + 0.5) * 20}
+                              y1={(viewingPosB.r + 0.5) * 20}
+                              x2={(viewingPosB.c + 0.5) * 20}
+                              y2={(viewingPosB.r - 1 + 0.5) * 20}
+                              stroke="#ffc146"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              markerEnd="url(#pf-arrow-amber-sprint)"
+                            />
+                          ) : (
+                            <>
+                              <line
+                                x1={(viewingPosB.c + 0.5) * 20}
+                                y1={(viewingPosB.r + 0.5) * 20}
+                                x2={(viewingPosB.c + 0.5) * 20}
+                                y2="0"
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                              />
+                              <line
+                                x1="100"
+                                y1={(viewingPosB.r + 0.5) * 20}
+                                x2={(4 + 0.5) * 20}
+                                y2={(viewingPosB.r + 0.5) * 20}
+                                stroke="#ffc146"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                markerEnd="url(#pf-arrow-amber-sprint)"
+                              />
+                            </>
+                          )}
+                        </>
+                      )}
+                    </svg>
                   )}
                 </div>
               </div>
@@ -1488,32 +1443,28 @@ export default function PlayfairSprint({
                       </button>
                     </span>
                   </div>
-                  <div className="vg-calc-formula-row">
-                    <div className="vg-calc-item cipher">
-                      <span className="lbl">Cipher</span>
-                      <strong style={{ letterSpacing: '2px' }}>{viewingPair.cipherPair}</strong>
-                      <span className="val">DIGRAPH</span>
+                  <div className="pf-calc-formula-row">
+                    <div className="pf-calc-box cipher">
+                      <span className="lbl">CIPHER</span>
+                      <strong className="val">{viewingPair.cipherPair}</strong>
                     </div>
-                    <span className="vg-calc-op">→</span>
-                    <div className="vg-calc-item key">
-                      <span className="lbl">Rule</span>
-                      <strong style={{ fontSize: '0.85rem' }}>{viewingPair.rule ? String(viewingPair.rule).toUpperCase() : 'RULE'}</strong>
-                      <span className="val">5×5 MATRIX</span>
+                    <div className="pf-calc-box rule-chip">
+                      <span className="lbl">RULE</span>
+                      <strong className="val">{viewingRuleChipText}</strong>
                     </div>
-                    <span className="vg-calc-op">=</span>
-                    <div className={`vg-calc-item plain ${isViewingSolved ? 'is-solved' : ''}`}>
-                      <span className="lbl">Target</span>
-                      <strong style={{ letterSpacing: '2px', color: isViewingSolved ? 'var(--neon-green)' : '#ffffff' }}>
+                    <div className={`pf-calc-box target ${isViewingSolved ? 'is-solved' : ''}`}>
+                      <span className="lbl">TARGET</span>
+                      <strong className="val">
                         {isViewingSolved ? (
                           viewingPair.plainPair
                         ) : (
                           <>
-                            {levelData.fullMask?.[viewingIndex * 2] ? (
+                            {viewingHasHint0 ? (
                               <span className="pf-hint-char">{viewingPair.plainPair[0]}</span>
                             ) : (
                               '?'
                             )}
-                            {levelData.fullMask?.[viewingIndex * 2 + 1] ? (
+                            {viewingHasHint1 ? (
                               <span className="pf-hint-char">{viewingPair.plainPair[1]}</span>
                             ) : (
                               '?'
@@ -1521,22 +1472,34 @@ export default function PlayfairSprint({
                           </>
                         )}
                       </strong>
-                      <span className="val">
-                        {isViewingSolved ? 'SOLVED' : 'MYSTERY'}
-                      </span>
                     </div>
                   </div>
 
-                  <div className="vg-calc-help-row">
-                    {isViewingSolved ? (
-                      <span className="vg-calc-help-text solved">
-                        ✅ Solved: {viewingPair.cipherPair} → {viewingPair.plainPair}
-                      </span>
-                    ) : (
-                      <span className="vg-calc-help-text normal">
-                        💡 Rule: <strong>{viewingRuleHint}</strong>
-                      </span>
-                    )}
+                  <div className="pf-trace-block">
+                    <div className="pf-trace-line cipher-line">
+                      {viewingPosA && viewingPosB
+                        ? `${viewingC1} r${viewingPosA.r} c${viewingPosA.c}   ${viewingC2} r${viewingPosB.r} c${viewingPosB.c}`
+                        : `${viewingPair.cipherPair}`}
+                    </div>
+                    <div className="pf-trace-line rule-line">
+                      {viewingEffectiveRule === 'row'
+                        ? `same row (r${viewingPosA?.r ?? 0})`
+                        : viewingEffectiveRule === 'column'
+                        ? `same column (c${viewingPosA?.c ?? 0})`
+                        : 'different row + column'}
+                    </div>
+                    <div className="pf-trace-line rule-line">
+                      {viewingEffectiveRule === 'row'
+                        ? 'same row → wrap around'
+                        : viewingEffectiveRule === 'column'
+                        ? 'same column ↓ wrap around'
+                        : 'rectangle ⇄ swap'}
+                    </div>
+                    <div className="pf-trace-line target-line">
+                      {viewingTargetPosA && viewingTargetPosB
+                        ? `${viewingT1Disp} r${viewingTargetPosA.r} c${viewingTargetPosA.c}   ${viewingT2Disp} r${viewingTargetPosB.r} c${viewingTargetPosB.c}`
+                        : `${viewingT1Disp}${viewingT2Disp}`}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1566,12 +1529,6 @@ export default function PlayfairSprint({
               <GameOverPanel onRetry={handleRetryFromCheckpoint} />
             </div>
           )}
-
-          {sprintStep === 'explanation' && (
-            <div className="caesar-floating-rule-violation sprint-floating-action-modal">
-              <CrashPanel message={crashMessage} onContinue={handleContinueAfterCrash} />
-            </div>
-          )}
         </div>
       )}
 
@@ -1581,12 +1538,6 @@ export default function PlayfairSprint({
         onResume={() => {
           setIsMenuOpen(false);
           setIsPaused(false);
-          if (hasRestoredFromSnapshotRef.current) {
-            hasRestoredFromSnapshotRef.current = false;
-            sprintSound.unlockAudio();
-            sprintSound.playBgm();
-            startBriefingPhase();
-          }
         }}
         onTutorial={() => {
           onClearSnapshot?.();
@@ -1657,46 +1608,6 @@ function GameOverPanel({ onRetry }) {
         }}
       >
         Try Again
-      </button>
-    </div>
-  );
-}
-
-function CrashPanel({ message, onContinue }) {
-  return (
-    <div
-      className="fg-alert-panel"
-      style={{
-        borderColor: 'var(--neon-red)',
-        background: 'rgba(255, 0, 127, 0.05)',
-        textAlign: 'center',
-      }}
-    >
-      <strong style={{ color: 'var(--neon-red)', fontSize: '1rem' }}>CRASH! GATE STAYED SHUT</strong>
-      <p
-        style={{
-          fontSize: '0.88rem',
-          lineHeight: '1.5',
-          color: '#cbd5e1',
-          marginTop: '12px',
-          marginBottom: '12px',
-        }}
-      >
-        {message}
-      </p>
-      <button
-        className="fg-btn fg-btn-secondary"
-        onClick={onContinue}
-        style={{
-          width: '100%',
-          marginTop: '10%',
-          background: 'rgba(255,255,255,0.1)',
-          color: '#fff',
-          fontSize: '0.9rem',
-          padding: '12px',
-        }}
-      >
-        Try Checkpoint Again
       </button>
     </div>
   );
