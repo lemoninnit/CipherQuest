@@ -169,6 +169,36 @@ public class ScoringServiceTest {
                 () -> scoringService.startStage(7L, new StartStageRequest("CAESAR", "EASY", 9)));
     }
 
+    // ── SESSION HEARTS: server-authoritative cooldown gate ────────────
+
+    @Test
+    public void testStartStageConsultsTheSessionHeartGate() {
+        User user = User.builder().id(7L).username("operative").build();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        when(sessionRepository.save(any(StageSession.class))).thenAnswer(invocation -> {
+            invocation.<StageSession>getArgument(0).setId(99L);
+            return invocation.getArgument(0);
+        });
+
+        scoringService.startStage(7L, new StartStageRequest("caesar", "easy", 0));
+
+        verify(userProgressService).assertNotOnCooldown(7L);
+    }
+
+    @Test
+    public void testStartStageIsRefusedWhileTheHeartsAreOnCooldown() {
+        User user = User.builder().id(7L).username("operative").build();
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user));
+        doThrow(new IllegalStateException("All session hearts are spent. Missions resume in 3h 59m."))
+                .when(userProgressService).assertNotOnCooldown(7L);
+
+        assertThrows(IllegalStateException.class,
+                () -> scoringService.startStage(7L, new StartStageRequest("caesar", "easy", 0)));
+
+        // No session may be created for a locked-out operative.
+        verify(sessionRepository, never()).save(any(StageSession.class));
+    }
+
     // ── PHASE 2-11: success flow ─────────────────────────────────────
 
     @Test
@@ -232,8 +262,8 @@ public class ScoringServiceTest {
     // ── PHASE 3 / 4 / 7: failure flow ────────────────────────────────
 
     @Test
-    public void testFailureResetsStreakAndPreservesTotalScore() {
-        User user = User.builder().id(1L).username("op").gameStreak(6).totalScore(1235).build();
+    public void testFailureResetsStreakPreservesTotalAndCostsOneHeart() {
+        User user = User.builder().id(1L).username("op").gameStreak(6).totalScore(1235).attempts(3).build();
         StageSession session = StageSession.builder()
                 .id(3L)
                 .user(user)
@@ -246,6 +276,9 @@ public class ScoringServiceTest {
         when(sessionRepository.findById(3L)).thenReturn(Optional.of(session));
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        // The server spends the heart, so the client cannot skip the cost.
+        when(userProgressService.consumeHeartForStageLoss(1L))
+                .thenReturn(new UserProgressService.HeartState(2, 3, false, null));
 
         FailStageResponse response = scoringService.failStage(1L, 3L);
 
@@ -255,12 +288,112 @@ public class ScoringServiceTest {
         assertEquals(1235, user.getTotalScore());
         assertEquals("FAILED", session.getStatus());
 
+        // SESSION HEART: losing a stage costs exactly one server heart.
+        verify(userProgressService).consumeHeartForStageLoss(1L);
+        assertEquals(2, response.attempts(), "The response reports the hearts left");
+        assertEquals(3, response.maxAttempts());
+        assertFalse(response.lockedOut(), "Hearts remain, so play is still allowed");
+
         // No successful completion record and no personal-best updates on failure.
         verifyNoInteractions(completionRepository);
         verifyNoInteractions(progressRepository);
 
         // A failed attempt cannot be completed afterwards.
         assertThrows(IllegalStateException.class, () -> scoringService.completeStage(1L, 3L));
+    }
+
+    @Test
+    public void testSpendingTheLastHeartLocksOutEveryStage() {
+        User user = User.builder().id(1L).username("op").gameStreak(2).totalScore(400).attempts(1).build();
+        StageSession session = StageSession.builder()
+                .id(4L).user(user).cipherType("PLAYFAIR").difficultyTier("EASY")
+                .levelIndex(0).status("ACTIVE").build();
+
+        LocalDateTime cooldownEnd = LocalDateTime.now().plusHours(4);
+        when(sessionRepository.findById(4L)).thenReturn(Optional.of(session));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userProgressService.consumeHeartForStageLoss(1L))
+                .thenReturn(new UserProgressService.HeartState(0, 3, true, cooldownEnd));
+
+        FailStageResponse response = scoringService.failStage(1L, 4L);
+
+        assertEquals(0, response.attempts(), "The last heart is spent");
+        assertTrue(response.lockedOut(), "No hearts left locks every cipher out of play");
+        assertEquals(cooldownEnd, response.cooldownEndTime(), "The refill time is reported to the client");
+    }
+
+    @Test
+    public void testDuplicateFailureReportDoesNotSpendASecondHeart() {
+        // A retried/refreshed request re-reports an already-FAILED session: the
+        // streak reset is idempotent, but the heart must NOT be charged twice.
+        User user = User.builder().id(1L).username("op").gameStreak(0).totalScore(900).build();
+        StageSession session = StageSession.builder()
+                .id(5L).user(user).cipherType("CAESAR").difficultyTier("EASY")
+                .levelIndex(0).status("FAILED").build();
+
+        when(sessionRepository.findById(5L)).thenReturn(Optional.of(session));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userProgressService.heartState(1L))
+                .thenReturn(new UserProgressService.HeartState(2, 3, false, null));
+
+        FailStageResponse response = scoringService.failStage(1L, 5L);
+
+        verify(userProgressService, never()).consumeHeartForStageLoss(anyLong());
+        verify(sessionRepository, never()).save(any(StageSession.class));
+        assertEquals(900, response.totalScore(), "Total score is still preserved");
+    }
+
+    @Test
+    public void testFailureOnAnExpiredSessionStillCostsOneHeart() {
+        // Regression: EXPIRED is how the server retires an attempt that was
+        // abandoned or superseded (expireActiveSessions runs on every
+        // startStage for the same stage). Such a loss was NEVER charged, so
+        // reporting it must still cost a heart - otherwise the player loses the
+        // stage for free and keeps playing, which is exactly the bug reported.
+        User user = User.builder().id(1L).username("op").gameStreak(4).totalScore(700).attempts(1).build();
+        StageSession session = StageSession.builder()
+                .id(6L).user(user).cipherType("CAESAR").difficultyTier("EASY")
+                .levelIndex(2).status("EXPIRED").build();
+
+        LocalDateTime cooldownEnd = LocalDateTime.now().plusHours(4);
+        when(sessionRepository.findById(6L)).thenReturn(Optional.of(session));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userProgressService.consumeHeartForStageLoss(1L))
+                .thenReturn(new UserProgressService.HeartState(0, 3, true, cooldownEnd));
+
+        FailStageResponse response = scoringService.failStage(1L, 6L);
+
+        verify(userProgressService).consumeHeartForStageLoss(1L);
+        assertEquals("FAILED", session.getStatus(), "The attempt is settled as failed");
+        assertEquals(0, response.attempts(), "The heart is spent even on an expired session");
+        assertTrue(response.lockedOut(), "Zero hearts locks every cipher out");
+        assertEquals(0, response.gameStreak(), "The streak is still reset");
+        assertEquals(700, response.totalScore(), "Total score is never reduced by a loss");
+    }
+
+    @Test
+    public void testCompletedSessionIsNotChargedForALoss() {
+        // The attempt was already won, so a stray loss report must not take a
+        // heart away - but the streak reset is still harmless and idempotent.
+        User user = User.builder().id(1L).username("op").gameStreak(3).totalScore(500).attempts(3).build();
+        StageSession session = StageSession.builder()
+                .id(7L).user(user).cipherType("VIGENERE").difficultyTier("MEDIUM")
+                .levelIndex(1).status("COMPLETED").build();
+
+        when(sessionRepository.findById(7L)).thenReturn(Optional.of(session));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userProgressService.heartState(1L))
+                .thenReturn(new UserProgressService.HeartState(3, 3, false, null));
+
+        FailStageResponse response = scoringService.failStage(1L, 7L);
+
+        verify(userProgressService, never()).consumeHeartForStageLoss(anyLong());
+        verify(sessionRepository, never()).save(any(StageSession.class));
+        assertEquals(3, response.attempts(), "A won attempt keeps its heart");
     }
 
     // ── PHASE 9 / 10: personal bests ─────────────────────────────────

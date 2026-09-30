@@ -230,11 +230,27 @@ export function useGameFlow() {
   });
   const stageSessionIdRef = useRef(initialSnapshot?.stageSessionId ?? null);
   const lastFailedSessionRef = useRef(null);
+  // The in-flight stage-loss charge, so a game that reports the same loss twice
+  // (StrictMode double-invoke, a double effect) joins the running charge
+  // instead of starting a second one and spending two hearts.
+  const heartFailInFlightRef = useRef(null);
+  // The in-flight stage-session open, keyed by stage, so a duplicate open for
+  // the same stage joins the running request instead of superseding it.
+  const pendingSessionRef = useRef(null);
+  // Set by requestStageSession when the server answers 409, so the
+  // stage-start gate can tell "refused" apart from "network hiccup".
+  const isLockedOutRef = useRef(false);
   const completingStageIdRef = useRef(null);
   const completeRunTokenRef = useRef(0);
   const [stageResult, setStageResult] = useState(null);
   const [leaderboardStage, setLeaderboardStage] = useState(null);
   const [stageFailNotice, setStageFailNotice] = useState(null);
+  const [cooldownNotice, setCooldownNotice] = useState(null);
+  // The post-loss heart state, published the moment a stage loss is charged.
+  // Games that render their own losing screen read this so the hearts they
+  // show are the server's answer rather than the profile value that is still
+  // in flight from `refreshProfile()` a frame earlier.
+  const [stageLoss, setStageLoss] = useState(null);
   const [completionModalData, setCompletionModalData] = useState(null);
 
   // Stable refs for tracking latest state without triggering cascading effect re-runs
@@ -298,7 +314,11 @@ export function useGameFlow() {
         // Only load snapshot when initializing a new stage object
         const snapshot = loadStageSnapshot(uid, parsed.category, parsed.difficulty, parsed.stageIndex);
         if (snapshot) {
-          stageSessionIdRef.current = snapshot.stageSessionId ?? null;
+          // NOTE: the snapshot deliberately does NOT restore the old session id.
+          // That session is already FAILED/EXPIRED on the server, so reporting a
+          // loss against it would be a no-op and the player would keep the heart.
+          // A fresh session is opened by startStageTimer once play begins.
+          stageSessionIdRef.current = null;
           setStageStartedAt(Date.now() - (snapshot.elapsedMs || 0));
         }
 
@@ -329,19 +349,62 @@ export function useGameFlow() {
   };
 
   /**
-   * SCORING: register a server-side attempt and restart the live stage timer.
+   * SCORING: open a server-side attempt for this stage.
+   *
+   * Called as soon as the stage is launched (not after the loading screen) so
+   * the session ALWAYS exists before the player can lose. Previously this ran
+   * only when a game reported its loading screen finished, which left a window
+   * where a fast loss had no session to report against - the heart was never
+   * charged and the player could keep playing for free.
+   *
+   * Only ONE attempt is ever opened per stage. Opening a second one makes the
+   * server retire the first (StageSessionRepository.expireActiveSessions), so a
+   * duplicate open could leave the client holding a session the server has
+   * already marked EXPIRED - and a loss reported against an expired session was
+   * never charged. Concurrent opens for the same stage (startStage racing the
+   * game's startStageTimer, a double-clicked stage card) now share one request.
+   *
+   * @returns {Promise<number|null>} the new session id, or null if refused.
    */
-  const requestStageSession = (cat, diff, stageIndex) => {
-    stageSessionIdRef.current = null;
-    setStageStartedAt(Date.now());
-    if (!user) return;
+  const requestStageSession = async (cat, diff, stageIndex) => {
+    const key = `${cat}-${diff}-${stageIndex}`;
+    const pending = pendingSessionRef.current;
+    if (pending && pending.key === key) return pending.promise;
 
-    scoringApi
-      .startStage(cat.toUpperCase(), diff.toUpperCase(), stageIndex)
-      .then((res) => { stageSessionIdRef.current = res?.sessionId ?? null; })
-      .catch((err) => {
+    // Registered before the request starts so a re-entrant call during the
+    // round trip joins this attempt instead of opening a competing one.
+    const entry = { key, promise: null };
+    pendingSessionRef.current = entry;
+
+    entry.promise = (async () => {
+      stageSessionIdRef.current = null;
+      isLockedOutRef.current = false;
+      setStageStartedAt(Date.now());
+      if (!user) return null;
+
+      try {
+        const res = await scoringApi.startStage(cat.toUpperCase(), diff.toUpperCase(), stageIndex);
+        stageSessionIdRef.current = res?.sessionId ?? null;
+        return stageSessionIdRef.current;
+      } catch (err) {
+        // 409 = the server locked this operative out (no session hearts left).
+        // The local profile can be stale, so trust the server: re-sync the
+        // profile and show the lockout instead of silently playing unscored.
+        if (err?.status === 409) {
+          isLockedOutRef.current = true;
+          showLockoutNotice();
+          return null;
+        }
         console.warn("Scoring start unavailable, using local scoring:", err.message);
-      });
+        return null;
+      } finally {
+        // Settled either way: allow a later retry (a new attempt, or a stage
+        // start that was refused and is being tried again).
+        if (pendingSessionRef.current === entry) pendingSessionRef.current = null;
+      }
+    })();
+
+    return entry.promise;
   };
 
   const saveSnapshot = useCallback((gameState) => {
@@ -370,9 +433,53 @@ export function useGameFlow() {
     clearStageSnapshot(uid, cat, diff, stageIndex);
   }, [user]);
 
-  const startStage = (cat, diff, stageIndex, options = {}) => {
+  /**
+   * Raises the session-heart lockout dialog.
+   *
+   * Accepts the server-supplied cooldown end time when there is one; otherwise
+   * falls back to the 4-hour window so the countdown is always meaningful.
+   * Re-syncs the profile in the background so the HUD hearts stop disagreeing
+   * with the server.
+   */
+  const showLockoutNotice = (cooldownEndTime = null) => {
+    const endMs = cooldownEndTime ? new Date(cooldownEndTime).getTime() : NaN;
+    setCooldownNotice({
+      // `id` lets the notice remount per cooldown so its clock re-seeds.
+      cooldownEndTime: Number.isFinite(endMs) ? endMs : Date.now() + 4 * 60 * 60 * 1000,
+      id: Date.now(),
+    });
+    if (refreshProfile) {
+      refreshProfile().catch(() => { /* offline */ });
+    }
+  };
+
+  const startStage = async (cat, diff, stageIndex, options = {}) => {
+    // SESSION HEART GATE (fast path). The server is the authority and refuses
+    // a stage start with HTTP 409 while no session heart remains
+    // (ScoringService.startStage -> UserProgressService.assertNotOnCooldown),
+    // for EVERY cipher. This mirrors the rule locally so a locked-out player
+    // stays on the roadmap with a clear explanation.
+    //
+    // Zero hearts locks play on its own: a profile with no hearts left but no
+    // usable cooldown clock (stale client data) is still locked out, matching
+    // UserProgressService.isLockedOut on the server.
+    const heartsLeft = Number(user?.attempts);
+    const hasHearts = Number.isFinite(heartsLeft) && heartsLeft > 0;
+    const cooldownEndMs = user?.cooldownEndTime
+      ? new Date(user.cooldownEndTime).getTime()
+      : NaN;
+    const cooldownActive = Number.isFinite(cooldownEndMs) && cooldownEndMs - Date.now() > 0;
+    if (!hasHearts || cooldownActive) {
+      showLockoutNotice(Number.isFinite(cooldownEndMs) ? cooldownEndMs : null);
+      return;
+    }
+
     completingStageIdRef.current = null;
     completeRunTokenRef.current++;
+    // A fresh attempt clears the previous loss, so a game's losing screen
+    // cannot linger (or keep counting down) once play resumes.
+    setStageLoss(null);
+    setStageFailNotice(null);
     const uid = getUserId();
     clearStageSnapshot(uid, cat, diff, stageIndex);
 
@@ -382,7 +489,19 @@ export function useGameFlow() {
     setCompletionModalData(null);
     lastFailedSessionRef.current = null;
     setLeaderboardStage(null);
-    setStageStartedAt(null);
+
+    // Open the server attempt BEFORE the stage is shown, so a loss always has
+    // a session to report against and the heart is always charged. This is
+    // also the authoritative lockout check: if the server answers 409 we abort
+    // here and never launch the stage, so a stale local profile cannot let a
+    // heartless operative play.
+    const runToken = completeRunTokenRef.current;
+    const sessionId = await requestStageSession(cat, diff, stageIndex);
+    if (completeRunTokenRef.current !== runToken) return; // superseded
+    if (sessionId == null && isLockedOutRef.current) {
+      // Server refused the start: stay on the roadmap, do not launch.
+      return;
+    }
 
     const stageObj = createStageObject(cat, diff, stageIndex);
     setCurrentStage(stageObj);
@@ -394,10 +513,17 @@ export function useGameFlow() {
     );
   };
 
+  // Games call this when their loading screen finishes. The server attempt is
+  // already open (startStage opens it before the stage renders), so this only
+  // restarts the local timer if the session has since gone missing.
   const startStageTimer = () => {
     if (!currentStage) return;
-    const { category: cat, difficulty: diff, stageIndex } = currentStage;
-    requestStageSession(cat, diff, stageIndex);
+    if (!stageSessionIdRef.current) {
+      const { category: cat, difficulty: diff, stageIndex } = currentStage;
+      requestStageSession(cat, diff, stageIndex);
+      return;
+    }
+    setStageStartedAt(Date.now());
   };
 
   const finishLoadingStage = () => {
@@ -590,54 +716,169 @@ export function useGameFlow() {
     startStage(cat, diff, stageIndex, { replace: true });
   };
 
-  // ── SCORING: failure flow ─────────────────────────────────────────
-  // 0 points, streak -> 0, multiplier -> 1.00, total score preserved.
-  // Called by games when the player runs out of lives / fails the stage.
+  // -- SCORING: stage-loss flow ----------------------------------------
+  // 0 points, streak -> 0, multiplier -> 1.00, total score preserved, and the
+  // server spends exactly ONE session heart (ScoringService.failStage).
+  // Called by games when the player runs out of IN-GAME lives / attempts.
+  //
+  // In-game attempts and server session hearts are deliberately separate: the
+  // in-game counter is client-side and never reaches the server, while this
+  // stage-loss report is what costs a heart.
   //
   // Also clears the stage snapshot so a lost stage is not resurrected by the
   // pause/resume engine, and `showNotice: false` lets a game that already
-  // renders its own GAME OVER overlay keep the scoring side-effects (streak
-  // reset, 0 score) without a second modal stacking on top of it.
-  const failStage = async ({ showNotice = true } = {}) => {
-    if (currentStage) {
-      const uid = getUserId();
-      clearStageSnapshot(uid, currentStage.category, currentStage.difficulty, currentStage.stageIndex);
-    }
+  // renders its own GAME OVER overlay keep the side-effects without a second
+  // modal stacking on top of it.
+  const failStage = ({ showNotice = true } = {}) => {
+    // A lost stage must ALWAYS cost exactly one heart, so the whole charge is
+    // resolved to a single promise. A game that reports the same loss twice
+    // (StrictMode double-invoke, a duplicated effect) joins the running charge
+    // instead of starting a second one and spending two hearts.
+    if (heartFailInFlightRef.current) return heartFailInFlightRef.current;
+
+    // Already settled for this exact attempt: a duplicate report must not
+    // charge again. A genuinely new attempt always has a new session id.
     const sessionId = stageSessionIdRef.current;
-    if (sessionId && lastFailedSessionRef.current === sessionId) return;
+    if (sessionId && lastFailedSessionRef.current === sessionId) {
+      return Promise.resolve();
+    }
 
-    let failResult = null;
-    if (sessionId) {
-      lastFailedSessionRef.current = sessionId;
-      try {
-        failResult = await scoringApi.failStage(sessionId);
-      } catch (err) {
-        console.warn("Scoring fail unavailable:", err.message);
+    const run = (async () => {
+      if (currentStage) {
+        const uid = getUserId();
+        clearStageSnapshot(uid, currentStage.category, currentStage.difficulty, currentStage.stageIndex);
       }
-    }
-    stageSessionIdRef.current = null;
 
-    // FAILURE BEHAVIOR (spec §7 / §18): no score, streak reset to 0,
-    // multiplier effective at 1.00x, existing total score preserved.
-    if (showNotice) {
-      setStageFailNotice({
-        score: 0,
-        streak: failResult?.gameStreak ?? 0,
-        multiplier: failResult?.multiplier ?? 1,
+      let failResult = null;
+      let charged = false;
+
+      if (sessionId) {
+        try {
+          failResult = await scoringApi.failStage(sessionId);
+          charged = true;
+        } catch (err) {
+          // The scoring report never landed (offline, expired token, 4xx/5xx or
+          // the 10s timeout). Swallowing it used to make the whole loss FREE,
+          // and because the duplicate guard had already marked the session as
+          // handled, no retry was ever possible - the player simply kept the
+          // heart and kept playing. Fall through to the standalone endpoint
+          // instead, which spends exactly one heart per call and clamps at 0.
+          // A timeout is the one ambiguous case (the server may have processed
+          // it), but paying for a real loss is the safer failure direction for
+          // an economy than giving it away.
+          console.warn("Scoring fail unavailable, charging the heart directly:", err.message);
+        }
+      }
+
+      // NO SESSION (the player lost before the attempt was opened, or the
+      // session request failed) OR the scoring report failed. Either way the
+      // heart MUST be spent, otherwise the loss is free and the lockout never
+      // triggers.
+      if (!charged) {
+        try {
+          failResult = await userApi.deductAttempt();
+          charged = true;
+        } catch (err) {
+          console.warn("Heart deduction unavailable:", err.message);
+        }
+      }
+
+      // Only remember the attempt as settled once a charge actually landed, so
+      // a report that failed outright can still be retried by a later trigger
+      // instead of being locked out forever as "already failed".
+      if (charged && sessionId) lastFailedSessionRef.current = sessionId;
+
+      // The session is spent: the stage is over and cannot be resumed or
+      // retried through it. Deliberately NOT re-armed here - a fresh attempt
+      // must be started from the roadmap, and costs another heart if lost
+      // again. Only clear the id we captured, so a stage the player already
+      // started while this charge was in flight keeps its own live session.
+      if (stageSessionIdRef.current === sessionId) {
+        stageSessionIdRef.current = null;
+      }
+
+      // FAILURE BEHAVIOR (spec 7 / 18): no score, streak reset to 0,
+      // multiplier effective at 1.00x, existing total score preserved.
+      //
+      // Two response shapes can come back and BOTH must be read correctly:
+      //   - POST /scoring/fail/{id} -> { attempts, maxAttempts, lockedOut, ... }
+      //   - POST /users/attempts/deduct -> a full profile { attempts,
+      //     onCooldown, cooldownEndTime, ... } with no `lockedOut` field.
+      // Reading `lockedOut` only off the first shape is what let the fallback
+      // path report "not locked" even at zero hearts, so the lockout dialog
+      // never appeared. Normalise both into one shape instead.
+      const serverHearts = failResult?.attempts;
+      const left = serverHearts != null ? Number(serverHearts) : Number(user?.attempts) || 0;
+      const cooldownEndTime = failResult?.cooldownEndTime ?? null;
+      const hearts = {
+        left,
+        max: failResult?.maxAttempts ?? 3,
+        // A missing `lockedOut` means the profile shape: derive it from the
+        // cooldown flag and the heart count, matching
+        // UserProgressService.isLockedOut on the server. One heart is NOT a
+        // lockout - only zero (or a live cooldown) is.
+        lockedOut: failResult?.lockedOut !== undefined
+          ? Boolean(failResult.lockedOut)
+          : (Boolean(failResult?.onCooldown) || left <= 0),
+        cooldownEndTime,
+      };
+
+      if (showNotice) {
+        setStageFailNotice({
+          score: 0,
+          streak: failResult?.gameStreak ?? 0,
+          multiplier: failResult?.multiplier ?? 1,
+          totalScore: failResult?.totalScore ?? (Number(user?.totalScore) || 0),
+          heartsLeft: hearts.left,
+          maxHearts: hearts.max,
+          lockedOut: hearts.lockedOut,
+          cooldownEndTime: hearts.cooldownEndTime,
+        });
+      }
+
+      // Published for whichever losing screen the game renders. `id` is a
+      // monotonically increasing token so a genuinely new loss re-renders the
+      // screen (and re-seeds its countdown) even if the numbers repeat.
+      setStageLoss((prev) => ({
+        id: (prev?.id ?? 0) + 1,
+        heartsLeft: hearts.left,
+        maxHearts: hearts.max,
+        lockedOut: hearts.lockedOut,
+        cooldownEndTime: hearts.cooldownEndTime,
         totalScore: failResult?.totalScore ?? (Number(user?.totalScore) || 0),
-      });
-    }
+        streak: failResult?.gameStreak ?? 0,
+      }));
 
-    if (refreshProfile) {
-      try { await refreshProfile(); } catch { /* offline */ }
-    }
+      // Re-sync from the server so the HUD hearts are never stale. Done even
+      // when every charge attempt failed, so the UI still converges on truth.
+      if (refreshProfile) {
+        try { await refreshProfile(); } catch { /* offline */ }
+      }
 
-    if (currentStage) {
-      requestStageSession(currentStage.category, currentStage.difficulty, currentStage.stageIndex);
-    }
+      // Spending the last heart locks EVERY stage immediately. When this game
+      // renders its own losing screen, that screen explains the lockout with a
+      // live countdown, so raising CooldownNotice as well would stack a second
+      // dialog on top of it telling the player the same thing.
+      if (hearts.lockedOut && showNotice) {
+        showLockoutNotice(hearts.cooldownEndTime);
+      }
+    })();
+
+    heartFailInFlightRef.current = run;
+    // Release the in-flight slot once settled so a later, genuinely new loss
+    // can charge. Kept until the promise resolves, so duplicate reports that
+    // arrive mid-charge can never double-spend.
+    const release = () => {
+      if (heartFailInFlightRef.current === run) heartFailInFlightRef.current = null;
+    };
+    run.then(release, release);
+
+    return run;
   };
 
   const dismissStageFailNotice = () => setStageFailNotice(null);
+
+  const dismissCooldownNotice = () => setCooldownNotice(null);
 
   const openStageLeaderboard = (cat, diff, stageIndex) => {
     setLeaderboardStage({
@@ -782,6 +1023,8 @@ export function useGameFlow() {
     // SCORING SYSTEM
     stageStartedAt, stageResult, dismissStageResult, failStage,
     stageFailNotice, dismissStageFailNotice,
+    stageLoss,
+    cooldownNotice, dismissCooldownNotice,
     leaderboardStage, openStageLeaderboard, closeStageLeaderboard,
   };
 }

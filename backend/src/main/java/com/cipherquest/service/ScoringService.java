@@ -37,7 +37,19 @@ import java.util.Comparator;
  * Streak timing: the streak is incremented BEFORE the multiplier is calculated,
  *                so reaching a new tier benefits the stage that reached it.
  * Failure      : no score, streak reset to 0, total score untouched, no history
- *                record, no personal best updates.
+ *                record, no personal best updates, and ONE server session heart
+ *                is spent.
+ *
+ * SESSION HEARTS vs IN-GAME ATTEMPTS (two separate economies):
+ *  - Session hearts live on the server (User.attempts, max 3). They are spent
+ *    ONLY by a finished stage attempt, in every cipher and mini-game alike, and
+ *    are reported back in the fail/complete responses.
+ *  - In-game attempts (Pac-Man lives, Sprint tokens, fishing casts) are purely
+ *    client-side, reset with the stage, and never touch the server counter.
+ *
+ * Lockout      : while no session heart remains, starting a stage is refused
+ *                (HTTP 409) for EVERY cipher, and direct progress claims are
+ *                refused too, so the lockout cannot be bypassed.
  *
  * Anti-cheat:
  *  - Every attempt must start via POST /api/scoring/start which creates a
@@ -120,6 +132,10 @@ public class ScoringService {
     /**
      * PHASE 7: startStageTimer — records a server-side start timestamp.
      * Any previous ACTIVE session for the same stage is marked EXPIRED.
+     *
+     * The session-heart gate runs first: an operative with no hearts left is
+     * locked out by the server for the duration of the cooldown, so a modified
+     * client cannot start a stage it is not entitled to.
      */
     @Transactional
     public StartStageResponse startStage(Long userId, StartStageRequest req) {
@@ -129,6 +145,9 @@ public class ScoringService {
         String cipher     = req.cipherType().toUpperCase();
         String difficulty = req.difficultyTier().toUpperCase();
         validateStage(cipher, difficulty, req.levelIndex());
+
+        // Reject the attempt while the session hearts are on cooldown.
+        userProgressService.assertNotOnCooldown(userId);
 
         // Expire abandoned attempts so a stage cannot have two live sessions.
         sessionRepository.expireActiveSessions(userId, cipher, difficulty, req.levelIndex());
@@ -266,6 +285,20 @@ public class ScoringService {
      * PHASE 4: failure flow.
      * 0 points, streak -> 0, multiplier -> 1.00, total score untouched,
      * no completion record, no personal-best updates.
+     *
+     * SESSION HEARTS: a lost stage costs exactly ONE server session heart. The
+     * heart is spent here, on the server, rather than by a separate client call,
+     * so the cost cannot be skipped by a modified client and stays identical for
+     * every cipher and mini-game. In-game attempts (Pac-Man lives, Sprint tokens,
+     * fishing casts) are a separate client-side economy and never touch it.
+     *
+     * The heart is charged for the report that SETTLES the attempt, so a
+     * duplicate report against an already-FAILED session can never charge
+     * twice. A session that is merely EXPIRED is NOT settled: EXPIRED is how
+     * the server retires an attempt that was abandoned or superseded, and it
+     * carries no record of the loss ever having been paid for. Those are
+     * charged here too, otherwise a player whose session got retired while
+     * they were still playing it would lose the stage for free.
      */
     @Transactional
     public FailStageResponse failStage(Long userId, Long sessionId) {
@@ -275,18 +308,44 @@ public class ScoringService {
         if (!session.getUser().getId().equals(userId)) {
             throw new IllegalStateException("Stage session does not belong to the current player.");
         }
-        if ("ACTIVE".equals(session.getStatus())) {
+
+        // A loss is charged once per session, on the report that settles it.
+        // FAILED means this session's loss was already paid for, so a repeated
+        // report is a no-op and must not spend a second heart. COMPLETED means
+        // the attempt was won, so there is nothing to charge. Everything else
+        // (ACTIVE, EXPIRED, anything unexpected) is unsettled and owes a heart.
+        boolean alreadySettled = "FAILED".equals(session.getStatus())
+                || "COMPLETED".equals(session.getStatus());
+
+        if (!alreadySettled) {
             session.setStatus("FAILED");
-            session.setEndedAt(LocalDateTime.now());
+            if (session.getEndedAt() == null) {
+                session.setEndedAt(LocalDateTime.now());
+            }
             sessionRepository.save(session);
         }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
-        user.setGameStreak(0); // failure resets the streak; totalScore is preserved
+
+        // Streak reset on every report (cheap, idempotent); the heart is only
+        // charged for the report that actually settles the attempt.
+        user.setGameStreak(0);
         userRepository.save(user);
 
-        return new FailStageResponse(user.getGameStreak(), getStreakMultiplier(user.getGameStreak()), user.getTotalScore());
+        UserProgressService.HeartState hearts = !alreadySettled
+                ? userProgressService.consumeHeartForStageLoss(userId)
+                : userProgressService.heartState(userId);
+
+        return new FailStageResponse(
+                user.getGameStreak(),
+                getStreakMultiplier(user.getGameStreak()),
+                user.getTotalScore(),
+                hearts.attempts(),
+                hearts.maxAttempts(),
+                hearts.lockedOut(),
+                hearts.cooldownEndTime()
+        );
     }
 
     // ── Personal bests ───────────────────────────────────────────────

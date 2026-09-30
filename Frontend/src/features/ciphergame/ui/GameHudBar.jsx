@@ -37,28 +37,15 @@ export default function GameHudBar({
             <span>Menu</span>
           </button>
         )}
-      </div>
 
-      {!isReady && (
-        <div
-          className="fg-header-title"
-          style={{
-            position: 'absolute',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            textAlign: 'center',
-            fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: '1.1rem',
-            fontWeight: '700',
-            color: '#ffffff',
-            whiteSpace: 'nowrap',
-            pointerEvents: 'none',
-            zIndex: 5,
-          }}
-        >
-          {title} {stage != null && `— Stage ${stage}`} {tier && `(${tier.toUpperCase()})`}
-        </div>
-      )}
+        {/* Stage name: left-aligned beside the Menu button so it can never
+            collide with the scoring / hearts / attempts cluster on the right. */}
+        {!isReady && (
+          <div className="fg-header-title" title={`${title}${stage != null ? ` — Stage ${stage}` : ''}${tier ? ` (${tier.toUpperCase()})` : ''}`}>
+            {title} {stage != null && `— Stage ${stage}`} {tier && `(${tier.toUpperCase()})`}
+          </div>
+        )}
+      </div>
 
       {!isReady && (
         <div className="fg-header-right" style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 6 }}>

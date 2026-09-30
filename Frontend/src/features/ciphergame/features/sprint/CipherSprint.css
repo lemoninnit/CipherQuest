@@ -1665,7 +1665,9 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 40;
-  min-width: 320px;
+  width: 330px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
 }
 
 .sprint-floating-action-modal {

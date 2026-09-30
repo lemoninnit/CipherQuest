@@ -15,6 +15,7 @@ import CompletionModal    from "./ui/CompletionModal";
 import StageScoreModal    from "./ui/StageScoreModal";
 import StageLeaderboard   from "./ui/StageLeaderboard";
 import StageFailNotice    from "./ui/StageFailNotice";
+import CooldownNotice    from "./ui/CooldownNotice";
 
 // Caesar, Vigenere & Playfair tutorials
 import CaesarTutorialModal from "./features/caesar/CaesarTutorialModal";
@@ -122,6 +123,8 @@ export default function CipherGame() {
     // SCORING SYSTEM
     stageStartedAt, stageResult, dismissStageResult, failStage,
     stageFailNotice, dismissStageFailNotice,
+    stageLoss,
+    cooldownNotice, dismissCooldownNotice,
     leaderboardStage, openStageLeaderboard, closeStageLeaderboard,
   } = game;
 
@@ -159,6 +162,9 @@ export default function CipherGame() {
       onStartStageTimer: startStageTimer,
       // SCORING SYSTEM: games call this when the player fails (streak reset)
       onStageFail: failStage,
+      // Authoritative post-loss heart state, so a game's losing screen shows
+      // the server's answer rather than the profile value still in flight.
+      stageLoss,
       onSaveSnapshot: game.saveSnapshot,
       onClearSnapshot: game.clearSnapshot,
     };
@@ -238,6 +244,13 @@ export default function CipherGame() {
         {/* SCORING SYSTEM: failure feedback (no score, streak reset) */}
         <StageFailNotice notice={stageFailNotice} onDismiss={dismissStageFailNotice} />
 
+        {/* SESSION HEARTS: cooldown lockout (stage start refused server-side) */}
+        <CooldownNotice
+          key={cooldownNotice?.id}
+          notice={cooldownNotice}
+          onDismiss={dismissCooldownNotice}
+        />
+
         {/* SCORING SYSTEM: per-stage HIGHEST SCORE / FASTEST TIME rankings */}
         {leaderboardStage && (
           <StageLeaderboard stage={leaderboardStage} onClose={closeStageLeaderboard} />
@@ -301,6 +314,13 @@ export default function CipherGame() {
         {leaderboardStage && (
           <StageLeaderboard stage={leaderboardStage} onClose={closeStageLeaderboard} />
         )}
+
+        {/* SESSION HEARTS: cooldown lockout — raised when a stage start is refused */}
+        <CooldownNotice
+          key={cooldownNotice?.id}
+          notice={cooldownNotice}
+          onDismiss={dismissCooldownNotice}
+        />
 
         {/* Caesar Tutorial Modal */}
         <CaesarTutorialModal

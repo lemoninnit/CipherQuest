@@ -7,19 +7,37 @@ import './Registerpage.css';
 const RegisterPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm]       = useState({ username: '', email: '', password: '' });
+  const [form, setForm]       = useState({ username: '', email: '', password: '', confirmPassword: '' });
   const [error, setError]     = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  // Whether the confirm field has been interacted with. Lets us stay quiet
+  // about a mismatch until they have actually finished typing it.
+  const [confirmTouched, setConfirmTouched] = useState(false);
 
-  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    // Clear a stale "do not match" banner as soon as they start correcting it.
+    if (name === 'password' || name === 'confirmPassword') setError('');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const { username, email, password, confirmPassword } = form;
+    // Validate that both Access Ciphers match before spending a request on the
+    // server. The server re-checks this (see UserService.register) — this is
+    // purely to give immediate, friendly feedback.
+    if (confirmPassword !== password) {
+      setError('Access Ciphers do not match. Please re-enter them to confirm.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      const data = await authApi.register(form.username, form.email, form.password);
+      const data = await authApi.register(username, email, password, confirmPassword);
       login(data.token, data.user);
       navigate('/loading');
     } catch (err) {
@@ -28,6 +46,13 @@ const RegisterPage = () => {
       setLoading(false);
     }
   };
+
+  // Live mismatch feedback. Only meaningful once they have typed something in
+  // the confirm field, otherwise the banner fires while the first cipher is
+  // still being composed.
+  const confirmMismatch =
+    form.confirmPassword.length > 0 && form.confirmPassword !== form.password;
+  const showMismatch = confirmMismatch && (confirmTouched || error !== '');
 
   return (
     <main className="cipher-bg register-page">
@@ -133,6 +158,54 @@ const RegisterPage = () => {
                   </span>
                 </button>
               </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="register-confirm-password">Confirm Access Cipher</label>
+              <div className="input-wrapper neon-glow-focus has-toggle">
+                <div className="input-icon">
+                  <span className="material-symbols-outlined icon-20">lock_reset</span>
+                </div>
+                <input
+                  id="register-confirm-password"
+                  required
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Re-enter cipher"
+                  value={form.confirmPassword}
+                  onChange={onChange}
+                  onBlur={() => setConfirmTouched(true)}
+                  minLength={6}
+                  autoComplete="new-password"
+                  disabled={loading}
+                  aria-invalid={showMismatch}
+                  aria-describedby={showMismatch ? 'register-confirm-error' : undefined}
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  aria-label={showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'}
+                  aria-pressed={showConfirmPassword}
+                  onClick={() => setShowConfirmPassword((visible) => !visible)}
+                  disabled={loading}
+                >
+                  <span className="material-symbols-outlined icon-20">
+                    {showConfirmPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
+              </div>
+              {showMismatch && (
+                <p id="register-confirm-error" className="register-field-error" role="alert">
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>error</span>
+                  Access Ciphers do not match.
+                </p>
+              )}
+              {!confirmMismatch && form.confirmPassword.length > 0 && (
+                <p className="register-field-success" role="status">
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check_circle</span>
+                  Access Ciphers match.
+                </p>
+              )}
             </div>
 
             <button type="submit" className="submit-btn" disabled={loading}>

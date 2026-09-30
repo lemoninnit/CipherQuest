@@ -454,6 +454,59 @@ input:checked + .slider:before {
   color: #ffffff;
 }
 
+/* Neutral (non-destructive) action button, matching the shape of the logout and
+   purge buttons but in the cyan accent so "Change" never reads as a warning. */
+.settings-change-pw-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: #00e5ff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.settings-change-pw-btn:hover {
+  background: rgba(0, 229, 255, 0.16);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+  border-color: #00e5ff;
+  color: #ffffff;
+}
+
+.settings-change-pw-btn:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 2px;
+}
+
+/* Confirms the cipher change without a toast, so the message stays attached to
+   the row it refers to and is read out by the role="status" live region. */
+.settings-inline-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: 10px;
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: #86efac;
+}
+
+.settings-inline-success .material-symbols-outlined {
+  font-size: 1.05rem;
+  color: #4ade80;
+  flex-shrink: 0;
+}
+
 /* Danger Zone Styles */
 .danger-zone-group h3 {
   color: #ef4444 !important;

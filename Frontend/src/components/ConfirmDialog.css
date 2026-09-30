@@ -1,0 +1,229 @@
+/* ── Confirmation dialog ─────────────────────────────────────────────────────
+   Replaces the native window.confirm() popup. Styled to match the rest of the
+   dashboard: dark glass, cyan accents, Space Grotesk headings. Danger tone
+   (sign out, delete account) swaps the accent to the neon red already used by
+   the destructive sidebar items, so "this one is risky" is readable before a
+   single word is. */
+
+.cd-overlay {
+  position: fixed;
+  inset: 0;
+  /* Must clear the Settings modal (z-index 10000 in DashboardLayout.css),
+     because a dialog can be opened from inside it, and the game overlays
+     (StageLostScreen / CooldownNotice, 1250). 11000 sits above all of them
+     without reaching for an ever-larger number later. */
+  z-index: 11000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(3, 9, 20, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: cd-fade-in 0.18s ease-out;
+}
+
+@keyframes cd-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cd-card {
+  width: min(430px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(9, 18, 32, 0.98);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 18px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 229, 255, 0.1);
+  padding: 24px;
+  color: #e8f4f8;
+  font-family: 'Space Grotesk', sans-serif;
+  animation: cd-pop-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes cd-pop-in {
+  from { transform: scale(0.95) translateY(6px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.cd-card.is-danger {
+  border-color: rgba(255, 45, 85, 0.45);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 45, 85, 0.14);
+}
+
+.cd-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cd-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  color: #00e5ff;
+}
+
+.cd-icon .material-symbols-outlined {
+  font-size: 1.5rem;
+}
+
+.is-danger .cd-icon {
+  background: rgba(255, 45, 85, 0.12);
+  border-color: rgba(255, 45, 85, 0.4);
+  color: #ff5277;
+}
+
+.cd-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: #fff;
+}
+
+.cd-desc {
+  margin: 0 0 14px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: rgba(232, 244, 248, 0.75);
+}
+
+.cd-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cd-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 11px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease, background 0.15s ease;
+}
+
+.cd-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Cancel is the default, so it reads as the safe, quiet option. */
+.cd-btn-cancel {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #e8f4f8;
+}
+
+.cd-btn-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.cd-btn-confirm {
+  background: #0096c7;
+  background: linear-gradient(135deg, #00a8cc 0%, #0084a8 100%);
+  border: 1px solid #00e5ff;
+  color: #fff;
+}
+
+.cd-btn-confirm:hover:not(:disabled) {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.is-danger .cd-btn-confirm {
+  background: linear-gradient(135deg, #ff2d55 0%, #c2183c 100%);
+  border-color: #ff5277;
+}
+
+.cd-btn:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 2px;
+}
+
+.is-danger .cd-btn:focus-visible {
+  outline-color: #ff5277;
+}
+
+/* ── Slots a caller can fill with its own content ───────────────────────── */
+
+/* "what you are about to lose" list, used by the delete-account dialog. */
+.cd-permanent-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 45, 85, 0.07);
+  border: 1px solid rgba(255, 45, 85, 0.25);
+  display: grid;
+  gap: 7px;
+}
+
+.cd-permanent-list li {
+  position: relative;
+  padding-left: 18px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  color: rgba(232, 244, 248, 0.9);
+}
+
+.cd-permanent-list li::before {
+  content: '\2022';
+  position: absolute;
+  left: 4px;
+  color: #ff5277;
+  font-weight: 700;
+}
+
+.cd-irreversible {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: rgba(232, 244, 248, 0.75);
+}
+
+.cd-irreversible strong {
+  color: #fff;
+}
+
+/* Failure feedback stays inside the dialog instead of firing window.alert,
+   so the player can retry or back out without a second popup. */
+.cd-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 45, 85, 0.12);
+  border: 1px solid rgba(255, 45, 85, 0.4);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #fca5a5;
+}
+
+.cd-error .material-symbols-outlined {
+  flex: none;
+  font-size: 1.05rem;
+  color: #ff5277;
+}
+
+@media (max-width: 420px) {
+  .cd-card { padding: 20px 18px; }
+  .cd-actions { flex-direction: column-reverse; }
+}

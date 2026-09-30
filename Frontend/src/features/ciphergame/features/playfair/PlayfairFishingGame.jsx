@@ -102,6 +102,9 @@ export default function PlayfairFishingGame({
   onSaveSnapshot,
   onClearSnapshot,
   onStageFail,
+  // Authoritative post-loss heart state, so the losing screen shows the
+  // server's answer rather than the profile value still in flight.
+  stageLoss,
 }) {
   const { containerRef, isFullscreen, toggleFullscreen } = useFullscreen();
 
@@ -972,9 +975,11 @@ export default function PlayfairFishingGame({
         )}
       </div>
 
+      {/* Running out of IN-GAME attempts loses the stage and costs one
+          server session heart. No retry: the stage attempt is final. */}
       <FishingGameOverOverlay
         open={gameOver}
-        onRetry={startGame}
+        stageLoss={stageLoss}
         onExit={onBackToStages}
       />
 
