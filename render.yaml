@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: cipherquest-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: DB_URL
+        value: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?prepareThreshold=0
+      - key: DB_USERNAME
+        value: postgres.jacbtscvbixzsfbkkjcf
+      - key: DB_PASSWORD
+        sync: false # Set in Render Dashboard
+      - key: JWT_SECRET
+        sync: false # Set in Render Dashboard
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://cipher-quest.kwpoliquit.workers.dev,https://*.workers.dev,https://*.pages.dev,http://localhost:5173,*

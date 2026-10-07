@@ -20,7 +20,12 @@ backend/target/
 backend/target/
 *.class
 
+# Cloudflare Wrangler & Build
+.wrangler/
+Frontend/dist/
+
 # Environment / secrets
 .env
 .env.*
 !.env.example
+

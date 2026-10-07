@@ -1,6 +1,9 @@
 // Allow overriding the backend base URL via Vite env `VITE_API_BASE`.
-// Falls back to relative `/api` so the app works behind a proxy or in production.
-const BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE) || (window && window.__API_BASE__) || (window && window.location.origin + '/api');
+// In production, fallback to the live Render backend URL if not explicitly configured.
+const PROD_API_URL = 'https://cipherquest-oddy.onrender.com/api';
+const BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE)
+  || (typeof window !== 'undefined' && window.__API_BASE__)
+  || (import.meta.env && import.meta.env.DEV ? '/api' : PROD_API_URL);
 
 const getToken = () => localStorage.getItem('cq_token');
 
@@ -14,7 +17,7 @@ async function request(method, path, body) {
   const url = `${BASE_URL}${path}`;
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout for backend cold starts
 
     const res = await fetch(url, {
       method,

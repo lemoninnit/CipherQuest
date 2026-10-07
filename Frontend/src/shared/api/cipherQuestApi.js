@@ -1,4 +1,7 @@
-const BASE_URL = 'http://localhost:8080/api';
+const PROD_API_URL = 'https://cipherquest-oddy.onrender.com/api';
+const BASE_URL = (import.meta.env && import.meta.env.VITE_API_BASE)
+  || (typeof window !== 'undefined' && window.__API_BASE__)
+  || (import.meta.env && import.meta.env.DEV ? '/api' : PROD_API_URL);
 
 const getToken = () => localStorage.getItem('cq_token');
 
@@ -8,14 +11,26 @@ const headers = () => ({
 });
 
 async function request(method, path, body) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers: headers(),
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
-  return data;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers: headers(),
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+    return data;
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err.name === 'AbortError') {
+      throw new Error('Network timeout: backend did not respond (server may be waking up)', { cause: err });
+    }
+    throw err;
+  }
 }
 
 export const authApi = {
