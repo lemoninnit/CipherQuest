@@ -10,13 +10,22 @@
   background: rgba(3, 8, 18, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  animation: ssm-fade 0.25s ease-out;
+  animation: ssm-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   padding: 1rem;
 }
 
-@keyframes ssm-fade {
+.ssm-overlay.is-closing {
+  animation: ssm-fade-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ssm-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes ssm-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 .ssm-card {
@@ -31,16 +40,25 @@
     inset 0 1px 1px rgba(255, 255, 255, 0.15);
   padding: 26px 26px 24px;
   color: #fff;
-  animation: ssm-scale 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: ssm-scale-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   display: flex;
   flex-direction: column;
   align-items: center;
   overflow: hidden;
 }
 
-@keyframes ssm-scale {
-  from { transform: scale(0.92) translateY(8px); opacity: 0; }
+.ssm-card.is-closing {
+  animation: ssm-scale-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ssm-scale-in {
+  from { transform: scale(0.92) translateY(10px); opacity: 0; }
   to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes ssm-scale-out {
+  from { transform: scale(1) translateY(0); opacity: 1; }
+  to { transform: scale(0.92) translateY(10px); opacity: 0; }
 }
 
 /* Top-Left Back to Roadmap Button */
@@ -406,5 +424,18 @@
 @media (max-width: 440px) {
   .ssm-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ssm-overlay,
+  .ssm-overlay.is-closing,
+  .ssm-card,
+  .ssm-card.is-closing,
+  .ssm-btn,
+  .ssm-best-badge {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
   }
 }

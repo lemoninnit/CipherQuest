@@ -89,23 +89,34 @@ export function StageLostCard({
 
   const score = Number.isFinite(Number(totalScore)) ? Number(totalScore) : (Number(user?.totalScore) || 0);
 
+  const [isClosing, setIsClosing] = useState(false);
+
   // Kept in a ref so the focus/Escape effect runs once per open instead of
   // re-firing on every render (callers pass a fresh arrow function each time).
   const onExitRef = useRef(onExit);
   useEffect(() => { onExitRef.current = onExit; });
 
+  const handleExit = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onExitRef.current?.();
+    }, 200);
+  };
+
   useEffect(() => {
     if (!open) return undefined;
     actionRef.current?.focus();
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') onExitRef.current?.();
+      if (e.key === 'Escape') handleExit();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
   return (
-    <div className={`sls-card${compact ? ' sls-card-compact' : ''}`}>
+    <div className={`sls-card${compact ? ' sls-card-compact' : ''}${isClosing ? ' is-closing' : ''}`}>
       <header className="sls-header">
         <span className="material-symbols-outlined sls-icon" aria-hidden="true">favorite</span>
         <div>
@@ -180,7 +191,7 @@ export function StageLostCard({
           : 'This attempt is over, but every stage you have already cleared \u2014 and your total score \u2014 is safe.'}
       </p>
 
-      <button ref={actionRef} type="button" className="sls-btn" onClick={onExit}>
+      <button ref={actionRef} type="button" className="sls-btn" onClick={handleExit}>
         {showExitIcon && (
           <span className="material-symbols-outlined" aria-hidden="true">{exitIcon}</span>
         )}
@@ -196,19 +207,30 @@ export function StageLostCard({
  */
 export default function StageLostScreen(props) {
   const { open = true, onExit } = props;
+  const [isClosing, setIsClosing] = useState(false);
+
   if (!open) return null;
+
+  const handleBackdropExit = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onExit?.();
+    }, 200);
+  };
 
   return (
     <div
-      className="sls-overlay"
-      onClick={onExit}
+      className={`sls-overlay ${isClosing ? 'is-closing' : ''}`}
+      onClick={handleBackdropExit}
       role="dialog"
       aria-modal="true"
       aria-labelledby="sls-title"
     >
       {/* Stops a click on the card from bubbling out and dismissing it. */}
       <div className="sls-panel" onClick={(e) => e.stopPropagation()}>
-        <StageLostCard {...props} open={open} />
+        <StageLostCard {...props} open={open} onExit={handleBackdropExit} />
       </div>
     </div>
   );

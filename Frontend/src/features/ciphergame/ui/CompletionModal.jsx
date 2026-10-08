@@ -3,6 +3,7 @@ import './CompletionModal.css';
 
 export default function CompletionModal({ modalData, onContinueNext, onMainMenu }) {
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     if (modalData?.badgeImage) {
@@ -15,6 +16,15 @@ export default function CompletionModal({ modalData, onContinueNext, onMainMenu 
   }, [modalData?.badgeImage]);
 
   if (!modalData) return null;
+
+  const handleAction = (callback) => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      callback?.();
+    }, 200);
+  };
 
   const {
     type, // 'tier' or 'grandmaster'
@@ -29,8 +39,8 @@ export default function CompletionModal({ modalData, onContinueNext, onMainMenu 
   const isGrandmaster = type === 'grandmaster';
 
   return (
-    <div className="cq-completion-overlay">
-      <div className={`cq-completion-card ${isGrandmaster ? 'grandmaster-glow' : 'tier-glow'}`}>
+    <div className={`cq-completion-overlay ${isClosing ? 'is-closing' : ''}`}>
+      <div className={`cq-completion-card ${isGrandmaster ? 'grandmaster-glow' : 'tier-glow'} ${isClosing ? 'is-closing' : ''}`}>
         {/* Top Header Banner */}
         <div className="cq-completion-header">
           <div className="cq-header-pill">
@@ -71,13 +81,13 @@ export default function CompletionModal({ modalData, onContinueNext, onMainMenu 
 
         {/* Action Buttons */}
         <div className="cq-completion-actions">
-          <button className="cq-btn-secondary" onClick={onMainMenu}>
+          <button className="cq-btn-secondary" onClick={() => handleAction(onMainMenu)}>
             <span className="material-symbols-outlined">grid_view</span>
             <span>Main Menu (Sidequest)</span>
           </button>
 
           {!isGrandmaster && nextDifficulty && (
-            <button className="cq-btn-primary" onClick={onContinueNext}>
+            <button className="cq-btn-primary" onClick={() => handleAction(onContinueNext)}>
               <span>Continue to {nextDifficulty.toUpperCase()}</span>
               <span className="material-symbols-outlined">arrow_forward</span>
             </button>

@@ -17,12 +17,21 @@
   background: rgba(20, 3, 6, 0.84);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  animation: sls-fade-in 0.2s ease-out;
+  animation: sls-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.sls-overlay.is-closing {
+  animation: sls-fade-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes sls-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes sls-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 .sls-panel {
@@ -39,7 +48,11 @@
   padding: 22px;
   color: #fff;
   font-family: 'Space Grotesk', sans-serif;
-  animation: sls-pop-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  animation: sls-pop-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.sls-card.is-closing {
+  animation: sls-pop-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* The sprint games already wrap the card in a bordered, padded modal, so the
@@ -53,8 +66,13 @@
 }
 
 @keyframes sls-pop-in {
-  from { transform: scale(0.94); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from { transform: scale(0.92) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes sls-pop-out {
+  from { transform: scale(1) translateY(0); opacity: 1; }
+  to { transform: scale(0.92) translateY(8px); opacity: 0; }
 }
 
 .sls-header {
@@ -264,4 +282,16 @@
 @media (max-width: 420px) {
   .sls-facts { grid-template-columns: 1fr; }
   .sls-card { padding: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sls-overlay,
+  .sls-overlay.is-closing,
+  .sls-card,
+  .sls-card.is-closing,
+  .sls-btn {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }

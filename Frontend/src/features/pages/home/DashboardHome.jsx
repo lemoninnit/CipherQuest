@@ -475,23 +475,25 @@ const DashboardHome = () => {
                       {card.svg}
                     </div>
                     <div className="dh-card-body">
-                      <div className="dh-card-title-row">
-                        <h3 className="dh-card-title">{card.title}</h3>
-                        <span className="dh-card-progress-pill">{totalCompleted}/15</span>
-                      </div>
-
-                      {/* Sleek Mini Progress Bar */}
-                      <div className="dh-card-mini-progress">
-                        <div className="dh-card-mini-progress-outer">
-                          <div
-                            className="dh-card-mini-progress-inner"
-                            style={{ width: `${percentage}%` }}
-                          />
+                      <div>
+                        <div className="dh-card-title-row">
+                          <h3 className="dh-card-title">{card.title}</h3>
+                          <span className="dh-card-progress-pill">{totalCompleted}/15</span>
                         </div>
-                        <span className="dh-card-mini-progress-text">{percentage}% Complete</span>
-                      </div>
 
-                      <p className="dh-card-desc">{card.desc}</p>
+                        {/* Sleek Mini Progress Bar */}
+                        <div className="dh-card-mini-progress">
+                          <div className="dh-card-mini-progress-outer">
+                            <div
+                              className="dh-card-mini-progress-inner"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <span className="dh-card-mini-progress-text">{percentage}% Complete</span>
+                        </div>
+
+                        <p className="dh-card-desc">{card.desc}</p>
+                      </div>
 
                       <button
                         className="dh-card-show-tutorial-btn"

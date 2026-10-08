@@ -15,18 +15,51 @@
   justify-content: center;
   z-index: 10000;
   padding: 16px;
-  animation: cqTutFadeIn 0.22s ease-out;
+  animation: cqTutFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   box-sizing: border-box;
+}
+
+.cq-tut-modal-overlay.is-closing {
+  animation: cqTutFadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes cqTutFadeIn {
   from {
     opacity: 0;
-    transform: scale(0.98);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+  }
+}
+
+@keyframes cqTutFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes cqTutPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes cqTutPopOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
   }
 }
 
@@ -47,6 +80,11 @@
   -webkit-backdrop-filter: blur(20px);
   overflow: hidden;
   box-sizing: border-box;
+  animation: cqTutPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cq-tut-modal-container.is-closing {
+  animation: cqTutPopOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* ─── Header ─── */
@@ -555,5 +593,18 @@
 
   .cq-tut-modal-container {
     max-height: 95vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cq-tut-modal-overlay,
+  .cq-tut-modal-overlay.is-closing,
+  .cq-tut-modal-container,
+  .cq-tut-modal-container.is-closing,
+  .cq-tut-modal-back-btn,
+  .cq-tut-footer-close-btn {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
   }
 }

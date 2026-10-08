@@ -29,6 +29,7 @@ export default function CooldownNotice({ notice, onDismiss }) {
   // each new cooldown, so the first frame already shows the correct remaining
   // time without reading the impure clock during render.
   const [now, setNow] = useState(() => Date.now());
+  const [isClosing, setIsClosing] = useState(false);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -38,12 +39,27 @@ export default function CooldownNotice({ notice, onDismiss }) {
 
   if (!notice) return null;
 
+  const handleDismiss = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onDismiss?.();
+    }, 200);
+  };
+
   const remaining = splitRemaining(notice.cooldownEndTime - now);
   const isOver = remaining.hours === 0 && remaining.minutes === 0 && remaining.seconds === 0;
 
   return (
-    <div className="cdn-overlay" onClick={onDismiss} role="dialog" aria-modal="true" aria-label="Session hearts cooldown">
-      <div className="cdn-card" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`cdn-overlay ${isClosing ? 'is-closing' : ''}`}
+      onClick={handleDismiss}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Session hearts cooldown"
+    >
+      <div className={`cdn-card ${isClosing ? 'is-closing' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="cdn-header">
           <span className="material-symbols-outlined cdn-icon">heart_broken</span>
           <h2 className="cdn-title">SESSION HEARTS DEPLETED</h2>
@@ -64,7 +80,7 @@ export default function CooldownNotice({ notice, onDismiss }) {
           refill — your cleared stages, score, and streak are all preserved.
         </p>
 
-        <button className="cdn-btn" onClick={onDismiss}>
+        <button className="cdn-btn" onClick={handleDismiss}>
           {isOver ? 'Resume Quest' : 'Understood'}
         </button>
       </div>

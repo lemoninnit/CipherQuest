@@ -12,7 +12,11 @@
   align-items: center;
   justify-content: center;
   z-index: 9999;
-  animation: cqPauseFadeIn 0.2s ease;
+  animation: cqPauseFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cq-pause-overlay.is-closing {
+  animation: cqPauseFadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes cqPauseFadeIn {
@@ -21,6 +25,37 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes cqPauseFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes cqPausePopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes cqPausePopOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
   }
 }
 
@@ -41,6 +76,11 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-sizing: border-box;
+  animation: cqPausePopIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cq-pause-card.is-closing {
+  animation: cqPausePopOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .cq-pause-title {
@@ -138,4 +178,16 @@
 
 .cq-pause-btn-exit:active {
   transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cq-pause-overlay,
+  .cq-pause-overlay.is-closing,
+  .cq-pause-card,
+  .cq-pause-card.is-closing,
+  .cq-pause-btn {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }

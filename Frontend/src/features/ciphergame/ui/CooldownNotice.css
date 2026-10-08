@@ -12,12 +12,21 @@
   justify-content: center;
   background: rgba(20, 12, 3, 0.84);
   backdrop-filter: blur(6px);
-  animation: cdn-fade-in 0.2s ease-out;
+  animation: cdn-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cdn-overlay.is-closing {
+  animation: cdn-fade-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes cdn-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes cdn-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 .cdn-card {
@@ -28,12 +37,21 @@
   box-shadow: 0 0 40px rgba(251, 191, 36, 0.18);
   padding: 22px 24px;
   color: #fff;
-  animation: cdn-pop-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  animation: cdn-pop-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cdn-card.is-closing {
+  animation: cdn-pop-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes cdn-pop-in {
-  from { transform: scale(0.92); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from { transform: scale(0.92) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes cdn-pop-out {
+  from { transform: scale(1) translateY(0); opacity: 1; }
+  to { transform: scale(0.92) translateY(8px); opacity: 0; }
 }
 
 .cdn-header {
@@ -113,4 +131,16 @@
 
 .cdn-btn:hover {
   filter: brightness(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cdn-overlay,
+  .cdn-overlay.is-closing,
+  .cdn-card,
+  .cdn-card.is-closing,
+  .cdn-btn {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }

@@ -105,6 +105,34 @@
   width: 100%;
 }
 
+@keyframes cqPageContentEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cqCardEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cqProgressFill {
+  0% {
+    width: 0% !important;
+  }
+}
+
 /* Center Section Container */
 .bd-center-section {
   position: relative;
@@ -117,6 +145,7 @@
   gap: 2rem;
   overflow-y: auto;
   padding-right: 8px;
+  animation: cqPageContentEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* AAA Section Block - Clean & Borderless Outer Layout */
@@ -209,19 +238,40 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease;
   position: relative;
   overflow: hidden;
   cursor: pointer;
   outline: none;
+  animation: cqCardEntrance 0.38s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
+.bd-badge-card:nth-child(1) { animation-delay: 0.04s; }
+.bd-badge-card:nth-child(2) { animation-delay: 0.08s; }
+.bd-badge-card:nth-child(3) { animation-delay: 0.12s; }
+.bd-badge-card:nth-child(4) { animation-delay: 0.16s; }
+.bd-badge-card:nth-child(5) { animation-delay: 0.20s; }
+.bd-badge-card:nth-child(6) { animation-delay: 0.24s; }
+.bd-badge-card:nth-child(7) { animation-delay: 0.28s; }
+.bd-badge-card:nth-child(8) { animation-delay: 0.32s; }
+
 .bd-badge-card:hover {
-  transform: translateY(-8px) scale(1.03);
+  transform: translateY(-7px) scale(1.025);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 28px rgba(0, 229, 255, 0.35);
 }
 
 .bd-badge-card:active {
-  transform: translateY(-3px) scale(0.98);
+  transform: translateY(-2px) scale(0.975);
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bd-badge-img {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease;
+}
+
+.bd-badge-card:hover .bd-badge-img {
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, 0.6));
 }
 
 /* Card Status Header */
@@ -535,46 +585,20 @@
   overflow: hidden;
 }
 
+.bd-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0096c7 0%, #00e5ff 100%);
+  border-radius: 12px;
+  box-shadow: 0 0 10px #00e5ff;
+  transition: width 0.4s ease-out;
+  animation: cqProgressFill 0.85s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
 .bd-card-progress-fill {
   height: 100%;
   border-radius: 4px;
   transition: width 0.4s ease;
-}
-
-.fill-bronze { background: linear-gradient(90deg, #b86518, #cd7f32); box-shadow: 0 0 6px #cd7f32; }
-.fill-silver { background: linear-gradient(90deg, #94a3b8, #cbd5e1); box-shadow: 0 0 6px #cbd5e1; }
-.fill-gold { background: linear-gradient(90deg, #d97706, #ffd700); box-shadow: 0 0 8px #ffd700; }
-.fill-flame { background: linear-gradient(90deg, #ea580c, #f97316); box-shadow: 0 0 8px #f97316; }
-.fill-flame-purple { background: linear-gradient(90deg, #9333ea, #a855f7); box-shadow: 0 0 8px #a855f7; }
-.fill-cyan { background: linear-gradient(90deg, #0284c7, #00e5ff); box-shadow: 0 0 8px #00e5ff; }
-.fill-purple { background: linear-gradient(90deg, #a855f7, #c084fc); box-shadow: 0 0 8px #c084fc; }
-
-.bd-click-prompt {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #00e5ff;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  opacity: 0;
-  transform: translateY(3px);
-  transition: all 0.25s ease;
-  height: 0;
-  overflow: hidden;
-}
-
-.bd-badge-card:hover .bd-click-prompt {
-  opacity: 1;
-  transform: translateY(0);
-  height: 16px;
-  margin-top: 2px;
-}
-
-.prompt-icon {
-  font-size: 13px !important;
+  animation: cqProgressFill 0.75s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 /* Modal Overlay */
@@ -591,6 +615,21 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
+  animation: modalFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modal-overlay.is-closing {
+  animation: modalFadeOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 .modal-card {
@@ -604,6 +643,33 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  animation: modalCardIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.modal-card.is-closing {
+  animation: modalCardOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes modalCardIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modalCardOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.93) translateY(6px);
+  }
 }
 
 .modal-title {
@@ -630,4 +696,28 @@
   color: #041525;
   font-weight: 800;
   cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
+.btn-modal-close:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 229, 255, 0.4);
+}
+
+.btn-modal-close:active {
+  transform: translateY(0) scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bd-badge-card,
+  .bd-badge-img,
+  .bd-center-section,
+  .bd-progress-fill,
+  .bd-card-progress-fill,
+  .modal-overlay,
+  .modal-card {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+

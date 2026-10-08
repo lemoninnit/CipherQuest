@@ -15,6 +15,16 @@ const DashboardLayout = ({ children }) => {
   const { user, logout } = useAuth();
   const { signOut, dialog: signOutDialog } = useSignOut();
   const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const [settingsClosing, setSettingsClosing] = React.useState(false);
+
+  const closeSettings = React.useCallback(() => {
+    if (settingsClosing) return;
+    setSettingsClosing(true);
+    setTimeout(() => {
+      setSettingsClosing(false);
+      setSettingsOpen(false);
+    }, 200);
+  }, [settingsClosing]);
 
   // Account deletion is irreversible, so it gets a real dialog (with a pending
   // state and an inline error) instead of window.confirm + window.alert. The
@@ -182,14 +192,14 @@ const DashboardLayout = ({ children }) => {
 
       {/* ── Agent Settings Console Modal Overlay ───────────── */}
       {settingsOpen && (
-        <div className="settings-modal-overlay" onClick={() => setSettingsOpen(false)}>
-          <div className="settings-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className={`settings-modal-overlay ${settingsClosing ? 'is-closing' : ''}`} onClick={closeSettings}>
+          <div className={`settings-modal-content ${settingsClosing ? 'is-closing' : ''}`} onClick={(e) => e.stopPropagation()}>
             <div className="settings-modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="material-symbols-outlined text-primary" style={{ color: 'var(--primary)' }}>settings</span>
                 <h2>Agent Console Settings</h2>
               </div>
-              <button className="settings-close-btn" onClick={() => setSettingsOpen(false)}>
+              <button className="settings-close-btn" onClick={closeSettings}>
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>

@@ -21,6 +21,16 @@ export default function StageLeaderboard({ stage, onClose }) {
   const { cipherType, difficultyTier, levelIndex } = stage || {};
 
   const [category, setCategory] = useState('score');
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose?.();
+    }, 200);
+  };
 
   // One state slot keyed by the requested stage/category, so `loading` can be
   // derived on render instead of being toggled synchronously inside the effect.
@@ -63,8 +73,14 @@ export default function StageLeaderboard({ stage, onClose }) {
   const cipherLabel = CIPHER_LABELS[String(cipherType || '').toUpperCase()] || cipherType;
 
   return (
-    <div className="slb-overlay" onClick={onClose} role="dialog" aria-modal="true" aria-label="Stage leaderboard">
-      <div className="slb-card" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`slb-overlay ${isClosing ? 'is-closing' : ''}`}
+      onClick={handleClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Stage leaderboard"
+    >
+      <div className={`slb-card ${isClosing ? 'is-closing' : ''}`} onClick={(e) => e.stopPropagation()}>
         <div className="slb-header">
           <div className="slb-header-text">
             <span className="material-symbols-outlined slb-header-icon">leaderboard</span>
@@ -73,7 +89,7 @@ export default function StageLeaderboard({ stage, onClose }) {
               <p className="slb-subtitle">{cipherLabel} — {tierLabel} — {stageLabel}</p>
             </div>
           </div>
-          <button className="slb-close-btn" onClick={onClose} aria-label="Close leaderboard">
+          <button className="slb-close-btn" onClick={handleClose} aria-label="Close leaderboard">
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>

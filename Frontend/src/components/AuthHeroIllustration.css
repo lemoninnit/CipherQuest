@@ -1,0 +1,328 @@
+/* AuthHeroIllustration.css */
+
+.auth-hero-panel {
+  display: none;
+  flex: 1.25;
+  position: relative;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 52px 32px;
+  background: radial-gradient(circle at 25% 30%, #08162c 0%, #030814 70%, #02040a 100%);
+  border-right: 1px solid rgba(0, 229, 255, 0.12);
+  overflow: hidden;
+  z-index: 2;
+  user-select: none;
+  min-height: 100vh;
+}
+
+@media (min-width: 1024px) {
+  .auth-hero-panel {
+    display: flex;
+  }
+}
+
+/* Background ambient glow pools */
+.auth-hero-glow-top {
+  position: absolute;
+  top: -40px;
+  left: -40px;
+  width: 440px;
+  height: 440px;
+  background: radial-gradient(circle, rgba(0, 229, 255, 0.16) 0%, rgba(0, 229, 255, 0) 70%);
+  filter: blur(65px);
+  pointer-events: none;
+}
+
+.auth-hero-glow-bottom {
+  position: absolute;
+  bottom: -60px;
+  right: 10%;
+  width: 480px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(0, 150, 255, 0.14) 0%, rgba(0, 229, 255, 0) 70%);
+  filter: blur(75px);
+  pointer-events: none;
+}
+
+/* Hex markers layer */
+.auth-hex-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.auth-hex-item {
+  position: absolute;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(0, 229, 255, 0.24);
+  letter-spacing: 0.08em;
+  transition: opacity 0.3s;
+}
+
+/* Isometric Graphic Scene - Magnified 1.5x-2x and horizontally centered */
+.auth-iso-scene {
+  position: relative;
+  width: 100%;
+  max-width: 680px;
+  margin: auto auto 12px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+.auth-iso-svg {
+  width: 100%;
+  height: auto;
+  max-height: 460px;
+  overflow: visible;
+  filter: drop-shadow(0 20px 45px rgba(0, 0, 0, 0.65));
+}
+
+/* Animations */
+.iso-cube-group {
+  animation: cq-float-cube 4s ease-in-out infinite;
+}
+
+.iso-tile-1 {
+  animation: cq-float-tile-1 3.8s ease-in-out infinite;
+}
+
+.iso-tile-2 {
+  animation: cq-float-tile-2 4.2s ease-in-out infinite 0.4s;
+}
+
+.iso-tile-3 {
+  animation: cq-float-tile-3 3.6s ease-in-out infinite 0.8s;
+}
+
+.iso-tile-4 {
+  animation: cq-float-tile-4 4.5s ease-in-out infinite 1.2s;
+}
+
+.iso-pulse-glow {
+  animation: cq-pulse-glow 3.5s ease-in-out infinite;
+}
+
+@keyframes cq-float-cube {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+@keyframes cq-float-tile-1 {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes cq-float-tile-2 {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes cq-float-tile-3 {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes cq-float-tile-4 {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes cq-pulse-glow {
+  0%, 100% {
+    opacity: 0.85;
+    transform: scale(1);
+    transform-origin: 270px 278px;
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+    transform-origin: 270px 278px;
+  }
+}
+
+/* Hero Content Area */
+.auth-hero-content {
+  position: relative;
+  z-index: 3;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* Pill Tag */
+.auth-pill-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  border-radius: 9999px;
+  background: rgba(0, 229, 255, 0.06);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  margin-bottom: 14px;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.08);
+}
+
+.auth-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00e5ff;
+  box-shadow: 0 0 8px #00e5ff;
+  animation: cq-pill-pulse 2s infinite ease-in-out;
+}
+
+@keyframes cq-pill-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}
+
+.auth-pill-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #00e5ff;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Hero Title */
+.auth-hero-title {
+  font-family: 'Outfit', var(--font-body), sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.auth-hero-cyan-gradient {
+  display: block;
+  background: linear-gradient(135deg, #a5f3fc 0%, #00e5ff 50%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.auth-hero-desc {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #8fa0b5;
+  max-width: 500px;
+  margin-bottom: 22px;
+}
+
+/* Bottom Stats Row */
+.auth-hero-stats {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.auth-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.auth-stat-value {
+  font-family: 'Outfit', var(--font-body), sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.auth-stat-unit {
+  color: #00e5ff;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.auth-stat-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Responsive scaling for different viewports */
+@media (max-width: 1280px) {
+  .auth-hero-panel {
+    padding: 32px 36px 24px;
+  }
+  .auth-iso-scene {
+    max-width: 540px;
+  }
+  .auth-iso-svg {
+    max-height: 380px;
+  }
+  .auth-hero-title {
+    font-size: 2.2rem;
+  }
+  .auth-hero-stats {
+    gap: 20px;
+  }
+}
+
+@media (max-height: 850px) and (min-width: 1024px) {
+  .auth-hero-panel {
+    padding: 24px 36px 20px;
+  }
+  .auth-iso-scene {
+    max-width: 480px;
+    margin-bottom: 8px;
+  }
+  .auth-iso-svg {
+    max-height: 320px;
+  }
+  .auth-hero-title {
+    font-size: 2rem;
+    margin-bottom: 6px;
+  }
+  .auth-hero-desc {
+    font-size: 0.8rem;
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .auth-pill-tag {
+    margin-bottom: 10px;
+  }
+  .auth-hero-stats {
+    padding-top: 10px;
+    gap: 18px;
+  }
+}

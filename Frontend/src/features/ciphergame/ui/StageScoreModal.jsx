@@ -1,8 +1,20 @@
+import { useState } from 'react';
 import { formatCompletionTime, formatMultiplier } from '../core/engine/scoring';
 import './StageScoreModal.css';
 
 export default function StageScoreModal({ result, onContinue, onReplay, onViewLeaderboard, onBack }) {
+  const [isClosing, setIsClosing] = useState(false);
+
   if (!result) return null;
+
+  const handleAction = (callback) => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      callback?.();
+    }, 200);
+  };
 
   const {
     score,
@@ -18,15 +30,18 @@ export default function StageScoreModal({ result, onContinue, onReplay, onViewLe
   } = result;
 
   return (
-    <div className="ssm-overlay" onClick={onBack ? onBack : undefined}>
-      <div className="ssm-card" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`ssm-overlay ${isClosing ? 'is-closing' : ''}`}
+      onClick={onBack ? () => handleAction(onBack) : undefined}
+    >
+      <div className={`ssm-card ${isClosing ? 'is-closing' : ''}`} onClick={(e) => e.stopPropagation()}>
         
         {/* Top-Left Back to Roadmap Control */}
         {onBack && (
           <button
             type="button"
             className="ssm-top-back-btn"
-            onClick={onBack}
+            onClick={() => handleAction(onBack)}
             title="Return to Stage Roadmap"
             aria-label="Return to Stage Roadmap"
           >
@@ -142,20 +157,20 @@ export default function StageScoreModal({ result, onContinue, onReplay, onViewLe
 
         {/* Action Buttons (Vertically Stacked) */}
         <div className="ssm-actions">
-          <button className="ssm-btn ssm-btn-pri" onClick={onContinue}>
+          <button className="ssm-btn ssm-btn-pri" onClick={() => handleAction(onContinue)}>
             <span>Continue</span>
             <span className="material-symbols-outlined ssm-arrow-icon">arrow_forward</span>
           </button>
 
           {onReplay && (
-            <button className="ssm-btn ssm-btn-sec" onClick={onReplay}>
+            <button className="ssm-btn ssm-btn-sec" onClick={() => handleAction(onReplay)}>
               <span className="material-symbols-outlined">replay</span>
               <span>Play Again</span>
             </button>
           )}
 
           {onViewLeaderboard && (
-            <button className="ssm-btn ssm-btn-sec" onClick={onViewLeaderboard}>
+            <button className="ssm-btn ssm-btn-sec" onClick={() => handleAction(onViewLeaderboard)}>
               <span className="material-symbols-outlined">leaderboard</span>
               <span>Leaderboard</span>
             </button>

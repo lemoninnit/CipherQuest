@@ -1,13 +1,23 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './GameTutorialModal.css';
 import { getTutorialData } from './tutorialData';
 
 export default function GameTutorialModal({ cipherType = 'caesar', gameType = 'fishing', onClose }) {
+  const [isClosing, setIsClosing] = useState(false);
   const modalRef = useRef(null);
   const closeBtnRef = useRef(null);
   const previousFocusRef = useRef(null);
 
   const { cipher, game, comboTip } = getTutorialData(cipherType, gameType);
+
+  const handleClose = () => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onClose?.();
+    }, 200);
+  };
 
   useEffect(() => {
     previousFocusRef.current = document.activeElement;
@@ -17,7 +27,7 @@ export default function GameTutorialModal({ cipherType = 'caesar', gameType = 'f
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
-        onClose?.();
+        handleClose();
       }
     };
 
@@ -31,20 +41,20 @@ export default function GameTutorialModal({ cipherType = 'caesar', gameType = 'f
   }, [onClose]);
 
   const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose?.();
+    if (e.target === e.currentTarget && !isClosing) {
+      handleClose();
     }
   };
 
   return (
     <div
-      className="cq-tut-modal-overlay"
+      className={`cq-tut-modal-overlay ${isClosing ? 'is-closing' : ''}`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="cq-tut-modal-title"
       onClick={handleBackdropClick}
     >
-      <div className="cq-tut-modal-container" ref={modalRef}>
+      <div className={`cq-tut-modal-container ${isClosing ? 'is-closing' : ''}`} ref={modalRef}>
         {/* Header */}
         <div className="cq-tut-modal-header">
           <div className="cq-tut-modal-header-left">
@@ -67,7 +77,7 @@ export default function GameTutorialModal({ cipherType = 'caesar', gameType = 'f
             ref={closeBtnRef}
             type="button"
             className="cq-tut-modal-back-btn"
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Back to pause menu"
           >
             <span className="material-symbols-outlined">arrow_back</span>
@@ -283,7 +293,7 @@ export default function GameTutorialModal({ cipherType = 'caesar', gameType = 'f
           <button
             type="button"
             className="cq-tut-footer-close-btn"
-            onClick={onClose}
+            onClick={handleClose}
           >
             <span className="material-symbols-outlined">arrow_back</span>
             <span>Return to Pause Menu</span>

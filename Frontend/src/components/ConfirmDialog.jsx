@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import './ConfirmDialog.css';
 
 const FOCUSABLE = [
@@ -11,24 +11,7 @@ const FOCUSABLE = [
 ].join(',');
 
 /**
- * The app's confirmation dialog.
- *
- * Replaces window.confirm()/window.alert(), which render a native browser
- * popup: unstyled, unreadable on a dark UI, untestable, and on mobile they sit
- * outside the app chrome entirely. This is the same dialog everywhere, so
- * "are you sure?" looks and behaves the same on every screen.
- *
- * Accessibility notes, because a modal the user can escape is a modal that
- * traps people:
- *   - Real dialog semantics: role=dialog + aria-modal + labelled/described.
- *   - Focus moves to the SAFE action on open (the cancel button by default),
- *     so a stray Enter can never trigger something destructive.
- *   - Focus is trapped inside the card and wraps at both ends.
- *   - Escape and a backdrop click both mean "cancel", never "confirm".
- *   - Focus returns to whatever opened the dialog on close.
- *   - The page behind is scroll-locked while the dialog is up.
- *
- * `onCancel` is deliberately the default for every dismiss path.
+ * The app's confirmation dialog with smooth open and closing animations.
  */
 export default function ConfirmDialog({
   open,
@@ -38,31 +21,44 @@ export default function ConfirmDialog({
   description,
   children,
   icon = 'help',
-  // 'default' is neutral; 'danger' is for irreversible or account-ending
-  // actions and tints the icon, border and confirm button red.
   tone = 'default',
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   busy = false,
   busyLabel = 'Working…',
-  // Which action receives focus on open. 'cancel' is the safe default; pass
-  // 'confirm' only for low-risk prompts the user has deliberately opened.
   initialFocus = 'cancel',
 }) {
   const cardRef = useRef(null);
   const confirmRef = useRef(null);
   const cancelRef = useRef(null);
   const restoreFocusRef = useRef(null);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleDismiss = useCallback(() => {
+    if (busy || isClosing) return;
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onCancel?.();
+    }, 200);
+  }, [busy, isClosing, onCancel]);
+
+  const handleConfirmAction = () => {
+    if (busy || isClosing) return;
+    onConfirm?.();
+  };
 
   useEffect(() => {
-    if (!open) return undefined;
+    if (!open) {
+      setIsClosing(false);
+      return undefined;
+    }
 
     restoreFocusRef.current = document.activeElement;
     const target = initialFocus === 'confirm' ? confirmRef.current : cancelRef.current;
     target?.focus();
 
     return () => {
-      // Unmounting (e.g. signing out) must not throw if the trigger is gone.
       restoreFocusRef.current?.focus?.();
     };
   }, [open, initialFocus]);
@@ -82,7 +78,7 @@ export default function ConfirmDialog({
       if (event.key === 'Escape') {
         event.preventDefault();
         event.stopPropagation();
-        onCancel?.();
+        handleDismiss();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -103,11 +99,9 @@ export default function ConfirmDialog({
       }
     };
 
-    // Capture phase: games install their own Escape handlers, and the dialog
-    // must win so dismissing it never also pauses or closes the game.
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [open, onCancel]);
+  }, [open, handleDismiss]);
 
   if (!open) return null;
 
@@ -115,10 +109,10 @@ export default function ConfirmDialog({
   const descriptionId = 'confirm-dialog-description';
 
   return (
-    <div className="cd-overlay" onClick={onCancel}>
+    <div className={`cd-overlay ${isClosing ? 'is-closing' : ''}`} onClick={handleDismiss}>
       <div
         ref={cardRef}
-        className={`cd-card is-${tone}`}
+        className={`cd-card is-${tone} ${isClosing ? 'is-closing' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -143,8 +137,8 @@ export default function ConfirmDialog({
             ref={cancelRef}
             type="button"
             className="cd-btn cd-btn-cancel"
-            onClick={onCancel}
-            disabled={busy}
+            onClick={handleDismiss}
+            disabled={busy || isClosing}
           >
             {cancelLabel}
           </button>
@@ -152,8 +146,8 @@ export default function ConfirmDialog({
             ref={confirmRef}
             type="button"
             className="cd-btn cd-btn-confirm"
-            onClick={onConfirm}
-            disabled={busy}
+            onClick={handleConfirmAction}
+            disabled={busy || isClosing}
           >
             {busy ? busyLabel : confirmLabel}
           </button>

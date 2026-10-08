@@ -57,6 +57,28 @@
   align-self: center;
 }
 
+@keyframes cqPageContentEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cqCardEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 /* ── Expanded Console Section ── */
 .lb-center-section {
   display: flex;
@@ -69,6 +91,7 @@
   min-height: 0;
   margin: 0;
   box-sizing: border-box;
+  animation: cqPageContentEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* ── Console Wrapper: Seamless Lobby Background Integration ── */
@@ -124,7 +147,12 @@
   background: rgba(56, 224, 255, 0.1);
   border-color: #38e0ff;
   color: #ffffff;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(56, 224, 255, 0.2);
+}
+
+.lb-scope-pill:active {
+  transform: translateY(0) scale(0.97);
 }
 
 .lb-scope-pill.active {
@@ -156,7 +184,17 @@
   border-radius: 18px 18px 0 0;
   box-sizing: border-box;
   padding: clamp(10px, 1.4vh, 16px) clamp(14px, 1.4vw, 20px) clamp(8px, 1.2vh, 14px);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease, border-color 0.28s ease;
+  animation: cqCardEntrance 0.38s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  cursor: pointer;
+}
+
+.lb-podium-step:hover {
+  transform: translateY(-6px) scale(1.025);
+}
+
+.lb-podium-step:active {
+  transform: translateY(-2px) scale(0.98);
 }
 
 /* Rank 2 (Left, Medium Step) */
@@ -167,6 +205,11 @@
   border: 1.5px solid #b2cdde;
   border-bottom: 4px solid #b2cdde;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 16px rgba(178, 205, 222, 0.12);
+  animation-delay: 0.05s;
+}
+
+.lb-podium-step.step-2:hover {
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 24px rgba(178, 205, 222, 0.35);
 }
 
 /* Rank 1 (Center, Tallest Step) */
@@ -177,6 +220,11 @@
   border: 1.5px solid #ffc146;
   border-bottom: 4.5px solid #ffc146;
   box-shadow: 0 14px 35px rgba(0, 0, 0, 0.65), 0 0 28px rgba(255, 193, 70, 0.22);
+  animation-delay: 0.12s;
+}
+
+.lb-podium-step.step-1:hover {
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 36px rgba(255, 193, 70, 0.45);
 }
 
 /* Rank 3 (Right, Shortest Step) */
@@ -187,6 +235,11 @@
   border: 1.5px solid #d6854a;
   border-bottom: 4px solid #d6854a;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 16px rgba(214, 133, 74, 0.12);
+  animation-delay: 0.18s;
+}
+
+.lb-podium-step.step-3:hover {
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.75), 0 0 24px rgba(214, 133, 74, 0.35);
 }
 
 /* Current user podium highlight */
@@ -406,15 +459,30 @@
   background: rgba(6, 18, 36, 0.55);
   border: 1px solid rgba(0, 229, 255, 0.12);
   border-radius: 10px;
-  transition: all 0.18s ease;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: 'Space Grotesk', sans-serif;
   font-size: 13.5px;
   flex-shrink: 0;
+  animation: cqCardEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
+.lb-table-row:nth-child(1) { animation-delay: 0.04s; }
+.lb-table-row:nth-child(2) { animation-delay: 0.08s; }
+.lb-table-row:nth-child(3) { animation-delay: 0.12s; }
+.lb-table-row:nth-child(4) { animation-delay: 0.16s; }
+.lb-table-row:nth-child(5) { animation-delay: 0.20s; }
+.lb-table-row:nth-child(6) { animation-delay: 0.24s; }
+.lb-table-row:nth-child(7) { animation-delay: 0.28s; }
+
 .lb-table-row:hover {
-  background: rgba(8, 28, 54, 0.75);
-  border-color: rgba(0, 229, 255, 0.35);
+  background: rgba(8, 28, 54, 0.85);
+  border-color: rgba(0, 229, 255, 0.4);
+  transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 229, 255, 0.15);
+}
+
+.lb-table-row:active {
+  transform: translateX(2px) scale(0.99);
 }
 
 /* ── Current User Row Highlight ── */
@@ -872,6 +940,16 @@
 
   .lb-table-body {
     max-height: 350px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lb-center-section,
+  .lb-podium-step,
+  .lb-table-row,
+  .lb-scope-pill {
+    animation: none !important;
+    transition: none !important;
   }
 }
 

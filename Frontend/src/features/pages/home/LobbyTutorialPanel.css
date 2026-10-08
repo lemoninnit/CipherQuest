@@ -582,3 +582,15 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .cq-tut-container,
+  .cq-tut-cipher-btn,
+  .cq-tut-step-card,
+  .cq-tut-char-pill,
+  .cq-walk-row {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

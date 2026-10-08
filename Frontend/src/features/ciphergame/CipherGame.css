@@ -20,6 +20,39 @@
   --radius-lg:     20px;
 }
 
+@keyframes cqPageContentEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cqCardEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cqProgressFill {
+  0% {
+    width: 0% !important;
+  }
+}
+
+.cq-lobby-screen,
+.cq-lobby-center-content {
+  animation: cqPageContentEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 .fg-root {
   height: 100%;
   width: 100%;
@@ -2872,7 +2905,7 @@
   margin: 0 auto !important;
 }
 
-/* Matches .dh-quest-card line 222 */
+/* Matches .dh-quest-card */
 .cq-tier-card {
   --card-art: none;
   background: linear-gradient(165deg, rgba(8, 26, 48, 0.85) 0%, rgba(4, 14, 28, 0.92) 100%) !important;
@@ -2883,7 +2916,10 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  transition: border-color 0.28s ease !important;
+  transition:
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.28s ease,
+    box-shadow 0.28s ease !important;
   min-width: 240px !important;
   max-width: 300px !important;
   flex: 1 1 0 !important;
@@ -2894,22 +2930,36 @@
   box-sizing: border-box !important;
   outline: none !important;
   position: relative !important;
-  transform: none !important;
+  transform: scale(1);
   text-align: left !important;
+  animation: cqCardEntrance 0.38s cubic-bezier(0.16, 1, 0.3, 1) backwards !important;
 }
 
-/* Problem 2: Only hover feedback allowed is cursor: pointer and subtle border-colour change */
-.cq-tier-card:hover {
+.cq-tier-card:nth-child(1) { animation-delay: 0.05s !important; }
+.cq-tier-card:nth-child(2) { animation-delay: 0.12s !important; }
+.cq-tier-card:nth-child(3) { animation-delay: 0.19s !important; }
+
+/* Card hover & active feedback */
+.cq-tier-card:hover,
+.cq-tier-card:focus-visible {
+  transform: translateY(-6px) scale(1.025) !important;
   border-color: #00e5ff !important;
-  transform: none !important;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.75),
+    0 0 32px rgba(0, 229, 255, 0.45),
+    inset 0 0 16px rgba(0, 229, 255, 0.14) !important;
+  z-index: 5 !important;
+}
+
+.cq-tier-card:active {
+  transform: translateY(-2px) scale(0.975) !important;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* Keyboard focus - focus ring visible without resizing card */
 .cq-tier-card:focus-visible {
   outline: 2px solid #00e5ff !important;
   outline-offset: 4px !important;
-  border-color: #00e5ff !important;
-  transform: none !important;
 }
 
 /* Matches .dh-card-art-panel line 268 */
@@ -2944,6 +2994,14 @@
   object-fit: contain !important;
   filter: drop-shadow(0 0 12px rgba(0, 229, 255, 0.6)) !important;
   display: block !important;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s ease !important;
+}
+
+.cq-tier-card:hover .cq-tier-card-svg,
+.cq-tier-card:hover .cq-card-img-symbol,
+.cq-tier-card:hover .cq-tier-card-img-symbol {
+  transform: scale(1.09) !important;
+  filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.8)) !important;
 }
 
 /* Matches .dh-card-body line 290 */
@@ -5429,6 +5487,7 @@
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
   border-radius: 1px;
   transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: cqProgressFill 0.75s cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
 
 /* 3. Row of 5 Nodes */
@@ -5466,8 +5525,24 @@
   cursor: pointer !important;
   gap: 12px !important;
   outline: none !important;
-  transform: none !important;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transform: translateY(0);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  animation: cqCardEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards !important;
+}
+
+.cq-roadmap-node.cq-stage-card:nth-child(1) { animation-delay: 0.05s !important; }
+.cq-roadmap-node.cq-stage-card:nth-child(2) { animation-delay: 0.10s !important; }
+.cq-roadmap-node.cq-stage-card:nth-child(3) { animation-delay: 0.15s !important; }
+.cq-roadmap-node.cq-stage-card:nth-child(4) { animation-delay: 0.20s !important; }
+.cq-roadmap-node.cq-stage-card:nth-child(5) { animation-delay: 0.25s !important; }
+
+.cq-roadmap-node.cq-stage-card:hover {
+  transform: translateY(-4px) !important;
+}
+
+.cq-roadmap-node.cq-stage-card:active {
+  transform: translateY(-1px) scale(0.97) !important;
+  transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* Node Circle Wrap (Ensures common horizontal axis at 42px) */
@@ -8026,5 +8101,22 @@
   background: #e11d48;
   box-shadow: 0 0 24px rgba(255, 45, 85, 0.8);
   transform: translateY(-2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cq-tier-card,
+  .cq-stage-card,
+  .cq-roadmap-node,
+  .cq-lobby-screen,
+  .cq-lobby-center-content,
+  .cq-roadmap-track-fill,
+  .cq-node-circle,
+  .cq-tier-card-svg,
+  .cq-card-img-symbol,
+  .cq-tier-card-img-symbol {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }
 

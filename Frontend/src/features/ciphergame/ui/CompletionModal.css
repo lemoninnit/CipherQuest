@@ -15,12 +15,21 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  animation: cqFadeIn 0.3s ease-out;
+  animation: cqFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cq-completion-overlay.is-closing {
+  animation: cqFadeOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes cqFadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+@keyframes cqFadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 .cq-completion-card {
@@ -37,12 +46,21 @@
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75);
   font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
   color: #ffffff;
-  animation: cqPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: cqPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cq-completion-card.is-closing {
+  animation: cqPopOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes cqPopIn {
-  from { transform: scale(0.85); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
+  from { transform: scale(0.9) translateY(10px); opacity: 0; }
+  to   { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes cqPopOut {
+  from { transform: scale(1) translateY(0); opacity: 1; }
+  to   { transform: scale(0.9) translateY(10px); opacity: 0; }
 }
 
 .cq-completion-card.tier-glow {
@@ -260,4 +278,18 @@
   box-shadow: 0 0 28px rgba(0, 229, 255, 0.7);
   background: linear-gradient(135deg, #38ef7d 0%, #11998e 100%);
   color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cq-completion-overlay,
+  .cq-completion-overlay.is-closing,
+  .cq-completion-card,
+  .cq-completion-card.is-closing,
+  .cq-badge-award-img,
+  .cq-btn-primary,
+  .cq-btn-secondary {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }

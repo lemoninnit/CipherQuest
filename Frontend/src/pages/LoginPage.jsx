@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { authApi } from '../api/cipherQuestApi';
 import { useAuth } from '../context/AuthContext';
+import AuthHeroIllustration from '../components/AuthHeroIllustration';
 import './LoginPage.css';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [form, setForm]       = useState({ username: '', password: '' });
-  const [error, setError]     = useState('');
+  const [form, setForm] = useState({ username: '', password: '' });
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -30,80 +31,79 @@ const LoginPage = () => {
   };
 
   return (
-    <main className="cipher-bg login-page">
-      <section className="login-illustration">
-        <div className="maze-pattern absolute-full opacity-20"></div>
-        <div className="illustration-wrapper">
-          <div className="illustration-container">
-            <img
-              alt="Cyber Illustration"
-              className="illustration-img"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJplOW3jHAzhEHHJnd3e4AaV2j0x6GKok6WTaxHd3yBcrkrcyIBUkIZr6zWiVlfebMU5Ad3rQW391Mzsndv1Tj31LnnIwTSi4NZU5u_4AtDZTBYLd6YbxUfNyAin9D6D_h7UbE1J9773B51ntMAan9C6v1xjjlyc8E2dmr15EWeiPFyl8nASh7dfagv47pSHc6GTLXqPmSUCdIgiaLZn7JQ5BK1a9nUq8evVM6naOsUELNzU7SpZK_JG7M-1ZGNxk860IDRzKiPSw"
-            />  
-            <div className="blur-circle-primary" />
-            <div className="blur-circle-secondary" />
-            <div className="icon-card-primary animate-pulse">
-              <span className="material-symbols-outlined icon-40">enhanced_encryption</span>
-            </div>
-            <div className="icon-card-secondary">
-              <span className="material-symbols-outlined icon-32">military_tech</span>
-            </div>
-          </div>
-          <div className="illustration-text">
-            <h2>Master the Decryption Grid</h2>
-            <p>
-              Join the elite ranks of operatives in the world's most immersive cryptographic arcade.
-              Solve complex puzzles, claim badges, and secure the network.
-            </p>
-          </div>
-        </div>
-      </section>
+    <main className="auth-page-container login-page">
+      {/* Background ambient lighting */}
+      <div className="auth-bg-orb-1" />
+      <div className="auth-bg-orb-2" />
 
-      <section className="login-form-section">
-        <div className="maze-pattern md-hidden absolute-full opacity-10"></div>
-        <div className="login-card">
-          <div className="login-header">
-            <div className="login-logo">
-              <span className="material-symbols-outlined fill-1">enhanced_encryption</span>
-              <span className="logo-text">CipherQuest</span>
+      {/* Left side Hero Illustration */}
+      <AuthHeroIllustration
+        badgeText="SECURE // SESSION"
+        titleLine1="Master the"
+        titleLine2="Decryption Grid"
+        description="Join the elite ranks of operatives in the world's most immersive cryptographic arcade. Solve complex puzzles, claim badges, and secure the network."
+        stats={[
+          { value: '128', unit: '-bit', label: 'ENCRYPTED GRID' },
+          { value: '12k+', unit: '', label: 'OPERATIVES' },
+          { value: '99.9%', unit: '', label: 'UPTIME' },
+        ]}
+      />
+
+      {/* Right side Login Form Card */}
+      <section className="auth-form-section">
+        <div className="auth-card">
+          <div className="auth-card-header">
+            <div className="auth-logo-pill">
+              <div className="auth-logo-icon-box">
+                <span className="material-symbols-outlined">lock</span>
+              </div>
+              <span className="auth-logo-text">CipherQuest</span>
             </div>
             <h1>Welcome Back, Decoder</h1>
-            <p>Identify yourself to enter the grid</p>
+            <p className="auth-card-subtitle">IDENTIFY YOURSELF TO ENTER THE GRID</p>
           </div>
 
-          {error && <div className="login-error">{error}</div>}
+          {error && <div className="auth-error-banner" role="alert">{error}</div>}
 
-          <form onSubmit={handleSubmit} className="login-form" autoComplete="off">
-            <div className="form-group">
-              <label>Operative ID</label>
-              <div className="input-wrapper neon-glow-focus">
-                <div className="input-icon">
+          <form onSubmit={handleSubmit} className="auth-form" autoComplete="off">
+            <div className="auth-form-group">
+              <label htmlFor="login-username">OPERATIVE ID</label>
+              <div className="auth-input-wrapper">
+                <span className="auth-input-icon">
                   <span className="material-symbols-outlined icon-20">person</span>
-                </div>
+                </span>
                 <input
-                  required name="username" type="text"
+                  id="login-username"
+                  required
+                  name="username"
+                  type="text"
                   placeholder="Enter your operative ID"
-                  value={form.username} onChange={onChange}
-                  autoComplete="off"
+                  value={form.username}
+                  onChange={onChange}
+                  autoComplete="username"
                 />
               </div>
             </div>
 
-            <div className="form-group">
-              <label>Access Cipher</label>
-              <div className="input-wrapper neon-glow-focus has-toggle">
-                <div className="input-icon">
-                  <span className="material-symbols-outlined icon-20">lock</span>
-                </div>
+            <div className="auth-form-group">
+              <label htmlFor="login-password">ACCESS CIPHER</label>
+              <div className="auth-input-wrapper">
+                <span className="auth-input-icon">
+                  <span className="material-symbols-outlined icon-20">key</span>
+                </span>
                 <input
-                  required name="password" type={showPassword ? 'text' : 'password'}
+                  id="login-password"
+                  required
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
-                  value={form.password} onChange={onChange}
-                  autoComplete="new-password"
+                  value={form.password}
+                  onChange={onChange}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
-                  className="password-toggle"
+                  className="auth-password-toggle"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                   aria-pressed={showPassword}
                   onClick={() => setShowPassword((visible) => !visible)}
@@ -113,27 +113,26 @@ const LoginPage = () => {
                   </span>
                 </button>
               </div>
-              <Link to="/reset-password" className="forgot-cipher-link">
+              <Link to="/reset-password" className="auth-forgot-link">
                 Forgot Access Cipher?
               </Link>
             </div>
 
-            <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? 'Authenticating…' : 'Initialize Session'}
+            <button type="submit" className="auth-submit-btn" disabled={loading}>
+              {loading ? 'INITIALIZING SESSION…' : 'INITIALIZE SESSION'}
             </button>
           </form>
 
-          <div className="divider">
-            <div className="divider-line"></div>
+          <div className="auth-divider">
+            <div className="auth-divider-line"></div>
             <span>NEW OPERATIVE?</span>
-            <div className="divider-line"></div>
+            <div className="auth-divider-line"></div>
           </div>
 
-          <div className="alternate-access">
-            <Link to="/register" className="btn-primary-outline" style={{textDecoration: 'none', textAlign: 'center'}}>
-              Create New Operative
-            </Link>
-          </div>
+          <Link to="/register" className="auth-outline-btn">
+            <span className="material-symbols-outlined icon-20">person_add</span>
+            CREATE NEW OPERATIVE
+          </Link>
         </div>
       </section>
     </main>

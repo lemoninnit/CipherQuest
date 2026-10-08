@@ -9,12 +9,21 @@
   justify-content: center;
   background: rgba(3, 9, 20, 0.82);
   backdrop-filter: blur(6px);
-  animation: slb-fade-in 0.2s ease-out;
+  animation: slb-fade-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slb-overlay.is-closing {
+  animation: slb-fade-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes slb-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+@keyframes slb-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
 .slb-card {
@@ -28,12 +37,21 @@
   box-shadow: 0 0 40px rgba(0, 229, 255, 0.18);
   color: #fff;
   padding: 20px 22px 16px;
-  animation: slb-pop-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  animation: slb-pop-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slb-card.is-closing {
+  animation: slb-pop-out 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes slb-pop-in {
-  from { transform: scale(0.92); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from { transform: scale(0.92) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes slb-pop-out {
+  from { transform: scale(1) translateY(0); opacity: 1; }
+  to { transform: scale(0.92) translateY(8px); opacity: 0; }
 }
 
 /* Header */
@@ -261,4 +279,17 @@
   .slb-row { grid-template-columns: 30px 1fr auto; font-size: 0.78rem; }
   .slb-col-metric { min-width: 66px; }
   .slb-footer { flex-direction: column; align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slb-overlay,
+  .slb-overlay.is-closing,
+  .slb-card,
+  .slb-card.is-closing,
+  .slb-tab,
+  .slb-close-btn {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }
