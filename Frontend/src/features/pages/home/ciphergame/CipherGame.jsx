@@ -279,20 +279,17 @@ export default function CipherGame() {
       try {
         const myProfile = await userApi.getMyProfile();
         setProfile(myProfile);
+        if (myProfile?.progressMap?.CAESAR) {
+          const cProg = myProfile.progressMap.CAESAR;
+          setCompletedLevels({
+            easy: cProg.EASY || [],
+            medium: cProg.MEDIUM || [],
+            hard: cProg.HARD || []
+          });
+        }
       } catch (err) {
         console.warn("Backend offline. Running in local sandbox mode.", err.message);
         setOffline(true);
-        // Load offline profile from local storage if available
-        const savedProfile = localStorage.getItem('cq_offline_profile');
-        if (savedProfile) {
-          setProfile(JSON.parse(savedProfile));
-        }
-      }
-
-      // Load completed levels progress
-      const savedProgress = localStorage.getItem('cq_completed_levels');
-      if (savedProgress) {
-        setCompletedLevels(JSON.parse(savedProgress));
       }
     }
     loadInitialData();
@@ -580,16 +577,11 @@ export default function CipherGame() {
     setTimeout(() => setFloatingXp(null), 1200);
 
     // Save profile to local storage if offline
-    if (offline) {
-      localStorage.setItem('cq_offline_profile', JSON.stringify(updatedProfile));
-    }
-
     // Save completed levels
     const nextCompleted = { ...completedLevels };
     if (!nextCompleted[tier].includes(levelIndex)) {
       nextCompleted[tier].push(levelIndex);
       setCompletedLevels(nextCompleted);
-      localStorage.setItem('cq_completed_levels', JSON.stringify(nextCompleted));
     }
 
     // If backend session is active, submit correct answers to award actual backend database XP
@@ -799,11 +791,9 @@ export default function CipherGame() {
                   if (completedLevels.easy.length > 0) {
                     const nextCompleted = { easy: [], medium: [], hard: [] };
                     setCompletedLevels(nextCompleted);
-                    localStorage.setItem('cq_completed_levels', JSON.stringify(nextCompleted));
                   } else {
                     const nextCompleted = { easy: [0, 1, 2, 3], medium: [], hard: [] };
                     setCompletedLevels(nextCompleted);
-                    localStorage.setItem('cq_completed_levels', JSON.stringify(nextCompleted));
                   }
                 }}
                 style={{

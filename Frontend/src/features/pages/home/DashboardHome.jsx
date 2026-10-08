@@ -84,15 +84,17 @@ const DashboardHome = () => {
   // Calculate Progress per Cipher
   const getCipherProgress = (cipherId) => {
     const cKey = cipherId.toUpperCase();
-    let progressMap = user?.progress;
-    if (!progressMap) {
+    const uid = user?.id || user?.userId || user?.username;
+    let progressMap = user?.progressMap || user?.progress;
+    if (!progressMap && uid) {
       try {
-        const stored = localStorage.getItem('cq_user_progress');
+        const stored = localStorage.getItem(`cq_user_progress_${uid}`);
         if (stored) progressMap = JSON.parse(stored);
-      } catch (e) {
+      } catch (_e) {
         // ignore fallback errors
       }
     }
+    progressMap = progressMap || {};
 
     const cipherData = progressMap?.[cKey] || {};
     const easyCount = (cipherData.EASY || []).length;

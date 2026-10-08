@@ -188,12 +188,13 @@ const getProgressCounts = (user) => {
     playfair: { easy: 0, medium: 0, hard: 0, total: 0 },
   };
 
+  const uid = user?.id || user?.userId || user?.username;
   let rawMap = user?.progressMap || user?.progress;
-  if (!rawMap) {
+  if (!rawMap && uid) {
     try {
-      const stored = localStorage.getItem("cipher_progress_v2");
+      const stored = localStorage.getItem(`cq_user_progress_${uid}`);
       if (stored) rawMap = JSON.parse(stored);
-    } catch {}
+    } catch (_e) {}
   }
 
   if (!rawMap) return result;

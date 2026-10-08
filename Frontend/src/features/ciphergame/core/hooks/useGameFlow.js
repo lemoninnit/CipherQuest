@@ -154,51 +154,64 @@ export function useGameFlow() {
   const navigate = useNavigate();
 
   const getUserId = () => user?.id || user?.userId || user?.username || 'anonymous';
+  const getUserProgressKey = (uid) => (uid && uid !== 'anonymous') ? `cq_user_progress_${uid}` : null;
 
-  const [progress, setProgress] = useState(() => {
-    let localSaved = null;
-    try {
-      const saved = localStorage.getItem("cipher_progress_v2");
-      if (saved) localSaved = JSON.parse(saved);
-    } catch (_e) {
-      /* ignore storage error */
-    }
+  const getInitialProgress = () => {
     const map = user?.progress || user?.progressMap;
-    const backendProg = map ? convertBackendProgress(map) : null;
-    return mergeProgress(localSaved, backendProg);
-  });
+    if (map) {
+      return convertBackendProgress(map);
+    }
+    const uid = user?.id || user?.userId || user?.username;
+    const storageKey = getUserProgressKey(uid);
+    if (storageKey) {
+      try {
+        const saved = localStorage.getItem(storageKey);
+        if (saved) return JSON.parse(saved);
+      } catch (_e) {
+        /* ignore storage error */
+      }
+    }
+    return defaultProgress();
+  };
+
+  const [progress, setProgress] = useState(getInitialProgress);
 
   // Keep progress in sync when user updates
   useEffect(() => {
     if (user) {
       const map = user.progress || user.progressMap;
+      const uid = user.id || user.userId || user.username;
+      const storageKey = getUserProgressKey(uid);
       if (map) {
         const backendProg = convertBackendProgress(map);
-        setProgress((prev) => {
-          const merged = mergeProgress(prev, backendProg);
+        setProgress(backendProg);
+        if (storageKey) {
           try {
-            localStorage.setItem("cipher_progress_v2", JSON.stringify(merged));
+            localStorage.setItem(storageKey, JSON.stringify(backendProg));
           } catch (_e) {
             /* ignore storage error */
           }
-          return merged;
-        });
+        }
+      } else if (storageKey) {
+        try {
+          const saved = localStorage.getItem(storageKey);
+          if (saved) {
+            setProgress(JSON.parse(saved));
+          } else {
+            setProgress(defaultProgress());
+          }
+        } catch (_e) {
+          setProgress(defaultProgress());
+        }
+      } else {
+        setProgress(defaultProgress());
       }
+    } else {
+      setProgress(defaultProgress());
     }
   }, [user]);
 
-  const initialProg = (() => {
-    let localSaved = null;
-    try {
-      const saved = localStorage.getItem("cipher_progress_v2");
-      if (saved) localSaved = JSON.parse(saved);
-    } catch (_e) {
-      /* ignore storage error */
-    }
-    const map = user?.progress || user?.progressMap;
-    const backendProg = map ? convertBackendProgress(map) : null;
-    return mergeProgress(localSaved, backendProg);
-  })();
+  const initialProg = getInitialProgress();
   const initialParsed = parseUrlParams(location.search, location.state, initialProg);
   const initialUid = user?.id || user?.userId || user?.username || 'anonymous';
   const initialSnapshot = (initialParsed.category && initialParsed.difficulty && typeof initialParsed.stageIndex === 'number')
@@ -600,10 +613,14 @@ export function useGameFlow() {
           [diff]: diffArr.includes(stageId) ? diffArr : [...diffArr, stageId],
         },
       };
-      try {
-        localStorage.setItem("cipher_progress_v2", JSON.stringify(next));
-      } catch (_e) {
-        /* ignore storage error */
+      const uid = getUserId();
+      const storageKey = getUserProgressKey(uid);
+      if (storageKey) {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(next));
+        } catch (_e) {
+          /* ignore storage error */
+        }
       }
       return next;
     });
@@ -657,15 +674,16 @@ export function useGameFlow() {
         const response = await userApi.saveProgress(cat, diff, stageIndex);
         if (completeRunTokenRef.current === currentRunToken && response && response.progressMap) {
           const backendProg = convertBackendProgress(response.progressMap);
-          setProgress((prev) => {
-            const merged = mergeProgress(prev, backendProg);
+          setProgress(backendProg);
+          const uid = getUserId();
+          const storageKey = getUserProgressKey(uid);
+          if (storageKey) {
             try {
-              localStorage.setItem("cipher_progress_v2", JSON.stringify(merged));
+              localStorage.setItem(storageKey, JSON.stringify(backendProg));
             } catch (_e) {
               /* ignore storage error */
             }
-            return merged;
-          });
+          }
         }
       } catch (err) {
         console.warn("Could not save progress to backend, using local progress:", err.message);

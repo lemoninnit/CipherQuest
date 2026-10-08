@@ -20,6 +20,13 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = (token, userData) => {
+    try {
+      localStorage.removeItem('cipher_progress_v2');
+      localStorage.removeItem('cq_completed_levels');
+      localStorage.removeItem('cq_user_progress');
+      localStorage.removeItem('cq_offline_profile');
+      sessionStorage.clear();
+    } catch (_e) {}
     saveToken(token);
     setUser(userData);
   };
@@ -27,6 +34,13 @@ export function AuthProvider({ children }) {
   const logout = () => {
     clearToken();
     setUser(null);
+    try {
+      localStorage.removeItem('cipher_progress_v2');
+      localStorage.removeItem('cq_completed_levels');
+      localStorage.removeItem('cq_user_progress');
+      localStorage.removeItem('cq_offline_profile');
+      sessionStorage.clear();
+    } catch (_e) {}
   };
 
   const refreshProfile = async () => {

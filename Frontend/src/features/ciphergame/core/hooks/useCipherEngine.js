@@ -14,12 +14,7 @@ const defaultProgress = () => ({
 });
 
 export function useGameFlow() {
-  const [progress, setProgress] = useState(() => {
-    try {
-      const saved = localStorage.getItem("cipher_progress_v2");
-      return saved ? JSON.parse(saved) : defaultProgress();
-    } catch { return defaultProgress(); }
-  });
+  const [progress, setProgress] = useState(defaultProgress);
 
   // Navigation state
   const [category,   setCategory]   = useState(null); // 'caesar' | 'vigenere' | 'playfair'
@@ -28,7 +23,6 @@ export function useGameFlow() {
 
   const saveProgress = (next) => {
     setProgress(next);
-    try { localStorage.setItem("cipher_progress_v2", JSON.stringify(next)); } catch {}
   };
 
   /* ── Unlock logic ── */
@@ -85,7 +79,6 @@ export function useGameFlow() {
           [diff]: diffArr.includes(id) ? diffArr : [...diffArr, id],
         },
       };
-      try { localStorage.setItem("cipher_progress_v2", JSON.stringify(next)); } catch {}
       return next;
     });
 
