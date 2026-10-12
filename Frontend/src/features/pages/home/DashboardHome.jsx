@@ -135,8 +135,8 @@ const DashboardHome = () => {
   const overallMasteryPct = Math.round((totalLevelsCompleted / 45) * 100);
 
   // XP & Level Calculation
-  const currentXp = user?.xp ?? 0;
-  const currentLevel = user?.level ?? 1;
+  const currentXp = Math.max(Number(user?.xp) || 0, Number(user?.totalScore) || 0);
+  const currentLevel = (user?.level && user.level > 1) ? user.level : Math.floor(currentXp / 1000) + 1;
   const xpInCurrentLevel = currentXp % 1000;
   const xpPct = Math.min(100, Math.round((xpInCurrentLevel / 1000) * 100));
 

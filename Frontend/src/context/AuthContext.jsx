@@ -15,6 +15,24 @@ const AuthContext = createContext(null);
  */
 export const PROFILE_POLL_MS = 60_000;
 
+/**
+ * Normalizes user profile data so XP is never zero if totalScore is available,
+ * and level is derived dynamically from accumulated XP.
+ */
+export function normalizeUserProfile(data) {
+  if (!data) return data;
+  const xp = Math.max(Number(data.xp) || 0, Number(data.totalScore) || 0);
+  const level = (data.level && data.level > 1) ? data.level : Math.floor(xp / 1000) + 1;
+  const gameStreak = (typeof data.gameStreak === 'number') ? data.gameStreak : (data.streak ?? 0);
+  return {
+    ...data,
+    xp,
+    totalScore: Math.max(Number(data.totalScore) || 0, xp),
+    level,
+    gameStreak,
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true); // true while checking token on mount
@@ -43,7 +61,7 @@ export function AuthProvider({ children }) {
       }
       try {
         const data = await userApi.getMyProfile();
-        setUser(data);
+        if (data) setUser(normalizeUserProfile(data));
       } catch {
         // Silently swallow — backend may be waking up (Render cold start).
         // The existing stale profile stays in state; the user is not logged out.
@@ -57,7 +75,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (isLoggedIn()) {
       userApi.getMyProfile()
-        .then((data) => { setUser(data); startPoll(); })
+        .then((data) => { setUser(normalizeUserProfile(data)); startPoll(); })
         .catch(() => { clearToken(); setUser(null); })
         .finally(() => setLoading(false));
     } else {
@@ -77,7 +95,7 @@ export function AuthProvider({ children }) {
       sessionStorage.clear();
     } catch (_e) {}
     saveToken(token);
-    setUser(userData);
+    setUser(normalizeUserProfile(userData));
     startPoll(); // begin keeping the profile fresh after login
   };
 
@@ -97,15 +115,18 @@ export function AuthProvider({ children }) {
   const refreshProfile = useCallback(async () => {
     try {
       const data = await userApi.getMyProfile();
-      setUser(data);
-      return data;
+      if (data) {
+        const normalized = normalizeUserProfile(data);
+        setUser(normalized);
+        return normalized;
+      }
     } catch (err) {
       console.error("Failed to refresh user profile:", err);
     }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshProfile }}>
+    <AuthContext.Provider value={{ user, setUser, loading, login, logout, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

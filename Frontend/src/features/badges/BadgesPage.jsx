@@ -389,12 +389,12 @@ export default function BadgesPage() {
           <div className="dh-hud-divider" />
           <div className="dh-hud-item" title="Operative Level">
             <span className="dh-hud-icon">🏅</span>
-            <span>Lv.{user?.level ?? 1}</span>
+            <span>Lv.{user?.level && user.level > 1 ? user.level : Math.floor(Math.max(Number(user?.xp) || 0, Number(user?.totalScore) || 0) / 1000) + 1}</span>
           </div>
           <div className="dh-hud-divider" />
           <div className="dh-hud-item" title="Accumulated XP">
             <span className="dh-hud-icon">⭐</span>
-            <span>{user?.xp ?? 0} XP</span>
+            <span>{Math.max(Number(user?.xp) || 0, Number(user?.totalScore) || 0)} XP</span>
           </div>
         </div>
       </header>
