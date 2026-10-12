@@ -384,7 +384,7 @@ export default function BadgesPage() {
           <div className="dh-hud-divider" />
           <div className="dh-hud-item" title="Active Session Streak">
             <span className="dh-hud-icon">🔥</span>
-            <span>{user?.streak ?? 0}</span>
+            <span>{user?.gameStreak ?? user?.streak ?? 0}</span>
           </div>
           <div className="dh-hud-divider" />
           <div className="dh-hud-item" title="Operative Level">

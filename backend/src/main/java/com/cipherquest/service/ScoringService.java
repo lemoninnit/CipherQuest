@@ -214,8 +214,9 @@ public class ScoringService {
         int baseScore = getBaseScore(session.getDifficultyTier());
         int score     = calculateStageScore(baseScore, multiplier);
 
-        // 4. Add to total score (failures never subtract from this).
+        // 4. Add to total score and XP (failures never subtract from this).
         user.setTotalScore(user.getTotalScore() + score);
+        user.addXp(score);
         userRepository.save(user);
 
         // 5. Save the immutable completion history record.
@@ -237,7 +238,13 @@ public class ScoringService {
         session.setEndedAt(now);
         sessionRepository.save(session);
 
-        // 7. Update personal bests on the progress record.
+        // 7. Award first-completion milestone / badges via the progress pipeline BEFORE
+        // personal best save so alreadyDone is checked accurately.
+        userProgressService.awardForCompletion(
+                userId, session.getCipherType(), session.getDifficultyTier(), session.getLevelIndex());
+        List<String> newBadges = userProgressService.awardBadgesForUser(userId, user);
+
+        // 8. Update personal bests on the progress record.
         UserProgress progress = progressRepository
                 .findByUserIdAndCipherTypeAndDifficultyTierAndLevelIndex(
                         userId, session.getCipherType(), session.getDifficultyTier(), session.getLevelIndex())
@@ -259,11 +266,6 @@ public class ScoringService {
         }
         progress.setCompletedAt(now);
         progressRepository.save(progress);
-
-        // 8. Award XP / badges via the existing progress pipeline.
-        userProgressService.awardForCompletion(
-                userId, session.getCipherType(), session.getDifficultyTier(), session.getLevelIndex());
-        List<String> newBadges = userProgressService.awardBadgesForUser(userId, user);
 
         return new CompleteStageResponse(
                 score,
