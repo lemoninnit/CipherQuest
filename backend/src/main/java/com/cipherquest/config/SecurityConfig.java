@@ -39,6 +39,7 @@ public class SecurityConfig {
                 // Public endpoints
                 .requestMatchers(
                     "/api/auth/**",
+                    "/api/health",
                     "/h2-console/**",
                     "/api/fishing/leaderboard"
                 ).permitAll()
