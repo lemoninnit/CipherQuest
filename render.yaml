@@ -6,6 +6,10 @@ services:
     dockerfilePath: Dockerfile
     plan: free
     region: singapore
+    # Render uses this path to determine if the service is healthy.
+    # Pointing it at our lightweight /api/health endpoint avoids false
+    # "unhealthy" shutdowns and also keeps the instance warmer on free tier.
+    healthCheckPath: /api/health
     envVars:
       - key: PORT
         value: 8080
