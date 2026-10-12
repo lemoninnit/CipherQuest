@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from '../../../context/AuthContext';
 import './CooldownNotice.css';
 
 /**
@@ -12,6 +13,8 @@ import './CooldownNotice.css';
  *
  * The countdown ticks locally from the server-provided cooldown end time, so it
  * stays accurate without polling, and flips to "RESUME" once it elapses.
+ * When it elapses, refreshProfile() is called automatically so the HUD hearts
+ * refill immediately without the user having to dismiss and re-navigate.
  */
 const pad = (n) => String(Math.max(0, n)).padStart(2, '0');
 
@@ -25,11 +28,13 @@ const splitRemaining = (ms) => {
 };
 
 export default function CooldownNotice({ notice, onDismiss }) {
+  const { refreshProfile } = useAuth();
   // Seeded lazily on mount; the parent remounts this component (via `key`) for
   // each new cooldown, so the first frame already shows the correct remaining
   // time without reading the impure clock during render.
   const [now, setNow] = useState(() => Date.now());
   const [isClosing, setIsClosing] = useState(false);
+  const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -39,6 +44,20 @@ export default function CooldownNotice({ notice, onDismiss }) {
 
   if (!notice) return null;
 
+  const remaining = splitRemaining(notice.cooldownEndTime - now);
+  const isOver = remaining.hours === 0 && remaining.minutes === 0 && remaining.seconds === 0;
+
+  // Auto-refresh hearts the moment the countdown reaches zero.
+  // Guarded by `hasAutoRefreshed` so it fires exactly once per cooldown
+  // instance even though `now` ticks every second.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  useEffect(() => {
+    if (isOver && !hasAutoRefreshed && refreshProfile) {
+      setHasAutoRefreshed(true);
+      refreshProfile().catch(() => { /* offline — hearts will sync on next poll */ });
+    }
+  }, [isOver, hasAutoRefreshed, refreshProfile]);
+
   const handleDismiss = () => {
     if (isClosing) return;
     setIsClosing(true);
@@ -47,9 +66,6 @@ export default function CooldownNotice({ notice, onDismiss }) {
       onDismiss?.();
     }, 200);
   };
-
-  const remaining = splitRemaining(notice.cooldownEndTime - now);
-  const isOver = remaining.hours === 0 && remaining.minutes === 0 && remaining.seconds === 0;
 
   return (
     <div
@@ -66,12 +82,18 @@ export default function CooldownNotice({ notice, onDismiss }) {
         </div>
 
         <div className="cdn-timer-hero">
-          <div className="cdn-timer-label">NEW MISSIONS RESUME IN</div>
+          <div className="cdn-timer-label">
+            {isOver ? 'HEARTS REFILLED' : 'NEW MISSIONS RESUME IN'}
+          </div>
           <div className="cdn-timer-value" role="timer">
-            {pad(remaining.hours)}:{pad(remaining.minutes)}:{pad(remaining.seconds)}
+            {isOver
+              ? '00:00:00'
+              : `${pad(remaining.hours)}:${pad(remaining.minutes)}:${pad(remaining.seconds)}`}
           </div>
           <div className="cdn-timer-note">
-            All hearts are refilled automatically when the cooldown ends.
+            {isOver
+              ? 'All hearts have been restored. You may resume your quest.'
+              : 'All hearts are refilled automatically when the cooldown ends.'}
           </div>
         </div>
 
@@ -86,4 +108,4 @@ export default function CooldownNotice({ notice, onDismiss }) {
       </div>
     </div>
   );
-}
+}
