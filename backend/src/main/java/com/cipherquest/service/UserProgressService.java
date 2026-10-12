@@ -63,6 +63,10 @@ public class UserProgressService {
         User user = findUser(userId);
         autoRefillIfExpired(user);
         checkAndAwardBadges(userId, user);
+        if (user.getTotalScore() > user.getXp()) {
+            user.setXp(user.getTotalScore());
+            user.setLevel((user.getXp() / 1000) + 1);
+        }
         userRepository.save(user);
         return buildProfileDto(user);
     }
