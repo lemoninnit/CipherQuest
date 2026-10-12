@@ -284,7 +284,7 @@ export default function LeaderboardPage() {
                 <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
               </svg>
             </span>
-            <span>Lv.{user?.level ?? 1}</span>
+            <span>Lv{user?.level && user.level > 1 ? user.level : Math.floor(Math.max(Number(user?.xp) || 0, Number(user?.totalScore) || 0) / 1000) + 1}</span>
           </div>
           <div className="dh-hud-divider" />
           <div className="dh-hud-item" title="Accumulated XP">
@@ -293,7 +293,7 @@ export default function LeaderboardPage() {
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
               </svg>
             </span>
-            <span>{user?.xp ?? 0} XP</span>
+            <span>{Math.max(Number(user?.xp) || 0, Number(user?.totalScore) || 0)} XP</span>
           </div>
         </div>
       </header>

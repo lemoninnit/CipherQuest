@@ -149,7 +149,7 @@ function parseUrlParams(search, state, currentProg) {
 }
 
 export function useGameFlow() {
-  const { user, refreshProfile } = useAuth();
+  const { user, setUser, refreshProfile } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -617,6 +617,26 @@ export function useGameFlow() {
       };
     }
     setStageResult({ ...scoreResult, category: cat, difficulty: diff, stageIndex });
+
+    if (scoreResult && setUser) {
+      setUser((prev) => {
+        if (!prev) return prev;
+        const newTotalScore = Math.max(
+          Number(prev.totalScore) || 0,
+          Number(scoreResult.totalScore) || 0,
+          (Number(prev.totalScore) || 0) + (Number(scoreResult.score) || 0)
+        );
+        const newXp = Math.max(Number(prev.xp) || 0, newTotalScore);
+        const newStreak = scoreResult.streak ?? ((Number(prev.gameStreak) || 0) + 1);
+        return {
+          ...prev,
+          totalScore: newTotalScore,
+          xp: newXp,
+          level: Math.floor(newXp / 1000) + 1,
+          gameStreak: newStreak,
+        };
+      });
+    }
 
     // Optimistically record stage completion synchronously so next stage unlocks immediately
     setProgress((prev) => {
