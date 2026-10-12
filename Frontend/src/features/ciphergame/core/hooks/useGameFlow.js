@@ -396,7 +396,15 @@ export function useGameFlow() {
       if (!user) return null;
 
       try {
-        const res = await scoringApi.startStage(cat.toUpperCase(), diff.toUpperCase(), stageIndex);
+        // Use a short 10-second timeout for the session open so a cold Render
+        // backend doesn't block the UI for the full 60-second fetch timeout.
+        // A timeout here is NOT a lockout — we fall through to unscored local
+        // play rather than refusing to launch the stage.
+        const sessionPromise = scoringApi.startStage(cat.toUpperCase(), diff.toUpperCase(), stageIndex);
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(Object.assign(new Error('session-open-timeout'), { isTimeout: true })), 10_000)
+        );
+        const res = await Promise.race([sessionPromise, timeoutPromise]);
         stageSessionIdRef.current = res?.sessionId ?? null;
         return stageSessionIdRef.current;
       } catch (err) {
@@ -408,7 +416,13 @@ export function useGameFlow() {
           showLockoutNotice();
           return null;
         }
-        console.warn("Scoring start unavailable, using local scoring:", err.message);
+        // Timeout or other network error: allow play to continue unscored
+        // rather than blocking the stage launch. The heart is not deducted.
+        if (err?.isTimeout) {
+          console.warn("Scoring start timed out (backend cold-start?), continuing unscored.");
+        } else {
+          console.warn("Scoring start unavailable, using local scoring:", err.message);
+        }
         return null;
       } finally {
         // Settled either way: allow a later retry (a new attempt, or a stage
@@ -478,9 +492,11 @@ export function useGameFlow() {
     // UserProgressService.isLockedOut on the server.
     const heartsLeft = Number(user?.attempts);
     const hasHearts = Number.isFinite(heartsLeft) && heartsLeft > 0;
-    const cooldownEndMs = user?.cooldownEndTime
-      ? new Date(user.cooldownEndTime).getTime()
-      : NaN;
+    // `cooldownEndTime` arrives from the backend as an ISO-8601 string.
+    // `new Date(null)` returns an invalid date, so coerce null/undefined to
+    // an empty string so the parse produces NaN rather than epoch (0 ms).
+    const rawEnd = user?.cooldownEndTime ?? '';
+    const cooldownEndMs = rawEnd ? new Date(rawEnd).getTime() : NaN;
     const cooldownActive = Number.isFinite(cooldownEndMs) && cooldownEndMs - Date.now() > 0;
     if (!hasHearts || cooldownActive) {
       showLockoutNotice(Number.isFinite(cooldownEndMs) ? cooldownEndMs : null);
