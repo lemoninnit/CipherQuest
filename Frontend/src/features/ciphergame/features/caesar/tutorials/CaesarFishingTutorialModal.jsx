@@ -108,9 +108,12 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
   // Dynamic simulation timing & animation states (no cuts)
   const [castProgress, setCastProgress] = useState(0); // 0 to 1
   const [reelProgress, setReelProgress] = useState(0); // 0 to 1
+  const [isHooked, setIsHooked] = useState(false);
   const [hookedTargetPos, setHookedTargetPos] = useState({ x: 52, y: 190 });
   const [showSplash, setShowSplash] = useState(false);
   const [splashPos, setSplashPos] = useState({ x: 52, y: 190 });
+  const [showCatchToast, setShowCatchToast] = useState(false);
+  const [showClickPointer, setShowClickPointer] = useState(false);
   const [basketShake, setBasketShake] = useState(false);
 
   // Reset or restart when opened
@@ -122,19 +125,22 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
       setFishList(createInitialFishList());
       setCastProgress(0);
       setReelProgress(0);
+      setIsHooked(false);
+      setShowCatchToast(false);
+      setShowClickPointer(false);
       setShowSplash(false);
       setBasketShake(false);
     }
   }, [isOpen]);
 
-  // Main slideshow timer: advances 1 step every 4.5 seconds
+  // Main slideshow timer: advances 1 step every 4.8 seconds
   // Resets cleanly whenever currentStep changes so manual clicks give a full duration
   useEffect(() => {
     if (!isOpen || !isPlaying || isClosing) return;
 
     const timer = setInterval(() => {
       setCurrentStep((prev) => (prev + 1) % FISHING_STEPS.length);
-    }, 4500);
+    }, 4800);
 
     return () => clearInterval(timer);
   }, [isOpen, isPlaying, isClosing, currentStep]);
@@ -147,6 +153,9 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
       // Step 1: Target Shift - swimming smoothly, reset cast/reel
       setCastProgress(0);
       setReelProgress(0);
+      setIsHooked(false);
+      setShowCatchToast(false);
+      setShowClickPointer(false);
       setShowSplash(false);
       // Ensure target fish is swimming if missing
       setFishList((prev) => {
@@ -156,7 +165,7 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
             id: `target-3-${Date.now()}`,
             isTarget: true,
             value: 3,
-            x: 14,
+            x: 20,
             y: 200,
             speed: 0.44,
             ...spriteForFishValue(3),
@@ -168,40 +177,55 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
     } else if (currentStep === 1) {
       // Step 2: Cast line out smoothly to the swimming target fish
       setReelProgress(0);
+      setIsHooked(false);
+      setShowCatchToast(false);
+      setShowClickPointer(true);
+
       const target = fishList.find((f) => f.isTarget) || { x: 55, y: 200 };
       setHookedTargetPos({ x: target.x, y: target.y });
 
-      // Animate line shooting out from rod to fish over 400ms
-      let start = null;
-      let frameId;
-      const animateCast = (ts) => {
-        if (!start) start = ts;
-        const progress = Math.min((ts - start) / 400, 1);
-        setCastProgress(progress);
-        if (progress < 1) {
-          frameId = requestAnimationFrame(animateCast);
-        } else {
-          // Line reaches fish -> trigger ripple splash
-          setSplashPos({ x: target.x, y: target.y });
-          setShowSplash(true);
-          setTimeout(() => setShowSplash(false), 550);
-        }
-      };
-      frameId = requestAnimationFrame(animateCast);
-      return () => cancelAnimationFrame(frameId);
+      // First show click pointer for 250ms, then cast line over 380ms
+      const castTimer = setTimeout(() => {
+        setShowClickPointer(false);
+        let start = null;
+        let frameId;
+        const animateCast = (ts) => {
+          if (!start) start = ts;
+          const progress = Math.min((ts - start) / 380, 1);
+          setCastProgress(progress);
+          if (progress < 1) {
+            frameId = requestAnimationFrame(animateCast);
+          } else {
+            // Line reaches fish -> HOOK IMPACT & SPLASH!
+            setIsHooked(true);
+            setSplashPos({ x: target.x, y: target.y });
+            setShowSplash(true);
+            setTimeout(() => setShowSplash(false), 550);
+          }
+        };
+        frameId = requestAnimationFrame(animateCast);
+      }, 250);
+
+      return () => clearTimeout(castTimer);
     } else if (currentStep === 2) {
-      // Step 3: Reel in the hooked fish down to the basket over 750ms
+      // Step 3: Reel in the hooked fish directly back along line to boat over 650ms
       setCastProgress(1);
+      setIsHooked(true);
+      setShowClickPointer(false);
       let start = null;
       let frameId;
       const animateReel = (ts) => {
         if (!start) start = ts;
-        const progress = Math.min((ts - start) / 750, 1);
+        const progress = Math.min((ts - start) / 650, 1);
         setReelProgress(progress);
         if (progress < 1) {
           frameId = requestAnimationFrame(animateReel);
         } else {
-          // Fish enters basket -> shake and activate shift
+          // Fish enters boat -> Catch Splash + Catch Toast + Shift Reveal!
+          setShowCatchToast(true);
+          setSplashPos({ x: 50, y: 470 });
+          setShowSplash(true);
+          setTimeout(() => setShowSplash(false), 500);
           setBasketShake(true);
           setTimeout(() => setBasketShake(false), 450);
         }
@@ -212,6 +236,9 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
       // Step 4: Solved / Victory state
       setCastProgress(0);
       setReelProgress(1);
+      setIsHooked(false);
+      setShowCatchToast(false);
+      setShowClickPointer(false);
     }
   }, [currentStep, isOpen]);
 
@@ -225,8 +252,8 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
 
       setFishList((prev) =>
         prev.map((f) => {
-          // If this is the target fish and it is currently being reeled in during step 2 or 3, don't move it freely
-          if (f.isTarget && (currentStep === 2 || currentStep === 3)) {
+          // If this is the target fish and it is currently hooked in step 1 or reeled in step 2/3, don't move it freely
+          if (f.isTarget && ((currentStep === 1 && isHooked) || currentStep === 2 || currentStep === 3)) {
             return f;
           }
           // Swim naturally using CipherQuest physics
@@ -243,7 +270,7 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
       isMounted = false;
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [isOpen, isClosing, currentStep]);
+  }, [isOpen, isClosing, currentStep, isHooked]);
 
   // Keyboard controls (Arrow navigation & Escape)
   useEffect(() => {
@@ -272,39 +299,55 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
 
   const stepData = FISHING_STEPS[currentStep];
 
-  // Active target fish
+  // Authentic in-game coordinates (Matching CaesarFishingGame.jsx 1:1)
+  const rodBaseX = 500;
+  const rodBaseY = 515;
+
   const targetFish = fishList.find((f) => f.isTarget) || { x: 50, y: 190, facing: 'left', imgSrc: '' };
+  const targetSvgX = (currentStep === 1 || currentStep === 2 ? hookedTargetPos.x : targetFish.x) * 10;
+  const targetSvgY = (currentStep === 1 || currentStep === 2 ? hookedTargetPos.y : targetFish.y) + 24;
+
+  const dx = targetSvgX - rodBaseX;
+  const dy = targetSvgY - rodBaseY;
+  const len = Math.hypot(dx, dy) || 1;
+  const rodLength = 100;
+
+  // Dynamic rod tip pointing toward target fish with realistic flex under tension
+  let rodTipX = rodBaseX + (dx / len) * rodLength;
+  let rodTipY = rodBaseY + (dy / len) * rodLength;
+  if (currentStep === 2 && reelProgress < 1) {
+    rodTipY += (1 - reelProgress) * 12; // Flex downward under line tension
+  }
+
+  // Rod guide rings along the shaft
+  const guide1X = rodBaseX + (dx / len) * (rodLength * 0.35);
+  const guide1Y = rodBaseY + (dy / len) * (rodLength * 0.35);
+  const guide2X = rodBaseX + (dx / len) * (rodLength * 0.7);
+  const guide2Y = rodBaseY + (dy / len) * (rodLength * 0.7);
+
+  // Exact hook coordinates along the line
+  let currentHookSvgX = rodTipX;
+  let currentHookSvgY = rodTipY;
+
+  if (currentStep === 0) {
+    currentHookSvgX = rodTipX;
+    currentHookSvgY = rodTipY + 18;
+  } else if (currentStep === 1) {
+    currentHookSvgX = rodTipX + (targetSvgX - rodTipX) * castProgress;
+    currentHookSvgY = rodTipY + (targetSvgY - rodTipY) * castProgress;
+  } else if (currentStep === 2) {
+    currentHookSvgX = rodTipX + (targetSvgX - rodTipX) * (1 - reelProgress);
+    currentHookSvgY = rodTipY + (targetSvgY - rodTipY) * (1 - reelProgress);
+  } else if (currentStep === 3) {
+    currentHookSvgX = rodTipX;
+    currentHookSvgY = rodTipY + 16;
+  }
 
   // Derived state for basket & decryption
   const isReeledIn = currentStep >= 2 && reelProgress >= 0.8;
   const basketShift = isReeledIn || currentStep === 3 ? 3 : 0;
   const isDecrypted = isReeledIn || currentStep === 3;
 
-  // Rod facing: flips toward the target fish position
-  const rodFacingRight = (currentStep === 1 || currentStep === 2 ? hookedTargetPos.x : targetFish.x) > 50;
-
-  // SVG coordinate calculations (viewBox: 0 0 1000 520)
-  const rodTipSvg = rodFacingRight ? { x: 670, y: 310 } : { x: 330, y: 310 };
-  const targetSvgX = (hookedTargetPos.x / 100) * 1000;
-  const targetSvgY = hookedTargetPos.y;
-
-  // Hook point calculation:
-  // During cast (step 1): interpolates from rod tip to target fish
-  // During reel (step 2): interpolates from target fish down to left basket (100, 460)
-  let currentHookSvgX = rodTipSvg.x;
-  let currentHookSvgY = rodTipSvg.y;
-
-  if (currentStep === 1) {
-    currentHookSvgX = rodTipSvg.x + (targetSvgX - rodTipSvg.x) * castProgress;
-    currentHookSvgY = rodTipSvg.y + (targetSvgY - rodTipSvg.y) * castProgress;
-  } else if (currentStep === 2) {
-    const basketSvgX = 100;
-    const basketSvgY = 460;
-    currentHookSvgX = targetSvgX + (basketSvgX - targetSvgX) * reelProgress;
-    currentHookSvgY = targetSvgY + (basketSvgY - targetSvgY) * reelProgress;
-  }
-
-  // Hooked fish DOM position during reel
   const hookedFishDomX = (currentHookSvgX / 1000) * 100;
   const hookedFishDomY = currentHookSvgY;
 
@@ -363,6 +406,8 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
                 setCurrentStep(0);
                 setIsPlaying(true);
                 setFishList(createInitialFishList());
+                setIsHooked(false);
+                setShowCatchToast(false);
               }}
               title="Restart Simulation"
             >
@@ -422,37 +467,106 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
                 <div className="fg-bubble" style={{ left: '62%', bottom: '25px', width: '16px', height: '16px' }} />
                 <div className="fg-bubble" style={{ left: '84%', bottom: '18px', width: '20px', height: '20px' }} />
 
-                {/* SVG FISHING LINE */}
+                {/* AUTHENTIC SVG FISHING ROD & LINE (Aligned with actual game physics) */}
                 <svg
-                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 42 }}
+                  style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 38 }}
                   viewBox="0 0 1000 520"
                   preserveAspectRatio="none"
                 >
+                  <defs>
+                    <filter id="cqRodGlowCaesar" x="-20%" y="-20%" width="140%" height="140%">
+                      <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#00e5ff" floodOpacity="0.8" />
+                    </filter>
+                    <filter id="cqHookGlowCaesar" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="#ffd700" floodOpacity="0.9" />
+                    </filter>
+                  </defs>
+
+                  {/* Fishing Rod Base Mount */}
+                  <circle cx={rodBaseX} cy={rodBaseY} r="9" fill="#090e17" stroke="#00e5ff" strokeWidth="2" />
+                  <circle cx={rodBaseX} cy={rodBaseY} r="5" fill="#ffd700" />
+
+                  {/* Fishing Rod Shaft */}
+                  <line
+                    x1={rodBaseX}
+                    y1={rodBaseY}
+                    x2={rodTipX}
+                    y2={rodTipY}
+                    stroke="#1e293b"
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                  />
+                  <line
+                    x1={rodBaseX}
+                    y1={rodBaseY}
+                    x2={rodTipX}
+                    y2={rodTipY}
+                    stroke="#00e5ff"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    filter="url(#cqRodGlowCaesar)"
+                  />
+
+                  {/* Rod Guide Rings */}
+                  <circle cx={guide1X} cy={guide1Y} r="3.5" fill="#ffd700" stroke="#00e5ff" strokeWidth="1" />
+                  <circle cx={guide2X} cy={guide2Y} r="3" fill="#ffd700" stroke="#00e5ff" strokeWidth="1" />
+
+                  {/* Rod Tip Eyelet */}
+                  <circle
+                    cx={rodTipX}
+                    cy={rodTipY}
+                    r="4.5"
+                    fill="#ffd700"
+                    stroke="#ffffff"
+                    strokeWidth="1.5"
+                    filter="url(#cqHookGlowCaesar)"
+                  />
+
+                  {/* Dynamic Fishing Line */}
                   {(currentStep === 1 || (currentStep === 2 && reelProgress < 1)) && (
-                    <line
-                      x1={rodTipSvg.x}
-                      y1={rodTipSvg.y}
-                      x2={currentHookSvgX}
-                      y2={currentHookSvgY}
-                      stroke="#00e5ff"
-                      strokeWidth="2.5"
-                      strokeDasharray="5 3"
-                    />
+                    <>
+                      <line
+                        x1={rodTipX}
+                        y1={rodTipY}
+                        x2={currentHookSvgX}
+                        y2={currentHookSvgY}
+                        stroke="#ffffff"
+                        strokeWidth="1.8"
+                        strokeDasharray="4 2.5"
+                        filter="url(#cqRodGlowCaesar)"
+                      />
+                      {/* Luminous Hook at line end */}
+                      <circle
+                        cx={currentHookSvgX}
+                        cy={currentHookSvgY}
+                        r="4"
+                        fill="#ffd700"
+                        stroke="#ffffff"
+                        strokeWidth="1.2"
+                        filter="url(#cqHookGlowCaesar)"
+                      />
+                    </>
                   )}
                 </svg>
 
-                {/* ACTIVE SWIMMING FISH */}
+                {/* TACTICAL SKIFF BOAT AT BOTTOM CENTER */}
+                <div className="cq-tut-boat-dock">
+                  <span className="cq-tut-boat-dock-label">TACTICAL SKIFF</span>
+                  <div className="cq-tut-boat-dock-bar" />
+                </div>
+
+                {/* ACTIVE SWIMMING & HOOKED FISH */}
                 {fishList.map((f) => {
-                  // If target fish is being reeled in (step 2), render it following the hook line
+                  // Step 2 Reeling state: target fish travels attached to hook along line
                   if (f.isTarget && currentStep === 2 && reelProgress < 1) {
                     return (
                       <div
                         key={f.id}
-                        className="fg-fish-entity"
+                        className="fg-fish-entity is-hooked is-reeling"
                         style={{
                           left: `${hookedFishDomX}%`,
-                          top: `${hookedFishDomY}px`,
-                          transform: 'scale(1.15)',
+                          top: `${hookedFishDomY - 24}px`,
+                          transform: 'scale(1.2)',
                           transition: 'none',
                         }}
                       >
@@ -470,9 +584,58 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
                     );
                   }
 
-                  // If target fish has already been deposited in the basket (step 2 finish or step 3), hide it
+                  // Step 1 Hooked state: target fish locked on hook with struggle animation
+                  if (f.isTarget && currentStep === 1 && isHooked) {
+                    return (
+                      <div
+                        key={f.id}
+                        className="fg-fish-entity is-hooked"
+                        style={{
+                          left: `${hookedTargetPos.x}%`,
+                          top: `${hookedTargetPos.y}px`,
+                          transition: 'none',
+                        }}
+                      >
+                        <div className="fg-fish-facing" style={{ transform: facingTransform(f.facing) }}>
+                          <img
+                            className={`fg-fish-sprite-img${isLargeFish(f.imgSrc) ? ' fg-large-fish' : ''}`}
+                            src={f.imgSrc}
+                            alt=""
+                            draggable={false}
+                            onError={onFishImgError}
+                          />
+                        </div>
+                        <div className="fg-fish-badge positive">+3</div>
+                      </div>
+                    );
+                  }
+
+                  // Landed fish inside boat in Step 2 (finished) & Step 3
                   if (f.isTarget && (currentStep === 3 || (currentStep === 2 && reelProgress >= 1))) {
-                    return null;
+                    return (
+                      <div
+                        key={f.id}
+                        className="fg-fish-entity"
+                        style={{
+                          left: '50%',
+                          top: '475px',
+                          transform: 'translate(-50%, -50%) scale(0.95)',
+                          transition: 'all 0.3s ease',
+                          zIndex: 40,
+                        }}
+                      >
+                        <div className="fg-fish-facing" style={{ transform: facingTransform(f.facing) }}>
+                          <img
+                            className={`fg-fish-sprite-img${isLargeFish(f.imgSrc) ? ' fg-large-fish' : ''}`}
+                            src={f.imgSrc}
+                            alt=""
+                            draggable={false}
+                            onError={onFishImgError}
+                          />
+                        </div>
+                        <div className="fg-fish-badge positive">✓ +3</div>
+                      </div>
+                    );
                   }
 
                   // Normal free-swimming fish
@@ -503,7 +666,7 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
                   );
                 })}
 
-                {/* WATER SPLASH EFFECT (No Emojis, clean cyan ripple) */}
+                {/* WATER SPLASH EFFECT */}
                 {showSplash && (
                   <div
                     className="cq-tut-water-splash"
@@ -511,19 +674,21 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
                   />
                 )}
 
-                {/* AUTHENTIC FISHING ROD SPRITE */}
-                <div
-                  className={`caesar-fishing-rod-sprite ${rodFacingRight ? 'facing-right' : ''}`}
-                  aria-hidden="true"
-                />
+                {/* CATCH CELEBRATION TOAST */}
+                {showCatchToast && (
+                  <div className="cq-tut-catch-toast">
+                    <span className="cq-tut-catch-toast-xp">+50 XP</span>
+                    <span className="cq-tut-catch-toast-msg">Shift +3 Fish Landed!</span>
+                  </div>
+                )}
 
                 {/* STEP 1: TARGETING RETICLE DYNAMICALLY TRACKING THE SWIMMING +3 FISH */}
                 {currentStep === 0 && (
                   <div
                     className="cq-tut-crosshair"
                     style={{
-                      left: `${targetFish.x + 3}%`,
-                      top: `${targetFish.y + 24}px`,
+                      left: `${targetFish.x}%`,
+                      top: `${targetFish.y + 20}px`,
                       transition: 'none',
                     }}
                   />
@@ -546,8 +711,8 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
                   </div>
                 )}
 
-                {/* STEP 2 POINTER (Click to Cast) */}
-                {currentStep === 1 && (
+                {/* STEP 2 POINTER (Tap to Cast) */}
+                {currentStep === 1 && showClickPointer && (
                   <div
                     className="cq-tut-pointer-overlay"
                     style={{
@@ -560,18 +725,36 @@ export default function CaesarFishingTutorialModal({ isOpen, onClose }) {
                   </div>
                 )}
 
-                {/* STEP 3 POINTER (Hooked & Reeling to Basket) */}
-                {currentStep === 2 && (
+                {/* STEP 2 HOOKED BADGE */}
+                {currentStep === 1 && isHooked && (
                   <div
                     className="cq-tut-pointer-overlay"
                     style={{
-                      left: '24px',
-                      bottom: '105px',
+                      left: `calc(${hookedTargetPos.x}% - 60px)`,
+                      top: `${hookedTargetPos.y - 48}px`,
+                    }}
+                  >
+                    <span className="material-symbols-outlined cq-tut-pointer-arrow" style={{ color: '#00e5ff' }}>
+                      lock
+                    </span>
+                    <span className="cq-tut-pointer-badge" style={{ background: '#00e5ff', color: '#020611', fontWeight: 800 }}>
+                      HOOKED! READY TO REEL
+                    </span>
+                  </div>
+                )}
+
+                {/* STEP 3 POINTER (Reeling to Boat) */}
+                {currentStep === 2 && reelProgress < 1 && (
+                  <div
+                    className="cq-tut-pointer-overlay"
+                    style={{
+                      left: 'calc(50% - 75px)',
+                      bottom: '72px',
                     }}
                   >
                     <span className="material-symbols-outlined cq-tut-pointer-arrow">downloading</span>
                     <span className="cq-tut-pointer-badge" style={{ background: '#10b981', color: '#ffffff' }}>
-                      Hooked &amp; Shift +3 Applied!
+                      Reeling Shift +3 to Boat!
                     </span>
                   </div>
                 )}

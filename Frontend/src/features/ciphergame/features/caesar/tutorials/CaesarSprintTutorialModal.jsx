@@ -18,7 +18,7 @@ const SPRINT_STEPS = [
     badge: 'DIRECTIVE 02 // COLLECT SHIFT DIAMONDS',
     desc: (
       <>
-        Diamonds float along lanes carrying <strong>+</strong> and <strong>−</strong> shift values. Collect the <strong>+3 diamond</strong> to adjust your shift.
+        Diamonds float along lanes carrying <strong>+</strong> and <strong>−</strong> shift values. Switch to any lane to collect the <strong>+3 diamond</strong>!
       </>
     ),
   },
@@ -45,6 +45,16 @@ const SPRINT_STEPS = [
 const TARGET_CIPHER = ['Z', 'L', 'Q', 'G'];
 const TARGET_PLAIN = ['W', 'I', 'N', 'D'];
 
+const PAD5 = (n) => String(n).padStart(5, '0');
+
+const INITIAL_SPEED_LINES = Array.from({ length: 16 }, (_, i) => ({
+  id: i,
+  x: (i * 7.5 + Math.random() * 5) % 110,
+  y: 8 + ((i * 17) % 80),
+  speed: 1.1 + (i % 4) * 0.45,
+  width: 18 + (i % 3) * 14,
+}));
+
 export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
@@ -53,6 +63,12 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
   // Continuous animation loop references
   const animFrameRef = useRef(null);
   const stepStartTimeRef = useRef(Date.now());
+
+  // 30-frame animated monster (slime) loop (45ms interval)
+  const [slimeFrame, setSlimeFrame] = useState(0);
+
+  // Speed lines state
+  const [speedLines, setSpeedLines] = useState(INITIAL_SPEED_LINES);
 
   // Dynamic simulation actor states
   const [runnerLane, setRunnerLane] = useState(1); // 1 = Middle, 0 = Top
@@ -63,7 +79,7 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
   const [isBatonPopping, setIsBatonPopping] = useState(false);
 
   // Obstacle Slime
-  const [slimeX, setSlimeX] = useState(95);
+  const [slimeX, setSlimeX] = useState(105);
   const [slimeLane, setSlimeLane] = useState(1);
   const [isSlimeVisible, setIsSlimeVisible] = useState(true);
 
@@ -82,6 +98,15 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
   // Floating feedback toast
   const [feedback, setFeedback] = useState(null); // { text, x, top }
 
+  // Cycle slime sprite animation frames (30 frames, 45ms per frame)
+  useEffect(() => {
+    if (!isOpen || isClosing || !isPlaying) return;
+    const timer = setInterval(() => {
+      setSlimeFrame((f) => (f + 1) % 30);
+    }, 45);
+    return () => clearInterval(timer);
+  }, [isOpen, isClosing, isPlaying]);
+
   // Reset when opened
   useEffect(() => {
     if (isOpen) {
@@ -95,10 +120,10 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
       setRunnerEffects('');
       setActiveShift(0);
       setIsBatonPopping(false);
-      setSlimeX(95);
+      setSlimeX(105);
       setSlimeLane(1);
       setIsSlimeVisible(true);
-      setDiamondX(95);
+      setDiamondX(105);
       setDiamondLane(0);
       setIsDiamondVisible(false);
       setShowDiamondSparkle(false);
@@ -119,7 +144,7 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
       setRunnerAnim('run');
       setRunnerEffects('');
       setActiveShift(0);
-      setSlimeX(95);
+      setSlimeX(105);
       setSlimeLane(1);
       setIsSlimeVisible(true);
       setIsDiamondVisible(false);
@@ -133,14 +158,14 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
       setRunnerEffects('');
       setActiveShift(0);
       setIsSlimeVisible(false);
-      setDiamondX(95);
-      setDiamondLane(0);
+      setDiamondX(105);
+      setDiamondLane(2);
       setIsDiamondVisible(true);
       setShowDiamondSparkle(false);
       setIsVictoryShown(false);
       setSolvedCount(0);
     } else if (currentStep === 2) {
-      setRunnerLane(0);
+      setRunnerLane(2);
       setRunnerX(18);
       setRunnerAnim('run');
       setRunnerEffects('');
@@ -207,12 +232,21 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
       const elapsed = Date.now() - stepStartTimeRef.current;
       const progress = Math.min(elapsed / 4500, 1.0);
 
+      // Continuously animate background speed lines across all steps
+      setSpeedLines((prevLines) =>
+        prevLines.map((line) => {
+          let nextX = line.x - line.speed * 0.45;
+          if (nextX < -15) nextX = 115;
+          return { ...line, x: nextX };
+        })
+      );
+
       // ── STEP 0: LANE SWITCHING & DODGING ──────────────────────────────────
       if (currentStep === 0) {
-        // Slime travels from right (95%) to left (-20%)
-        const sx = 95 - progress * 115;
+        // Slime travels from right (105%) to left (-25%)
+        const sx = 105 - progress * 130;
         setSlimeX(sx);
-        setIsSlimeVisible(sx > -15);
+        setIsSlimeVisible(sx > -20 && sx < 105);
         setIsDiamondVisible(false);
         setIsVictoryShown(false);
         setActiveShift(0);
@@ -250,43 +284,56 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
         }
       }
 
-      // ── STEP 1: COLLECT SHIFT DIAMONDS ───────────────────────────────────
+      // ── STEP 1: COLLECT SHIFT DIAMONDS IN ANY LANE (Bottom Lane 2) ───────
       else if (currentStep === 1) {
         setIsSlimeVisible(false);
         setIsVictoryShown(false);
-        setRunnerLane(0);
-        setRunnerX(18);
+        setDiamondLane(2);
 
-        // Diamond glides along Top Lane 0 towards the runner
-        if (progress < 0.42) {
-          const dx = 95 - (progress / 0.42) * 77;
+        // Runner starts in Top Lane 0, spots target +3 in Bottom Lane 2:
+        if (progress < 0.16) {
+          setRunnerLane(0);
+          setRunnerAnim('run');
+          setRunnerEffects('');
+        } else if (progress >= 0.16 && progress < 0.24) {
+          setRunnerLane(1);
+          setRunnerAnim('jump');
+          setRunnerEffects('moving-down');
+        } else if (progress >= 0.24 && progress < 0.32) {
+          setRunnerLane(2);
+          setRunnerAnim('jump');
+          setRunnerEffects('moving-down');
+        } else {
+          setRunnerLane(2);
+          setRunnerAnim('run');
+          setRunnerEffects('');
+        }
+
+        // Diamond glides along Bottom Lane 2 towards the runner
+        if (progress < 0.44) {
+          const dx = 105 - (progress / 0.44) * 87;
           setDiamondX(dx);
           setIsDiamondVisible(true);
           setShowDiamondSparkle(false);
-          setRunnerAnim('run');
-          setRunnerEffects('');
           setActiveShift(0);
           setIsBatonPopping(false);
           setFeedback(null);
-        } else if (progress >= 0.42 && progress < 0.52) {
-          // Collection moment: sparkle burst & spin effect
+        } else if (progress >= 0.44 && progress < 0.55) {
+          // Collection moment: sparkle burst & spin effect in Bottom Lane
           setIsDiamondVisible(false);
           setShowDiamondSparkle(true);
-          setRunnerAnim('run');
           setRunnerEffects('spin-effect');
           setActiveShift(3);
           setIsBatonPopping(true);
           setFeedback({
-            text: 'SHIFT +3 ACQUIRED!',
-            x: 24,
-            top: 'var(--lane-0-ground)',
+            text: 'SHIFT +3 ACQUIRED IN BOTTOM LANE!',
+            x: 28,
+            top: 'var(--lane-2-ground)',
           });
         } else {
-          // Continues running with active +3 baton
+          // Continues running in Bottom Lane with active +3 baton
           setIsDiamondVisible(false);
           setShowDiamondSparkle(false);
-          setRunnerAnim('run');
-          setRunnerEffects('');
           setActiveShift(3);
           setIsBatonPopping(false);
           setFeedback(null);
@@ -466,6 +513,24 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
                   <div className="sprint-parallax-layer sprint-bg-sky" />
                   <div className="sprint-track-vignette" />
 
+                  {/* Dynamic Fast Speed Lines */}
+                  <div
+                    className="sprint-speed-lines"
+                    style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 3 }}
+                  >
+                    {speedLines.map((line) => (
+                      <div
+                        key={line.id}
+                        className="sprint-speed-line"
+                        style={{
+                          left: `${line.x}%`,
+                          top: `${line.y}%`,
+                          width: `${line.width}px`,
+                        }}
+                      />
+                    ))}
+                  </div>
+
                   {/* 3 Authentic Platforms / Lanes Mathematically Grounded */}
                   <div className={`sprint-lane lane-0 ${runnerLane === 0 ? 'highlighted' : ''}`}>
                     <div className="sprint-lane-platform platform-upper" />
@@ -503,7 +568,7 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
                     >
                       <img
                         className="sprint-slime-img"
-                        src="/assets/sprint/obstacle/obstacle1/SlimeOrange_00000.png"
+                        src={`/assets/sprint/obstacle/obstacle1/SlimeOrange_${PAD5(slimeFrame)}.png`}
                         alt="Obstacle Slime"
                       />
                     </div>
@@ -527,7 +592,7 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
                       className="cq-tut-pellet-sparkle"
                       style={{
                         left: `${runnerX}%`,
-                        top: 'var(--lane-0-ground)',
+                        top: 'var(--lane-2-ground)',
                       }}
                     />
                   )}
@@ -567,10 +632,10 @@ export default function CaesarSprintTutorialModal({ isOpen, onClose }) {
                   {currentStep === 1 && isDiamondVisible && (
                     <div
                       className="cq-tut-pointer-overlay"
-                      style={{ left: `${Math.max(diamondX, 26)}%`, top: 'var(--lane-0-ground)' }}
+                      style={{ left: `${Math.max(diamondX, 26)}%`, top: 'var(--lane-2-ground)' }}
                     >
                       <span className="material-symbols-outlined cq-tut-pointer-arrow">arrow_downward</span>
-                      <span className="cq-tut-pointer-badge">Collect +3 Diamond</span>
+                      <span className="cq-tut-pointer-badge">Collect +3 in Bottom Lane</span>
                     </div>
                   )}
 

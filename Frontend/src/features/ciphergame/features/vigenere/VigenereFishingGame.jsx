@@ -13,6 +13,7 @@ import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 import { useFishingStageFail } from '../../core/hooks/useFishingStageFail';
 import FishingGameOverOverlay from '../../ui/FishingGameOverOverlay';
+import VigenereFishingTutorialModal from './tutorials/VigenereFishingTutorialModal';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
@@ -157,6 +158,7 @@ export default function VigenereFishingGame({
   const [caughtFish, setCaughtFish] = useState(null);
   const [splash, setSplash] = useState({ show: false, x: 0, y: 0 });
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [chumCount, setChumCount] = useState(() => (hasSnapshot && typeof snapshot.gameState.chumCount === 'number' ? snapshot.gameState.chumCount : 3));
   const [hoveredFish, setHoveredFish] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
@@ -164,6 +166,18 @@ export default function VigenereFishingGame({
   const [isMuted, setIsMuted] = useState(false);
   const animationRef = useRef(null);
   const prevLevelIdRef = useRef(levelData.id || `${levelData.plaintext}-${levelData.ciphertext}`);
+
+  // Auto-launch tutorial on first launch of Vigenere Fishing in Easy tier
+  useEffect(() => {
+    const normTier = String(tier || levelData?.difficulty || '').toLowerCase();
+    if (normTier === 'easy') {
+      const seen = localStorage.getItem('cq_tut_seen_vigenere_fishing');
+      if (!seen) {
+        setShowTutorial(true);
+        localStorage.setItem('cq_tut_seen_vigenere_fishing', 'true');
+      }
+    }
+  }, [tier, levelData?.difficulty]);
 
   const [selectedGlobalIdx, setSelectedGlobalIdx] = useState(null);
 
@@ -624,6 +638,14 @@ export default function VigenereFishingGame({
                 Look at the active blank position's cipher letter and matching key letter. Subtract the key letter's value from the cipher letter's value to find the plaintext letter, then catch that fish!
               </p>
               <button
+                type="button"
+                className="cq-dossier-how-to-play-btn"
+                onClick={() => setShowTutorial(true)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help_outline</span>
+                <span>How to Play</span>
+              </button>
+              <button
                 className="cq-dossier-action-btn"
                 onClick={() => {
                   fishingSound.unlockAudio();
@@ -636,6 +658,13 @@ export default function VigenereFishingGame({
             </div>
           </div>
         </div>
+        <VigenereFishingTutorialModal
+          isOpen={showTutorial}
+          onClose={() => {
+            localStorage.setItem('cq_tut_seen_vigenere_fishing', 'true');
+            setShowTutorial(false);
+          }}
+        />
       </div>
     );
   }
@@ -1056,6 +1085,14 @@ export default function VigenereFishingGame({
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();
+        }}
+      />
+
+      <VigenereFishingTutorialModal
+        isOpen={showTutorial}
+        onClose={() => {
+          localStorage.setItem('cq_tut_seen_vigenere_fishing', 'true');
+          setShowTutorial(false);
         }}
       />
     </div>

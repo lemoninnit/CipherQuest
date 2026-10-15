@@ -16,6 +16,7 @@ import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 import { describePlayfairRule, transformPlayfairPair } from '../playfair/PlayfairHelpers';
 import CaesarPacmanTutorialModal from '../caesar/tutorials/CaesarPacmanTutorialModal';
+import VigenerePacmanTutorialModal from '../vigenere/tutorials/VigenerePacmanTutorialModal';
 
 const EASY_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -727,6 +728,7 @@ export default function PacmanGame({
   const [showExplanation, setShowExplanation] = useState(false);
   const [showTabula, setShowTabula] = useState(false);
   const [showCaesarTutorial, setShowCaesarTutorial] = useState(false);
+  const [showVigenereTutorial, setShowVigenereTutorial] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
 
   // Auto-launch tutorial on first launch of Caesar Pac-Man in Easy tier
@@ -739,6 +741,17 @@ export default function PacmanGame({
       }
     }
   }, [isCaesar, currentTier]);
+
+  // Auto-launch tutorial on first launch of Vigenere Pac-Man in Easy tier
+  useEffect(() => {
+    if (isVigenere && currentTier === 'easy') {
+      const seen = localStorage.getItem('cq_tut_seen_vigenere_pacman');
+      if (!seen) {
+        setShowVigenereTutorial(true);
+        localStorage.setItem('cq_tut_seen_vigenere_pacman', 'true');
+      }
+    }
+  }, [isVigenere, currentTier]);
 
   const [pacman, setPacman] = useState(() => (hasSnapshot && snapshot.gameState.pacman ? snapshot.gameState.pacman : initialPacman));
   const [pacmanDir, setPacmanDir] = useState('NONE');
@@ -1880,6 +1893,16 @@ export default function PacmanGame({
                   <span>How to Play</span>
                 </button>
               )}
+              {isVigenere && (
+                <button
+                  type="button"
+                  className="cq-dossier-how-to-play-btn"
+                  onClick={() => setShowVigenereTutorial(true)}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help_outline</span>
+                  <span>How to Play</span>
+                </button>
+              )}
               <button
                 className="cq-dossier-action-btn"
                 onClick={() => {
@@ -1899,6 +1922,15 @@ export default function PacmanGame({
             onClose={() => {
               localStorage.setItem('cq_tut_seen_caesar_pacman', 'true');
               setShowCaesarTutorial(false);
+            }}
+          />
+        )}
+        {isVigenere && (
+          <VigenerePacmanTutorialModal
+            isOpen={showVigenereTutorial}
+            onClose={() => {
+              localStorage.setItem('cq_tut_seen_vigenere_pacman', 'true');
+              setShowVigenereTutorial(false);
             }}
           />
         )}
@@ -2832,6 +2864,15 @@ export default function PacmanGame({
           onClose={() => {
             localStorage.setItem('cq_tut_seen_caesar_pacman', 'true');
             setShowCaesarTutorial(false);
+          }}
+        />
+      )}
+      {isVigenere && (
+        <VigenerePacmanTutorialModal
+          isOpen={showVigenereTutorial}
+          onClose={() => {
+            localStorage.setItem('cq_tut_seen_vigenere_pacman', 'true');
+            setShowVigenereTutorial(false);
           }}
         />
       )}

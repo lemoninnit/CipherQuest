@@ -749,29 +749,110 @@
   border: 1px solid #ef4444;
 }
 
-/* Authentic Fishing Rod Sprite */
-.cq-tut-fishing-stage .caesar-fishing-rod-sprite {
+/* Tactical Boat Dock / Skiff at Bottom Center */
+.cq-tut-fishing-stage .cq-tut-boat-dock {
   position: absolute;
   bottom: 0;
-  left: calc(50% - 238px);
-  width: 280px;
-  height: 280px;
-  background-image: url('/assets/fish/fishing rod/Fishing Rod.png');
-  background-size: 800% 100%;
-  background-position: 0% 0%;
-  background-repeat: no-repeat;
-  image-rendering: pixelated;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 34px;
+  background: linear-gradient(180deg, #1e293b 0%, #090e17 100%);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.8), 0 0 14px rgba(0, 229, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  z-index: 35;
   pointer-events: none;
-  z-index: 15;
-  transition: transform 0.25s ease, left 0.25s ease;
 }
 
-.cq-tut-fishing-stage .caesar-fishing-rod-sprite.facing-right {
-  left: calc(50% - 42px);
-  transform: scaleX(-1);
+.cq-tut-boat-dock-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #00e5ff;
+  text-transform: uppercase;
 }
 
-/* Bottom-Left Basket Shift Key Card in Tutorial Modal (No Clipped Margins) */
+.cq-tut-boat-dock-bar {
+  width: 70%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00e5ff, transparent);
+  box-shadow: 0 0 6px #00e5ff;
+}
+
+/* Hooked Fish Struggle & Tension State */
+.cq-tut-fishing-stage .fg-fish-entity.is-hooked {
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, 0.95)) brightness(1.15) !important;
+  animation: cqFishHookedStruggle 0.22s ease-in-out infinite alternate !important;
+  z-index: 46 !important;
+}
+
+@keyframes cqFishHookedStruggle {
+  0% { transform: scale(1.18) rotate(-6deg); }
+  100% { transform: scale(1.22) rotate(6deg); }
+}
+
+/* Reeling Fish Wake Trail */
+.cq-tut-fishing-stage .fg-fish-entity.is-reeling {
+  filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.95)) brightness(1.2) !important;
+  z-index: 46 !important;
+}
+
+/* Catch Toast Celebration Badge */
+.cq-tut-catch-toast {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(6, 14, 26, 0.96);
+  border: 1.5px solid #10b981;
+  border-radius: 8px;
+  padding: 6px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 0 22px rgba(16, 185, 129, 0.65), 0 6px 16px rgba(0, 0, 0, 0.85);
+  z-index: 75;
+  animation: cqCatchToastPop 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.cq-tut-catch-toast-xp {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.18);
+  border: 1px solid rgba(255, 215, 0, 0.6);
+  padding: 2px 7px;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.cq-tut-catch-toast-msg {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #10b981;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+@keyframes cqCatchToastPop {
+  0% { opacity: 0; transform: translate(-50%, 20px) scale(0.85); }
+  25% { opacity: 1; transform: translate(-50%, 0) scale(1.06); }
+  100% { opacity: 1; transform: translate(-50%, -6px) scale(1); }
+}
+
+/* Bottom-Left Basket Shift Key Card in Tutorial Modal */
 .cq-tut-fishing-stage .caesar-floating-basket-card {
   position: absolute !important;
   bottom: 16px !important;
@@ -797,18 +878,32 @@
   z-index: 60 !important;
 }
 
-/* Water Splash Ripple Animation (No Emojis) */
+/* Water Splash Ripple Animation */
 .cq-tut-water-splash {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   border: 2.5px solid #00e5ff;
   border-radius: 50%;
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.9);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.95);
   pointer-events: none;
   z-index: 48;
   animation: cqSplashRipple 0.55s ease-out forwards;
+}
+
+.cq-tut-water-splash::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  animation: cqSplashInner 0.45s ease-out forwards;
+}
+
+@keyframes cqSplashInner {
+  0% { transform: scale(0.2); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
 }
 
 @keyframes cqSplashRipple {

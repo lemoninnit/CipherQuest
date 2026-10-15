@@ -12,6 +12,7 @@ import { StageLostCard } from '../../ui/StageLostScreen';
 import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { sprintSound } from '../sprint/sprintSound';
+import VigenereSprintTutorialModal from './tutorials/VigenereSprintTutorialModal';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const BASE_SPEED = 0.22;
@@ -234,7 +235,20 @@ export default function VigenereSprint({
   const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [showTabula, setShowTabula] = useState(false);
+
+  // Auto-launch tutorial on first launch of Vigenere Sprint in Easy tier
+  useEffect(() => {
+    const normTier = String(tier || levelData?.difficulty || '').toLowerCase();
+    if (normTier === 'easy') {
+      const seen = localStorage.getItem('cq_tut_seen_vigenere_sprint');
+      if (!seen) {
+        setShowTutorial(true);
+        localStorage.setItem('cq_tut_seen_vigenere_sprint', 'true');
+      }
+    }
+  }, [tier, levelData?.difficulty]);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackColor, setFeedbackColor] = useState('#facc15');
   const [feedbackY, setFeedbackY] = useState(50);
@@ -962,11 +976,26 @@ export default function VigenereSprint({
                   <strong>How it works:</strong>{' '}
                   Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext letter calculated using the Vigenère keyword and shift value. Dodge the obstacle slimes! Decoy letters will cost a heart! Press <strong>F</strong> to toggle fullscreen.
                 </p>
+                <button
+                  type="button"
+                  className="cq-dossier-how-to-play-btn"
+                  onClick={() => setShowTutorial(true)}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help_outline</span>
+                  <span>How to Play</span>
+                </button>
                 <button className="cq-dossier-action-btn" onClick={() => { sprintSound.unlockAudio(); setIsOperationLoading(true); }}>
                   Begin operation
                 </button>
               </div>
             </div>
+            <VigenereSprintTutorialModal
+              isOpen={showTutorial}
+              onClose={() => {
+                localStorage.setItem('cq_tut_seen_vigenere_sprint', 'true');
+                setShowTutorial(false);
+              }}
+            />
           </div>
         )
       ) : (
@@ -1375,6 +1404,14 @@ export default function VigenereSprint({
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();
+        }}
+      />
+
+      <VigenereSprintTutorialModal
+        isOpen={showTutorial}
+        onClose={() => {
+          localStorage.setItem('cq_tut_seen_vigenere_sprint', 'true');
+          setShowTutorial(false);
         }}
       />
     </div>
