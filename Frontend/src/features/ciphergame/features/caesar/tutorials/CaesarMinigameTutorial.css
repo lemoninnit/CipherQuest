@@ -506,6 +506,97 @@
   box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
 }
 
+/* ── PACMAN GOLDEN SKILL PELLET ───────────────────────────────────────── */
+.cq-tut-skill-pellet,
+.pellet-entity,
+.cq-tut-pacman-stage .pellet-entity {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 28;
+  pointer-events: none;
+}
+
+.cq-tut-skill-pellet-inner,
+.gold-pellet-sheet,
+.cq-tut-pacman-stage .gold-pellet-sheet {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  background-image: url('/assets/pacman/Resources/Resources/G_Idle.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.95)) drop-shadow(0 0 4px #ffffff);
+  animation: cqGoldPelletBob 0.8s ease-in-out infinite alternate;
+}
+
+/* Radiant glow fallback ensuring visibility in all conditions */
+.cq-tut-skill-pellet-inner::before,
+.gold-pellet-sheet::before,
+.cq-tut-pacman-stage .gold-pellet-sheet::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle, #ffffff 15%, #ffd700 65%, #b45309 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ffd700, 0 0 18px rgba(250, 204, 21, 0.85);
+  z-index: -1;
+}
+
+/* Self-contained fallback if .cq-tut-skill-pellet rendered without children */
+.cq-tut-skill-pellet:empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  background-image: url('/assets/pacman/Resources/Resources/G_Idle.png');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.95)) drop-shadow(0 0 4px #ffffff);
+  animation: cqGoldPelletBob 0.8s ease-in-out infinite alternate;
+}
+
+.cq-tut-skill-pellet:empty::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: radial-gradient(circle, #ffffff 15%, #ffd700 65%, #b45309 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 10px #ffd700, 0 0 18px rgba(250, 204, 21, 0.85);
+  z-index: -1;
+}
+
+@keyframes cqGoldPelletBob {
+  0% {
+    transform: translateY(0) scale(0.95);
+    filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.85));
+  }
+  100% {
+    transform: translateY(-3px) scale(1.1);
+    filter: drop-shadow(0 0 16px rgba(250, 204, 21, 1)) drop-shadow(0 0 6px #ffffff);
+  }
+}
+
 /* Sharp, cleanly scaled Knight & Ghost actors */
 .cq-tut-pacman-actor {
   position: absolute;

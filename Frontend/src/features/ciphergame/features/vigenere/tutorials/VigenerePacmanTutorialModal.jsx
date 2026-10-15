@@ -72,6 +72,7 @@ export default function VigenerePacmanTutorialModal({ isOpen, onClose }) {
   const [decoy2Pos, setDecoy2Pos] = useState({ row: 7, col: 16, facing: 'face-left' });
 
   // Skill & FX states
+  const [isPelletEaten, setIsPelletEaten] = useState(false);
   const [isSkillCharged, setIsSkillCharged] = useState(false);
   const [isFrozen, setIsFrozen] = useState(false);
   const [isTargetGhostEaten, setIsTargetGhostEaten] = useState(false);
@@ -96,6 +97,7 @@ export default function VigenerePacmanTutorialModal({ isOpen, onClose }) {
     setTargetGoblinPos({ row: 3, col: 14, facing: 'face-left' });
     setDecoy1Pos({ row: 5, col: 8, facing: '' });
     setDecoy2Pos({ row: 7, col: 16, facing: 'face-left' });
+    setIsPelletEaten(false);
     setIsSkillCharged(false);
     setIsFrozen(false);
     setIsTargetGhostEaten(false);
@@ -122,6 +124,7 @@ export default function VigenerePacmanTutorialModal({ isOpen, onClose }) {
     stepStartTimeRef.current = Date.now();
 
     if (currentStep === 0) {
+      setIsPelletEaten(false);
       setIsSkillCharged(false);
       setIsFrozen(false);
       setIsTargetGhostEaten(false);
@@ -130,15 +133,18 @@ export default function VigenerePacmanTutorialModal({ isOpen, onClose }) {
       setKnightAction('run');
       setKnightFacing('');
     } else if (currentStep === 1) {
+      setIsPelletEaten(true);
       setIsSkillCharged(true);
       setIsFrozen(false);
       setIsTargetGhostEaten(false);
       setShowHitSpark(false);
     } else if (currentStep === 2) {
+      setIsPelletEaten(true);
       setIsSkillCharged(true);
       setIsFrozen(true);
       setIsTargetGhostEaten(false);
     } else if (currentStep === 3) {
+      setIsPelletEaten(true);
       setIsSkillCharged(true);
       setIsFrozen(false);
       setIsTargetGhostEaten(true);
@@ -182,15 +188,24 @@ export default function VigenerePacmanTutorialModal({ isOpen, onClose }) {
         // Directive 01: Knight runs from (col 2.5, row 1) east along open row 1 to (col 8, row 1)
         if (elapsed < 2000) {
           const subP = elapsed / 2000;
-          setKnightPos({ row: 1, col: 2.5 + 5.5 * subP });
+          const col = 2.5 + 5.5 * subP;
+          setKnightPos({ row: 1, col });
           setKnightFacing('');
           setKnightAction('run');
+
+          if (col >= 7.6 && !isPelletEaten) {
+            setIsPelletEaten(true);
+            setIsSkillCharged(true);
+            setShowPelletSparkle(true);
+            setTimeout(() => setShowPelletSparkle(false), 500);
+          }
         } else {
           setKnightPos({ row: 1, col: 8 });
           setKnightFacing('face-down');
           setKnightAction('idle');
 
-          if (!isSkillCharged) {
+          if (!isPelletEaten) {
+            setIsPelletEaten(true);
             setIsSkillCharged(true);
             setShowPelletSparkle(true);
             setTimeout(() => setShowPelletSparkle(false), 500);
@@ -267,7 +282,7 @@ export default function VigenerePacmanTutorialModal({ isOpen, onClose }) {
       isMounted = false;
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [isOpen, isClosing, currentStep, isFrozen, isSkillCharged, isTargetGhostEaten]);
+  }, [isOpen, isClosing, currentStep, isFrozen, isSkillCharged, isPelletEaten, isTargetGhostEaten]);
 
   // Keyboard navigation & Escape
   useEffect(() => {
@@ -433,7 +448,7 @@ export default function VigenerePacmanTutorialModal({ isOpen, onClose }) {
                   {REAL_EASY_GRID.map((rowArr, rIdx) =>
                     rowArr.map((cellType, cIdx) => {
                       const isWall = cellType === 1;
-                      const isSkillPelletLocation = rIdx === 1 && cIdx === 8 && !isSkillCharged;
+                      const isSkillPelletLocation = rIdx === 1 && cIdx === 8;
                       const hasStandardDot = !isWall && !isSkillPelletLocation && (rIdx + cIdx) % 2 === 0;
 
                       return (
@@ -450,8 +465,10 @@ export default function VigenerePacmanTutorialModal({ isOpen, onClose }) {
                           }}
                         >
                           {/* Golden Skill Pellet at (col 8, row 1) */}
-                          {isSkillPelletLocation && (
-                            <div className="cq-tut-skill-pellet" />
+                          {isSkillPelletLocation && !isPelletEaten && (
+                            <div className="cq-tut-skill-pellet pellet-entity" title="Golden Skill Pellet">
+                              <div className="cq-tut-skill-pellet-inner gold-pellet-sheet" />
+                            </div>
                           )}
 
                           {/* Standard White Dots */}
@@ -589,7 +606,7 @@ export default function VigenerePacmanTutorialModal({ isOpen, onClose }) {
                 )}
 
                 {/* STEP 1 POINTER: EAT SKILL PELLET */}
-                {currentStep === 0 && !isSkillCharged && (
+                {currentStep === 0 && !isPelletEaten && (
                   <div
                     className="cq-tut-pointer-overlay"
                     style={{

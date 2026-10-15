@@ -439,10 +439,11 @@ export default function CaesarPacmanTutorialModal({ isOpen, onClose }) {
                         {/* Real Skill Pellet at col 8, row 1 */}
                         {rIdx === 1 && cIdx === 8 && !isPelletEaten && (
                           <div
-                            className="pellet-entity"
+                            className="cq-tut-skill-pellet pellet-entity"
+                            title="Golden Skill Pellet"
                             style={{ width: `${cellSize}px`, height: `${cellSize}px` }}
                           >
-                            <div className="gold-pellet-sheet" />
+                            <div className="cq-tut-skill-pellet-inner gold-pellet-sheet" />
                           </div>
                         )}
                       </div>
