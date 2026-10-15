@@ -38,6 +38,26 @@
   width: min(420px, 100%);
   max-height: 92vh;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 0, 127, 0.4) rgba(20, 3, 6, 0.84);
+}
+
+.sls-panel::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sls-panel::-webkit-scrollbar-track {
+  background: rgba(20, 3, 6, 0.84);
+  border-radius: 4px;
+}
+
+.sls-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 0, 127, 0.35);
+  border-radius: 4px;
+}
+
+.sls-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 0, 127, 0.6);
 }
 
 .sls-card {
@@ -282,6 +302,42 @@
 @media (max-width: 420px) {
   .sls-facts { grid-template-columns: 1fr; }
   .sls-card { padding: 18px; }
+}
+
+@media (max-height: 720px) {
+  .sls-card {
+    padding: 14px 16px;
+    border-radius: 14px;
+  }
+  .sls-header {
+    margin-bottom: 10px;
+    gap: 10px;
+  }
+  .sls-icon {
+    font-size: 1.5rem;
+  }
+  .sls-title {
+    font-size: 1.15rem;
+  }
+  .sls-reason {
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+  }
+  .sls-cost-box {
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .sls-facts {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .sls-fact {
+    padding: 8px 10px;
+  }
+  .sls-btn {
+    padding: 9px 14px;
+    font-size: 0.85rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

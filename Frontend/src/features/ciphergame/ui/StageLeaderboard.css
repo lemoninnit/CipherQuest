@@ -147,7 +147,27 @@
 .slb-body {
   flex: 1;
   overflow-y: auto;
-  min-height: 180px;
+  min-height: 140px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.4) rgba(10, 18, 38, 0.85);
+}
+
+.slb-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.slb-body::-webkit-scrollbar-track {
+  background: rgba(10, 18, 38, 0.85);
+  border-radius: 4px;
+}
+
+.slb-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.3);
+  border-radius: 4px;
+}
+
+.slb-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.55);
 }
 
 .slb-state {
@@ -279,6 +299,37 @@
   .slb-row { grid-template-columns: 30px 1fr auto; font-size: 0.78rem; }
   .slb-col-metric { min-width: 66px; }
   .slb-footer { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-height: 720px) {
+  .slb-card {
+    padding: 14px 16px 12px;
+    border-radius: 14px;
+  }
+  .slb-header {
+    margin-bottom: 8px;
+  }
+  .slb-header-icon {
+    font-size: 1.5rem;
+  }
+  .slb-title {
+    font-size: 1rem;
+  }
+  .slb-tabs {
+    margin-bottom: 8px;
+    gap: 6px;
+  }
+  .slb-tab {
+    padding: 6px 8px;
+    font-size: 0.72rem;
+  }
+  .slb-body {
+    min-height: 120px;
+  }
+  .slb-row {
+    padding: 6px 8px;
+    font-size: 0.78rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

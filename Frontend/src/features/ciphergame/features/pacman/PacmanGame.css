@@ -1156,4 +1156,78 @@
     padding: 8px 10px;
     max-width: 220px;
   }
+
+  .relative-header {
+    min-height: 52px;
+    padding: 0 16px;
+  }
+  .indent-header-title {
+    margin-left: 140px !important;
+    font-size: 1.1rem;
+  }
+  .pacman-layout {
+    grid-template-columns: 240px 1fr;
+    gap: 14px;
+    padding: 10px 16px;
+  }
+  .maze-realm {
+    transform: scale(0.88);
+    transform-origin: center center;
+  }
+  .fg-sidebar {
+    gap: 10px;
+  }
+  .fg-target-word-card {
+    padding: 12px;
+  }
+  .fg-word-box {
+    font-size: 1.4rem;
+    padding: 8px 12px;
+  }
+}
+
+@media (max-width: 1280px), (max-height: 720px) {
+  .relative-header {
+    min-height: 46px;
+    padding: 0 12px;
+  }
+  .exit-stage-absolute {
+    padding: 5px 10px !important;
+    font-size: 0.75rem;
+    left: 12px;
+  }
+  .indent-header-title {
+    margin-left: 110px !important;
+    font-size: 0.95rem;
+  }
+  .heart-icon {
+    font-size: 1.4rem !important;
+  }
+  .pacman-layout {
+    grid-template-columns: 200px 1fr;
+    gap: 10px;
+    padding: 6px 12px;
+  }
+  .maze-realm {
+    transform: scale(0.74);
+    transform-origin: center center;
+  }
+  .fg-sidebar {
+    gap: 8px;
+  }
+  .fg-basket-card,
+  .fg-target-word-card,
+  .pacman-controls-hint-card {
+    padding: 8px;
+    border-radius: 12px;
+  }
+  .fg-word-box {
+    font-size: 1.2rem;
+    padding: 6px 10px;
+    letter-spacing: 0.15em;
+  }
+  .pacman-board-wrapper.bigger-board {
+    border-radius: 14px;
+    padding: 6px;
+  }
 }

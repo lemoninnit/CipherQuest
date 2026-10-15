@@ -47,10 +47,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  height: 80vh;
-  max-width: 800px;
+  height: clamp(340px, 64vh, 560px);
+  max-width: clamp(440px, 46vw, 680px);
   width: 90%;
-  padding: 24px;
+  padding: 16px;
   box-sizing: border-box;
   text-align: center;
 }
@@ -70,7 +70,7 @@
   background: rgba(0, 229, 255, 0.1);
   border: 1px solid rgba(0, 229, 255, 0.35);
   border-radius: 20px;
-  padding: 6px 16px;
+  padding: 5px 14px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -84,7 +84,7 @@
 }
 
 .cq-loading-title {
-  font-size: clamp(26px, 2.8vw, 42px);
+  font-size: clamp(20px, 2.2vw, 36px);
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #ffffff;
@@ -95,8 +95,8 @@
 /* Cybernetic Radar Spinner */
 .cq-loading-spinner-wrapper {
   position: relative;
-  width: 110px;
-  height: 110px;
+  width: clamp(74px, 9vh, 100px);
+  height: clamp(74px, 9vh, 100px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -127,7 +127,7 @@
 }
 
 .cq-loading-center-icon {
-  font-size: 32px;
+  font-size: clamp(24px, 3vh, 30px);
   color: #00e5ff;
   text-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
   animation: cq-pulse-icon-scale 1.4s ease-in-out infinite;
@@ -136,10 +136,10 @@
 /* Progress Bar & Status */
 .cq-loading-bar-section {
   width: 100%;
-  max-width: 580px;
+  max-width: clamp(340px, 38vw, 500px);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .cq-loading-status-row {
@@ -230,5 +230,69 @@
     opacity: 1;
     transform: scale(1) translateY(0);
     filter: brightness(1);
+  }
+}
+
+/* ── Responsive Scaling for Display Scaling (125%, 150%) ── */
+@media (max-height: 850px) {
+  .cq-loading-content {
+    height: clamp(320px, 60vh, 480px);
+    max-width: 580px;
+  }
+  .cq-loading-title {
+    font-size: 26px;
+  }
+  .cq-loading-sub-badge {
+    padding: 4px 14px;
+    font-size: 10.5px;
+  }
+  .cq-loading-spinner-wrapper {
+    width: 82px;
+    height: 82px;
+  }
+  .cq-loading-center-icon {
+    font-size: 25px;
+  }
+  .cq-loading-bar-section {
+    max-width: 460px;
+    gap: 6px;
+  }
+}
+
+@media (max-height: 720px) {
+  .cq-loading-content {
+    height: clamp(280px, 56vh, 400px);
+    max-width: 460px;
+    padding: 10px;
+  }
+  .cq-loading-header {
+    gap: 6px;
+  }
+  .cq-loading-title {
+    font-size: 21px;
+  }
+  .cq-loading-sub-badge {
+    padding: 3px 10px;
+    font-size: 9.5px;
+  }
+  .cq-loading-spinner-wrapper {
+    width: 68px;
+    height: 68px;
+  }
+  .cq-ring-inner {
+    inset: 8px;
+  }
+  .cq-loading-center-icon {
+    font-size: 20px;
+  }
+  .cq-loading-bar-section {
+    max-width: 380px;
+    gap: 5px;
+  }
+  .cq-loading-status-row {
+    font-size: 10.5px;
+  }
+  .cq-loading-track {
+    height: 6px;
   }
 }

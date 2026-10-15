@@ -36,6 +36,10 @@
   position: relative;
   max-width: 520px;
   width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.4) rgba(5, 14, 28, 0.85);
   background: linear-gradient(180deg, rgba(12, 26, 46, 0.95) 0%, rgba(5, 14, 28, 0.98) 100%);
   border-radius: 24px;
   padding: 2.25rem 2rem;
@@ -47,6 +51,24 @@
   font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
   color: #ffffff;
   animation: cqPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cq-completion-card::-webkit-scrollbar {
+  width: 5px;
+}
+
+.cq-completion-card::-webkit-scrollbar-track {
+  background: rgba(5, 14, 28, 0.85);
+  border-radius: 4px;
+}
+
+.cq-completion-card::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.3);
+  border-radius: 4px;
+}
+
+.cq-completion-card::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.55);
 }
 
 .cq-completion-card.is-closing {
@@ -278,6 +300,17 @@
   box-shadow: 0 0 28px rgba(0, 229, 255, 0.7);
   background: linear-gradient(135deg, #38ef7d 0%, #11998e 100%);
   color: #ffffff;
+}
+
+@media (max-height: 720px) {
+  .cq-completion-card {
+    padding: 1.25rem 1.5rem;
+    gap: 1rem;
+    border-radius: 18px;
+  }
+  .cq-header-title {
+    font-size: 1.4rem !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

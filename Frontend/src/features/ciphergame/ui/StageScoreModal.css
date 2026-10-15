@@ -31,6 +31,10 @@
 .ssm-card {
   position: relative;
   width: min(460px, 94vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.4) rgba(6, 14, 28, 0.85);
   background: linear-gradient(170deg, rgba(14, 28, 52, 0.96) 0%, rgba(6, 14, 28, 0.98) 100%);
   border: 1px solid rgba(0, 229, 255, 0.35);
   border-radius: 22px;
@@ -44,7 +48,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow: hidden;
+}
+
+.ssm-card::-webkit-scrollbar {
+  width: 5px;
+}
+
+.ssm-card::-webkit-scrollbar-track {
+  background: rgba(6, 14, 28, 0.85);
+  border-radius: 4px;
+}
+
+.ssm-card::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.3);
+  border-radius: 4px;
+}
+
+.ssm-card::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.55);
 }
 
 .ssm-card.is-closing {
@@ -424,6 +445,38 @@
 @media (max-width: 440px) {
   .ssm-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-height: 720px) {
+  .ssm-card {
+    padding: 16px 18px 14px;
+    border-radius: 16px;
+  }
+  .ssm-top-back-btn {
+    top: 10px;
+    left: 10px;
+    padding: 3px 8px;
+    font-size: 0.68rem;
+  }
+  .ssm-banner {
+    margin-top: 10px;
+    margin-bottom: 8px;
+  }
+  .ssm-rank-badge {
+    padding: 3px 12px;
+    font-size: 0.72rem;
+  }
+  .ssm-score-val {
+    font-size: 2.2rem;
+  }
+  .ssm-grid {
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .ssm-btn {
+    padding: 10px;
+    font-size: 0.85rem;
   }
 }
 

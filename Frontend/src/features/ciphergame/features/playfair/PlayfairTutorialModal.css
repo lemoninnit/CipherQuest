@@ -452,11 +452,57 @@
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
+  .cq-pf-digraph-pipeline {
+    width: 100%;
+    padding: 10px;
+  }
   .cq-tut-header-actions {
     gap: 8px;
   }
   .cq-tut-dont-show-checkbox span.cq-tut-dont-show-text {
     font-size: 0.72rem;
+  }
+}
+
+@media (max-height: 850px) {
+  .cq-pf-grid-cell {
+    width: 30px;
+    height: 30px;
+  }
+  .cq-pf-cell-char {
+    font-size: 0.82rem;
+  }
+  .cq-pf-cell-coord {
+    display: none;
+  }
+  .cq-pf-matrix-grid {
+    padding: 6px;
+    gap: 3px;
+  }
+  .cq-pf-digraph-pipeline {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+}
+
+@media (max-height: 720px) {
+  .cq-pf-grid-cell {
+    width: 25px;
+    height: 25px;
+  }
+  .cq-pf-cell-char {
+    font-size: 0.75rem;
+  }
+  .cq-pf-cell-coord {
+    display: none;
+  }
+  .cq-pf-matrix-grid {
+    padding: 4px;
+    gap: 2px;
+  }
+  .cq-pf-digraph-pipeline {
+    padding: 6px 10px;
+    gap: 6px;
   }
 }
 

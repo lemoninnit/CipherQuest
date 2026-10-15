@@ -39,16 +39,36 @@
 
 .cd-card {
   width: min(430px, 100%);
-  max-height: 90vh;
+  max-height: 92vh;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.35) rgba(9, 18, 32, 0.85);
   background: rgba(9, 18, 32, 0.98);
   border: 1px solid rgba(0, 229, 255, 0.3);
   border-radius: 18px;
   box-shadow: 0 18px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 229, 255, 0.1);
-  padding: 24px;
+  padding: clamp(16px, 2.2vh, 24px);
   color: #e8f4f8;
   font-family: 'Space Grotesk', sans-serif;
   animation: cd-pop-in 0.26s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cd-card::-webkit-scrollbar {
+  width: 5px;
+}
+
+.cd-card::-webkit-scrollbar-track {
+  background: rgba(9, 18, 32, 0.85);
+  border-radius: 4px;
+}
+
+.cd-card::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.3);
+  border-radius: 4px;
+}
+
+.cd-card::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.55);
 }
 
 .cd-card.is-closing {
@@ -244,6 +264,32 @@
 @media (max-width: 420px) {
   .cd-card { padding: 20px 18px; }
   .cd-actions { flex-direction: column-reverse; }
+}
+
+@media (max-height: 720px) {
+  .cd-card {
+    padding: 16px 18px;
+    border-radius: 14px;
+  }
+  .cd-head {
+    margin-bottom: 8px;
+    gap: 10px;
+  }
+  .cd-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .cd-title {
+    font-size: 1.15rem;
+  }
+  .cd-actions {
+    margin-top: 14px;
+    gap: 8px;
+  }
+  .cd-btn {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

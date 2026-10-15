@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect, no-unused-vars, react-hooks/immutability, react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from 'react';
+import '../caesar/CaesarTutorialModal.css';
 import './VigenereTutorialModal.css';
 import { useAuth } from '../../../../context/AuthContext';
 import { userApi } from '../../../../api/cipherQuestApi';

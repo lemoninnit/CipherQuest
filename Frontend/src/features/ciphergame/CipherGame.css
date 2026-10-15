@@ -3180,7 +3180,7 @@
 
 /* ── Part 1: Header Inset, Offset, and Typography (Matching DashboardHome.css) ── */
 .cq-lobby-screen {
-  padding: clamp(18px, 2.4vh, 28px) clamp(24px, 3.5vw, 48px) !important;
+  padding: clamp(10px, 1.8vh, 26px) clamp(16px, 2.8vw, 44px) !important;
 }
 
 .cq-screen-header-block {
@@ -3224,7 +3224,7 @@
 /* Exact values from .dh-wordmark-title (DashboardHome.css line 51) */
 .cq-screen-title {
   font-family: 'Space Grotesk', sans-serif !important;
-  font-size: clamp(34px, 2.6vw, 46px) !important;
+  font-size: clamp(24px, 2.2vw, 42px) !important;
   font-weight: 800 !important;
   color: #ffffff !important;
   letter-spacing: -0.02em !important;
@@ -3237,7 +3237,7 @@
 
 /* Cipher icon inline with title, vertically centered against cap height */
 .cq-screen-header-icon {
-  font-size: clamp(28px, 2.2vw, 36px) !important;
+  font-size: clamp(22px, 1.8vw, 32px) !important;
   color: #00e5ff !important;
   filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.7)) !important;
   display: inline-flex !important;
@@ -3250,7 +3250,7 @@
 /* Exact values from .dh-wordmark-subtitle (DashboardHome.css line 68), sentence-case kept */
 .cq-screen-subtitle {
   font-family: 'Space Grotesk', sans-serif !important;
-  font-size: clamp(12px, 0.9vw, 13.5px) !important;
+  font-size: clamp(11px, 0.85vw, 13px) !important;
   font-weight: 700 !important;
   letter-spacing: 0.12em !important;
   color: rgba(0, 229, 255, 0.85) !important;
@@ -3510,6 +3510,350 @@
   color: rgba(185, 220, 250, 0.7) !important;
   letter-spacing: 0.03em !important;
   text-shadow: 0 0 10px rgba(0, 229, 255, 0.2) !important;
+}
+
+/* ── Responsive Scaling for Display Scaling (125%, 150%) and Compact Viewports ── */
+@media (max-height: 850px) {
+  .cq-lobby-screen {
+    padding: clamp(10px, 1.8vh, 18px) clamp(16px, 2.5vw, 36px) !important;
+  }
+  .cq-screen-title {
+    font-size: clamp(22px, 2vw, 30px) !important;
+  }
+  .cq-screen-header-icon {
+    font-size: 24px !important;
+  }
+  .cq-screen-subtitle {
+    font-size: 11.5px !important;
+  }
+  .cq-top-nav-bar {
+    margin-bottom: 4px !important;
+  }
+  .cq-tier-cards-row {
+    gap: 16px !important;
+    max-width: 880px !important;
+  }
+  .cq-tier-card {
+    padding: 10px !important;
+    min-width: 180px !important;
+    max-width: 260px !important;
+    border-radius: 16px !important;
+  }
+  .cq-tier-art-panel {
+    padding: 8px !important;
+    border-radius: 12px !important;
+    margin-bottom: 8px !important;
+    max-height: 155px !important;
+  }
+  .cq-tier-card-title {
+    font-size: 16px !important;
+  }
+  .cq-tier-card-desc {
+    font-size: 11px !important;
+    min-height: 38px !important;
+    margin-bottom: 6px !important;
+  }
+  .cq-stages-container {
+    gap: clamp(12px, 1.8vh, 20px) !important;
+    padding: 10px 16px !important;
+  }
+  .cq-stages-row {
+    gap: 14px !important;
+  }
+  .cq-stage-card {
+    min-width: 130px !important;
+    max-width: 165px !important;
+    min-height: clamp(180px, 23vh, 220px) !important;
+    padding: 16px 10px 14px 10px !important;
+    border-radius: 16px !important;
+    gap: 10px !important;
+  }
+  .cq-stage-card-icon-box {
+    width: 52px !important;
+    height: 52px !important;
+  }
+  .cq-stage-card-icon-box .material-symbols-outlined {
+    font-size: 28px !important;
+  }
+  .cq-stages-progress-wrap {
+    padding: 12px 20px !important;
+    border-radius: 16px !important;
+  }
+
+  /* Stage Roadmap Responsive (850px) */
+  .cq-roadmap-container {
+    padding: 14px 18px !important;
+  }
+  .cq-roadmap-path-wrapper {
+    padding: 12px 0;
+    max-width: 780px;
+  }
+  .cq-roadmap-track-container {
+    top: 44px;
+  }
+  .cq-node-circle-wrap {
+    height: 64px;
+  }
+  .cq-roadmap-node.current .cq-node-circle {
+    width: 66px;
+    height: 66px;
+  }
+  .cq-roadmap-node.current .cq-node-icon {
+    font-size: 30px;
+  }
+  .cq-roadmap-node.completed .cq-node-circle,
+  .cq-roadmap-node.available .cq-node-circle,
+  .cq-roadmap-node.locked .cq-node-circle {
+    width: 48px;
+    height: 48px;
+  }
+  .cq-roadmap-node.completed .cq-node-icon,
+  .cq-roadmap-node.available .cq-node-icon,
+  .cq-roadmap-node.locked .cq-node-icon {
+    font-size: 20px;
+  }
+  .cq-stages-cleared-badge {
+    margin-top: 6px;
+    padding: 4px 12px;
+    font-size: 11.5px;
+  }
+
+  /* Mission Brief Responsive (850px) */
+  .cq-dossier-card {
+    padding: 16px 20px;
+    max-width: 580px;
+    gap: 16px;
+  }
+  .cq-dossier-sprite-frame {
+    width: 72px;
+    height: 72px;
+  }
+  .cq-dossier-sprite-fish {
+    width: 56px;
+    height: 56px;
+  }
+  .cq-dossier-sprite-pacman {
+    width: 56px;
+    height: 56px;
+  }
+  .cq-dossier-title {
+    font-size: 1.35rem;
+    margin-bottom: 3px;
+  }
+  .cq-dossier-subtitle {
+    font-size: 0.82rem;
+    margin-bottom: 8px;
+  }
+  .cq-dossier-divider {
+    margin-bottom: 8px;
+  }
+  .cq-dossier-data {
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  .cq-dossier-how-it-works {
+    padding: 6px 10px;
+    margin-bottom: 12px;
+    font-size: 0.76rem;
+  }
+  .cq-dossier-action-btn {
+    padding: 8px 16px;
+    font-size: 0.88rem;
+  }
+}
+
+@media (max-height: 720px) {
+  .cq-lobby-screen {
+    padding: 8px 20px !important;
+  }
+  .cq-screen-title {
+    font-size: 22px !important;
+  }
+  .cq-screen-header-icon {
+    font-size: 20px !important;
+  }
+  .cq-screen-subtitle {
+    font-size: 10px !important;
+  }
+  .cq-top-nav-bar {
+    margin-bottom: 2px !important;
+  }
+  .cq-tier-cards-row {
+    gap: 12px !important;
+    max-width: 760px !important;
+  }
+  .cq-tier-card {
+    padding: 7px 8px !important;
+    min-width: 155px !important;
+    max-width: 220px !important;
+    border-radius: 12px !important;
+  }
+  .cq-tier-art-panel {
+    padding: 4px !important;
+    border-radius: 9px !important;
+    margin-bottom: 5px !important;
+    max-height: 110px !important;
+  }
+  .cq-tier-card-title {
+    font-size: 13.5px !important;
+  }
+  .cq-tier-card-desc {
+    font-size: 10px !important;
+    min-height: 28px !important;
+    margin-bottom: 3px !important;
+    line-height: 1.35 !important;
+    -webkit-line-clamp: 2 !important;
+  }
+  .cq-tier-card-footer {
+    font-size: 10px !important;
+  }
+  .cq-stages-container {
+    gap: 8px !important;
+    padding: 6px 12px !important;
+  }
+  .cq-stages-row {
+    gap: 10px !important;
+  }
+  .cq-stage-card {
+    min-width: 110px !important;
+    max-width: 140px !important;
+    min-height: clamp(150px, 20vh, 180px) !important;
+    padding: 12px 8px 10px 8px !important;
+    border-radius: 14px !important;
+    gap: 8px !important;
+  }
+  .cq-stage-card-icon-box {
+    width: 42px !important;
+    height: 42px !important;
+  }
+  .cq-stage-card-icon-box .material-symbols-outlined {
+    font-size: 22px !important;
+  }
+  .cq-stage-card-number {
+    font-size: 11px !important;
+  }
+  .cq-stage-card-status {
+    font-size: 10px !important;
+    padding: 3px 10px !important;
+  }
+  .cq-stages-progress-wrap {
+    padding: 8px 16px !important;
+    border-radius: 14px !important;
+  }
+  .cq-lobby-bottom-caption {
+    padding-top: 3px !important;
+    padding-bottom: 2px !important;
+  }
+  .cq-lobby-bottom-caption p {
+    font-size: 10px !important;
+  }
+
+  /* Stage Roadmap Responsive (720px) */
+  .cq-roadmap-container {
+    padding: 8px 12px !important;
+  }
+  .cq-roadmap-path-wrapper {
+    padding: 8px 0;
+    max-width: 680px;
+  }
+  .cq-roadmap-track-container {
+    top: 34px;
+  }
+  .cq-node-circle-wrap {
+    height: 52px;
+  }
+  .cq-roadmap-node.current .cq-node-circle {
+    width: 52px;
+    height: 52px;
+  }
+  .cq-roadmap-node.current .cq-node-icon {
+    font-size: 24px;
+  }
+  .cq-roadmap-node.completed .cq-node-circle,
+  .cq-roadmap-node.available .cq-node-circle,
+  .cq-roadmap-node.locked .cq-node-circle {
+    width: 36px;
+    height: 36px;
+  }
+  .cq-roadmap-node.completed .cq-node-icon,
+  .cq-roadmap-node.available .cq-node-icon,
+  .cq-roadmap-node.locked .cq-node-icon {
+    font-size: 16px;
+  }
+  .cq-node-number {
+    font-size: 11px;
+  }
+  .cq-stages-cleared-badge {
+    margin-top: 3px;
+    padding: 2px 8px;
+    font-size: 10.5px;
+  }
+
+  /* Mission Brief Responsive (720px) */
+  .cq-dossier-card {
+    padding: 10px 16px;
+    max-width: 520px;
+    gap: 12px;
+    border-radius: 12px;
+  }
+  .cq-dossier-sprite-frame {
+    width: 58px;
+    height: 58px;
+    border-radius: 8px;
+  }
+  .cq-dossier-sprite-fish {
+    width: 44px;
+    height: 44px;
+  }
+  .cq-dossier-sprite-pacman {
+    width: 46px;
+    height: 46px;
+  }
+  .cq-dossier-stage-code {
+    font-size: 0.65rem;
+  }
+  .cq-dossier-tag {
+    font-size: 0.65rem;
+    margin-bottom: 2px;
+  }
+  .cq-dossier-title {
+    font-size: 1.15rem;
+    margin-bottom: 2px;
+  }
+  .cq-dossier-subtitle {
+    font-size: 0.74rem;
+    margin-bottom: 6px;
+  }
+  .cq-dossier-divider {
+    margin-bottom: 6px;
+  }
+  .cq-dossier-data {
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .cq-dossier-row {
+    font-size: 0.78rem;
+  }
+  .cq-dossier-label {
+    font-size: 0.68rem;
+    min-width: 85px;
+  }
+  .cq-dossier-value.cyan-mono {
+    font-size: 0.88rem;
+  }
+  .cq-dossier-value.hint-text {
+    font-size: 0.78rem;
+  }
+  .cq-dossier-how-it-works {
+    padding: 4px 8px;
+    margin-bottom: 8px;
+    font-size: 0.7rem;
+    line-height: 1.35;
+  }
+  .cq-dossier-action-btn {
+    padding: 7px 14px;
+    font-size: 0.82rem;
+  }
 }
 
 /* ─── CAESAR FISHING: FULL-SCREEN OVERLAY LAYOUT ─── */
@@ -5879,8 +6223,8 @@
   background: rgba(6, 18, 36, 0.88);
   border: 1px solid rgba(0, 229, 255, 0.22);
   border-radius: 14px;
-  padding: clamp(20px, 2.8vh, 32px) clamp(24px, 3.2vw, 36px);
-  max-width: 680px;
+  padding: clamp(14px, 2vh, 26px) clamp(18px, 2.4vw, 32px);
+  max-width: clamp(520px, 48vw, 640px);
   width: 100%;
   box-sizing: border-box;
   backdrop-filter: blur(16px);
@@ -5889,7 +6233,7 @@
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: clamp(20px, 2.5vw, 32px);
+  gap: clamp(14px, 1.8vw, 24px);
   animation: fadeIn 0.3s ease-out;
 }
 

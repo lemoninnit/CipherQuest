@@ -400,3 +400,41 @@
     font-size: 0.72rem;
   }
 }
+
+@media (max-height: 850px) {
+  .cq-vig-corner-box,
+  .cq-vig-grid-header-col,
+  .cq-vig-grid-header-row,
+  .cq-vig-grid-cell {
+    width: 26px;
+    height: 26px;
+    font-size: 0.75rem;
+  }
+  .cq-vig-square-container {
+    padding: 8px;
+    gap: 3px;
+  }
+  .cq-vig-alignment-display {
+    padding: 10px 14px;
+    gap: 6px;
+  }
+}
+
+@media (max-height: 720px) {
+  .cq-vig-corner-box,
+  .cq-vig-grid-header-col,
+  .cq-vig-grid-header-row,
+  .cq-vig-grid-cell {
+    width: 22px;
+    height: 22px;
+    font-size: 0.7rem;
+  }
+  .cq-vig-square-container {
+    padding: 6px;
+    gap: 2px;
+  }
+  .cq-vig-alignment-display {
+    padding: 8px 10px;
+    gap: 4px;
+  }
+}

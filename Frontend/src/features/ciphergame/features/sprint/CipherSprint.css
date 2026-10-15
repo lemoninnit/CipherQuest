@@ -3211,6 +3211,142 @@
   gap: 2px;
 }
 
+/* ───────────────────────────────────────────────
+   RESPONSIVE SCALING FOR SPRINT GAMES (125%, 150%, 768p)
+   ─────────────────────────────────────────────── */
+@media (max-width: 1440px), (max-height: 850px) {
+  :root {
+    --sprint-top-clearance: 95px;
+    --sprint-bottom-clearance: 90px;
+  }
+
+  .sprint-container {
+    padding: 14px 18px;
+    border-radius: 12px;
+  }
+
+  .sprint-widescreen {
+    grid-template-columns: 240px 1fr;
+    gap: 14px;
+  }
+
+  .sprint-header {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+  }
+
+  .sprint-header-title {
+    font-size: 1.1rem;
+    margin-left: 12px;
+  }
+
+  .sprint-track-container {
+    min-height: 420px;
+  }
+
+  .sprint-sidebar {
+    gap: 10px;
+  }
+
+  .sprint-baton-hud {
+    padding: 8px 14px;
+    margin-bottom: 10px;
+    gap: 10px;
+  }
+
+  .baton-letter {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    font-size: 1.4rem;
+  }
+
+  .sprint-ready-card {
+    margin: 20px auto;
+    padding: 20px 24px;
+  }
+
+  .sprint-ready-card h2 {
+    font-size: 1.4rem;
+    margin-bottom: 10px;
+  }
+}
+
+@media (max-width: 1280px), (max-height: 720px) {
+  :root {
+    --sprint-top-clearance: 75px;
+    --sprint-bottom-clearance: 70px;
+  }
+
+  .sprint-container {
+    padding: 8px 12px;
+    border-radius: 10px;
+  }
+
+  .sprint-widescreen {
+    grid-template-columns: 200px 1fr;
+    gap: 10px;
+  }
+
+  .sprint-header {
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+  }
+
+  .sprint-header-title {
+    font-size: 0.95rem;
+    margin-left: 8px;
+  }
+
+  .sprint-track-container {
+    min-height: 320px;
+  }
+
+  .sprint-sidebar {
+    gap: 8px;
+  }
+
+  .sprint-baton-hud {
+    padding: 6px 10px;
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .baton-letter {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    font-size: 1.2rem;
+  }
+
+  .sprint-ready-card {
+    margin: 10px auto;
+    padding: 16px 20px;
+  }
+
+  .sprint-ready-card h2 {
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+  }
+
+  .sprint-ready-desc {
+    font-size: 0.82rem;
+    margin-bottom: 14px;
+  }
+
+  .sprint-ready-instruction {
+    font-size: 0.78rem;
+    padding: 6px 10px;
+    margin-bottom: 16px;
+  }
+
+  .sprint-btn-primary,
+  .sprint-btn-secondary {
+    padding: 8px 20px;
+    font-size: 0.88rem;
+  }
+}
+
 
 
 

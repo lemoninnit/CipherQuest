@@ -596,6 +596,37 @@
   }
 }
 
+@media (max-height: 800px) {
+  .cq-tut-modal-header {
+    padding: 10px 18px;
+  }
+  .cq-tut-modal-title {
+    font-size: 1.1rem;
+  }
+  .cq-tut-synergy-banner {
+    padding: 6px 18px;
+    font-size: 0.78rem;
+  }
+  .cq-tut-dual-grid {
+    padding: 10px 18px;
+    gap: 12px;
+  }
+  .cq-tut-panel-header {
+    padding: 8px 14px;
+  }
+  .cq-tut-panel-content {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+  .cq-tut-footer {
+    padding: 8px 18px;
+  }
+  .cq-tut-footer-close-btn {
+    padding: 6px 18px;
+    font-size: 0.85rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cq-tut-modal-overlay,
   .cq-tut-modal-overlay.is-closing,

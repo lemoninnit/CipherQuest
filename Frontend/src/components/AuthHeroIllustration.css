@@ -326,3 +326,44 @@
     gap: 18px;
   }
 }
+
+@media (max-height: 720px) and (min-width: 1024px) {
+  .auth-hero-panel {
+    padding: 16px 28px 14px;
+  }
+  .auth-iso-scene {
+    max-width: 360px;
+    margin-bottom: 4px;
+  }
+  .auth-iso-svg {
+    max-height: 220px;
+  }
+  .auth-hero-title {
+    font-size: 1.6rem;
+    margin-bottom: 4px;
+  }
+  .auth-hero-desc {
+    font-size: 0.74rem;
+    margin-bottom: 8px;
+    line-height: 1.35;
+    -webkit-line-clamp: 2;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .auth-pill-tag {
+    margin-bottom: 6px;
+    padding: 2px 8px;
+    font-size: 0.65rem;
+  }
+  .auth-hero-stats {
+    padding-top: 8px;
+    gap: 14px;
+  }
+  .auth-stat-value {
+    font-size: 1.15rem;
+  }
+  .auth-stat-label {
+    font-size: 0.6rem;
+  }
+}

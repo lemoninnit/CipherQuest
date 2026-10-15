@@ -180,6 +180,30 @@
   transform: translateY(0);
 }
 
+@media (max-height: 720px) {
+  .cq-pause-card {
+    padding: 20px 24px;
+    gap: 10px;
+    border-radius: 16px;
+  }
+  .cq-pause-title {
+    font-size: 1.4rem;
+    margin-bottom: 2px;
+  }
+  .cq-pause-btn-resume {
+    padding: 10px 16px;
+    font-size: 0.95rem;
+  }
+  .cq-pause-btn-tutorial {
+    padding: 9px 16px;
+    font-size: 0.9rem;
+  }
+  .cq-pause-btn-exit {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cq-pause-overlay,
   .cq-pause-overlay.is-closing,

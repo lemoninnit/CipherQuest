@@ -13,7 +13,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: clamp(8px, 1.6vh, 20px);
   animation: cqTutFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -33,13 +33,14 @@
 
 .cq-tut-modal-container {
   width: 100%;
-  max-width: 800px;
+  max-width: clamp(540px, 62vw, 820px);
+  max-height: 94vh;
   background: linear-gradient(145deg, rgba(14, 18, 26, 0.96) 0%, rgba(9, 12, 18, 0.98) 100%);
   border: 1px solid rgba(0, 229, 255, 0.3);
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.9),
               0 0 40px rgba(0, 229, 255, 0.12),
               inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  border-radius: 18px;
+  border-radius: clamp(12px, 1.5vw, 18px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -64,28 +65,29 @@
 
 /* ── HEADER ──────────────────────────────────────────────────────────────── */
 .cq-tut-header {
-  padding: 16px 24px;
-  background: rgba(8, 11, 16, 0.8);
+  padding: clamp(8px, 1.2vh, 16px) clamp(14px, 2vw, 24px);
+  background: rgba(8, 11, 16, 0.85);
   border-bottom: 1px solid rgba(0, 229, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .cq-tut-header-title {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: clamp(8px, 1.2vw, 14px);
 }
 
 .cq-tut-header-icon {
   color: var(--neon-cyan, #00e5ff);
-  font-size: 30px;
+  font-size: clamp(22px, 2.6vh, 30px);
   filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.5));
 }
 
 .cq-tut-category-label {
-  font-size: 0.72rem;
+  font-size: clamp(0.64rem, 0.8vw, 0.72rem);
   font-weight: 800;
   letter-spacing: 1.2px;
   color: var(--neon-cyan, #00e5ff);
@@ -95,7 +97,7 @@
 }
 
 .cq-tut-header h2 {
-  font-size: 1.15rem;
+  font-size: clamp(0.92rem, 1.2vw, 1.15rem);
   font-weight: 800;
   letter-spacing: 0.5px;
   color: #ffffff;
@@ -171,18 +173,41 @@
 
 /* ── BODY ────────────────────────────────────────────────────────────────── */
 .cq-tut-body {
-  padding: 20px 24px;
+  padding: clamp(8px, 1.4vh, 20px) clamp(14px, 2vw, 24px);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: clamp(8px, 1.2vh, 16px);
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.35) rgba(4, 8, 15, 0.8);
+}
+
+.cq-tut-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.cq-tut-body::-webkit-scrollbar-track {
+  background: rgba(4, 8, 15, 0.8);
+  border-radius: 4px;
+}
+
+.cq-tut-body::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.3);
+  border-radius: 4px;
+}
+
+.cq-tut-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.55);
 }
 
 /* ── HERO ANIMATION VIEWPORT ─────────────────────────────────────────────── */
 .cq-tut-animation-wrapper {
   background: radial-gradient(circle at center, rgba(14, 22, 34, 0.95) 0%, rgba(6, 10, 16, 0.98) 100%);
   border: 1px solid rgba(0, 229, 255, 0.25);
-  border-radius: 14px;
-  padding: 16px 20px;
+  border-radius: clamp(10px, 1.2vw, 14px);
+  padding: clamp(8px, 1.2vh, 16px) clamp(12px, 1.6vw, 20px);
   position: relative;
   overflow: hidden;
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.7),
@@ -204,7 +229,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: clamp(6px, 1vh, 14px);
   position: relative;
   z-index: 2;
 }
@@ -213,10 +238,10 @@
   background: rgba(0, 229, 255, 0.12);
   color: var(--neon-cyan, #00e5ff);
   border: 1px solid rgba(0, 229, 255, 0.35);
-  font-size: 0.68rem;
+  font-size: clamp(0.62rem, 0.8vw, 0.68rem);
   font-weight: 800;
   letter-spacing: 1.2px;
-  padding: 4px 12px;
+  padding: 3px 10px;
   border-radius: 20px;
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
 }
@@ -225,8 +250,8 @@
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #a3b8c2;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -243,7 +268,7 @@
 }
 
 .cq-tut-viewport {
-  min-height: 160px;
+  min-height: clamp(80px, 13vh, 160px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -273,12 +298,12 @@
 .cq-tut-track-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: clamp(4px, 0.8vh, 8px);
   align-items: center;
 }
 
 .cq-tut-track-label {
-  font-size: 0.7rem;
+  font-size: clamp(0.62rem, 0.8vw, 0.7rem);
   font-weight: 800;
   color: #798e99;
   letter-spacing: 1.5px;
@@ -286,17 +311,17 @@
 
 .cq-tut-letters-row {
   display: flex;
-  gap: 6px;
+  gap: clamp(3px, 0.4vw, 6px);
 }
 
 .cq-tut-char-box {
-  width: 34px;
-  height: 36px;
+  width: clamp(24px, 2.4vw, 34px);
+  height: clamp(26px, 3.2vh, 36px);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 0.95rem;
+  font-size: clamp(0.78rem, 1vw, 0.95rem);
   border-radius: 7px;
   font-family: var(--font-mono, monospace);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -624,17 +649,17 @@
 .cq-tut-intel-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: clamp(8px, 1.2vw, 14px);
 }
 
 .cq-tut-intel-card {
   background: rgba(15, 20, 29, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: clamp(8px, 1vh, 14px) clamp(10px, 1.2vw, 16px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: clamp(4px, 0.8vh, 8px);
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -655,17 +680,17 @@
 .cq-tut-intel-header {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .cq-tut-intel-tag {
   display: inline-block;
   align-self: flex-start;
-  font-size: 0.65rem;
+  font-size: clamp(0.58rem, 0.75vw, 0.65rem);
   font-weight: 800;
   letter-spacing: 0.8px;
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 2px 7px;
+  border-radius: 5px;
 }
 
 .tag-cyan {
@@ -681,15 +706,15 @@
 }
 
 .cq-tut-intel-header h4 {
-  font-size: 0.92rem;
+  font-size: clamp(0.82rem, 1vw, 0.92rem);
   font-weight: 700;
   color: #ffffff;
   margin: 0;
 }
 
 .cq-tut-intel-text {
-  font-size: 0.84rem;
-  line-height: 1.45;
+  font-size: clamp(0.74rem, 0.95vw, 0.84rem);
+  line-height: 1.38;
   color: #b0c4cf;
   margin: 0;
 }
@@ -700,21 +725,22 @@
 
 /* ── FOOTER ──────────────────────────────────────────────────────────────── */
 .cq-tut-footer {
-  padding: 16px 24px;
-  background: rgba(8, 11, 16, 0.8);
+  padding: clamp(8px, 1.2vh, 16px) clamp(14px, 2vw, 24px);
+  background: rgba(8, 11, 16, 0.85);
   border-top: 1px solid rgba(0, 229, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-shrink: 0;
 }
 
 .cq-tut-nav-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 9px 20px;
-  border-radius: 10px;
-  font-size: 0.88rem;
+  padding: clamp(6px, 0.8vh, 9px) clamp(12px, 1.5vw, 20px);
+  border-radius: 9px;
+  font-size: clamp(0.78rem, 0.95vw, 0.88rem);
   font-weight: 800;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -860,6 +886,86 @@
   }
   .cq-tut-dont-show-checkbox span.cq-tut-dont-show-text {
     font-size: 0.72rem;
+  }
+}
+
+@media (max-height: 850px) {
+  .cq-tut-header {
+    padding: 8px 18px 7px;
+  }
+  .cq-tut-body {
+    padding: 10px 18px;
+    gap: 10px;
+  }
+  .cq-tut-animation-wrapper {
+    padding: 8px 14px;
+  }
+  .cq-tut-viewport {
+    min-height: 90px;
+  }
+  .cq-tut-char-box {
+    width: 28px;
+    height: 30px;
+    font-size: 0.82rem;
+  }
+  .cq-tut-word-tile {
+    width: 34px;
+    height: 38px;
+    font-size: 0.95rem;
+  }
+  .cq-tut-decrypt-card {
+    padding: 8px 14px;
+  }
+  .cq-tut-intel-card {
+    padding: 8px 12px;
+    gap: 4px;
+  }
+  .cq-tut-footer {
+    padding: 8px 18px;
+  }
+  .cq-tut-nav-btn {
+    padding: 6px 14px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-height: 720px) {
+  .cq-tut-header {
+    padding: 6px 14px 5px;
+  }
+  .cq-tut-body {
+    padding: 6px 14px;
+    gap: 6px;
+  }
+  .cq-tut-animation-wrapper {
+    padding: 6px 10px;
+  }
+  .cq-tut-viewport {
+    min-height: 75px;
+  }
+  .cq-tut-char-box {
+    width: 24px;
+    height: 26px;
+    font-size: 0.74rem;
+  }
+  .cq-tut-word-tile {
+    width: 28px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+  .cq-tut-decrypt-card {
+    padding: 6px 10px;
+  }
+  .cq-tut-intel-card {
+    padding: 6px 10px;
+    gap: 3px;
+  }
+  .cq-tut-footer {
+    padding: 6px 14px;
+  }
+  .cq-tut-nav-btn {
+    padding: 5px 12px;
+    font-size: 0.75rem;
   }
 }
 

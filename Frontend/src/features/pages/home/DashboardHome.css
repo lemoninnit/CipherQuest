@@ -15,7 +15,7 @@
   flex-direction: column;
   justify-content: space-between;
   box-sizing: border-box;
-  padding: clamp(18px, 2.4vh, 28px) clamp(24px, 3.5vw, 48px);
+  padding: clamp(10px, 1.8vh, 24px) clamp(16px, 2.8vw, 44px);
   font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
   color: #ffffff;
 }
@@ -77,29 +77,31 @@
 .dh-wordmark-container {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .dh-wordmark-title {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(34px, 2.6vw, 46px);
+  font-size: clamp(24px, 2.2vw, 44px);
   font-weight: 800;
   color: #ffffff;
   letter-spacing: -0.02em;
   text-shadow: 0 0 24px rgba(0, 229, 255, 0.6), 0 2px 10px rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: clamp(8px, 1vw, 12px);
 }
 
 .dh-lock-svg {
+  width: clamp(22px, 2vw, 34px);
+  height: clamp(22px, 2vw, 34px);
   filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.7));
   flex-shrink: 0;
 }
 
 .dh-wordmark-subtitle {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(12px, 0.9vw, 13.5px);
+  font-size: clamp(10.5px, 0.8vw, 13px);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -110,22 +112,22 @@
 .dh-hud-badge {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: clamp(8px, 1vw, 14px);
   background: rgba(5, 18, 38, 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(0, 229, 255, 0.35);
-  border-radius: 30px;
-  padding: 8px 20px;
+  border-radius: 24px;
+  padding: clamp(5px, 0.8vh, 8px) clamp(10px, 1.2vw, 18px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 18px rgba(0, 229, 255, 0.15);
 }
 
 .dh-hud-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(12.5px, 0.95vw, 14.5px);
+  font-size: clamp(11px, 0.85vw, 13.5px);
   font-weight: 700;
   color: #e8f4f8;
 }
@@ -188,7 +190,7 @@
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(160px, 200px) 1fr minmax(160px, 200px);
+  grid-template-columns: minmax(130px, 180px) 1fr minmax(130px, 180px);
   align-items: center;
   width: 100%;
   flex: 1;
@@ -204,8 +206,8 @@
 
 /* Expanded 2-Column Layout for Tutorial Panel */
 .dh-lobby-content.dh-lobby-content-expanded {
-  grid-template-columns: minmax(160px, 200px) 1fr;
-  gap: clamp(20px, 2.4vw, 36px);
+  grid-template-columns: minmax(130px, 180px) 1fr;
+  gap: clamp(14px, 2vw, 32px);
   align-items: stretch;
 }
 
@@ -222,7 +224,7 @@
 .dh-side-menu {
   display: flex;
   flex-direction: column;
-  gap: clamp(16px, 2.2vh, 24px);
+  gap: clamp(10px, 1.8vh, 22px);
   width: 100%;
 }
 
@@ -232,10 +234,10 @@
   border: 1px solid transparent;
   color: #ffffff;
   font-family: 'Space Grotesk', sans-serif;
-  font-size: clamp(16px, 1.15vw, 19px);
+  font-size: clamp(13.5px, 1vw, 18px);
   font-weight: 700;
   text-align: left;
-  padding: 8px 12px;
+  padding: clamp(5px, 0.8vh, 8px) clamp(8px, 0.9vw, 12px);
   cursor: pointer;
   border-radius: 12px;
   backdrop-filter: none;
@@ -254,8 +256,8 @@
   color: #ffffff;
   border: 1px solid rgba(0, 229, 255, 0.4);
   border-radius: 16px;
-  padding: 10px 24px;
-  min-width: 140px;
+  padding: clamp(6px, 1vh, 10px) clamp(14px, 1.5vw, 22px);
+  min-width: clamp(110px, 9vw, 140px);
   text-align: center;
   box-shadow: 0 4px 18px rgba(0, 168, 204, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   letter-spacing: 0.02em;
@@ -412,10 +414,10 @@
   display: flex;
   align-items: stretch;
   justify-content: center;
-  gap: clamp(24px, 2.6vw, 36px);
+  gap: clamp(14px, 2vw, 32px);
   width: 100%;
-  max-width: clamp(960px, 75vw, 1080px);
-  padding: 0 clamp(20px, 2.8vw, 40px);
+  max-width: clamp(860px, 75vw, 1080px);
+  padding: 0 clamp(10px, 1.8vw, 36px);
   box-sizing: border-box;
   margin: 0 auto;
 }
@@ -436,12 +438,12 @@
     transform 0.28s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.28s ease,
     box-shadow 0.28s ease;
-  min-width: 240px;
-  max-width: 310px;
+  min-width: clamp(175px, 17vw, 240px);
+  max-width: clamp(235px, 22vw, 310px);
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
-  padding: 14px;
+  padding: clamp(8px, 1.2vh, 14px);
   cursor: pointer;
   box-sizing: border-box;
   outline: none;
@@ -639,6 +641,132 @@
   color: #ffffff;
   box-shadow: 0 0 16px rgba(0, 229, 255, 0.45);
   transform: translateY(-1px);
+}
+
+/* Height-Aware Responsive Scaling (125% & 150% Display Scaling, 1366x768, 1536x864) */
+@media (max-height: 850px) {
+  .dh-wordmark-title {
+    font-size: 28px;
+  }
+  .dh-lock-svg {
+    width: 26px;
+    height: 26px;
+  }
+  .dh-wordmark-subtitle {
+    font-size: 11.5px;
+  }
+  .dh-hud-badge {
+    padding: 5px 14px;
+    gap: 10px;
+  }
+  .dh-hud-item {
+    font-size: 12px;
+  }
+  .dh-side-menu {
+    gap: 12px;
+  }
+  .dh-menu-item {
+    font-size: 15px;
+    padding: 6px 10px;
+  }
+  .dh-menu-item.primary {
+    padding: 8px 18px;
+    min-width: 120px;
+    font-size: 15px;
+  }
+  .dh-quest-card {
+    padding: 10px;
+    min-width: 190px;
+    max-width: 275px;
+    border-radius: 16px;
+  }
+  .dh-card-art-panel {
+    padding: 8px;
+    border-radius: 12px;
+  }
+  .dh-card-title {
+    font-size: 16px;
+  }
+  .dh-card-desc {
+    font-size: 11.5px;
+    min-height: 42px;
+    margin-bottom: 6px;
+  }
+  .dh-card-show-tutorial-btn {
+    padding: 6px 10px;
+    font-size: 11.5px;
+    border-radius: 8px;
+  }
+}
+
+@media (max-height: 720px) {
+  .dh-lobby {
+    padding: 8px 24px;
+  }
+  .dh-wordmark-title {
+    font-size: 23px;
+  }
+  .dh-lock-svg {
+    width: 22px;
+    height: 22px;
+  }
+  .dh-wordmark-subtitle {
+    font-size: 10.5px;
+  }
+  .dh-hud-badge {
+    padding: 4px 10px;
+    gap: 8px;
+  }
+  .dh-hud-item {
+    font-size: 11px;
+  }
+  .dh-side-menu {
+    gap: 8px;
+  }
+  .dh-menu-item {
+    font-size: 13.5px;
+    padding: 4px 8px;
+  }
+  .dh-menu-item.primary {
+    padding: 5px 14px;
+    min-width: 105px;
+    font-size: 13.5px;
+  }
+  .dh-cards-row {
+    gap: 12px;
+  }
+  .dh-quest-card {
+    padding: 8px;
+    min-width: 170px;
+    max-width: 235px;
+    border-radius: 14px;
+  }
+  .dh-card-art-panel {
+    padding: 6px;
+    border-radius: 10px;
+    max-height: 180px;
+  }
+  .dh-card-title {
+    font-size: 14px;
+  }
+  .dh-card-desc {
+    font-size: 10.5px;
+    min-height: 32px;
+    margin-bottom: 4px;
+    -webkit-line-clamp: 2;
+  }
+  .dh-card-mini-progress {
+    margin: 2px 0 4px 0;
+  }
+  .dh-card-show-tutorial-btn {
+    padding: 4px 8px;
+    font-size: 10.5px;
+    border-radius: 6px;
+  }
+  .dh-lobby-bottom-caption {
+    font-size: 10.5px;
+    margin-top: 4px;
+  }
 }
 
 /* Responsive Styles for smaller screens */
