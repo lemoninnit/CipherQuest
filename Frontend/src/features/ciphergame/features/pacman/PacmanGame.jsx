@@ -15,6 +15,7 @@ import { useFullscreen } from '../../core/hooks/useFullscreen';
 import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 import { describePlayfairRule, transformPlayfairPair } from '../playfair/PlayfairHelpers';
+import CaesarPacmanTutorialModal from '../caesar/tutorials/CaesarPacmanTutorialModal';
 
 const EASY_GRID = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -725,7 +726,19 @@ export default function PacmanGame({
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [showTabula, setShowTabula] = useState(false);
+  const [showCaesarTutorial, setShowCaesarTutorial] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
+
+  // Auto-launch tutorial on first launch of Caesar Pac-Man in Easy tier
+  useEffect(() => {
+    if (isCaesar && currentTier === 'easy') {
+      const seen = localStorage.getItem('cq_tut_seen_caesar_pacman');
+      if (!seen) {
+        setShowCaesarTutorial(true);
+        localStorage.setItem('cq_tut_seen_caesar_pacman', 'true');
+      }
+    }
+  }, [isCaesar, currentTier]);
 
   const [pacman, setPacman] = useState(() => (hasSnapshot && snapshot.gameState.pacman ? snapshot.gameState.pacman : initialPacman));
   const [pacmanDir, setPacmanDir] = useState('NONE');
@@ -1857,6 +1870,16 @@ export default function PacmanGame({
                   ? 'Find the shift by comparing revealed letters with their cipher letters (cipher − plain). Then eat a yellow Skill Pellet, press SPACEBAR for Decryption Mode, and eat the ghost carrying the CORRECT shift — wrong shift ghosts will hurt you!'
                   : 'Eat a yellow Skill Pellet, then press SPACEBAR to activate Decryption Mode. While active, eat the ghost carrying the correct shift value to decrypt the letter!'}
               </p>
+              {isCaesar && (
+                <button
+                  type="button"
+                  className="cq-dossier-how-to-play-btn"
+                  onClick={() => setShowCaesarTutorial(true)}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help_outline</span>
+                  <span>How to Play</span>
+                </button>
+              )}
               <button
                 className="cq-dossier-action-btn"
                 onClick={() => {
@@ -1870,6 +1893,15 @@ export default function PacmanGame({
             </div>
           </div>
         </div>
+        {isCaesar && (
+          <CaesarPacmanTutorialModal
+            isOpen={showCaesarTutorial}
+            onClose={() => {
+              localStorage.setItem('cq_tut_seen_caesar_pacman', 'true');
+              setShowCaesarTutorial(false);
+            }}
+          />
+        )}
       </div>
     );
   }
@@ -2793,6 +2825,16 @@ export default function PacmanGame({
           onBackToStages();
         }}
       />
+
+      {isCaesar && (
+        <CaesarPacmanTutorialModal
+          isOpen={showCaesarTutorial}
+          onClose={() => {
+            localStorage.setItem('cq_tut_seen_caesar_pacman', 'true');
+            setShowCaesarTutorial(false);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 import { useFishingStageFail } from '../../core/hooks/useFishingStageFail';
 import FishingGameOverOverlay from '../../ui/FishingGameOverOverlay';
+import CaesarFishingTutorialModal from './tutorials/CaesarFishingTutorialModal';
 
 /* ─── Caesar math ─── */
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -135,8 +136,21 @@ export default function CaesarFishingGame({
   const [caughtFish, setCaughtFish]           = useState(null);
   const [splash, setSplash]                   = useState({ show: false, x: 0, y: 0 });
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showTutorial, setShowTutorial]       = useState(false);
   const [chumCount, setChumCount]             = useState(() => (hasSnapshot && typeof snapshot.gameState.chumCount === 'number' ? snapshot.gameState.chumCount : 3));
   const [isMenuOpen, setIsMenuOpen]           = useState(() => (hasSnapshot ? true : false));
+
+  // Auto-launch tutorial on first launch of Caesar Fishing in Easy tier
+  useEffect(() => {
+    const normTier = String(tier || levelData?.difficulty || '').toLowerCase();
+    if (normTier === 'easy') {
+      const seen = localStorage.getItem('cq_tut_seen_caesar_fishing');
+      if (!seen) {
+        setShowTutorial(true);
+        localStorage.setItem('cq_tut_seen_caesar_fishing', 'true');
+      }
+    }
+  }, [tier, levelData]);
   const [rodFacingRight, setRodFacingRight]   = useState(false);
   const [isMuted, setIsMuted]                 = useState(false);
   const [rodTip, setRodTip]                   = useState({ x: 110, y: 55 });
@@ -574,6 +588,14 @@ export default function CaesarFishingGame({
                 <code>Plain = (Cipher - Basket Shift) mod 26</code>
               </p>
               <button
+                type="button"
+                className="cq-dossier-how-to-play-btn"
+                onClick={() => setShowTutorial(true)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help_outline</span>
+                <span>How to Play</span>
+              </button>
+              <button
                 className="cq-dossier-action-btn"
                 onClick={() => {
                   fishingSound.unlockAudio();
@@ -586,6 +608,13 @@ export default function CaesarFishingGame({
             </div>
           </div>
         </div>
+        <CaesarFishingTutorialModal
+          isOpen={showTutorial}
+          onClose={() => {
+            localStorage.setItem('cq_tut_seen_caesar_fishing', 'true');
+            setShowTutorial(false);
+          }}
+        />
       </div>
     );
   }
@@ -953,6 +982,14 @@ export default function CaesarFishingGame({
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();
+        }}
+      />
+
+      <CaesarFishingTutorialModal
+        isOpen={showTutorial}
+        onClose={() => {
+          localStorage.setItem('cq_tut_seen_caesar_fishing', 'true');
+          setShowTutorial(false);
         }}
       />
     </div>

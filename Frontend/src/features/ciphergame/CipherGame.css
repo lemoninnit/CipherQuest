@@ -6600,6 +6600,42 @@
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* Mission Brief How to Play Button */
+.cq-dossier-how-to-play-btn {
+  width: 100%;
+  padding: 10px 18px;
+  margin-bottom: 10px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1.5px solid rgba(0, 229, 255, 0.45);
+  border-radius: 8px;
+  color: #00e5ff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.cq-dossier-how-to-play-btn:hover {
+  background: rgba(0, 229, 255, 0.18);
+  border-color: #00e5ff;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.35);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.cq-dossier-how-to-play-btn:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 2px;
+}
+
 /* Ghost Outline Action Button */
 .cq-dossier-action-btn {
   width: 100%;

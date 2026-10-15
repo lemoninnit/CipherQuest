@@ -12,6 +12,7 @@ import CryptographicRecap from '../../ui/CryptographicRecap';
 import VictoryConfetti from '../../ui/VictoryConfetti';
 import { sprintSound } from './sprintSound';
 import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
+import CaesarSprintTutorialModal from '../caesar/tutorials/CaesarSprintTutorialModal';
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const charToIdx = (char) => (char && char.charCodeAt(0) >= 65 && char.charCodeAt(0) <= 90 ? char.charCodeAt(0) - 65 : 0);
@@ -294,7 +295,20 @@ export default function CipherSprint({
   const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
+
+  // Auto-launch tutorial on first launch of Caesar Sprint in Easy tier
+  useEffect(() => {
+    const normTier = String(tier || levelData?.difficulty || '').toLowerCase();
+    if (normTier === 'easy') {
+      const seen = localStorage.getItem('cq_tut_seen_caesar_sprint');
+      if (!seen) {
+        setShowTutorial(true);
+        localStorage.setItem('cq_tut_seen_caesar_sprint', 'true');
+      }
+    }
+  }, [tier, levelData]);
   const [feedbackColor, setFeedbackColor] = useState('#facc15');
   const [feedbackY, setFeedbackY] = useState(50);
   const [trackShake, setTrackShake] = useState(false);
@@ -912,6 +926,14 @@ export default function CipherSprint({
                   <strong>How it works:</strong> Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys (or click lanes) to switch lanes. Collect diamonds carrying <strong>+</strong> and <strong>−</strong> shift modifiers to adjust your Active Shift. Watch the word decrypt live! Dodge obstacle slimes — slime contact costs a life. Press <strong>F</strong> to toggle fullscreen.
                 </p>
                 <button
+                  type="button"
+                  className="cq-dossier-how-to-play-btn"
+                  onClick={() => setShowTutorial(true)}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help_outline</span>
+                  <span>How to Play</span>
+                </button>
+                <button
                   className="cq-dossier-action-btn"
                   onClick={() => {
                     sprintSound.unlockAudio();
@@ -922,6 +944,13 @@ export default function CipherSprint({
                 </button>
               </div>
             </div>
+            <CaesarSprintTutorialModal
+              isOpen={showTutorial}
+              onClose={() => {
+                localStorage.setItem('cq_tut_seen_caesar_sprint', 'true');
+                setShowTutorial(false);
+              }}
+            />
           </div>
         )
       ) : (
@@ -1337,6 +1366,14 @@ export default function CipherSprint({
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();
+        }}
+      />
+
+      <CaesarSprintTutorialModal
+        isOpen={showTutorial}
+        onClose={() => {
+          localStorage.setItem('cq_tut_seen_caesar_sprint', 'true');
+          setShowTutorial(false);
         }}
       />
     </div>

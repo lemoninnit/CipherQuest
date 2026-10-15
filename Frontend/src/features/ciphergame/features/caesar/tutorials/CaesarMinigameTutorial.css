@@ -1,0 +1,1218 @@
+/* ==========================================================================
+   CIPHERQUEST CAESAR MINIGAME TUTORIAL MODALS (PAC-MAN, FISHING, SPRINT)
+   Clean, Professional, Non-Cluttered Tactical HUD Design
+   ========================================================================== */
+
+/* ── MODAL BACKDROP & CONTAINER ───────────────────────────────────────── */
+.cq-minigame-tut-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(4, 8, 15, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(10px, 2vh, 24px);
+  animation: cqTutFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cq-minigame-tut-backdrop.closing {
+  animation: cqTutFadeOut 0.22s ease-in forwards;
+}
+
+.cq-minigame-tut-modal {
+  width: 100%;
+  max-width: 980px;
+  max-height: 94vh;
+  background: linear-gradient(155deg, rgba(14, 20, 32, 0.98) 0%, rgba(7, 10, 18, 0.99) 100%);
+  border: 1px solid rgba(0, 229, 255, 0.32);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.9),
+              0 0 45px rgba(0, 229, 255, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #e2e8f0;
+  font-family: var(--font-body, "Plus Jakarta Sans", system-ui, sans-serif);
+  animation: cqModalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cq-minigame-tut-modal.closing {
+  animation: cqModalScaleOut 0.22s ease-in forwards;
+}
+
+/* ── MODAL TOP HEADER ─────────────────────────────────────────────────── */
+.cq-minigame-tut-header {
+  padding: 12px 22px;
+  background: rgba(8, 13, 22, 0.92);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.cq-minigame-tut-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Authentic Sprite Frame Avatars in Header */
+.cq-minigame-tut-header-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
+  flex-shrink: 0;
+}
+
+.cq-avatar-knight {
+  width: 36px;
+  height: 36px;
+  background-image: url('/assets/pacman/Knight/Warrior_Blue.png');
+  background-size: 216px 288px;
+  background-position: 0 0;
+  image-rendering: pixelated;
+}
+
+.cq-avatar-fish-img {
+  width: 38px;
+  height: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+
+.cq-avatar-runner {
+  width: 36px;
+  height: 36px;
+  background-image: url('/assets/sprint/user/IDLE.png');
+  background-size: 288px 36px;
+  background-position: 0 0;
+  image-rendering: pixelated;
+}
+
+.cq-minigame-tut-tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: var(--neon-cyan, #00e5ff);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.cq-minigame-tut-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.12rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  margin: 0;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+}
+
+.cq-minigame-tut-header-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cq-minigame-tut-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 4px 8px;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 229, 255, 0.18);
+}
+
+.cq-minigame-tut-pill {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cq-minigame-tut-pill:hover {
+  border-color: #00e5ff;
+  color: #ffffff;
+  background: rgba(0, 229, 255, 0.12);
+}
+
+.cq-minigame-tut-pill.active {
+  background: #00e5ff;
+  border-color: #00e5ff;
+  color: #071018;
+  font-weight: 800;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+}
+
+.cq-minigame-tut-icon-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cq-minigame-tut-icon-btn:hover {
+  background: rgba(0, 229, 255, 0.14);
+  border-color: #00e5ff;
+  color: #ffffff;
+}
+
+.cq-minigame-tut-close-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cq-minigame-tut-close-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4);
+}
+
+/* ── MODAL BODY ───────────────────────────────────────────────────────── */
+.cq-minigame-tut-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* ── TACTICAL DIRECTIVE BANNER ────────────────────────────────────────── */
+.cq-minigame-tut-step-banner {
+  background: rgba(10, 24, 40, 0.85);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-left: 4px solid #00e5ff;
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.cq-minigame-tut-step-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cq-minigame-tut-step-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #00e5ff;
+  text-transform: uppercase;
+}
+
+.cq-minigame-tut-step-desc {
+  font-size: 0.92rem;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.cq-minigame-tut-step-desc strong {
+  color: #ffffff;
+}
+
+.cq-minigame-tut-step-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.cq-minigame-tut-step-count {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+/* ── GAMEPLAY SIMULATION VIEWPORT ─────────────────────────────────────── */
+.cq-minigame-tut-viewport {
+  position: relative;
+  width: 100%;
+  height: 520px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1.5px solid rgba(0, 229, 255, 0.28);
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.8),
+              0 8px 30px rgba(0, 0, 0, 0.6);
+  background: #020611;
+  display: flex;
+  flex-direction: column;
+}
+
+.cq-tut-arena {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── TOP WORD PANEL (MATCHING ACTUAL GAME) ────────────────────────────── */
+.cq-tut-word-panel {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(6, 14, 26, 0.95);
+  border: 1.5px solid rgba(0, 229, 255, 0.4);
+  border-radius: 10px;
+  padding: 10px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.75), 0 0 16px rgba(0, 229, 255, 0.15);
+  z-index: 60;
+}
+
+.cq-tut-word-top-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cq-tut-shift-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.cq-tut-shift-badge {
+  background: rgba(0, 229, 255, 0.18);
+  border: 1.5px solid #00e5ff;
+  color: #00e5ff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 1px 8px;
+  border-radius: 4px;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+}
+
+.cq-tut-shift-badge.solved {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.cq-tut-word-letters {
+  display: flex;
+  gap: 8px;
+}
+
+.cq-tut-word-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 36px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1.5px solid rgba(0, 229, 255, 0.25);
+  border-radius: 6px;
+  padding: 4px 0;
+  transition: all 0.3s ease;
+}
+
+.cq-tut-word-cell.solved {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.22);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+}
+
+.cq-tut-cell-cipher {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.cq-tut-cell-plain {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.cq-tut-word-cell.solved .cq-tut-cell-plain {
+  color: #10b981;
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.9);
+}
+
+.cq-tut-clue-banner {
+  font-size: 0.78rem;
+  color: #ffd700;
+  letter-spacing: 0.02em;
+}
+
+/* ── OVERLAY POINTERS & GUIDANCE ARROWS ──────────────────────────────── */
+.cq-tut-pointer-overlay {
+  position: absolute;
+  z-index: 100;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cq-tut-pointer-arrow {
+  color: #ffd700;
+  font-size: 32px;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.9));
+  animation: cqPointerBounce 1s infinite alternate;
+}
+
+@keyframes cqPointerBounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-8px); }
+}
+
+.cq-tut-pointer-badge {
+  background: rgba(255, 215, 0, 0.95);
+  color: #050b14;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  padding: 5px 12px;
+  border-radius: 6px;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.6);
+  white-space: nowrap;
+}
+
+.cq-tut-crosshair {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border: 2px dashed #00e5ff;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 95;
+  animation: cqCrosshairSpin 4s linear infinite;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
+}
+
+@keyframes cqCrosshairSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ── PACMAN: CENTERED REAL DUNGEON MAZE ───────────────────────────────── */
+.cq-tut-pacman-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #020712;
+  overflow: hidden;
+}
+
+.cq-tut-pacman-bg-layer {
+  position: absolute;
+  inset: 0;
+  background-image: url('/assets/pacman/pacman-bg.png');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.cq-tut-pacman-stage .maze-grid {
+  position: relative !important;
+  display: grid !important;
+  gap: 0 !important;
+  background: rgba(4, 24, 34, 0.72) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.95), inset 0 0 25px rgba(0, 229, 255, 0.12) !important;
+  border: 1.5px solid rgba(0, 229, 255, 0.3) !important;
+  z-index: 10;
+}
+
+.cq-tut-pacman-stage .maze-cell.wall {
+  background-image: url('/assets/pacman/pacman-brick.png') !important;
+  background-size: 100% 100% !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  image-rendering: pixelated !important;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.5) !important;
+  z-index: 4;
+}
+
+.cq-tut-pacman-stage .maze-cell.path {
+  background: transparent !important;
+  position: relative;
+}
+
+.cq-tut-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 5px;
+  height: 5px;
+  background: #cbd5e1;
+  border-radius: 50%;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.4);
+}
+
+/* Sharp, cleanly scaled Knight & Ghost actors */
+.cq-tut-pacman-actor {
+  position: absolute;
+  z-index: 40;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: left 0.35s linear, top 0.35s linear;
+}
+
+.cq-tut-knight-sprite {
+  width: 48px;
+  height: 48px;
+  background-image: url('/assets/pacman/Knight/Warrior_Blue.png');
+  background-size: 288px 384px;
+  background-position: 0 -48px;
+  image-rendering: pixelated;
+  animation: cqKnightRun 0.5s steps(6) infinite;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.7));
+}
+
+@keyframes cqKnightRun {
+  from { background-position: 0 -48px; }
+  to { background-position: -288px -48px; }
+}
+
+.cq-tut-knight-sprite.attack {
+  animation: cqKnightAttack 0.45s steps(6) forwards;
+}
+
+@keyframes cqKnightAttack {
+  from { background-position: 0 -96px; }
+  to { background-position: -288px -96px; }
+}
+
+.cq-tut-ghost-actor {
+  position: absolute;
+  z-index: 35;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: left 0.35s linear, top 0.35s linear;
+}
+
+.cq-tut-goblin-sprite {
+  width: 44px;
+  height: 44px;
+  background-image: url('/assets/pacman/Enemy Goblins/Torch_Red.png');
+  background-size: 308px 220px;
+  background-position: 0 -44px;
+  image-rendering: pixelated;
+  animation: cqGoblinRun 0.54s steps(6) infinite;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.7));
+}
+
+@keyframes cqGoblinRun {
+  from { background-position: 0 -44px; }
+  to { background-position: -264px -44px; }
+}
+
+.cq-tut-ghost-actor.vulnerable .cq-tut-goblin-sprite,
+.cq-tut-ghost-actor.vulnerable .goblin-actor,
+.cq-tut-ghost-actor.vulnerable .goblin-sheet {
+  filter: hue-rotate(180deg) brightness(1.25) drop-shadow(0 0 10px rgba(0, 229, 255, 0.8));
+}
+
+.cq-tut-ghost-badge {
+  position: absolute;
+  top: -12px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+  white-space: nowrap;
+}
+
+.cq-tut-ghost-badge.correct {
+  border-color: #10b981;
+  color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+}
+
+.cq-tut-spacebar-prompt {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(4, 12, 24, 0.96);
+  border: 2px solid #00e5ff;
+  border-radius: 10px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.7);
+  z-index: 90;
+  animation: cqSpacebarPulse 0.9s infinite alternate;
+}
+
+@keyframes cqSpacebarPulse {
+  0% { transform: translate(-50%, -50%) scale(0.96); }
+  100% { transform: translate(-50%, -50%) scale(1.04); }
+}
+
+.cq-tut-keycap {
+  background: #00e5ff;
+  color: #040914;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 5px 12px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+/* Freeze Wave Ripple Effect Across Dungeon */
+.cq-tut-freeze-wave {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  border: 3px solid #00e5ff;
+  border-radius: 50%;
+  box-shadow: 0 0 35px rgba(0, 229, 255, 0.9);
+  pointer-events: none;
+  z-index: 50;
+  animation: cqFreezeWave 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cqFreezeWave {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(7.5); opacity: 0; }
+}
+
+/* Combat Hit Spark for Defeating Goblin */
+.cq-tut-hit-spark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 15%, #00e5ff 60%, transparent 100%);
+  box-shadow: 0 0 24px rgba(0, 229, 255, 0.95);
+  pointer-events: none;
+  z-index: 60;
+  animation: cqHitSpark 0.5s ease-out forwards;
+}
+
+@keyframes cqHitSpark {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
+}
+
+/* Golden Pellet Burst Sparkle */
+.cq-tut-pellet-sparkle {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 15%, #ffd700 65%, transparent 100%);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.95);
+  pointer-events: none;
+  z-index: 60;
+  animation: cqHitSpark 0.5s ease-out forwards;
+}
+
+/* ── FISHING: CLEAN OCEAN VIEW & SMOOTH SWIM SIMULATION ──────────────── */
+.cq-tut-fishing-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #02203e 0%, #021226 65%, #010a16 100%);
+  overflow: hidden;
+}
+
+.cq-tut-fishing-stage .fg-fish-entity {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 30;
+  user-select: none;
+  transform-origin: center center;
+  will-change: left, top;
+}
+
+.cq-tut-fishing-stage .fg-fish-facing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: center center;
+  line-height: 0;
+}
+
+.cq-tut-fishing-stage .fg-fish-sprite-img {
+  width: 70px;
+  height: 56px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.7));
+  display: block;
+  flex-shrink: 0;
+}
+
+.cq-tut-fishing-stage .fg-fish-sprite-img.fg-large-fish {
+  width: 140px !important;
+  height: auto !important;
+}
+
+.cq-tut-fishing-stage .fg-fish-badge {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 3px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+}
+
+.cq-tut-fishing-stage .fg-fish-badge.positive {
+  background: rgba(16, 185, 129, 0.95);
+  color: #ffffff;
+  border: 1px solid #10b981;
+}
+
+.cq-tut-fishing-stage .fg-fish-badge.negative {
+  background: rgba(239, 68, 68, 0.95);
+  color: #ffffff;
+  border: 1px solid #ef4444;
+}
+
+/* Authentic Fishing Rod Sprite */
+.cq-tut-fishing-stage .caesar-fishing-rod-sprite {
+  position: absolute;
+  bottom: 0;
+  left: calc(50% - 238px);
+  width: 280px;
+  height: 280px;
+  background-image: url('/assets/fish/fishing rod/Fishing Rod.png');
+  background-size: 800% 100%;
+  background-position: 0% 0%;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+  z-index: 15;
+  transition: transform 0.25s ease, left 0.25s ease;
+}
+
+.cq-tut-fishing-stage .caesar-fishing-rod-sprite.facing-right {
+  left: calc(50% - 42px);
+  transform: scaleX(-1);
+}
+
+/* Bottom-Left Basket Shift Key Card in Tutorial Modal (No Clipped Margins) */
+.cq-tut-fishing-stage .caesar-floating-basket-card {
+  position: absolute !important;
+  bottom: 16px !important;
+  left: 20px !important;
+  transform: none !important;
+  min-width: 140px !important;
+  padding: 8px 16px !important;
+  border-radius: 12px !important;
+  margin: 0 !important;
+  z-index: 60 !important;
+}
+
+.cq-tut-fishing-stage .caesar-floating-basket-card.shake {
+  animation: caesarBasketShake 0.4s ease;
+}
+
+/* Bottom-Right Chum the Waters Card in Tutorial Modal */
+.cq-tut-fishing-stage .skill-charge-card.fishing-skill-card {
+  position: absolute !important;
+  bottom: 16px !important;
+  right: 20px !important;
+  margin: 0 !important;
+  z-index: 60 !important;
+}
+
+/* Water Splash Ripple Animation (No Emojis) */
+.cq-tut-water-splash {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border: 2.5px solid #00e5ff;
+  border-radius: 50%;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.9);
+  pointer-events: none;
+  z-index: 48;
+  animation: cqSplashRipple 0.55s ease-out forwards;
+}
+
+@keyframes cqSplashRipple {
+  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
+}
+
+/* ── SPRINT: FULL UNOBSTRUCTED 3-LANE TRACK ───────────────────────────── */
+.cq-tut-sprint-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #020814;
+  overflow: hidden;
+
+  /* Explicit track clearance matching modal aspect ratio */
+  --sprint-top-clearance: 105px;
+  --sprint-bottom-clearance: 35px;
+  --sprint-lanes-height: calc(100% - var(--sprint-top-clearance) - var(--sprint-bottom-clearance));
+  --lane-height: calc(var(--sprint-lanes-height) / 3);
+  --sprint-lane-height: var(--lane-height);
+  --sprite-sink: 0px;
+
+  /* Measured top surface of paved stone walkway in each platform tileset:
+     Lane 0: platform_upper.png  (56px / 326px = 0.172)
+     Lane 1: platform_middle.png (50px / 326px = 0.154)
+     Lane 2: platform_bottom.png (48px / 220px = 0.218) */
+  --lane-0-ground: calc(var(--sprint-top-clearance) + var(--lane-height) * 0.172 + var(--sprite-sink));
+  --lane-1-ground: calc(var(--sprint-top-clearance) + var(--lane-height) * 1.154 + var(--sprite-sink));
+  --lane-2-ground: calc(var(--sprint-top-clearance) + var(--lane-height) * 2.218 + var(--sprite-sink));
+}
+
+.cq-tut-sprint-stage .sprint-track-container {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  background: #060b18;
+  overflow: hidden;
+  user-select: none;
+}
+
+.cq-tut-sprint-stage .sprint-bg-sky {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--sprint-top-clearance);
+  background-image: url('/assets/sprint/background/sprint_bg.png');
+  background-size: auto 100%;
+  background-position: 0 0;
+  background-repeat: repeat-x;
+  z-index: 2;
+  opacity: 1;
+  animation: parallaxSky 45s linear infinite;
+}
+
+/* 3 Lanes — positioned strictly by the clearance and lane-height variables */
+.cq-tut-sprint-stage .sprint-lane {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--lane-height);
+  display: flex;
+  align-items: center;
+  padding-left: 18px;
+  z-index: 6;
+  overflow: hidden;
+  contain: layout paint;
+  border: none;
+}
+
+.cq-tut-sprint-stage .sprint-lane.lane-0 {
+  top: var(--sprint-top-clearance);
+}
+
+.cq-tut-sprint-stage .sprint-lane.lane-1 {
+  top: calc(var(--sprint-top-clearance) + var(--lane-height));
+}
+
+.cq-tut-sprint-stage .sprint-lane.lane-2 {
+  top: calc(var(--sprint-top-clearance) + var(--lane-height) * 2);
+  height: calc(100% - var(--sprint-top-clearance) - var(--lane-height) * 2);
+  bottom: 0;
+}
+
+.cq-tut-sprint-stage .sprint-lane-platform {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  width: 100%;
+  background-size: 3102px 100%;
+  background-repeat: repeat-x;
+  background-position: 0 0;
+  animation: trackScroll 4.5s linear infinite;
+  z-index: 1;
+}
+
+.cq-tut-sprint-stage .sprint-lane-platform.platform-upper {
+  background-image: url('/assets/sprint/tileset/platform_upper.png');
+}
+
+.cq-tut-sprint-stage .sprint-lane-platform.platform-middle {
+  background-image: url('/assets/sprint/tileset/platform_middle.png');
+}
+
+.cq-tut-sprint-stage .sprint-lane-platform.platform-bottom {
+  background-image: url('/assets/sprint/tileset/platform_bottom.png');
+}
+
+/* Runner sprite container — anchored at bottom to lane ground line */
+.cq-tut-sprint-stage .sprint-runner-sprite {
+  position: absolute;
+  width: 175px;
+  height: 155px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 25;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  transition: top 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), left 0.45s ease;
+  will-change: top, left;
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.2));
+}
+
+.cq-tut-sprint-stage .sprint-runner-sprite.lane-0 { top: var(--lane-0-ground); }
+.cq-tut-sprint-stage .sprint-runner-sprite.lane-1 { top: var(--lane-1-ground); }
+.cq-tut-sprint-stage .sprint-runner-sprite.lane-2 { top: var(--lane-2-ground); }
+
+/* Character pixel art inside runner container */
+.cq-tut-sprint-stage .sprint-runner-char-sprite {
+  width: 96px;
+  height: 84px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  transform: scale(2.35);
+  transform-origin: center 61px;
+  margin-bottom: -23px;
+  position: relative;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.8));
+  will-change: background-position;
+  backface-visibility: hidden;
+}
+
+.cq-tut-sprint-stage .sprint-runner-char-sprite.run {
+  background: url('/assets/sprint/user/RUN.png') 0 0 no-repeat;
+  animation: spriteRun 0.62s steps(8) infinite;
+}
+.cq-tut-sprint-stage .sprint-runner-char-sprite.jump {
+  background: url('/assets/sprint/user/JUMP.png') 0 0 no-repeat;
+  animation: spriteJump 0.42s steps(5) infinite;
+}
+.cq-tut-sprint-stage .sprint-runner-char-sprite.idle {
+  background: url('/assets/sprint/user/IDLE.png') 0 0 no-repeat;
+  animation: spriteIdle 0.88s steps(7) infinite;
+}
+
+/* Runner baton glow badge */
+.cq-tut-sprint-stage .runner-baton-glow {
+  position: absolute;
+  right: 12px;
+  top: 14px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+  background: #00e5ff;
+  color: #030712;
+  padding: 2px 7px;
+  border-radius: 6px;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  z-index: 28;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+}
+
+.cq-tut-sprint-stage .runner-baton-glow.badge-correct {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.95);
+  border-color: #a7f3d0;
+}
+
+/* Runner boost trail and spin effects */
+.cq-tut-sprint-stage .sprint-runner-sprite.boost-trail {
+  filter: drop-shadow(0 0 16px #00e5ff) drop-shadow(-16px 0 10px rgba(0, 255, 136, 0.65));
+}
+
+.cq-tut-sprint-stage .sprint-runner-sprite.spin-effect .sprint-runner-char-sprite {
+  animation: spinCollect 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+/* Obstacle Slime Sprite Container */
+.cq-tut-sprint-stage .sprint-r2-obstacle-slime {
+  position: absolute;
+  width: 140px;
+  height: 100px;
+  transform: translate(-50%, -100%);
+  z-index: 18;
+  pointer-events: none;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: slimeHop 2s ease-in-out infinite;
+  will-change: left;
+}
+
+.cq-tut-sprint-stage .sprint-r2-obstacle-slime.lane-0 { top: var(--lane-0-ground); }
+.cq-tut-sprint-stage .sprint-r2-obstacle-slime.lane-1 { top: var(--lane-1-ground); }
+.cq-tut-sprint-stage .sprint-r2-obstacle-slime.lane-2 { top: var(--lane-2-ground); }
+
+.cq-tut-sprint-stage .sprint-r2-obstacle-slime img {
+  width: 160px;
+  height: auto;
+  object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 10px rgba(239, 68, 68, 0.5));
+}
+
+/* Modifier Diamond Container */
+.cq-tut-sprint-stage .sprint-r2-diamond-sprite {
+  position: absolute;
+  width: 52px;
+  height: 62px;
+  transform: translate(-50%, -100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 19;
+  pointer-events: none;
+  animation: runeFloat 1.8s ease-in-out infinite;
+  will-change: left;
+}
+
+.cq-tut-sprint-stage .sprint-r2-diamond-sprite.lane-0 { top: var(--lane-0-ground); }
+.cq-tut-sprint-stage .sprint-r2-diamond-sprite.lane-1 { top: var(--lane-1-ground); }
+.cq-tut-sprint-stage .sprint-r2-diamond-sprite.lane-2 { top: var(--lane-2-ground); }
+
+.cq-tut-sprint-stage .sprint-r2-diamond-inner {
+  width: 44px;
+  height: 44px;
+  background: rgba(3, 14, 28, 0.9);
+  border: 2px solid #00e5ff;
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.7), inset 0 0 10px rgba(0, 229, 255, 0.4);
+  transform: rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.cq-tut-sprint-stage .sprint-r2-diamond-char {
+  transform: rotate(-45deg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.9);
+}
+
+/* Floating In-Game Event Toast */
+.cq-tut-sprint-feedback {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #00e5ff;
+  background: rgba(3, 14, 28, 0.92);
+  border: 1.5px solid #00e5ff;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+  padding: 4px 12px;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 45;
+  animation: cqFeedbackFloat 0.8s ease-out forwards;
+}
+
+@keyframes cqFeedbackFloat {
+  0% { transform: translate(-50%, 0) scale(0.85); opacity: 0; }
+  25% { transform: translate(-50%, -10px) scale(1.05); opacity: 1; }
+  80% { transform: translate(-50%, -22px) scale(1); opacity: 1; }
+  100% { transform: translate(-50%, -30px) scale(0.95); opacity: 0; }
+}
+
+/* ── BOTTOM CARDS ─────────────────────────────────────────────────────── */
+.cq-tut-bottom-right-card {
+  position: absolute;
+  bottom: 14px;
+  right: 18px;
+  background: rgba(6, 14, 26, 0.94);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 10px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
+  z-index: 60;
+  min-width: 140px;
+}
+
+.cq-tut-bottom-right-card.charged {
+  border-color: #ffd700;
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.4);
+}
+
+.cq-tut-card-title {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.cq-tut-card-state {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ffd700;
+}
+
+/* Victory secured panel overlay */
+.cq-tut-victory-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(4, 16, 28, 0.96);
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  padding: 14px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 0 35px rgba(16, 185, 129, 0.6);
+  z-index: 85;
+  animation: cqVictoryPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes cqVictoryPop {
+  0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.cq-tut-victory-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #10b981;
+  letter-spacing: 0.08em;
+  margin: 0;
+}
+
+.cq-tut-victory-sub {
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+/* ── MODAL FOOTER ─────────────────────────────────────────────────────── */
+.cq-minigame-tut-footer {
+  padding: 12px 22px;
+  background: rgba(8, 13, 22, 0.94);
+  border-top: 1px solid rgba(0, 229, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.cq-minigame-tut-close-action-btn {
+  background: rgba(0, 229, 255, 0.12);
+  border: 1.5px solid #00e5ff;
+  color: #00e5ff;
+  padding: 9px 26px;
+  border-radius: 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.2);
+}
+
+.cq-minigame-tut-close-action-btn:hover {
+  background: #00e5ff;
+  color: #040914;
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.55);
+  transform: translateY(-1px);
+}
