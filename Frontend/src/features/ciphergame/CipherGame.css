@@ -70,7 +70,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 28px;
+  padding: clamp(6px, 1vh, 12px) clamp(10px, 1.5vw, 24px);
+  min-height: clamp(48px, 6vh, 60px);
   background: rgba(6, 19, 36, 0.85);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--card-border);
@@ -127,15 +128,16 @@
 }
 .fg-header-attempts {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1rem;
+  font-size: clamp(0.72rem, 0.85vw, 0.88rem);
   font-weight: 700;
   color: var(--neon-green);
   text-shadow: 0 0 8px rgba(57, 255, 20, 0.3);
   background: rgba(57, 255, 20, 0.08);
   border: 1px solid rgba(57, 255, 20, 0.2);
-  padding: 6px 20px;
+  padding: clamp(3px, 0.4vh, 5px) clamp(8px, 1vw, 14px);
   border-radius: 20px;
   transition: all 0.3s ease;
+  white-space: nowrap;
 }
 .fg-header-attempts.low-attempts {
   color: var(--neon-red);
@@ -4442,31 +4444,116 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Responsive adjustments */
-@media (max-height: 820px) {
+/* Responsive adjustments for Fishing */
+@media (max-width: 1536px), (max-height: 860px) {
   .caesar-floating-word-panel {
-    top: 10px;
+    top: 8px !important;
+  }
+  .caesar-fishing-fullscreen .fg-word-segment-card {
+    padding: 6px 14px 8px !important;
+  }
+  .caesar-segment-top-row {
+    margin-bottom: 4px !important;
+  }
+  .caesar-fishing-fullscreen .fg-letter-cell {
+    width: 32px !important;
+    height: 42px !important;
+  }
+  .caesar-fishing-fullscreen .fg-cell-ciphertext {
+    font-size: 0.62rem !important;
+    top: 2px !important;
+  }
+  .caesar-fishing-fullscreen .fg-cell-plaintext {
+    font-size: 1.05rem !important;
+    margin-top: 5px !important;
+  }
+  .caesar-floating-hint {
+    font-size: 0.8rem !important;
+    margin-top: 3px !important;
   }
   .caesar-fishing-fullscreen .caesar-fish-swim-lane {
-    top: 100px;
+    top: 85px !important;
   }
   .caesar-floating-guide {
-    max-width: 320px;
-    padding: 12px 16px;
-    bottom: 16px;
-    left: 20px;
+    max-width: 300px;
+    padding: 10px 14px;
+    bottom: 12px;
+    left: 16px;
   }
   .caesar-floating-basket-card {
-    min-width: 180px;
-    padding: 10px 16px;
-    bottom: 16px;
-    right: 20px;
+    min-width: 130px;
+    max-width: 160px;
+    padding: 6px 14px;
+    bottom: 10px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
   }
   .caesar-floating-chum-btn {
-    bottom: 140px;
-    right: 20px;
-    padding: 8px 14px;
-    font-size: 0.8rem;
+    bottom: 10px;
+    right: 16px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 1280px), (max-height: 750px) {
+  .caesar-floating-word-panel {
+    top: 6px !important;
+  }
+  .caesar-fishing-fullscreen .fg-word-segment-card {
+    padding: 4px 10px 6px !important;
+  }
+  .caesar-segment-top-row {
+    margin-bottom: 2px !important;
+  }
+  .caesar-active-shift-label {
+    font-size: 0.72rem !important;
+  }
+  .caesar-active-shift-badge {
+    font-size: 0.75rem !important;
+    padding: 1px 7px !important;
+  }
+  .caesar-fishing-fullscreen .fg-letter-cell {
+    width: 28px !important;
+    height: 36px !important;
+    border-radius: 6px !important;
+  }
+  .caesar-fishing-fullscreen .fg-cell-ciphertext {
+    font-size: 0.56rem !important;
+    top: 2px !important;
+  }
+  .caesar-fishing-fullscreen .fg-cell-plaintext {
+    font-size: 0.95rem !important;
+    margin-top: 4px !important;
+  }
+  .caesar-floating-hint {
+    font-size: 0.72rem !important;
+    margin-top: 2px !important;
+  }
+  .caesar-fishing-fullscreen .caesar-fish-swim-lane {
+    top: 75px !important;
+  }
+  .caesar-floating-guide {
+    max-width: 270px;
+    padding: 8px 12px;
+    bottom: 8px;
+    left: 12px;
+  }
+  .caesar-floating-basket-card {
+    min-width: 120px;
+    max-width: 150px;
+    padding: 5px 12px;
+    bottom: 8px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+  }
+  .caesar-floating-chum-btn {
+    bottom: 8px;
+    right: 12px;
+    padding: 5px 10px;
+    font-size: 0.74rem;
   }
 }
 
@@ -5269,18 +5356,37 @@
   justify-content: center;
   z-index: 5;
   transition: transform 0.2s ease;
+  transform-origin: center center;
 }
 
-/* Scaling support for large screens */
+/* Scaling support for large and scaled screens */
+@media (min-width: 1900px) and (min-height: 1000px) {
+  .pacman-fullscreen-board-area {
+    transform: scale(1.15);
+  }
+}
+
 @media (min-width: 1600px) and (min-height: 900px) {
   .pacman-fullscreen-board-area {
     transform: scale(1.08);
   }
 }
 
-@media (min-width: 1900px) and (min-height: 1000px) {
+@media (max-width: 1536px), (max-height: 860px) {
   .pacman-fullscreen-board-area {
-    transform: scale(1.15);
+    transform: scale(0.82);
+  }
+}
+
+@media (max-width: 1380px), (max-height: 750px) {
+  .pacman-fullscreen-board-area {
+    transform: scale(0.70);
+  }
+}
+
+@media (max-width: 1150px), (max-height: 640px) {
+  .pacman-fullscreen-board-area {
+    transform: scale(0.60);
   }
 }
 
@@ -5549,61 +5655,114 @@
   z-index: 40;
 }
 
-/* Responsive constraints for zero scrolling */
-@media (max-width: 1440px), (max-height: 850px) {
+/* Responsive constraints for zero scrolling and zero maze overlap */
+@media (max-width: 1536px), (max-height: 860px) {
   .caesar-pacman-floating-word-panel {
-    top: 10px;
+    top: 8px;
   }
   .caesar-pacman-word-card {
-    padding: 8px 18px 10px;
+    padding: 6px 16px 8px;
   }
-  .caesar-pacman-floating-word-panel .fg-letter-cell {
-    width: 38px;
-    height: 48px;
-  }
-  .caesar-pacman-floating-word-panel .fg-letter-cell .fg-cell-plaintext {
-    font-size: 1.15rem;
-    margin-top: 8px;
-  }
-  .caesar-floating-cheat-sheet.caesar-pacman-cheat-sheet {
-    bottom: 12px !important;
-    left: 18px !important;
-    padding: 7px 12px 6px;
-  }
-  .caesar-floating-basket-card.caesar-pacman-clue-card {
-    bottom: 12px !important;
-    padding: 8px 18px !important;
-  }
-  .skill-charge-card.caesar-pacman-skill-card {
-    bottom: 12px !important;
-    right: 18px !important;
-    padding: 8px 14px !important;
-  }
-}
-
-@media (max-height: 760px) {
-  .caesar-pacman-floating-word-panel {
-    top: 6px;
-  }
-  .caesar-pacman-word-card {
-    padding: 6px 14px 8px;
+  .caesar-pacman-word-top-row {
+    margin-bottom: 4px;
+    gap: 12px;
   }
   .caesar-pacman-floating-word-panel .fg-letter-cell {
     width: 34px;
     height: 44px;
   }
+  .caesar-pacman-floating-word-panel .fg-letter-cell .fg-cell-ciphertext {
+    font-size: 0.65rem;
+    top: 2px;
+  }
+  .caesar-pacman-floating-word-panel .fg-letter-cell .fg-cell-plaintext {
+    font-size: 1.1rem;
+    margin-top: 6px;
+  }
   .caesar-pacman-clue-banner {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
+    margin-top: 3px;
+  }
+  .caesar-floating-cheat-sheet.caesar-pacman-cheat-sheet {
+    bottom: 10px !important;
+    left: 14px !important;
+    padding: 6px 10px !important;
+  }
+  .caesar-floating-basket-card.caesar-pacman-clue-card {
+    bottom: 10px !important;
+    padding: 6px 16px !important;
+    min-width: 140px !important;
+  }
+  .skill-charge-card.caesar-pacman-skill-card {
+    bottom: 10px !important;
+    right: 14px !important;
+    padding: 6px 12px !important;
+    min-width: 115px !important;
+  }
+}
+
+@media (max-width: 1280px), (max-height: 750px) {
+  .caesar-pacman-floating-word-panel {
+    top: 6px;
+  }
+  .caesar-pacman-word-card {
+    padding: 4px 12px 6px;
+  }
+  .caesar-pacman-word-top-row {
+    margin-bottom: 2px;
+    gap: 8px;
+  }
+  .caesar-pacman-shift-label {
+    font-size: 0.72rem;
+  }
+  .caesar-pacman-shift-badge {
+    font-size: 0.75rem;
+    padding: 1px 7px;
+  }
+  .caesar-pacman-floating-word-panel .fg-letter-cell {
+    width: 28px;
+    height: 38px;
+    border-radius: 6px;
+  }
+  .caesar-pacman-floating-word-panel .fg-letter-cell .fg-cell-ciphertext {
+    font-size: 0.58rem;
+    top: 2px;
+  }
+  .caesar-pacman-floating-word-panel .fg-letter-cell .fg-cell-plaintext {
+    font-size: 0.95rem;
     margin-top: 4px;
+  }
+  .caesar-pacman-clue-banner {
+    font-size: 0.72rem;
+    margin-top: 2px;
   }
   .caesar-floating-cheat-sheet.caesar-pacman-cheat-sheet {
     bottom: 8px !important;
+    left: 10px !important;
+    padding: 5px 8px !important;
   }
   .caesar-floating-basket-card.caesar-pacman-clue-card {
     bottom: 8px !important;
+    padding: 5px 12px !important;
+    min-width: 120px !important;
+  }
+  .caesar-pacman-clue-card .caesar-basket-icon {
+    font-size: 1.25rem !important;
+    margin-bottom: 2px !important;
+  }
+  .caesar-pacman-clue-card .caesar-basket-badge {
+    font-size: 0.95rem !important;
+    padding: 1px 8px !important;
+    margin-bottom: 2px !important;
+  }
+  .caesar-pacman-clue-card .caesar-basket-label {
+    font-size: 0.58rem !important;
   }
   .skill-charge-card.caesar-pacman-skill-card {
     bottom: 8px !important;
+    right: 10px !important;
+    padding: 5px 10px !important;
+    min-width: 105px !important;
   }
 }
 
@@ -7117,11 +7276,121 @@
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.6) !important;
 }
 
-@media (max-width: 1440px), (max-height: 850px) {
-  .vg-fishing-az-panel {
-    min-width: 290px !important;
-    max-width: 350px !important;
-    padding: 10px 14px !important;
+@media (max-width: 1536px), (max-height: 860px) {
+  .vg-fishing-az-panel,
+  .caesar-floating-cheat-sheet.vg-fishing-az-panel,
+  .vg-floating-key-panel.vg-fishing-az-panel {
+    min-width: clamp(260px, 22vw, 320px) !important;
+    max-width: clamp(290px, 25vw, 340px) !important;
+    padding: 6px 10px !important;
+    gap: 4px !important;
+    bottom: 10px !important;
+    left: 14px !important;
+    right: auto !important;
+  }
+  .vg-fishing-calc-card {
+    padding: 4px 8px !important;
+    gap: 3px !important;
+  }
+  .vg-calc-top-row {
+    font-size: 0.65rem !important;
+  }
+  .vg-calc-label {
+    font-size: 0.6rem !important;
+  }
+  .vg-calc-formula-row {
+    gap: 6px !important;
+  }
+  .vg-calc-item {
+    min-width: 36px !important;
+    padding: 2px 6px !important;
+  }
+  .vg-calc-item strong {
+    font-size: 0.95rem !important;
+  }
+  .vg-calc-item .lbl {
+    font-size: 0.5rem !important;
+  }
+  .vg-calc-item .val {
+    font-size: 0.58rem !important;
+  }
+  .vg-calc-op {
+    font-size: 0.9rem !important;
+  }
+  .vg-calc-help-row {
+    padding: 3px 6px !important;
+    margin-top: 2px !important;
+  }
+  .vg-calc-help-text {
+    font-size: 0.66rem !important;
+  }
+  .vg-sprint-alphabet-grid {
+    gap: 2px !important;
+  }
+  .vg-alphabet-row {
+    gap: 2px !important;
+  }
+  .vg-alphabet-cell {
+    min-width: 16px !important;
+    max-width: 22px !important;
+    padding: 2px 0 !important;
+  }
+  .vg-alpha-char {
+    font-size: 0.68rem !important;
+  }
+  .vg-alpha-val {
+    font-size: 0.5rem !important;
+  }
+}
+
+@media (max-width: 1280px), (max-height: 750px) {
+  .vg-fishing-az-panel,
+  .caesar-floating-cheat-sheet.vg-fishing-az-panel,
+  .vg-floating-key-panel.vg-fishing-az-panel {
+    min-width: clamp(245px, 20vw, 300px) !important;
+    max-width: clamp(275px, 23vw, 320px) !important;
+    padding: 4px 8px !important;
+    gap: 3px !important;
+    bottom: 8px !important;
+    left: 10px !important;
+    right: auto !important;
+  }
+  .vg-fishing-calc-card {
+    padding: 3px 6px !important;
+    gap: 2px !important;
+  }
+  .vg-calc-top-row {
+    font-size: 0.62rem !important;
+  }
+  .vg-calc-label {
+    font-size: 0.56rem !important;
+  }
+  .vg-calc-formula-row {
+    gap: 4px !important;
+  }
+  .vg-calc-item {
+    min-width: 32px !important;
+    padding: 1px 4px !important;
+  }
+  .vg-calc-item strong {
+    font-size: 0.85rem !important;
+  }
+  .vg-calc-op {
+    font-size: 0.8rem !important;
+  }
+  .vg-calc-help-text {
+    font-size: 0.62rem !important;
+  }
+  .vg-alphabet-cell {
+    min-width: 14px !important;
+    max-width: 20px !important;
+    padding: 1px 0 !important;
+  }
+  .vg-alpha-char {
+    font-size: 0.62rem !important;
+  }
+  .vg-alpha-val {
+    font-size: 0.48rem !important;
   }
 }
 
@@ -7893,25 +8162,26 @@
   .vigenere-fishing-fullscreen .vg-fishing-az-panel,
   .vigenere-sprint-fullscreen .vg-fishing-az-panel,
   .vg-pacman-fullscreen .vg-fishing-az-panel {
-    min-width: 330px !important;
-    max-width: 410px !important;
-    bottom: 14px !important;
-    right: 16px !important;
-    padding: 8px 12px !important;
-    gap: 5px !important;
+    min-width: clamp(260px, 22vw, 320px) !important;
+    max-width: clamp(290px, 25vw, 340px) !important;
+    bottom: 10px !important;
+    left: 14px !important;
+    right: auto !important;
+    padding: 6px 10px !important;
+    gap: 4px !important;
   }
 
   .vigenere-fishing-fullscreen .vigenere-floating-chum-btn {
-    bottom: 170px !important;
+    bottom: 14px !important;
     right: 16px !important;
-    padding: 8px 14px !important;
-    font-size: 0.82rem !important;
+    padding: 6px 12px !important;
+    font-size: 0.78rem !important;
   }
 
   .vigenere-fishing-fullscreen .vg-calc-item strong,
   .vigenere-sprint-fullscreen .vg-calc-item strong,
   .vg-pacman-fullscreen .vg-calc-item strong {
-    font-size: 1.2rem !important;
+    font-size: 0.95rem !important;
   }
 }
 
@@ -8269,6 +8539,33 @@
     width: 300px !important;
     min-width: 280px !important;
     padding: 8px 10px !important;
+  }
+}
+
+@media (max-height: 750px), (max-width: 1280px) {
+  .pf-bottom-left-group {
+    bottom: 8px !important;
+    left: 10px !important;
+    gap: 6px !important;
+  }
+  .pf-bottom-left-group .pf-matrix-panel {
+    width: 155px !important;
+    min-width: 145px !important;
+    padding: 5px 8px !important;
+  }
+  .pf-bottom-left-group .pf-matrix-panel .pf-template-cell {
+    width: 20px !important;
+    height: 18px !important;
+    max-width: 20px !important;
+    max-height: 18px !important;
+    min-width: 20px !important;
+    min-height: 18px !important;
+    font-size: 0.68rem !important;
+  }
+  .pf-bottom-left-group .pf-digraph-panel {
+    width: 245px !important;
+    min-width: 230px !important;
+    padding: 5px 8px !important;
   }
 }
 

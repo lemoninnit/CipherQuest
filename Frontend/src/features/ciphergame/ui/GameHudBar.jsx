@@ -48,9 +48,12 @@ export default function GameHudBar({
             transform: 'translateX(-50%)',
             textAlign: 'center',
             fontFamily: "'Space Grotesk', sans-serif",
-            fontSize: '1.1rem',
+            fontSize: 'clamp(0.82rem, 1.1vw, 1.05rem)',
             fontWeight: '700',
             color: '#ffffff',
+            maxWidth: 'clamp(200px, 30vw, 420px)',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             pointerEvents: 'none',
             zIndex: 5,
@@ -62,7 +65,7 @@ export default function GameHudBar({
       )}
 
       {!isReady && (
-        <div className="fg-header-right" style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 6 }}>
+        <div className="fg-header-right" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(4px, 0.7vw, 10px)', zIndex: 6 }}>
           {/* ── SCORING SYSTEM: live score / streak / multiplier / stage timer ── */}
           <ScoringStrip />
           {lives != null && (
@@ -74,8 +77,8 @@ export default function GameHudBar({
                   style={{
                     color: i < lives ? '#ff007f' : 'rgba(255,255,255,0.15)',
                     fontVariationSettings: "'FILL' 1",
-                    fontSize: '1.2rem',
-                    marginRight: '2px'
+                    fontSize: 'clamp(0.95rem, 1.1vw, 1.15rem)',
+                    marginRight: '1px'
                   }}
                 >
                   favorite
@@ -99,11 +102,11 @@ export default function GameHudBar({
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 borderRadius: '8px',
                 color: '#fff',
-                padding: '4px 8px',
+                padding: 'clamp(2px, 0.3vh, 4px) clamp(6px, 0.6vw, 8px)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                fontSize: '1rem'
+                fontSize: 'clamp(0.85rem, 1vw, 1rem)'
               }}
             >
               {isMuted ? '🔇' : '🔊'}
@@ -133,19 +136,19 @@ function ScoringStrip() {
   const chipStyle = {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    padding: '3px 10px',
-    borderRadius: '14px',
+    gap: '3px',
+    padding: 'clamp(2px, 0.4vh, 3px) clamp(5px, 0.6vw, 8px)',
+    borderRadius: '12px',
     background: 'rgba(0, 229, 255, 0.08)',
     border: '1px solid rgba(0, 229, 255, 0.25)',
-    fontSize: '0.78rem',
+    fontSize: 'clamp(0.68rem, 0.78vw, 0.76rem)',
     fontWeight: 'bold',
     fontFamily: 'JetBrains Mono, monospace',
     whiteSpace: 'nowrap',
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(3px, 0.4vw, 5px)' }}>
       <div style={chipStyle} title="Total Score">
         <span style={{ color: '#ffd700' }}>★</span>
         <span style={{ color: '#fff' }}>{(scoring.totalScore || 0).toLocaleString()}</span>
@@ -163,7 +166,7 @@ function ScoringStrip() {
         </span>
       </div>
       <div style={chipStyle} title="Stage Timer">
-        <span className="material-symbols-outlined" style={{ fontSize: '0.85rem', color: '#00e5ff' }}>timer</span>
+        <span className="material-symbols-outlined" style={{ fontSize: '0.8rem', color: '#00e5ff' }}>timer</span>
         <span style={{ color: '#fff' }}>{formattedTime}</span>
       </div>
     </div>

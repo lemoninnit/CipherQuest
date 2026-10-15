@@ -1692,7 +1692,7 @@
 @media (max-height: 850px) {
   .sprint-track-container.sprint-track-fullscreen {
     --sprint-top-clearance: 110px;
-    --sprint-bottom-clearance: 105px;
+    --sprint-bottom-clearance: 98px;
   }
   .sprint-floating-gate-panel {
     top: 8px;
@@ -1708,9 +1708,11 @@
   }
   .caesar-floating-basket-card.sprint-floating-shift-card {
     bottom: 10px;
-    right: 16px;
-    padding: 6px 12px;
-    min-width: 190px;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    padding: 6px 14px;
+    min-width: 140px;
   }
   .sprint-floating-word-progress {
     bottom: 10px;
@@ -1722,8 +1724,8 @@
 
 @media (max-height: 768px) {
   .sprint-track-container.sprint-track-fullscreen {
-    --sprint-top-clearance: 95px;
-    --sprint-bottom-clearance: 95px;
+    --sprint-top-clearance: 104px;
+    --sprint-bottom-clearance: 90px;
   }
   .sprint-floating-gate-panel {
     top: 6px;
@@ -1732,9 +1734,9 @@
     padding: 4px 10px;
   }
   .baton-letter {
-    width: 34px;
-    height: 34px;
-    font-size: 1.3rem;
+    width: 32px;
+    height: 32px;
+    font-size: 1.25rem;
   }
   .caesar-floating-guide.sprint-floating-guide {
     bottom: 8px;
@@ -1753,20 +1755,22 @@
     font-size: 0.72rem;
   }
   .caesar-floating-basket-card.sprint-floating-shift-card {
-    bottom: 10px;
-    right: 12px;
-    padding: 6px 12px;
-    min-width: 170px;
+    bottom: 8px;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    padding: 5px 12px;
+    min-width: 130px;
   }
   .sprint-flow-char {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
   }
   .sprint-floating-word-progress {
-    bottom: 10px;
+    bottom: 8px;
   }
   .sprint-floating-word-progress .sprint-letter-box {
-    width: 28px;
-    height: 36px;
+    width: 26px;
+    height: 34px;
   }
 }
 
@@ -3216,8 +3220,43 @@
    ─────────────────────────────────────────────── */
 @media (max-width: 1440px), (max-height: 850px) {
   :root {
-    --sprint-top-clearance: 95px;
-    --sprint-bottom-clearance: 90px;
+    --sprint-top-clearance: 110px;
+    --sprint-bottom-clearance: 98px;
+  }
+
+  .sprint-track-container.sprint-track-fullscreen {
+    --sprint-top-clearance: 110px;
+    --sprint-bottom-clearance: 98px;
+  }
+
+  .sprint-floating-word-panel,
+  .caesar-floating-word-panel.vg-sprint-word-panel {
+    top: 6px;
+  }
+
+  .sprint-floating-word-panel .caesar-pacman-word-card,
+  .caesar-floating-segment-card {
+    padding: 5px 14px 6px;
+  }
+
+  .sprint-floating-word-panel .fg-letter-cell,
+  .vg-sprint-word-panel .fg-letter-cell {
+    width: 32px;
+    height: 42px;
+  }
+
+  .sprint-r2-diamond-sprite {
+    width: 48px;
+    height: 52px;
+  }
+
+  .sprint-r2-diamond-inner {
+    width: 36px;
+    height: 36px;
+  }
+
+  .sprint-r2-diamond-char {
+    font-size: 1.2rem;
   }
 
   .sprint-container {
@@ -3270,12 +3309,68 @@
     font-size: 1.4rem;
     margin-bottom: 10px;
   }
+
+  .caesar-floating-cheat-sheet.sprint-cheat-sheet {
+    bottom: 10px !important;
+    left: 14px !important;
+    padding: 6px 10px !important;
+  }
+
+  .caesar-floating-basket-card.sprint-clue-card {
+    bottom: 10px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    right: auto !important;
+    padding: 6px 16px !important;
+    min-width: 140px !important;
+  }
 }
 
 @media (max-width: 1280px), (max-height: 720px) {
   :root {
-    --sprint-top-clearance: 75px;
-    --sprint-bottom-clearance: 70px;
+    --sprint-top-clearance: 104px;
+    --sprint-bottom-clearance: 90px;
+  }
+
+  .sprint-track-container.sprint-track-fullscreen {
+    --sprint-top-clearance: 104px;
+    --sprint-bottom-clearance: 90px;
+  }
+
+  .sprint-floating-word-panel,
+  .caesar-floating-word-panel.vg-sprint-word-panel {
+    top: 4px;
+  }
+
+  .sprint-floating-word-panel .caesar-pacman-word-card,
+  .caesar-floating-segment-card {
+    padding: 4px 10px 5px;
+  }
+
+  .sprint-floating-word-panel .fg-letter-cell,
+  .vg-sprint-word-panel .fg-letter-cell {
+    width: 28px;
+    height: 36px;
+  }
+
+  .caesar-floating-hint,
+  .caesar-pacman-clue-banner {
+    font-size: 0.72rem;
+    margin-top: 2px;
+  }
+
+  .sprint-r2-diamond-sprite {
+    width: 42px;
+    height: 46px;
+  }
+
+  .sprint-r2-diamond-inner {
+    width: 32px;
+    height: 32px;
+  }
+
+  .sprint-r2-diamond-char {
+    font-size: 1.05rem;
   }
 
   .sprint-container {
@@ -3317,6 +3412,21 @@
     height: 30px;
     min-width: 30px;
     font-size: 1.2rem;
+  }
+
+  .caesar-floating-cheat-sheet.sprint-cheat-sheet {
+    bottom: 8px !important;
+    left: 10px !important;
+    padding: 5px 8px !important;
+  }
+
+  .caesar-floating-basket-card.sprint-clue-card {
+    bottom: 8px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    right: auto !important;
+    padding: 5px 12px !important;
+    min-width: 125px !important;
   }
 
   .sprint-ready-card {
