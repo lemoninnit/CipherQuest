@@ -1,0 +1,167 @@
+/* ==========================================================================
+   CIPHERQUEST PLAYFAIR MINIGAME TUTORIAL MODALS (FISHING, PAC-MAN, SPRINT)
+   Shares exact HUD styling, cyber-tactical aesthetic & layout with Caesar & Vigenère
+   ========================================================================== */
+
+@import "../../caesar/tutorials/CaesarMinigameTutorial.css";
+
+/* ── COMPACT HORIZONTAL HUD (TOP CENTER) ─────────────────────────────── */
+.cq-tut-word-panel.pf-compact-hud {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(6, 14, 26, 0.94);
+  border: 1.2px solid rgba(0, 229, 255, 0.4);
+  border-radius: 8px;
+  padding: 5px 14px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 12px rgba(0, 229, 255, 0.16);
+  z-index: 60;
+  white-space: nowrap;
+}
+
+.pf-hud-key-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.pf-hud-key-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.pf-hud-key-val {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.14);
+  border: 1px solid rgba(255, 215, 0, 0.45);
+  padding: 1px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+}
+
+.pf-hud-pairs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf-hud-pair-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  transition: all 0.2s ease;
+}
+
+.pf-hud-pair-chip .pf-hud-cipher {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+.pf-hud-pair-chip .pf-hud-arrow {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.pf-hud-pair-chip .pf-hud-plain {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: 1px;
+}
+
+.pf-hud-pair-chip.active {
+  border-color: #00e5ff;
+  background: rgba(0, 229, 255, 0.14);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+.pf-hud-pair-chip.active .pf-hud-plain {
+  color: #00e5ff;
+}
+
+.pf-hud-pair-chip.solved {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.pf-hud-pair-chip.solved .pf-hud-plain {
+  color: #10b981;
+}
+
+.pf-hud-status-badge {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid #00e5ff;
+  color: #00e5ff;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
+}
+
+.pf-hud-status-badge.solved {
+  background: rgba(16, 185, 129, 0.18);
+  border-color: #10b981;
+  color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+/* ── FISHING DIGRAPH BADGES ───────────────────────────────────────────── */
+.cq-tut-fishing-stage .fg-fish-badge.pair-target {
+  background: rgba(16, 185, 129, 0.95);
+  color: #050b14;
+  font-weight: 800;
+  letter-spacing: 1px;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.7);
+  padding: 1px 7px;
+}
+
+.cq-tut-fishing-stage .fg-fish-badge.pair-decoy {
+  background: rgba(15, 23, 42, 0.92);
+  color: #e2e8f0;
+  letter-spacing: 1px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 1px 7px;
+}
+
+/* ── PAC-MAN GOBLIN DIGRAPH BADGES ───────────────────────────────────── */
+.cq-tut-pacman-stage .ghost-inner-letter.pf-pair {
+  font-size: 0.74rem;
+  letter-spacing: 0.5px;
+  font-weight: 800;
+}
+
+/* ── SPRINT BATON & DIAMOND DIGRAPH LABELS ────────────────────────────── */
+.runner-baton-glow.pf-baton {
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  min-width: 32px;
+}
+
+.sprint-r2-diamond-char.pf-char {
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+}

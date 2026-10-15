@@ -18,6 +18,7 @@ import { useGameShortcuts } from '../../core/hooks/useGameShortcuts';
 import { useStageSnapshotAutoSaver } from '../../core/engine/gameSnapshot';
 import { useFishingStageFail } from '../../core/hooks/useFishingStageFail';
 import FishingGameOverOverlay from '../../ui/FishingGameOverOverlay';
+import PlayfairFishingTutorialModal from './tutorials/PlayfairFishingTutorialModal';
 
 const normalizePair = (value) => String(value || '').replace(/[^A-Z]/g, '').slice(0, 2);
 
@@ -140,8 +141,21 @@ export default function PlayfairFishingGame({
   const [attemptsLeft, setAttemptsLeft] = useState(() => (hasSnapshot && typeof snapshot.gameState.attemptsLeft === 'number' ? snapshot.gameState.attemptsLeft : 15));
   const [chumCount, setChumCount] = useState(() => (hasSnapshot && typeof snapshot.gameState.chumCount === 'number' ? snapshot.gameState.chumCount : 3));
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
   const [isMuted, setIsMuted] = useState(false);
+
+  // Auto-launch tutorial on first launch of Playfair Fishing in Easy tier
+  useEffect(() => {
+    const normTier = String(tier || levelData?.difficulty || '').toLowerCase();
+    if (normTier === 'easy') {
+      const seen = localStorage.getItem('cq_tut_seen_playfair_fishing');
+      if (!seen) {
+        setShowTutorial(true);
+        localStorage.setItem('cq_tut_seen_playfair_fishing', 'true');
+      }
+    }
+  }, [tier, levelData?.difficulty]);
 
   // Running out of attempts loses the stage and costs one session heart.
   // Declared BEFORE the snapshot saver so `gameOver` is in scope there.
@@ -536,10 +550,25 @@ export default function PlayfairFishingGame({
                 {matrix.flat().map((letter) => (<span key={letter}>{letter}</span>))}
               </div>
               <p className="cq-dossier-how-it-works"><strong>Fishing rule:</strong> each fish carries a two-letter plaintext candidate. Correct catches fill the message.</p>
+              <button
+                type="button"
+                className="cq-dossier-how-to-play-btn"
+                onClick={() => setShowTutorial(true)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help_outline</span>
+                <span>How to Play</span>
+              </button>
               <button className="cq-dossier-action-btn" onClick={() => { fishingSound.unlockAudio(); fishingSound.playBgm(); setIsOperationLoading(true); }}>Begin operation</button>
             </div>
           </div>
         </main>
+        <PlayfairFishingTutorialModal
+          isOpen={showTutorial}
+          onClose={() => {
+            localStorage.setItem('cq_tut_seen_playfair_fishing', 'true');
+            setShowTutorial(false);
+          }}
+        />
       </div>
     );
   }
@@ -991,6 +1020,14 @@ export default function PlayfairFishingGame({
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();
+        }}
+      />
+
+      <PlayfairFishingTutorialModal
+        isOpen={showTutorial}
+        onClose={() => {
+          localStorage.setItem('cq_tut_seen_playfair_fishing', 'true');
+          setShowTutorial(false);
         }}
       />
     </div>

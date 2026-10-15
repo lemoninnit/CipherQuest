@@ -15,6 +15,7 @@ import { sprintSound } from '../sprint/sprintSound';
 import {
   transformPlayfairPair,
 } from './PlayfairHelpers';
+import PlayfairSprintTutorialModal from './tutorials/PlayfairSprintTutorialModal';
 
 const BASE_SPEED = 0.22;
 const BOOST_MULT = 1.6;
@@ -284,6 +285,19 @@ export default function PlayfairSprint({
   const [isMenuOpen, setIsMenuOpen] = useState(() => (hasSnapshot ? true : false));
   const [isOperationLoading, setIsOperationLoading] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  // Auto-launch tutorial on first launch of Playfair Sprint in Easy tier
+  useEffect(() => {
+    const normTier = String(tier || levelData?.difficulty || '').toLowerCase();
+    if (normTier === 'easy') {
+      const seen = localStorage.getItem('cq_tut_seen_playfair_sprint');
+      if (!seen) {
+        setShowTutorial(true);
+        localStorage.setItem('cq_tut_seen_playfair_sprint', 'true');
+      }
+    }
+  }, [tier, levelData?.difficulty]);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackColor, setFeedbackColor] = useState('#facc15');
   const [feedbackY, setFeedbackY] = useState(50);
@@ -1039,11 +1053,26 @@ export default function PlayfairSprint({
                   <strong>How it works:</strong>{' '}
                   Use <strong>Arrow UP/DOWN</strong> or <strong>W/S</strong> keys to switch lanes. Collect the correct plaintext digraph calculated using the 5×5 Playfair key matrix. Dodge the obstacle slimes! Decoy digraphs will cost a life! Press <strong>Space</strong> to pause running, and <strong>F</strong> to toggle fullscreen.
                 </p>
+                <button
+                  type="button"
+                  className="cq-dossier-how-to-play-btn"
+                  onClick={() => setShowTutorial(true)}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>help_outline</span>
+                  <span>How to Play</span>
+                </button>
                 <button className="cq-dossier-action-btn" onClick={() => { sprintSound.unlockAudio(); setIsOperationLoading(true); }}>
                   Begin operation
                 </button>
               </div>
             </div>
+            <PlayfairSprintTutorialModal
+              isOpen={showTutorial}
+              onClose={() => {
+                localStorage.setItem('cq_tut_seen_playfair_sprint', 'true');
+                setShowTutorial(false);
+              }}
+            />
           </div>
         )
       ) : (
@@ -1571,6 +1600,14 @@ export default function PlayfairSprint({
         onExit={() => {
           onClearSnapshot?.();
           onBackToStages();
+        }}
+      />
+
+      <PlayfairSprintTutorialModal
+        isOpen={showTutorial}
+        onClose={() => {
+          localStorage.setItem('cq_tut_seen_playfair_sprint', 'true');
+          setShowTutorial(false);
         }}
       />
     </div>
