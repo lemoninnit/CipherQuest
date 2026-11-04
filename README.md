@@ -53,7 +53,7 @@ cors.allowed-origins=http://localhost:5173
 
 | Service | URL |
 |---|---|
-| Frontend (Cloudflare Workers) | https://cipher-quest.kwpoliquit.workers.dev |
+| Frontend (Cloudflare Workers) | https://citu.cipherquest.workers.dev |
 | Backend API (Render) | https://cipherquest-oddy.onrender.com |
 
 The backend runs on Render's free tier. The first request after inactivity may take 30-60 seconds to cold-start.
