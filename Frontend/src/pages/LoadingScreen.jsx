@@ -33,6 +33,7 @@ const LoadingScreen = () => {
       
       <main className="loading-main z-10">
         <div className="loading-header">
+          <img src="/assets/ui/CipherQuest_Logo.png" alt="CipherQuest Logo" style={{ width: '64px', height: '64px', margin: '0 auto 12px', display: 'block', filter: 'drop-shadow(0 0 16px rgba(0, 229, 255, 0.7))' }} />
           <h1 className="glow-text tracking-tighter text-primary">CipherQuest</h1>
           <div className="loading-divider"></div>
         </div>

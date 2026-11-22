@@ -323,11 +323,8 @@ const DashboardHome = () => {
       <header className="dh-header-bar">
         <div className="dh-wordmark-container">
           <div className="dh-wordmark-title">
-            CipherQuest{' '}
-            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#00e5ff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="dh-lock-svg">
-              <rect x="5" y="11" width="14" height="10" rx="3" />
-              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-            </svg>
+            <img src="/assets/ui/CipherQuest_Logo.png" alt="CipherQuest Logo" className="dh-logo-img" />
+            <span>CipherQuest</span>
           </div>
           <div className="dh-wordmark-subtitle">
             OPERATIVE: {user?.username ?? 'OPERATIVE'} &nbsp;•&nbsp; LEVEL {currentLevel} OPERATIVE

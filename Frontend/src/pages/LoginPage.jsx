@@ -54,9 +54,7 @@ const LoginPage = () => {
         <div className="auth-card">
           <div className="auth-card-header">
             <div className="auth-logo-pill">
-              <div className="auth-logo-icon-box">
-                <span className="material-symbols-outlined">lock</span>
-              </div>
+              <img src="/assets/ui/CipherQuest_Logo.png" alt="CipherQuest Logo" className="auth-logo-img" />
               <span className="auth-logo-text">CipherQuest</span>
             </div>
             <h1>Welcome Back, Decoder</h1>

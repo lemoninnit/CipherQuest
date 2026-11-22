@@ -29,7 +29,23 @@
 }
 
 .sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 48px;
+}
+
+.sidebar-logo-img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.45));
+  flex-shrink: 0;
+}
+
+.sidebar-title-group {
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-title {
