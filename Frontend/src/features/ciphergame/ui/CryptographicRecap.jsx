@@ -23,6 +23,8 @@ const idxToChar = (idx) => ALPHABET[((idx % 26) + 26) % 26];
 export default function CryptographicRecap({
   cipherType = 'caesar', // 'caesar' | 'vigenere' | 'playfair'
   levelData = {},
+  tier,
+  difficulty,
   plaintext: overridePlaintext,
   ciphertext: overrideCiphertext,
   onUnlockNext,
@@ -57,13 +59,13 @@ export default function CryptographicRecap({
   }, [explanationStep]);
 
   const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
-  const tierName = capitalize(levelData.tier || levelData.difficulty || 'Easy');
+  const tierName = capitalize(tier || difficulty || levelData.tier || levelData.difficulty || 'Easy');
   const cipherCategoryName =
     cipherType === 'vigenere'
       ? 'Vigenère'
       : cipherType === 'playfair'
-      ? 'Playfair'
-      : 'Caesar';
+        ? 'Playfair'
+        : 'Caesar';
   const stagesTitle = `${cipherCategoryName} — ${tierName} Stages`;
 
   /* ───────────────────────────────────────────────
@@ -255,8 +257,8 @@ export default function CryptographicRecap({
     cipherType === 'caesar'
       ? caesarData?.totalSteps || 0
       : cipherType === 'vigenere'
-      ? vigenereData?.totalSteps || 0
-      : playfairData?.totalSteps || 0;
+        ? vigenereData?.totalSteps || 0
+        : playfairData?.totalSteps || 0;
 
   /* ───────────────────────────────────────────────
      STAGED REVEAL TIMING
@@ -391,307 +393,303 @@ export default function CryptographicRecap({
         <div className="cq-recap-scrollable-body" ref={bodyScrollRef}>
           {/* ═══════════ TOP ANIMATION / NODE ROW ═══════════ */}
           <div className="fg-recap-animation-box cq-recap-animation-box">
-          {cipherType === 'caesar' && caesarData && (
-            <div className="fg-recap-letter-row">
-              {caesarData.letters.map((node) => {
-                const isRevealed = explanationStep >= node.index;
-                return (
-                  <div
-                    key={node.index}
-                    className={`fg-recap-node ${isRevealed ? 'active' : 'waiting'}`}
-                    onMouseEnter={() => setHoveredIdx(node.index)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                  >
-                    <span className="fg-recap-char-cipher">{node.cipherChar}</span>
-                    <span className="fg-recap-math">+{node.shift}</span>
-                    <span className="fg-recap-arrow">↓</span>
-                    <span className="fg-recap-char-plain">{isRevealed ? node.plainChar : '_'}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {cipherType === 'vigenere' && vigenereData && (
-            <div className="fg-recap-letter-row cq-vigenere-recap-row">
-              {vigenereData.columns.map((col, idx) => {
-                if (col.isSpace) {
-                  return <div key={`sp-${idx}`} className="cq-recap-space-gap" />;
-                }
-                const isRevealed = explanationStep >= col.index;
-                return (
-                  <div
-                    key={idx}
-                    className={`fg-recap-node ${isRevealed ? 'active' : 'waiting'}`}
-                    onMouseEnter={() => setHoveredIdx(col.index)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                  >
-                    <span className="fg-recap-char-cipher">{col.cipherChar}</span>
-                    <span className="fg-recap-math">-{col.keyChar}</span>
-                    <span className="fg-recap-arrow">↓</span>
-                    <span className="fg-recap-char-plain">{isRevealed ? col.plainChar : '_'}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {cipherType === 'playfair' && playfairData && (
-            <div className="fg-recap-letter-row cq-playfair-recap-row">
-              {playfairData.pairs.map((pair, idx) => {
-                const isRevealed = explanationStep >= idx;
-                const isCurrent = activePlayfairIndex === idx;
-                return (
-                  <div
-                    key={idx}
-                    className={`fg-recap-node cq-playfair-node ${
-                      isRevealed ? 'active' : 'waiting'
-                    } ${isCurrent ? 'selected-pair' : ''}`}
-                    onMouseEnter={() => setHoveredIdx(idx)}
-                    onMouseLeave={() => setHoveredIdx(null)}
-                  >
-                    <span className="fg-recap-char-cipher">{pair.cipherPair}</span>
-                    <span className="fg-recap-math">({pair.rule})</span>
-                    <span className="fg-recap-arrow">↓</span>
-                    <span className="fg-recap-char-plain">{isRevealed ? pair.plainPair : '__'}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ═══════════ DETAILED WORKED EXPLANATION ═══════════ */}
-        <div className="fg-recap-explanation cq-recap-explanation-box">
-          {/* CAESAR EXPLANATION */}
-          {cipherType === 'caesar' && caesarData && (
-            <div className="cq-recap-body">
-              <div className="cq-recap-lead">
-                <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is decoded by
-                applying the Caesar shift key. With <code>A = 1 … Z = 26</code>, the formula{' '}
-                <code>Plain = (Cipher + Key) mod 26</code> shifts each letter back uniformly.
-              </div>
-
-              {/* Step-by-step arithmetic chain */}
-              <div className="cq-recap-calc-card">
-                <div className="cq-calc-card-title">Detailed Step-by-Step Arithmetic:</div>
-                <div className="cq-calc-chain-grid">
-                  {caesarData.letters.map((node) => (
+            {cipherType === 'caesar' && caesarData && (
+              <div className="fg-recap-letter-row">
+                {caesarData.letters.map((node) => {
+                  const isRevealed = explanationStep >= node.index;
+                  return (
                     <div
                       key={node.index}
-                      className={`cq-calc-chain-item ${
-                        explanationStep >= node.index ? 'revealed' : 'dim'
-                      }`}
+                      className={`fg-recap-node ${isRevealed ? 'active' : 'waiting'}`}
+                      onMouseEnter={() => setHoveredIdx(node.index)}
+                      onMouseLeave={() => setHoveredIdx(null)}
                     >
-                      <span className="cq-calc-chain-bullet">#{node.index + 1}:</span>
-                      <code>{node.wrapCalc}</code>
+                      <span className="fg-recap-char-cipher">{node.cipherChar}</span>
+                      <span className="fg-recap-math">+{node.shift}</span>
+                      <span className="fg-recap-arrow">↓</span>
+                      <span className="fg-recap-char-plain">{isRevealed ? node.plainChar : '_'}</span>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
+            )}
 
-              {/* Full Alphabet Shift Table */}
-              {caesarData.shiftTables.map((table, tIdx) => (
-                <div key={tIdx} className="cq-shift-table-wrap">
-                  <div className="cq-shift-table-title">
-                    Caesar Alphabet Shift Table {caesarData.shiftTables.length > 1 ? `— Segment #${tIdx + 1}` : ''}{' '}
-                    (Shift: +{table.shiftVal})
-                  </div>
-                  <div className="cq-table-scroll">
-                    <table className="cq-alphabet-shift-table">
-                      <thead>
-                        <tr>
-                          <th className="cq-table-lbl">Cipher:</th>
-                          {table.cipherRow.map((ch, i) => (
-                            <td key={i} className="cq-cell-cipher">
-                              <div className="cq-cell-char">{ch}</div>
-                              <div className="cq-cell-num">{i + 1}</div>
-                            </td>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <th className="cq-table-lbl">Plain:</th>
-                          {table.plainRow.map((ch, i) => (
-                            <td key={i} className="cq-cell-plain">
-                              <div className="cq-cell-char">{ch}</div>
-                              <div className="cq-cell-num">{charTo1Idx(ch)}</div>
-                            </td>
-                          ))}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* VIGENÈRE EXPLANATION */}
-          {cipherType === 'vigenere' && vigenereData && (
-            <div className="cq-recap-body">
-              <div className="cq-recap-lead">
-                <strong>Vigenère Cipher Decryption:</strong> Decryption shifts each character backward
-                by the shift value of the repeating keyword <code>{vigenereData.targetKey}</code>.
-                With <code>A = 0 … Z = 25</code>, the formula is{' '}
-                <code>Plain[i] = (Cipher[i] − Key[i] + 26) mod 26</code>.
-              </div>
-
-              <div className="cq-recap-note-callout">
-                Because the shift key changes with each letter position, identical ciphertext letters
-                map to different plaintext letters, preventing single-shift frequency analysis.
-              </div>
-
-              {/* Step-by-step arithmetic chain */}
-              <div className="cq-recap-calc-card">
-                <div className="cq-calc-card-title">Aligned Keyword Column Calculations:</div>
-                <div className="cq-calc-chain-grid">
-                  {vigenereData.validColumns.map((col) => (
-                    <div
-                      key={col.index}
-                      className={`cq-calc-chain-item ${
-                        explanationStep >= col.index ? 'revealed' : 'dim'
-                      }`}
-                    >
-                      <span className="cq-calc-chain-bullet">Col #{col.index + 1}:</span>
-                      <code>{col.wrapCalc}</code>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Vigenère Keyword Alphabet Shift Tables */}
-              {vigenereData.shiftTables.map((table, tIdx) => (
-                <div key={tIdx} className="cq-shift-table-wrap">
-                  <div className="cq-shift-table-title">
-                    Vigenère Row for Keyword Letter: <strong>'{table.keyChar}'</strong> (Shift: -{table.shiftVal})
-                  </div>
-                  <div className="cq-table-scroll">
-                    <table className="cq-alphabet-shift-table">
-                      <thead>
-                        <tr>
-                          <th className="cq-table-lbl">Cipher:</th>
-                          {table.cipherRow.map((ch, i) => (
-                            <td key={i} className="cq-cell-cipher">
-                              <div className="cq-cell-char">{ch}</div>
-                              <div className="cq-cell-num">{i}</div>
-                            </td>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <th className="cq-table-lbl">Plain:</th>
-                          {table.plainRow.map((ch, i) => (
-                            <td key={i} className="cq-cell-plain">
-                              <div className="cq-cell-char">{ch}</div>
-                              <div className="cq-cell-num">{charTo0Idx(ch)}</div>
-                            </td>
-                          ))}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* PLAYFAIR EXPLANATION */}
-          {cipherType === 'playfair' && playfairData && (
-            <div className="cq-recap-body">
-              <div className="cq-recap-lead">
-                <strong>Playfair Cipher Decryption:</strong> Digraphs (2-letter pairs) are decrypted
-                using a 5×5 key matrix built from keyword <code>{playfairData.key}</code> (I and J
-                merged into one cell). Plaintext was formatted into pairs with 'X' padding for double
-                letters and odd lengths.
-              </div>
-
-              {/* Matrix + Rule Breakdown Row */}
-              <div className="cq-playfair-breakdown-row">
-                {/* 5x5 Key Matrix with Highlight */}
-                <div className="cq-playfair-matrix-card">
-                  <div className="cq-matrix-card-title">
-                    5×5 Key Matrix (Key: {playfairData.key})
-                  </div>
-                  <div className="cq-playfair-grid">
-                    {playfairData.matrix.map((row, rIdx) =>
-                      row.map((letter, cIdx) => {
-                        const cellKey = `${rIdx}-${cIdx}`;
-                        const isHighlighted = highlightedCells.has(cellKey);
-                        return (
-                          <div
-                            key={cellKey}
-                            className={`cq-playfair-cell ${isHighlighted ? 'highlighted' : ''}`}
-                          >
-                            {letter}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                  <div className="cq-matrix-hint-caption">
-                    Highlighted cells show active pair #{activePlayfairIndex + 1} ({activePlayfairPair?.cipherPair} → {activePlayfairPair?.plainPair})
-                  </div>
-                </div>
-
-                {/* Geometry Rule Summary */}
-                <div className="cq-playfair-rules-card">
-                  <div className="cq-rules-card-title">Digraph Geometry Rules:</div>
-                  <ul className="cq-rules-list">
-                    <li>
-                      <strong>Same Row:</strong> Shift <strong>left</strong> 1 column (wrap around
-                      to right edge).
-                    </li>
-                    <li>
-                      <strong>Same Column:</strong> Shift <strong>up</strong> 1 row (wrap around to
-                      bottom edge).
-                    </li>
-                    <li>
-                      <strong>Rectangle:</strong> Swap columns while preserving rows (take horizontal
-                      opposite corners).
-                    </li>
-                  </ul>
-
-                  {activePlayfairPair && (
-                    <div className="cq-active-rule-box">
-                      <div className="cq-active-rule-header">
-                        Active Pair #{activePlayfairIndex + 1}: <strong>{activePlayfairPair.cipherPair}</strong> → <strong>{activePlayfairPair.plainPair}</strong>
-                      </div>
-                      <div className="cq-active-rule-desc">
-                        Rule applied: <em>{activePlayfairPair.rule.toUpperCase()}</em> — {describePlayfairRule(activePlayfairPair.rule, 'decrypt')}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Digraph table summary */}
-              <div className="cq-playfair-pairs-summary">
-                <div className="cq-calc-card-title">All Digraph Transformations:</div>
-                <div className="cq-playfair-pairs-grid">
-                  {playfairData.pairs.map((p, idx) => (
+            {cipherType === 'vigenere' && vigenereData && (
+              <div className="fg-recap-letter-row cq-vigenere-recap-row">
+                {vigenereData.columns.map((col, idx) => {
+                  if (col.isSpace) {
+                    return <div key={`sp-${idx}`} className="cq-recap-space-gap" />;
+                  }
+                  const isRevealed = explanationStep >= col.index;
+                  return (
                     <div
                       key={idx}
-                      className={`cq-playfair-pair-chip ${
-                        idx === activePlayfairIndex ? 'active' : ''
-                      }`}
+                      className={`fg-recap-node ${isRevealed ? 'active' : 'waiting'}`}
+                      onMouseEnter={() => setHoveredIdx(col.index)}
+                      onMouseLeave={() => setHoveredIdx(null)}
+                    >
+                      <span className="fg-recap-char-cipher">{col.cipherChar}</span>
+                      <span className="fg-recap-math">-{col.keyChar}</span>
+                      <span className="fg-recap-arrow">↓</span>
+                      <span className="fg-recap-char-plain">{isRevealed ? col.plainChar : '_'}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {cipherType === 'playfair' && playfairData && (
+              <div className="fg-recap-letter-row cq-playfair-recap-row">
+                {playfairData.pairs.map((pair, idx) => {
+                  const isRevealed = explanationStep >= idx;
+                  const isCurrent = activePlayfairIndex === idx;
+                  return (
+                    <div
+                      key={idx}
+                      className={`fg-recap-node cq-playfair-node ${isRevealed ? 'active' : 'waiting'
+                        } ${isCurrent ? 'selected-pair' : ''}`}
                       onMouseEnter={() => setHoveredIdx(idx)}
                       onMouseLeave={() => setHoveredIdx(null)}
                     >
-                      <span className="cq-chip-num">#{idx + 1}</span>
-                      <span className="cq-chip-cipher">{p.cipherPair}</span>
-                      <span className="cq-chip-arrow">→</span>
-                      <span className="cq-chip-plain">{p.plainPair}</span>
-                      <span className="cq-chip-rule">({p.rule})</span>
+                      <span className="fg-recap-char-cipher">{pair.cipherPair}</span>
+                      <span className="fg-recap-math">({pair.rule})</span>
+                      <span className="fg-recap-arrow">↓</span>
+                      <span className="fg-recap-char-plain">{isRevealed ? pair.plainPair : '__'}</span>
                     </div>
-                  ))}
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ═══════════ DETAILED WORKED EXPLANATION ═══════════ */}
+          <div className="fg-recap-explanation cq-recap-explanation-box">
+            {/* CAESAR EXPLANATION */}
+            {cipherType === 'caesar' && caesarData && (
+              <div className="cq-recap-body">
+                <div className="cq-recap-lead">
+                  <strong>Caesar Cipher Decryption:</strong> Each ciphertext letter is decoded by
+                  applying the Caesar shift key. With <code>A = 1 … Z = 26</code>, the formula{' '}
+                  <code>Plain = (Cipher + Key) mod 26</code> shifts each letter back uniformly.
+                </div>
+
+                {/* Step-by-step arithmetic chain */}
+                <div className="cq-recap-calc-card">
+                  <div className="cq-calc-card-title">Detailed Step-by-Step Arithmetic:</div>
+                  <div className="cq-calc-chain-grid">
+                    {caesarData.letters.map((node) => (
+                      <div
+                        key={node.index}
+                        className={`cq-calc-chain-item ${explanationStep >= node.index ? 'revealed' : 'dim'
+                          }`}
+                      >
+                        <span className="cq-calc-chain-bullet">#{node.index + 1}:</span>
+                        <code>{node.wrapCalc}</code>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Full Alphabet Shift Table */}
+                {caesarData.shiftTables.map((table, tIdx) => (
+                  <div key={tIdx} className="cq-shift-table-wrap">
+                    <div className="cq-shift-table-title">
+                      Caesar Alphabet Shift Table {caesarData.shiftTables.length > 1 ? `— Segment #${tIdx + 1}` : ''}{' '}
+                      (Shift: +{table.shiftVal})
+                    </div>
+                    <div className="cq-table-scroll">
+                      <table className="cq-alphabet-shift-table">
+                        <thead>
+                          <tr>
+                            <th className="cq-table-lbl">Cipher:</th>
+                            {table.cipherRow.map((ch, i) => (
+                              <td key={i} className="cq-cell-cipher">
+                                <div className="cq-cell-char">{ch}</div>
+                                <div className="cq-cell-num">{i + 1}</div>
+                              </td>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <th className="cq-table-lbl">Plain:</th>
+                            {table.plainRow.map((ch, i) => (
+                              <td key={i} className="cq-cell-plain">
+                                <div className="cq-cell-char">{ch}</div>
+                                <div className="cq-cell-num">{charTo1Idx(ch)}</div>
+                              </td>
+                            ))}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* VIGENÈRE EXPLANATION */}
+            {cipherType === 'vigenere' && vigenereData && (
+              <div className="cq-recap-body">
+                <div className="cq-recap-lead">
+                  <strong>Vigenère Cipher Decryption:</strong> Decryption shifts each character backward
+                  by the shift value of the repeating keyword <code>{vigenereData.targetKey}</code>.
+                  With <code>A = 0 … Z = 25</code>, the formula is{' '}
+                  <code>Plain[i] = (Cipher[i] − Key[i] + 26) mod 26</code>.
+                </div>
+
+                <div className="cq-recap-note-callout">
+                  Because the shift key changes with each letter position, identical ciphertext letters
+                  map to different plaintext letters, preventing single-shift frequency analysis.
+                </div>
+
+                {/* Step-by-step arithmetic chain */}
+                <div className="cq-recap-calc-card">
+                  <div className="cq-calc-card-title">Aligned Keyword Column Calculations:</div>
+                  <div className="cq-calc-chain-grid">
+                    {vigenereData.validColumns.map((col) => (
+                      <div
+                        key={col.index}
+                        className={`cq-calc-chain-item ${explanationStep >= col.index ? 'revealed' : 'dim'
+                          }`}
+                      >
+                        <span className="cq-calc-chain-bullet">Col #{col.index + 1}:</span>
+                        <code>{col.wrapCalc}</code>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Vigenère Keyword Alphabet Shift Tables */}
+                {vigenereData.shiftTables.map((table, tIdx) => (
+                  <div key={tIdx} className="cq-shift-table-wrap">
+                    <div className="cq-shift-table-title">
+                      Vigenère Row for Keyword Letter: <strong>'{table.keyChar}'</strong> (Shift: -{table.shiftVal})
+                    </div>
+                    <div className="cq-table-scroll">
+                      <table className="cq-alphabet-shift-table">
+                        <thead>
+                          <tr>
+                            <th className="cq-table-lbl">Cipher:</th>
+                            {table.cipherRow.map((ch, i) => (
+                              <td key={i} className="cq-cell-cipher">
+                                <div className="cq-cell-char">{ch}</div>
+                                <div className="cq-cell-num">{i}</div>
+                              </td>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <th className="cq-table-lbl">Plain:</th>
+                            {table.plainRow.map((ch, i) => (
+                              <td key={i} className="cq-cell-plain">
+                                <div className="cq-cell-char">{ch}</div>
+                                <div className="cq-cell-num">{charTo0Idx(ch)}</div>
+                              </td>
+                            ))}
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* PLAYFAIR EXPLANATION */}
+            {cipherType === 'playfair' && playfairData && (
+              <div className="cq-recap-body">
+                <div className="cq-recap-lead">
+                  <strong>Playfair Cipher Decryption:</strong> Digraphs (2-letter pairs) are decrypted
+                  using a 5×5 key matrix built from keyword <code>{playfairData.key}</code> (I and J
+                  merged into one cell). Plaintext was formatted into pairs with 'X' padding for double
+                  letters and odd lengths.
+                </div>
+
+                {/* Matrix + Rule Breakdown Row */}
+                <div className="cq-playfair-breakdown-row">
+                  {/* 5x5 Key Matrix with Highlight */}
+                  <div className="cq-playfair-matrix-card">
+                    <div className="cq-matrix-card-title">
+                      5×5 Key Matrix (Key: {playfairData.key})
+                    </div>
+                    <div className="cq-playfair-grid">
+                      {playfairData.matrix.map((row, rIdx) =>
+                        row.map((letter, cIdx) => {
+                          const cellKey = `${rIdx}-${cIdx}`;
+                          const isHighlighted = highlightedCells.has(cellKey);
+                          return (
+                            <div
+                              key={cellKey}
+                              className={`cq-playfair-cell ${isHighlighted ? 'highlighted' : ''}`}
+                            >
+                              {letter}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    <div className="cq-matrix-hint-caption">
+                      Highlighted cells show active pair #{activePlayfairIndex + 1} ({activePlayfairPair?.cipherPair} → {activePlayfairPair?.plainPair})
+                    </div>
+                  </div>
+
+                  {/* Geometry Rule Summary */}
+                  <div className="cq-playfair-rules-card">
+                    <div className="cq-rules-card-title">Digraph Geometry Rules:</div>
+                    <ul className="cq-rules-list">
+                      <li>
+                        <strong>Same Row:</strong> Shift <strong>left</strong> 1 column (wrap around
+                        to right edge).
+                      </li>
+                      <li>
+                        <strong>Same Column:</strong> Shift <strong>up</strong> 1 row (wrap around to
+                        bottom edge).
+                      </li>
+                      <li>
+                        <strong>Rectangle:</strong> Swap columns while preserving rows (take horizontal
+                        opposite corners).
+                      </li>
+                    </ul>
+
+                    {activePlayfairPair && (
+                      <div className="cq-active-rule-box">
+                        <div className="cq-active-rule-header">
+                          Active Pair #{activePlayfairIndex + 1}: <strong>{activePlayfairPair.cipherPair}</strong> → <strong>{activePlayfairPair.plainPair}</strong>
+                        </div>
+                        <div className="cq-active-rule-desc">
+                          Rule applied: <em>{activePlayfairPair.rule.toUpperCase()}</em> — {describePlayfairRule(activePlayfairPair.rule, 'decrypt')}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Digraph table summary */}
+                <div className="cq-playfair-pairs-summary">
+                  <div className="cq-calc-card-title">All Digraph Transformations:</div>
+                  <div className="cq-playfair-pairs-grid">
+                    {playfairData.pairs.map((p, idx) => (
+                      <div
+                        key={idx}
+                        className={`cq-playfair-pair-chip ${idx === activePlayfairIndex ? 'active' : ''
+                          }`}
+                        onMouseEnter={() => setHoveredIdx(idx)}
+                        onMouseLeave={() => setHoveredIdx(null)}
+                      >
+                        <span className="cq-chip-num">#{idx + 1}</span>
+                        <span className="cq-chip-cipher">{p.cipherPair}</span>
+                        <span className="cq-chip-arrow">→</span>
+                        <span className="cq-chip-plain">{p.plainPair}</span>
+                        <span className="cq-chip-rule">({p.rule})</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
         </div>
 
         {/* ═══════════ FIXED FOOTER ACTION BUTTON ═══════════ */}

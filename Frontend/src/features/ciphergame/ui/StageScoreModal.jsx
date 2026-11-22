@@ -74,12 +74,18 @@ export default function StageScoreModal({ result, onContinue, onReplay, onViewLe
         <div className="ssm-score-block">
           <div className="ssm-hero-radial-glow" />
           <div className="ssm-score-label">STAGE SCORE</div>
-          <div className="ssm-score-amount">+{score.toLocaleString()}</div>
+          <div className="ssm-score-amount">{score > 0 ? `+${score.toLocaleString()}` : '+0'}</div>
           
           <div className="ssm-score-formula-pill">
-            <span>{baseScore} Base</span>
-            <span className="ssm-formula-dot">•</span>
-            <span>{formatMultiplier(multiplier)} Multiplier</span>
+            {score === 0 ? (
+              <span>Already Cleared &bull; 0 XP Awarded</span>
+            ) : (
+              <>
+                <span>{baseScore} Base</span>
+                <span className="ssm-formula-dot">•</span>
+                <span>{formatMultiplier(multiplier)} Multiplier</span>
+              </>
+            )}
           </div>
 
           {(newBestScore || newBestTime) && (

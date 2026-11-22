@@ -496,10 +496,26 @@ export default function PlayfairFishingGame({
   };
 
   const pondWidth = 500;
-  const rodTipX = rodFacingRight ? 390 : 110;
-  const rodTipY = 60;
-  const hookX = caughtFish ? rodTipX + (castTarget.x - rodTipX) * castProgress : rodTipX;
-  const hookY = caughtFish ? rodTipY + (castTarget.y - rodTipY) * castProgress : rodTipY;
+  const rodBaseX = 250;
+  const rodBaseY = 260;
+  let rodTipX = 220;
+  let rodTipY = 190;
+  let hookX = rodTipX;
+  let hookY = rodTipY;
+
+  if (isCasting && castTarget) {
+    const dx = castTarget.x - rodBaseX;
+    const dy = castTarget.y - rodBaseY;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len > 0) {
+      rodTipX = rodBaseX + (dx / len) * 50;
+      rodTipY = rodBaseY + (dy / len) * 50;
+    }
+    if (castProgress <= 1 && caughtFish) {
+      hookX = rodTipX + (castTarget.x - rodTipX) * castProgress;
+      hookY = rodTipY + (castTarget.y - rodTipY) * castProgress;
+    }
+  }
 
   if (phase === 'ready') {
     if (isOperationLoading) {
@@ -575,7 +591,7 @@ export default function PlayfairFishingGame({
 
   return (
     <div className="fg-root caesar-fishing-fullscreen pf-fishing-fullscreen" ref={containerRef}>
-      {showExplanation && (<CryptographicRecap cipherType="playfair" levelData={levelData} onUnlockNext={onVerifySubmit} />)}
+      {showExplanation && (<CryptographicRecap cipherType="playfair" levelData={levelData} tier={tier} onUnlockNext={onVerifySubmit} />)}
       <GameHudBar
         title="Playfair Fishing"
         stage={levelData.level}
@@ -613,6 +629,10 @@ export default function PlayfairFishingGame({
             </div>
           )}
           {splash && <div className="fg-splash-effect" style={{ left: `${splash.x}%`, top: `${splash.y}px` }}>💦</div>}
+          <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">
+            <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
+            {isCasting && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />}
+          </svg>
         </div>
 
         {/* 1. Top-Center Word Progress Header */}

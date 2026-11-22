@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * DAY 1 & 2:
@@ -103,14 +104,35 @@ public class UserProgressService {
     }
 
     /**
-     * Consumes one session heart and starts the cooldown once the last heart is
-     * spent. Returns true when a heart was actually consumed.
+     * Consumes one session heart and starts an independent per-slot cooldown.
+     * Returns true when a heart was actually consumed.
      */
     private boolean consumeHeart(User user) {
         if (user.getAttempts() <= 0) return false;
         user.setAttempts(user.getAttempts() - 1);
+        // Set refill time for the slot that was just spent.
+        // slotsNowEmpty counts from 1 (first heart lost) to 3 (all hearts lost).
+        LocalDateTime refillAt = LocalDateTime.now().plusMinutes(COOLDOWN_MINUTES);
+        int slotsNowEmpty = MAX_ATTEMPTS - user.getAttempts();
+        switch (slotsNowEmpty) {
+            case 1 -> user.setHeart1RefillAt(refillAt);
+            case 2 -> user.setHeart2RefillAt(refillAt);
+            case 3 -> {
+                user.setHeart3RefillAt(refillAt);
+                // keep existing lockout mechanism for compatibility
+                user.setCooldownEndTime(refillAt);
+            }
+        }
         if (user.getAttempts() == 0) {
-            user.setCooldownEndTime(LocalDateTime.now().plusMinutes(COOLDOWN_MINUTES));
+            // Find the latest refill time among all hearts for the global lockout.
+            LocalDateTime latestRefill = Stream.of(
+                            user.getHeart1RefillAt(),
+                            user.getHeart2RefillAt(),
+                            user.getHeart3RefillAt())
+                    .filter(t -> t != null)
+                    .max(LocalDateTime::compareTo)
+                    .orElse(LocalDateTime.now().plusMinutes(COOLDOWN_MINUTES));
+            user.setCooldownEndTime(latestRefill);
         }
         return true;
     }
@@ -204,19 +226,29 @@ public class UserProgressService {
                 user.getAttempts(),
                 MAX_ATTEMPTS,
                 isLockedOut(user),
-                user.getCooldownEndTime()
+                user.getCooldownEndTime(),
+                user.getHeart1RefillAt(),
+                user.getHeart2RefillAt(),
+                user.getHeart3RefillAt()
         );
     }
 
     /**
      * Snapshot of the server-side session-heart counter.
-     *
-     * attempts       – hearts remaining
-     * maxAttempts    – hearts a full player holds (3)
-     * lockedOut      – true when no stage may be started at all
-     * cooldownEndTime – when the hearts refill, or null if not on cooldown
      */
-    public record HeartState(int attempts, int maxAttempts, boolean lockedOut, LocalDateTime cooldownEndTime) {}
+    public record HeartState(
+            int attempts,
+            int maxAttempts,
+            boolean lockedOut,
+            LocalDateTime cooldownEndTime,
+            LocalDateTime heart1RefillAt,
+            LocalDateTime heart2RefillAt,
+            LocalDateTime heart3RefillAt
+    ) {
+        public HeartState(int attempts, int maxAttempts, boolean lockedOut, LocalDateTime cooldownEndTime) {
+            this(attempts, maxAttempts, lockedOut, cooldownEndTime, null, null, null);
+        }
+    }
 
     /**
      * Manually spend one session heart.
@@ -241,11 +273,41 @@ public class UserProgressService {
     }
 
     private void autoRefillIfExpired(User user) {
-        if (user.getCooldownEndTime() != null
-                && LocalDateTime.now().isAfter(user.getCooldownEndTime())) {
-            user.setAttempts(MAX_ATTEMPTS);
+        LocalDateTime now = LocalDateTime.now();
+        int refilled = 0;
+
+        // Check each heart slot independently and restore hearts whose cooldown expired.
+        int missing = MAX_ATTEMPTS - user.getAttempts();
+
+        if (missing >= 1 && user.getHeart1RefillAt() != null && now.isAfter(user.getHeart1RefillAt())) {
+            user.setHeart1RefillAt(null);
+            refilled++;
+        }
+        if (missing >= 2 && user.getHeart2RefillAt() != null && now.isAfter(user.getHeart2RefillAt())) {
+            user.setHeart2RefillAt(null);
+            refilled++;
+        }
+        if (missing >= 3 && user.getHeart3RefillAt() != null && now.isAfter(user.getHeart3RefillAt())) {
+            user.setHeart3RefillAt(null);
+            refilled++;
+        }
+
+        if (refilled > 0) {
+            user.setAttempts(Math.min(MAX_ATTEMPTS, user.getAttempts() + refilled));
+        }
+
+        // Update global cooldown state.
+        if (user.getAttempts() >= MAX_ATTEMPTS) {
+            // All hearts full — clear every refill marker.
+            user.setCooldownEndTime(null);
+            user.setHeart1RefillAt(null);
+            user.setHeart2RefillAt(null);
+            user.setHeart3RefillAt(null);
+        } else if (user.getAttempts() > 0) {
+            // Some hearts remain but not all — no full lockout.
             user.setCooldownEndTime(null);
         }
+        // If attempts == 0, cooldownEndTime stays set (last heart's refill time).
     }
 
     // ── Streak ────────────────────────────────────────────────────────
@@ -505,7 +567,10 @@ public class UserProgressService {
             progressMap,
             user.getTotalScore(),
             user.getGameStreak(),
-            tutorialDismissed
+            tutorialDismissed,
+            user.getHeart1RefillAt(),
+            user.getHeart2RefillAt(),
+            user.getHeart3RefillAt()
         );
     }
 }

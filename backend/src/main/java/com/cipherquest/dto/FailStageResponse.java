@@ -24,5 +24,8 @@ public record FailStageResponse(
     int attempts,
     int maxAttempts,
     boolean lockedOut,
-    LocalDateTime cooldownEndTime
+    LocalDateTime cooldownEndTime,
+    LocalDateTime heart1RefillAt,
+    LocalDateTime heart2RefillAt,
+    LocalDateTime heart3RefillAt
 ) {}

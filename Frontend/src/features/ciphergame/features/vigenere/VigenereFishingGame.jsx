@@ -676,6 +676,7 @@ export default function VigenereFishingGame({
         <CryptographicRecap
           cipherType="vigenere"
           levelData={levelData}
+          tier={tier}
           onUnlockNext={handleCloseExplanation}
         />
       )}

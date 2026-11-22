@@ -180,8 +180,8 @@ const DifficultySelector = ({ onSelectDifficulty, onBack, onOpenTutorial, active
   };
 
   const catProgress = completedLevels[activeCategory] || { easy: [], medium: [], hard: [] };
-  const isEasyCompleted   = true;
-  const isMediumCompleted = true;
+  const isEasyCompleted   = (catProgress.easy   || []).length >= 5;
+  const isMediumCompleted = (catProgress.medium || []).length >= 5;
 
   const categoryLabels = {
     caesar:   { easy: 'Simple Shifts',     medium: 'Compound Shifts',  hard: 'Full Key-Space' },

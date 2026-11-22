@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import './CooldownNotice.css';
 
@@ -18,6 +18,27 @@ import './CooldownNotice.css';
  */
 const pad = (n) => String(Math.max(0, n)).padStart(2, '0');
 
+export function parseDateToMs(val) {
+  if (!val) return null;
+  if (typeof val === 'number') return val;
+  let str = String(val).trim();
+  if (Array.isArray(val)) {
+    const [y, m, d, h = 0, min = 0, s = 0] = val;
+    return Date.UTC(y, m - 1, d, h, min, s);
+  }
+  if (str.includes('T') && !str.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(str)) {
+    const utcMs = new Date(str + 'Z').getTime();
+    if (Number.isFinite(utcMs)) {
+      const localMs = new Date(str).getTime();
+      if (utcMs > Date.now() - 60000 || !Number.isFinite(localMs)) {
+        return utcMs;
+      }
+    }
+  }
+  const parsed = new Date(str).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 const splitRemaining = (ms) => {
   const total = Math.max(0, Math.floor(ms / 1000));
   return {
@@ -29,12 +50,20 @@ const splitRemaining = (ms) => {
 
 export default function CooldownNotice({ notice, onDismiss }) {
   const { refreshProfile } = useAuth();
-  // Seeded lazily on mount; the parent remounts this component (via `key`) for
-  // each new cooldown, so the first frame already shows the correct remaining
-  // time without reading the impure clock during render.
   const [now, setNow] = useState(() => Date.now());
   const [isClosing, setIsClosing] = useState(false);
   const [hasAutoRefreshed, setHasAutoRefreshed] = useState(false);
+
+  // Compute a valid future target timestamp (fallback to 3 minutes if missing/expired)
+  const targetEndMs = useMemo(() => {
+    if (!notice) return Date.now();
+    const parsed = parseDateToMs(notice.cooldownEndTime);
+    if (parsed && parsed > Date.now()) {
+      return parsed;
+    }
+    // Default to standard 3-minute cooldown if server timestamp is missing or past
+    return Date.now() + 3 * 60 * 1000;
+  }, [notice]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -44,7 +73,7 @@ export default function CooldownNotice({ notice, onDismiss }) {
 
   if (!notice) return null;
 
-  const remaining = splitRemaining(notice.cooldownEndTime - now);
+  const remaining = splitRemaining(targetEndMs - now);
   const isOver = remaining.hours === 0 && remaining.minutes === 0 && remaining.seconds === 0;
 
   // Auto-refresh hearts the moment the countdown reaches zero.
@@ -92,8 +121,8 @@ export default function CooldownNotice({ notice, onDismiss }) {
           </div>
           <div className="cdn-timer-note">
             {isOver
-              ? 'All hearts have been restored. You may resume your quest.'
-              : 'All hearts are refilled automatically when the cooldown ends.'}
+              ? 'Hearts have been restored. You may resume your quest.'
+              : 'Each spent heart refills independently on its own 3-minute cooldown.'}
           </div>
         </div>
 
@@ -108,4 +137,4 @@ export default function CooldownNotice({ notice, onDismiss }) {
       </div>
     </div>
   );
-}
+}

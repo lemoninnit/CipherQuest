@@ -507,12 +507,25 @@ export default function CaesarFishingGame({
   };
 
   /* ── rod SVG coords ── */
-  const rodTipX = rodTip.x;
-  const rodTipY = rodTip.y;
-  let hookX = rodTipX, hookY = rodTipY;
-  if (isCasting && caughtFish && castTarget) {
-    hookX = rodTipX + (castTarget.x - rodTipX) * castProgress;
-    hookY = rodTipY + (castTarget.y - rodTipY) * castProgress;
+  const rodBaseX = 250;
+  const rodBaseY = 260;
+  let rodTipX = 220;
+  let rodTipY = 190;
+  let hookX = rodTipX;
+  let hookY = rodTipY;
+
+  if (isCasting && castTarget) {
+    const dx = castTarget.x - rodBaseX;
+    const dy = castTarget.y - rodBaseY;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len > 0) {
+      rodTipX = rodBaseX + (dx / len) * 50;
+      rodTipY = rodBaseY + (dy / len) * 50;
+    }
+    if (castProgress <= 1 && caughtFish) {
+      hookX = rodTipX + (castTarget.x - rodTipX) * castProgress;
+      hookY = rodTipY + (castTarget.y - rodTipY) * castProgress;
+    }
   }
 
   /* ════ READY ════ */
@@ -642,6 +655,7 @@ export default function CaesarFishingGame({
         <CryptographicRecap
           cipherType="caesar"
           levelData={levelData}
+          tier={tier}
           onUnlockNext={handleCloseExplanation}
         />
       )}
@@ -722,12 +736,9 @@ export default function CaesarFishingGame({
               </div>
             </div>
           )}
-          {/* Fishing rod sprite — flips toward the clicked fish */}
-          <div
-            className={`caesar-fishing-rod-sprite${rodFacingRight ? ' facing-right' : ''}`}
-            aria-hidden="true"
-          />
+          {/* Fishing rod SVG — same style as Vigenere/Playfair */}
           <svg className="fg-pond-svg" viewBox="0 0 500 260" preserveAspectRatio="none">
+            <line x1={rodBaseX} y1={rodBaseY} x2={rodTipX} y2={rodTipY} className="fg-fishing-rod-line" />
             {isCasting && <line x1={rodTipX} y1={rodTipY} x2={hookX} y2={hookY} className="fg-fishing-line" />}
           </svg>
           {splash.show && (

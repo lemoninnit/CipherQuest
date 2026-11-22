@@ -2102,6 +2102,7 @@ export default function PacmanGame({
         <CryptographicRecap
           cipherType={isPlayfair ? 'playfair' : (isVigenere ? 'vigenere' : 'caesar')}
           levelData={levelData}
+          tier={tier}
           onUnlockNext={handleCloseExplanation}
         />
       )}

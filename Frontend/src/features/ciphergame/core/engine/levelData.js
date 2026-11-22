@@ -622,6 +622,8 @@ function buildCaesarLevel(plain, shift, stageIndex, difficulty, hint) {
 
   return {
     level: stageIndex + 1,
+    difficulty,
+    tier: difficulty,
     ciphertext,
     plaintext: plain,
     targetShifts: [shift],
@@ -1534,6 +1536,8 @@ function buildVigenereLevel(plain, key, stageIndex, difficulty, hint, keyClue, k
   });
   return {
     level: stageIndex + 1,
+    difficulty,
+    tier: difficulty,
     ciphertext,
     plaintext: plain,
     targetKey: key,
