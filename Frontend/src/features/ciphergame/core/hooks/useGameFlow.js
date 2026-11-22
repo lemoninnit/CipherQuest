@@ -67,7 +67,12 @@ const mergeProgress = (localProg, backendProg) => {
 // later stage requires the previous one to be cleared.
 export const isTierUnlocked = (cat, diff, prog) => {
   if (!cat || !VALID_CATEGORIES.includes(cat)) return false;
-  return VALID_DIFFICULTIES.includes(diff);
+  if (!VALID_DIFFICULTIES.includes(diff)) return false;
+  if (diff === 'easy') return true;
+  const catProg = prog?.[cat] || { easy: [], medium: [], hard: [] };
+  if (diff === 'medium') return (catProg.easy || []).length >= 5;
+  if (diff === 'hard') return (catProg.medium || []).length >= 5;
+  return false;
 };
 
 export const isStageUnlocked = (cat, diff, stageIndex, prog) => {
@@ -469,10 +474,19 @@ export function useGameFlow() {
    * with the server.
    */
   const showLockoutNotice = (cooldownEndTime = null) => {
-    const endMs = cooldownEndTime ? new Date(cooldownEndTime).getTime() : NaN;
+    let endMs = null;
+    if (cooldownEndTime) {
+      const str = String(cooldownEndTime).trim();
+      if (str.includes('T') && !str.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(str)) {
+        const utc = new Date(str + 'Z').getTime();
+        endMs = Number.isFinite(utc) && utc > Date.now() - 60000 ? utc : new Date(str).getTime();
+      } else {
+        endMs = new Date(str).getTime();
+      }
+    }
     setCooldownNotice({
       // `id` lets the notice remount per cooldown so its clock re-seeds.
-      cooldownEndTime: Number.isFinite(endMs) ? endMs : Date.now() + 4 * 60 * 60 * 1000,
+      cooldownEndTime: (Number.isFinite(endMs) && endMs > Date.now()) ? endMs : Date.now() + 3 * 60 * 1000,
       id: Date.now(),
     });
     if (refreshProfile) {
@@ -492,11 +506,17 @@ export function useGameFlow() {
     // UserProgressService.isLockedOut on the server.
     const heartsLeft = Number(user?.attempts);
     const hasHearts = Number.isFinite(heartsLeft) && heartsLeft > 0;
-    // `cooldownEndTime` arrives from the backend as an ISO-8601 string.
-    // `new Date(null)` returns an invalid date, so coerce null/undefined to
-    // an empty string so the parse produces NaN rather than epoch (0 ms).
     const rawEnd = user?.cooldownEndTime ?? '';
-    const cooldownEndMs = rawEnd ? new Date(rawEnd).getTime() : NaN;
+    let cooldownEndMs = NaN;
+    if (rawEnd) {
+      const str = String(rawEnd).trim();
+      if (str.includes('T') && !str.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(str)) {
+        const utc = new Date(str + 'Z').getTime();
+        cooldownEndMs = Number.isFinite(utc) && utc > Date.now() - 60000 ? utc : new Date(str).getTime();
+      } else {
+        cooldownEndMs = new Date(str).getTime();
+      }
+    }
     const cooldownActive = Number.isFinite(cooldownEndMs) && cooldownEndMs - Date.now() > 0;
     if (!hasHearts || cooldownActive) {
       showLockoutNotice(Number.isFinite(cooldownEndMs) ? cooldownEndMs : null);
@@ -601,13 +621,15 @@ export function useGameFlow() {
       const newStreak = currentStreak + 1;
       const multiplier = getStreakMultiplier(newStreak);
       const baseScore = getBaseScore(diff);
+      const alreadyDone = isStageCompleted(cat, diff, stageIndex);
+      const earnedScore = alreadyDone ? 0 : calculateStageScore(baseScore, multiplier);
       scoreResult = {
-        score: calculateStageScore(baseScore, multiplier),
+        score: earnedScore,
         baseScore,
         streak: newStreak,
         multiplier,
         completionTimeMs: stageStartedAt ? Date.now() - stageStartedAt : 0,
-        totalScore: (Number(user?.totalScore) || 0) + calculateStageScore(baseScore, multiplier),
+        totalScore: (Number(user?.totalScore) || 0) + earnedScore,
         bestScore: null,
         bestTimeMs: null,
         newBestScore: false,

@@ -124,6 +124,20 @@ public class User {
     @Column(name = "cooldown_end_time")
     private LocalDateTime cooldownEndTime;
 
+    // ── Per-heart independent refill timestamps ───────────────────────
+    // Each heart slot tracks its own refill time independently.
+    // heart1RefillAt = slot lost first (attempts went 3→2), etc.
+    // Null means that slot is currently full (not spent).
+
+    @Column(name = "heart1_refill_at")
+    private LocalDateTime heart1RefillAt;
+
+    @Column(name = "heart2_refill_at")
+    private LocalDateTime heart2RefillAt;
+
+    @Column(name = "heart3_refill_at")
+    private LocalDateTime heart3RefillAt;
+
     // ── Tutorial Preferences ──────────────────────────────────────────
     @Column(name = "tutorial_dismissed_caesar", nullable = false, columnDefinition = "boolean default false")
     @Builder.Default

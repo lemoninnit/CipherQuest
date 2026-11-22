@@ -203,6 +203,12 @@ public class ScoringService {
         // ── Success flow ─────────────────────────────────────────────
         User user = session.getUser();
 
+        // Check if this is the first completion of this stage (before any saves).
+        boolean alreadyCompleted = progressRepository
+                .findByUserIdAndCipherTypeAndDifficultyTierAndLevelIndex(
+                        userId, session.getCipherType(), session.getDifficultyTier(), session.getLevelIndex())
+                .isPresent();
+
         // 1. Increase the global streak BEFORE calculating the score.
         int newStreak = user.getGameStreak() + 1;
         user.setGameStreak(newStreak);
@@ -212,11 +218,13 @@ public class ScoringService {
 
         // 3. Final score = base x multiplier, rounded once.
         int baseScore = getBaseScore(session.getDifficultyTier());
-        int score     = calculateStageScore(baseScore, multiplier);
+        int score     = alreadyCompleted ? 0 : calculateStageScore(baseScore, multiplier);
 
-        // 4. Add to total score and XP (failures never subtract from this).
-        user.setTotalScore(user.getTotalScore() + score);
-        user.addXp(score);
+        // 4. Add to total score and XP only on first completion (failures never subtract).
+        if (!alreadyCompleted) {
+            user.setTotalScore(user.getTotalScore() + score);
+            user.addXp(score);
+        }
         userRepository.save(user);
 
         // 5. Save the immutable completion history record.
@@ -346,7 +354,10 @@ public class ScoringService {
                 hearts.attempts(),
                 hearts.maxAttempts(),
                 hearts.lockedOut(),
-                hearts.cooldownEndTime()
+                hearts.cooldownEndTime(),
+                hearts.heart1RefillAt(),
+                hearts.heart2RefillAt(),
+                hearts.heart3RefillAt()
         );
     }
 

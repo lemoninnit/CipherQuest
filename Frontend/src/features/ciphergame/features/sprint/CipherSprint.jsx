@@ -850,6 +850,7 @@ export default function CipherSprint({
         <CryptographicRecap
           cipherType="caesar"
           levelData={levelData}
+          tier={tier}
           onUnlockNext={handleCloseExplanation}
         />
       )}

@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useAuth } from '../../../context/AuthContext';
+import { parseDateToMs } from './CooldownNotice';
 import './StageLostScreen.css';
 
 /**
@@ -39,8 +40,17 @@ const formatClock = (totalSeconds) => {
  * `endTime`. Seeded once on mount rather than reading the clock during render,
  * so the first frame is already correct and the screen stays hydration-safe.
  */
-function useCountdown(endTime, running) {
+function useCountdown(endTime, running, fallbackSeconds = 180) {
   const [now, setNow] = useState(() => Date.now());
+
+  const targetMs = useMemo(() => {
+    const parsed = parseDateToMs(endTime);
+    if (parsed && parsed > Date.now()) {
+      return parsed;
+    }
+    // If running and no valid future timestamp, start a fresh fallback countdown
+    return running ? Date.now() + fallbackSeconds * 1000 : null;
+  }, [endTime, running, fallbackSeconds]);
 
   useEffect(() => {
     if (!running) return undefined;
@@ -48,9 +58,8 @@ function useCountdown(endTime, running) {
     return () => clearInterval(id);
   }, [running]);
 
-  const end = endTime ? new Date(endTime).getTime() : NaN;
-  if (!Number.isFinite(end)) return 0;
-  return Math.max(0, Math.ceil((end - now) / 1000));
+  if (!targetMs) return 0;
+  return Math.max(0, Math.ceil((targetMs - now) / 1000));
 }
 
 export function StageLostCard({
@@ -81,11 +90,9 @@ export function StageLostCard({
     : (Number.isFinite(profileHearts) ? profileHearts : null);
 
   const end = cooldownEndTime ?? user?.cooldownEndTime ?? null;
-  // A lockout is either a running clock or an empty counter. Treating both as
-  // locked is what stops the screen from telling a player on 0 hearts that
-  // everything is fine.
-  const secondsLeft = useCountdown(end, open && (lockedOut || left === 0));
-  const isLocked = lockedOut || left === 0 || secondsLeft > 0;
+  const isHeartDepleted = lockedOut || left === 0;
+  const secondsLeft = useCountdown(end, open && isHeartDepleted, 180);
+  const isLocked = isHeartDepleted || secondsLeft > 0;
 
   const score = Number.isFinite(Number(totalScore)) ? Number(totalScore) : (Number(user?.totalScore) || 0);
 
@@ -144,8 +151,8 @@ export function StageLostCard({
           </div>
           <p className="sls-hearts-text">
             {left === 0
-              ? `No hearts left \u00b7 all ${maxHearts} refill shortly`
-              : `You spent 1 heart \u00b7 ${left} of ${maxHearts} left`}
+              ? `No hearts left · Refilling independently (3m cooldown each)`
+              : `You spent 1 heart · ${left} of ${maxHearts} left (refills in 3m)`}
           </p>
         </div>
       )}
@@ -160,8 +167,8 @@ export function StageLostCard({
             )}
             <p className="sls-wait-text">
               {secondsLeft > 0
-                ? `All ${maxHearts} hearts come back automatically. You can jump straight back in.`
-                : `All ${maxHearts} hearts come back automatically \u2014 try again in a moment.`}
+                ? `Each heart refills independently every 3 minutes. Missions resume as soon as a heart refills.`
+                : `Each heart refills independently every 3 minutes — try again in a moment.`}
             </p>
           </div>
         </div>

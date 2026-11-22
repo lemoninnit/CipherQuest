@@ -894,6 +894,7 @@ export default function VigenereSprint({
         <CryptographicRecap
           cipherType="vigenere"
           levelData={levelData}
+          tier={tier}
           onUnlockNext={handleCloseExplanation}
         />
       )}

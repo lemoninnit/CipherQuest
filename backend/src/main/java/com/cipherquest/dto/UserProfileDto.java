@@ -30,5 +30,9 @@ public record UserProfileDto(
         int totalScore,
         int gameStreak,
         // Tutorial preferences
-        java.util.Map<String, Boolean> tutorialDismissed
+        java.util.Map<String, Boolean> tutorialDismissed,
+        // Per-heart independent refill timestamps (null = heart is full)
+        LocalDateTime heart1RefillAt,
+        LocalDateTime heart2RefillAt,
+        LocalDateTime heart3RefillAt
 ) {}

@@ -971,6 +971,7 @@ export default function PlayfairSprint({
         <CryptographicRecap
           cipherType="playfair"
           levelData={levelData}
+          tier={tier}
           onUnlockNext={handleCloseExplanation}
         />
       )}
