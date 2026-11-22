@@ -106,13 +106,20 @@
 .auth-logo-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 6px 16px;
   border-radius: 9999px;
   background: rgba(0, 229, 255, 0.08);
   border: 1px solid rgba(0, 229, 255, 0.32);
   box-shadow: 0 0 16px rgba(0, 229, 255, 0.12);
   margin-bottom: 18px;
+}
+
+.auth-logo-img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.6));
 }
 
 .auth-logo-icon-box {

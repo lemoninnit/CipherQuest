@@ -99,7 +99,7 @@ const ResetPasswordPage = () => {
         <div className="glass-card reset-card">
           <div className="reset-header">
             <div className="reset-logo">
-              <span className="material-symbols-outlined fill-1 icon-48">enhanced_encryption</span>
+              <img src="/assets/ui/CipherQuest_Logo.png" alt="CipherQuest Logo" className="reset-logo-img" />
               <span className="logo-text">CipherQuest</span>
             </div>
             <h1>Reset Access Cipher</h1>

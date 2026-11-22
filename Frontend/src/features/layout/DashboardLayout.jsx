@@ -136,8 +136,11 @@ const DashboardLayout = ({ children }) => {
         {!immersive && (
           <aside className="sidebar z-50">
             <div className="sidebar-header">
-              <span className="sidebar-title">CipherQuest</span>
-              <p className="sidebar-subtitle">Level {user?.level ?? 1} {levelLabel()}</p>
+              <img src="/assets/ui/CipherQuest_Logo.png" alt="CipherQuest Logo" className="sidebar-logo-img" />
+              <div className="sidebar-title-group">
+                <span className="sidebar-title">CipherQuest</span>
+                <p className="sidebar-subtitle">Level {user?.level ?? 1} {levelLabel()}</p>
+              </div>
             </div>
             <nav className="sidebar-nav">
               <NavItem to="/dashboard"          icon="home"                 label="Home"       active={location.pathname === '/dashboard' && !settingsOpen} />
